@@ -1,0 +1,351 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User & Authentication
+model User {
+  id                String     @id @default(cuid())
+  name              String?
+  email             String     @unique
+  emailVerified     DateTime?
+  image             String?
+  password          String?
+  role              Role       @default(USER)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  
+  accounts          Account[]
+  sessions          Session[]
+  projects          Project[]
+  invoices          Invoice[]
+  supportTickets    SupportTicket[]
+  blogPosts         BlogPost[]
+  events            Event[]
+  applications      JobApplication[]
+}
+
+enum Role {
+  USER
+  CLIENT
+  ADMIN
+  SUPER_ADMIN
+}
+
+// Authentication
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Projects
+model Project {
+  id            String    @id @default(cuid())
+  title         String
+  description   String    @db.Text
+  status        Status    @default(PENDING)
+  budget        Float?
+  currency      String    @default("KES")
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  clientId      String
+  client        User      @relation(fields: [clientId], references: [id])
+  
+  invoices      Invoice[]
+  milestones    Milestone[]
+  messages      Message[]
+  files         ProjectFile[]
+}
+
+enum Status {
+  PENDING
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Payments & Invoices
+model Invoice {
+  id            String    @id @default(cuid())
+  number        String    @unique
+  amount        Float
+  currency      String    @default("KES")
+  status        PaymentStatus @default(PENDING)
+  dueDate       DateTime
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  projectId     String?
+  project       Project?  @relation(fields: [projectId], references: [id])
+  
+  transactions  Transaction[]
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+model Transaction {
+  id            String    @id @default(cuid())
+  amount        Float
+  currency      String    @default("KES")
+  method        PaymentMethod
+  reference     String    @unique
+  status        PaymentStatus @default(PENDING)
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  
+  invoiceId     String
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id])
+}
+
+enum PaymentMethod {
+  STRIPE
+  MPESA
+  BANK_TRANSFER
+  CRYPTO
+}
+
+// Blog
+model BlogPost {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  content       String    @db.Text
+  excerpt       String?
+  featuredImage String?
+  category      String
+  tags          String[]
+  published     Boolean   @default(false)
+  metaTitle     String?
+  metaDesc      String?
+  views         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  comments      Comment[]
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String    @db.Text
+  approved  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  
+  postId    String
+  post      BlogPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+// Support
+model SupportTicket {
+  id          String    @id @default(cuid())
+  subject     String
+  description String    @db.Text
+  priority    Priority  @default(MEDIUM)
+  status      TicketStatus @default(OPEN)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  messages    Message[]
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  content     String    @db.Text
+  sender      String    // 'client' or 'admin'
+  createdAt   DateTime  @default(now())
+  
+  ticketId    String?
+  ticket      SupportTicket? @relation(fields: [ticketId], references: [id])
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id])
+}
+
+// Portfolio & Case Studies
+model PortfolioItem {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  description   String    @db.Text
+  category      String
+  technologies  String[]
+  thumbnail     String?
+  images        String[]
+  results       Json?
+  featured      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+}
+
+// Career & Events
+model Job {
+  id            String    @id @default(cuid())
+  title         String
+  department    String
+  location      String
+  type          JobType
+  description   String    @db.Text
+  requirements  String[]
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  
+  applications  JobApplication[]
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  REMOTE
+  HYBRID
+}
+
+model JobApplication {
+  id          String    @id @default(cuid())
+  resume      String
+  coverLetter String?   @db.Text
+  status      ApplicationStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+  
+  jobId       String
+  job         Job       @relation(fields: [jobId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  INTERVIEWING
+  ACCEPTED
+  REJECTED
+}
+
+model Event {
+  id            String    @id @default(cuid())
+  title         String
+  description   String    @db.Text
+  type          EventType
+  location      String?
+  virtual       Boolean   @default(false)
+  startDate     DateTime
+  endDate       DateTime
+  image         String?
+  registrationUrl String?
+  createdAt     DateTime  @default(now())
+  
+  attendees     User[]
+}
+
+enum EventType {
+  WEBINAR
+  WORKSHOP
+  CONFERENCE
+  HACKATHON
+  MEETUP
+}
+
+// Files
+model ProjectFile {
+  id        String    @id @default(cuid())
+  name      String
+  url       String
+  type      String
+  size      Int
+  createdAt DateTime  @default(now())
+  
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Analytics & Leads
+model Lead {
+  id          String    @id @default(cuid())
+  name        String
+  email       String
+  company     String?
+  phone       String?
+  source      String?
+  message     String?
+  status      LeadStatus @default(NEW)
+  createdAt   DateTime  @default(now())
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
