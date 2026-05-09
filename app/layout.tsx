@@ -4,7 +4,8 @@ import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
-import { Toaster } from '@/components/ui/toaster'
+import { LiveChatWidget } from '@/components/features/live-chat-widget'
+import { Toaster } from 'react-hot-toast' // <-- New import
 
 const inter = Inter({
   subsets: ['latin'],
@@ -49,7 +50,15 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
-          <Toaster />
+          {/* Add this new component and toaster */}
+          <LiveChatWidget />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: 'bg-background text-foreground border',
+              duration: 4000,
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>
