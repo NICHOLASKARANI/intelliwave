@@ -1,30 +1,27 @@
+// app/page.tsx (Replace entire file)
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card" // Ensure this import is correct
 import { 
-  ArrowRight, Sparkles, Zap, Globe, Users, TrendingUp, Shield, Cloud, Code2, Cpu,
-  CheckCircle, Star, Clock, HeadphonesIcon, BarChart3, Rocket, ChevronRight,
-  Award, Wallet, LineChart
+  ArrowRight, Sparkles, Zap, Globe, Users, Code2, Cpu,
+  CheckCircle, Star, Clock, HeadphonesIcon, Rocket, Award,
+  Shield, Cloud, TrendingUp, BarChart3, LineChart, ChevronRight
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
-// Import new features
+// Import new features (will be created next)
 import { AIDemoSandbox } from '@/components/features/ai-demo-sandbox'
-import { AIServiceRecommender } from '@/components/features/ai-service-recommender'
 import { GlobalActivityFeed } from '@/components/features/global-activity-feed'
 import { ProjectCommandCenter } from '@/components/features/project-command-center'
 import { SecurityPavilion } from '@/components/features/security-pavilion'
-import { APIPlayground } from '@/components/features/api-playground'
 import { CodingAnimation } from '@/components/features/coding-animation'
 import { InstitutionLogos } from '@/components/features/institution-logos'
-
-// Import new sections
+// New Team Page Imports
 import { MissionVisionSection } from '@/components/sections/mission-vision-section'
-import { TailoredSolutionsSection } from '@/components/sections/tailored-solutions-section'
-import { ImagineBuildSection } from '@/components/sections/imagine-build-section'
 import { ExecutiveInsightsSection } from '@/components/sections/executive-insights-section'
 import { CorporateTrainingSection } from '@/components/sections/corporate-training-section'
 import { HRServicesSection } from '@/components/sections/hr-services-section'
@@ -49,7 +46,6 @@ function AnimatedCounter({ end, duration = 2000, suffix = '', prefix = '' }: { e
         animationFrame = requestAnimationFrame(animate)
       }
     }
-
     animationFrame = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animationFrame)
   }, [end, duration, isInView])
@@ -62,12 +58,12 @@ function AnimatedCounter({ end, duration = 2000, suffix = '', prefix = '' }: { e
 }
 
 const services = [
-  { icon: Cpu, title: 'AI Development', description: 'Custom AI agents & ML models', color: 'from-blue-500 to-cyan-500' },
-  { icon: Globe, title: 'Web Development', description: 'Enterprise-grade websites', color: 'from-purple-500 to-pink-500' },
-  { icon: Cloud, title: 'Cloud Infrastructure', description: 'Scalable cloud solutions', color: 'from-cyan-500 to-blue-500' },
-  { icon: Shield, title: 'Cybersecurity', description: 'Bank-grade security', color: 'from-green-500 to-emerald-500' },
-  { icon: Code2, title: 'SaaS Platforms', description: 'Custom SaaS development', color: 'from-orange-500 to-red-500' },
-  { icon: Zap, title: 'AI Automation', description: 'Intelligent automation', color: 'from-yellow-500 to-orange-500' },
+  { icon: Cpu, title: 'AI Development', color: 'from-blue-500 to-cyan-500' },
+  { icon: Globe, title: 'Web Development', color: 'from-purple-500 to-pink-500' },
+  { icon: Cloud, title: 'Cloud Infrastructure', color: 'from-cyan-500 to-blue-500' },
+  { icon: Shield, title: 'Cybersecurity', color: 'from-green-500 to-emerald-500' },
+  { icon: Code2, title: 'SaaS Platforms', color: 'from-orange-500 to-red-500' },
+  { icon: Zap, title: 'AI Automation', color: 'from-yellow-500 to-orange-500' },
 ]
 
 const stats = [
@@ -194,7 +190,6 @@ export default function HomePage() {
                       <Icon className="w-full h-full text-white" />
                     </div>
                     <h3 className="text-xl font-bold mb-2">{service.title}</h3>
-                    <p className="text-muted-foreground mb-4">{service.description}</p>
                     <Link href="/services" className="inline-flex items-center text-primary hover:underline text-sm font-medium">
                       Learn more <ChevronRight className="w-4 h-4 ml-1" />
                     </Link>
@@ -203,13 +198,6 @@ export default function HomePage() {
               )
             })}
           </div>
-        </div>
-      </section>
-
-      {/* ========== IMAGINE BUILD SECTION ========== */}
-      <section className="py-24">
-        <div className="container">
-          <ImagineBuildSection />
         </div>
       </section>
 
@@ -224,7 +212,7 @@ export default function HomePage() {
           </div>
           <div className="grid lg:grid-cols-2 gap-8">
             <AIDemoSandbox />
-            <AIServiceRecommender />
+            <AIDemoSandbox /> {/* Temporary placeholder */}
           </div>
         </div>
       </section>
@@ -245,13 +233,6 @@ export default function HomePage() {
             </h2>
           </div>
           <MissionVisionSection />
-        </div>
-      </section>
-
-      {/* ========== TAILORED SOLUTIONS ========== */}
-      <section className="py-24">
-        <div className="container">
-          <TailoredSolutionsSection />
         </div>
       </section>
 
@@ -287,19 +268,6 @@ export default function HomePage() {
       <section className="py-24 bg-gradient-to-b from-background to-primary/5">
         <div className="container">
           <InstitutionLogos />
-        </div>
-      </section>
-
-      {/* ========== API PLAYGROUND ========== */}
-      <section className="py-24">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Developer-First <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">API Platform</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Integrate with our powerful APIs in minutes</p>
-          </div>
-          <APIPlayground />
         </div>
       </section>
 

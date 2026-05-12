@@ -1,0 +1,8 @@
+Place your images here:
+- ceo.jpg (CEO Photo)
+- team-member-1.jpg (Team Photo 1)
+- team-member-2.jpg (Team Photo 2)
+- hiring.jpg (Hiring Photo)
+- logo.png (Intelliwave Logo)
+- favicon.ico (Favicon)
+- og-image.jpg (Social Share Image)
