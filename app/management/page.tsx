@@ -2,94 +2,215 @@ import { Metadata } from 'next'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { ArrowRight, Linkedin, Twitter, Award, Users, Globe } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Management & Team - Leadership at Intelliwave',
-  description: 'Meet the visionary CEO and the expert team driving Intelliwave to become a global AI giant.',
+  title: 'Leadership & Management - Intelliwave Team',
+  description: 'Meet PhD, Eng. Nicholas Karani and the leadership team driving Intelliwave to become Africa\'s global AI giant.',
 }
 
 export default function ManagementPage() {
   return (
     <div className="py-20">
       <div className="container">
+        {/* Page Header */}
+        <div className="text-center mb-20">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            Our{' '}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+              Leadership
+            </span>
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Visionary leaders engineering Africa's global AI future
+          </p>
+        </div>
+
         {/* CEO Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-6">Our Leadership</h1>
-          <p className="text-xl text-muted-foreground">The visionaries behind Africa's Global AI Giant</p>
-        </div>
-        <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
-          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden border">
-            {/* Replace src with the actual path to your CEO's image */}
-            <Image
-              src="/ceo.jpg"
-              alt="PhD, Eng. Nicholas Karani - CEO of Intelliwave"
-              fill
-              className="object-cover"
-              priority
-            />
+        <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
+          {/* CEO Image */}
+          <div className="relative">
+            <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+              <Image
+                src="/ceo.jpg"
+                alt="PhD, Eng. Nicholas Karani - CEO & Founder of Intelliwave"
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              {/* Overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+              
+              {/* Name overlay on image */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                <h2 className="text-3xl font-bold mb-1">Nicholas Karani</h2>
+                <p className="text-primary-foreground/80">PhD, Software Engineering</p>
+              </div>
+            </div>
+
+            {/* Floating badges */}
+            <div className="absolute -bottom-4 -right-4 bg-background border rounded-xl p-4 shadow-xl">
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm font-bold">CEO & Founder</span>
+              </div>
+            </div>
+            <div className="absolute -top-4 -left-4 bg-background border rounded-xl p-4 shadow-xl">
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-primary" />
+                <span className="text-sm font-bold">Global Vision</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="text-3xl font-bold mb-2">PhD, Eng. Nicholas Karani</h2>
-            <p className="text-primary font-semibold mb-4">Chief Executive Officer & Founder</p>
-            <p className="text-muted-foreground leading-relaxed">
-              A pioneering software engineer with a vision to build Africa's first trillion-dollar AI company. 
-              Nicholas combines deep technical expertise with strategic leadership to drive Intelliwave's 
-              mission of democratizing AI across the continent and building enterprise-grade solutions 
-              that rival the world's best.
+
+          {/* CEO Info */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-4xl font-bold mb-2">PhD, Eng. Nicholas Karani</h2>
+              <p className="text-primary font-semibold text-lg">Chief Executive Officer & Founder</p>
+            </div>
+
+            <p className="text-muted-foreground leading-relaxed text-lg">
+              A pioneering software engineer with a doctorate in Software Engineering, Nicholas 
+              combines deep technical expertise with visionary leadership to build Intelliwave 
+              into Africa's first trillion-dollar AI company.
             </p>
-        </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { icon: Users, label: 'Team Built', value: '500+' },
+                { icon: Globe, label: 'Global Reach', value: '100+' },
+                { icon: Award, label: 'Projects', value: '10K+' },
+              ].map((stat) => {
+                const Icon = stat.icon
+                return (
+                  <div key={stat.label} className="text-center p-4 rounded-xl border bg-background/50">
+                    <Icon className="w-6 h-6 text-primary mx-auto mb-2" />
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <div className="text-xs text-muted-foreground">{stat.label}</div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <Link href="/contact">
+              <Button size="lg" className="group">
+                Connect with CEO
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Team Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-6">The Intelliwave Team</h2>
-          <p className="text-xl text-muted-foreground">500+ AI engineers dedicated to building the future</p>
-        </div>
-        <div className="grid md:grid-cols-2 gap-8 mb-24">
-          <div className="relative w-full h-[300px] rounded-2xl overflow-hidden border">
-            {/* Replace with your team image 1 */}
-            <Image
-              src="/team-member-1.jpg"
-              alt="Intelliwave Team Members"
-              fill
-              className="object-cover"
-            />
+        <div className="mb-24">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">
+              The{' '}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                Intelliwave Team
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              500+ AI engineers building the future across 100+ countries
+            </p>
           </div>
-          <div className="relative w-full h-[300px] rounded-2xl overflow-hidden border">
-            {/* Replace with your team image 2 */}
-            <Image
-              src="/team-member-2.jpg"
-              alt="Intelliwave Team Collaboration"
-              fill
-              className="object-cover"
-            />
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Team Image 1 */}
+            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border shadow-xl group cursor-pointer">
+              <Image
+                src="/team-member-1.jpg"
+                alt="Intelliwave engineering team collaborating on AI solutions"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                <h3 className="text-2xl font-bold">Engineering Excellence</h3>
+                <p className="text-white/80">Our team of expert AI engineers</p>
+              </div>
+            </div>
+
+            {/* Team Image 2 */}
+            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border shadow-xl group cursor-pointer">
+              <Image
+                src="/team-member-2.jpg"
+                alt="Intelliwave team working on global AI infrastructure"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                <h3 className="text-2xl font-bold">Global Collaboration</h3>
+                <p className="text-white/80">Working across continents and time zones</p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Hiring Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-6">Join Our Team</h2>
-          <p className="text-xl text-muted-foreground">We're always looking for exceptional talent</p>
-        </div>
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="relative w-full h-[300px] rounded-2xl overflow-hidden border">
-            {/* Replace with your hiring image */}
-            <Image
-              src="/hiring.jpg"
-              alt="Vacant Position Hiring at Intelliwave"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <div>
-            <p className="text-muted-foreground mb-6">
-              We are actively hiring AI engineers, software developers, and HR consultants to help us 
-              achieve our ambitious goals. If you're passionate about technology and want to make an 
-              impact on a global scale, we want to hear from you.
+        <div>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">
+              Join Our{' '}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                Mission
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              We're always looking for exceptional talent to help us build Africa's global AI giant
             </p>
-            <Link href="/careers">
-              <Button>View Open Positions & Apply</Button>
-            </Link>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border shadow-xl">
+              <Image
+                src="/hiring.jpg"
+                alt="Career opportunities at Intelliwave - Join our team"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-3xl font-bold">We're Hiring!</h3>
+              <p className="text-muted-foreground leading-relaxed text-lg">
+                Join a team of 500+ brilliant engineers working on cutting-edge AI technology. 
+                We offer competitive compensation, remote work options, and the opportunity to 
+                make a real impact on Africa's technology landscape.
+              </p>
+              <div className="space-y-3">
+                {[
+                  'Competitive salary & benefits',
+                  'Remote-first culture',
+                  'Professional development',
+                  'Global project exposure',
+                ].map((benefit) => (
+                  <div key={benefit} className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <span className="text-muted-foreground">{benefit}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-4">
+                <Link href="/careers">
+                  <Button size="lg" className="group">
+                    View Open Positions
+                    <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button size="lg" variant="outline">
+                    Apply Now
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
