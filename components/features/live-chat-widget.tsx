@@ -16,7 +16,7 @@ export function LiveChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "👋 Hello! I'm Sarah, your AI solutions specialist. How can I help you build the future today?",
+      text: "👋 Hello! I'm IntelliWave, your AI solutions specialist. How can I help you build the future today?",
       sender: 'agent',
       timestamp: new Date()
     }

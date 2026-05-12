@@ -120,8 +120,8 @@ export default function PrivacyPage() {
             <h2 className="text-2xl font-bold mb-4">9. Contact Information</h2>
             <div className="text-muted-foreground space-y-2">
               <p><strong>Data Controller:</strong> Intelliwave Ltd</p>
-              <p><strong>Address:</strong> Nairobi CBD, Superior Centre, Shop F11, 1st Floor, Kenyatta Avenue, Kenya</p>
-              <p><strong>Email:</strong> privacy@intelliwave.com</p>
+              <p><strong>Address:</strong> Nairobi CBD, Superior Centre, 1st Floor, Kenyatta Avenue, Kenya</p>
+              <p><strong>Email:</strong> intelliwavehr@gmail.com</p>
               <p><strong>WhatsApp:</strong> +254 714 694 493</p>
             </div>
           </section>

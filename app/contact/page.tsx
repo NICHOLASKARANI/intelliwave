@@ -28,8 +28,8 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Our Office</h3>
                   <p className="text-muted-foreground">
-                    Nairobi CBD, Superior Centre<br />
-                    Shop F11, 1st Floor<br />
+                    Nairobi CBD, Superior Centre Mall <br />
+                     1st Floor<br />
                     Kenyatta Avenue<br />
                     Kenya
                   </p>
@@ -60,8 +60,8 @@ export default function ContactPage() {
                 <Mail className="w-6 h-6 text-primary mt-1" />
                 <div>
                   <h3 className="font-semibold mb-1">Email</h3>
-                  <a href="mailto:contact@intelliwave.com" className="text-muted-foreground hover:text-primary">
-                    contact@intelliwave.com
+                  <a href="mailto:intelliwavehr@gmail.com" className="text-muted-foreground hover:text-primary">
+                    intelliwavehr@gmail.com
                   </a>
                 </div>
               </div>
@@ -71,8 +71,8 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Business Hours</h3>
                   <p className="text-muted-foreground">
-                    Monday - Friday: 8:00 AM - 6:00 PM<br />
-                    Saturday: 9:00 AM - 1:00 PM<br />
+                    Monday - Friday: 9:00 AM - 5:00 PM<br />
+                    Saturday: 9:00 AM - 12:00 PM<br />
                     Sunday: Closed
                   </p>
                 </div>
@@ -88,7 +88,7 @@ export default function ContactPage() {
                 <input
                   type="text"
                   className="w-full px-4 py-2 border rounded-lg bg-background"
-                  placeholder="Your name"
+                  placeholder="Nicholas Karani"
                 />
               </div>
               <div>
@@ -96,7 +96,7 @@ export default function ContactPage() {
                 <input
                   type="email"
                   className="w-full px-4 py-2 border rounded-lg bg-background"
-                  placeholder="your@email.com"
+                  placeholder="intelliwavehr@gmail.com"
                 />
               </div>
               <div>

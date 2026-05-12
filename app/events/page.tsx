@@ -9,22 +9,22 @@ export const metadata: Metadata = {
 
 const events = [
   {
-    title: 'AI in Enterprise Summit 2024',
-    date: 'March 15, 2024',
+    title: 'AI in Enterprise Summit 2026',
+    date: 'March 15, 2026',
     location: 'Nairobi, Kenya',
     type: 'Conference',
     attendees: 500,
   },
   {
     title: 'Building SaaS Platforms Workshop',
-    date: 'April 20, 2024',
+    date: 'April 20, 2026',
     location: 'Virtual',
     type: 'Workshop',
     attendees: 200,
   },
   {
     title: 'Tech Career Fair Nairobi',
-    date: 'May 10, 2024',
+    date: 'May 10, 2026',
     location: 'Nairobi, Kenya',
     type: 'Meetup',
     attendees: 1000,

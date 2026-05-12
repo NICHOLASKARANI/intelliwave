@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2 border rounded-lg bg-background"
-                placeholder="you@example.com"
+                placeholder="intelliwavehr@gmail.com"
                 required
               />
             </div>

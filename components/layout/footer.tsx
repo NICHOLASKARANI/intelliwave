@@ -26,7 +26,7 @@ const footerNavigation = {
   ],
   connect: [
     { name: "WhatsApp", href: "https://wa.me/254714694493", external: true },
-    { name: "Email", href: "mailto:karaninicholas700@gmail.com", external: true },
+    { name: "Email", href: "mailto:intelliwavehr@gmail.com", external: true },
     { name: "Phone", href: "tel:+254714694493", external: true },
   ],
 }
@@ -75,19 +75,19 @@ export function Footer() {
               </a>
               
               <a 
-                href="mailto:karaninicholas700@gmail.com"
+                href="mailto:intelliwavehr@gmail.com"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
               >
                 <Mail className="w-4 h-4 text-primary" />
-                <span>karaninicholas700@gmail.com</span>
+                <span>intelliwavehr@gmail.com</span>
                 <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
               
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p>Nairobi CBD, Superior Centre</p>
-                  <p>Shop F11, 1st Floor</p>
+                  <p>Nairobi CBD, Superior Centre Mall</p>
+                  <p>1st Floor</p>
                   <p>Kenyatta Avenue, Kenya</p>
                 </div>
               </div>
