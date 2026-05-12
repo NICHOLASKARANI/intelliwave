@@ -25,6 +25,7 @@ import { MissionVisionSection } from '@/components/sections/mission-vision-secti
 import { ExecutiveInsightsSection } from '@/components/sections/executive-insights-section'
 import { CorporateTrainingSection } from '@/components/sections/corporate-training-section'
 import { HRServicesSection } from '@/components/sections/hr-services-section'
+import { AIMLShowcase } from '@/components/features/ai-ml-showcase'
 
 // Animated Counter Component
 function AnimatedCounter({ end, duration = 2000, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
@@ -216,6 +217,24 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* AI/ML Features Showcase */}
+<section className="py-24 bg-gradient-to-b from-secondary/5 to-background">
+  <div className="container">
+    <div className="text-center mb-12">
+      <h2 className="text-4xl md:text-5xl font-bold mb-4">
+        AI & ML{' '}
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+          Capabilities
+        </span>
+      </h2>
+      <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        Experience our intelligent automation in real-time
+      </p>
+    </div>
+    <AIMLShowcase />
+  </div>
+</section>
 
       {/* ========== PROJECT COMMAND CENTER ========== */}
       <section className="py-24">
