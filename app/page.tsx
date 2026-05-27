@@ -1,62 +1,30 @@
-// app/page.tsx (Replace entire file)
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card" // Ensure this import is correct
 import { 
   ArrowRight, Sparkles, Zap, Globe, Users, Code2, Cpu,
-  CheckCircle, Star, Clock, HeadphonesIcon, Rocket, Award,
-  Shield, Cloud, TrendingUp, BarChart3, LineChart, ChevronRight
+  Star, HeadphonesIcon, Rocket, Award, Shield, Cloud
 } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 
-// Import new features (will be created next)
+// Import NEW Cinematic Effects
+import { CinematicHero } from '@/components/sections/cinematic-hero'
+import { CinematicHomepage } from '@/components/sections/cinematic-homepage'
+import { ParticleSystem } from '@/components/effects/particle-system'
+
+// Import your existing features (keep these intact)
 import { AIDemoSandbox } from '@/components/features/ai-demo-sandbox'
 import { GlobalActivityFeed } from '@/components/features/global-activity-feed'
 import { ProjectCommandCenter } from '@/components/features/project-command-center'
 import { SecurityPavilion } from '@/components/features/security-pavilion'
-import { CodingAnimation } from '@/components/features/coding-animation'
 import { InstitutionLogos } from '@/components/features/institution-logos'
-// New Team Page Imports
+import { AIMLShowcase } from '@/components/features/ai-ml-showcase'
 import { MissionVisionSection } from '@/components/sections/mission-vision-section'
 import { ExecutiveInsightsSection } from '@/components/sections/executive-insights-section'
 import { CorporateTrainingSection } from '@/components/sections/corporate-training-section'
 import { HRServicesSection } from '@/components/sections/hr-services-section'
-import { AIMLShowcase } from '@/components/features/ai-ml-showcase'
-
-// Animated Counter Component
-function AnimatedCounter({ end, duration = 2000, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
-  const [count, setCount] = useState(0)
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true })
-
-  useEffect(() => {
-    if (!isInView) return
-    let startTime: number
-    let animationFrame: number
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const progress = Math.min((timestamp - startTime) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setCount(Math.floor(end * eased))
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate)
-      }
-    }
-    animationFrame = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrame)
-  }, [end, duration, isInView])
-
-  return (
-    <span ref={ref}>
-      {prefix}{count.toLocaleString()}{suffix}
-    </span>
-  )
-}
 
 const services = [
   { icon: Cpu, title: 'AI Development', color: 'from-blue-500 to-cyan-500' },
@@ -67,94 +35,26 @@ const services = [
   { icon: Zap, title: 'AI Automation', color: 'from-yellow-500 to-orange-500' },
 ]
 
-const stats = [
-  { icon: Users, value: 450000, suffix: '+', label: 'Active Users' },
-  { icon: Globe, value: 100, suffix: '+', label: 'Countries' },
-  { icon: Code2, value: 500, suffix: '+', label: 'AI Engineers' },
-  { icon: Award, value: 10000, suffix: '+', label: 'Projects' },
-]
-
 const partners = ['Microsoft', 'Tesla', 'NVIDIA', 'Meta', 'SpaceX', 'GST']
 
 export default function HomePage() {
   return (
-    <div className="overflow-hidden">
-      {/* ========== HERO SECTION ========== */}
-      <section className="relative min-h-screen flex items-center">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgb(0 102 255 / 0.3) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-          <motion.div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} />
-          <motion.div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl" animate={{ x: [0, -100, 0], y: [0, 50, 0], scale: [1, 1.3, 1] }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }} />
-        </div>
+    <div className="overflow-hidden relative">
+      {/* ========== NEW: GLOBAL PARTICLE BACKGROUND ========== */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <ParticleSystem />
+      </div>
 
-        <div className="container relative mx-auto px-4 py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="space-y-8">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 backdrop-blur-xl border border-primary/20">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium">Africa&apos;s #1 AI Company</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 backdrop-blur-xl border border-green-500/20">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm text-green-500">500+ Developers Ready</span>
-                </div>
-              </motion.div>
-
-              <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-bold text-5xl md:text-7xl lg:text-8xl leading-tight">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-accent">Engineering</span><br />
-                the Future<br />
-                with AI
-              </motion.h1>
-
-              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="text-xl md:text-2xl text-muted-foreground max-w-xl">
-                Building Africa&apos;s Global AI Giant. Enterprise SaaS, Cloud Infrastructure, AI Agents, and Custom Software Solutions.
-              </motion.p>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="grid grid-cols-4 gap-4">
-                {stats.map((stat) => {
-                  const Icon = stat.icon
-                  return (
-                    <div key={stat.label} className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-2xl md:text-3xl font-bold text-primary">
-                        <AnimatedCounter end={stat.value} suffix={stat.suffix} />
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
-                    </div>
-                  )
-                })}
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="flex flex-col sm:flex-row gap-4">
-                <Link href="/contact">
-                  <Button size="lg" className="group bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg">
-                    Start Your Project
-                    <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-                <Link href="/services">
-                  <Button size="lg" variant="outline" className="px-8 py-6 text-lg backdrop-blur-xl border-2">
-                    <Rocket className="mr-2" /> Explore Services
-                  </Button>
-                </Link>
-              </motion.div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, delay: 0.5 }} className="relative hidden lg:block">
-              <CodingAnimation />
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      {/* ========== NEW: CINEMATIC HERO SECTION ========== */}
+      <CinematicHero />
 
       {/* ========== GLOBAL ACTIVITY FEED ========== */}
-      <section className="container py-6">
+      <section className="container py-6 relative z-10">
         <GlobalActivityFeed />
       </section>
 
       {/* ========== PARTNERS BAR ========== */}
-      <section className="py-12 border-y bg-secondary/5 backdrop-blur-xl">
+      <section className="py-12 border-y bg-secondary/5 backdrop-blur-xl relative z-10">
         <div className="container">
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-sm text-muted-foreground mb-6">
             TRUSTED BY INDUSTRY LEADERS
@@ -170,10 +70,10 @@ export default function HomePage() {
       </section>
 
       {/* ========== SERVICES SECTION ========== */}
-      <section className="py-24 relative overflow-hidden">
+      <section className="py-24 relative overflow-hidden z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
         <div className="container relative">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center mb-16">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-bold mb-4">
               Our <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Services</span>
             </h2>
@@ -192,7 +92,7 @@ export default function HomePage() {
                     </div>
                     <h3 className="text-xl font-bold mb-2">{service.title}</h3>
                     <Link href="/services" className="inline-flex items-center text-primary hover:underline text-sm font-medium">
-                      Learn more <ChevronRight className="w-4 h-4 ml-1" />
+                      Learn more
                     </Link>
                   </div>
                 </motion.div>
@@ -202,8 +102,13 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ========== NEW: CINEMATIC HOMEPAGE (3D GLOBE & MISSION) ========== */}
+      <div className="relative z-10">
+        <CinematicHomepage />
+      </div>
+
       {/* ========== AI INTERACTIVE TOOLS ========== */}
-      <section className="py-24 bg-gradient-to-b from-background to-primary/5">
+      <section className="py-24 bg-gradient-to-b from-background to-primary/5 relative z-10">
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -213,85 +118,69 @@ export default function HomePage() {
           </div>
           <div className="grid lg:grid-cols-2 gap-8">
             <AIDemoSandbox />
-            <AIDemoSandbox /> {/* Temporary placeholder */}
+            <AIDemoSandbox />
           </div>
         </div>
       </section>
 
-      {/* AI/ML Features Showcase */}
-<section className="py-24 bg-gradient-to-b from-secondary/5 to-background">
-  <div className="container">
-    <div className="text-center mb-12">
-      <h2 className="text-4xl md:text-5xl font-bold mb-4">
-        AI & ML{' '}
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-          Capabilities
-        </span>
-      </h2>
-      <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-        Experience our intelligent automation in real-time
-      </p>
-    </div>
-    <AIMLShowcase />
-  </div>
-</section>
+      {/* ========== AI/ML SHOWCASE ========== */}
+      <section className="py-24 bg-gradient-to-b from-secondary/5 to-background relative z-10">
+        <div className="container">
+          <AIMLShowcase />
+        </div>
+      </section>
 
       {/* ========== PROJECT COMMAND CENTER ========== */}
-      <section className="py-24">
+      <section className="py-24 relative z-10">
         <div className="container">
           <ProjectCommandCenter />
         </div>
       </section>
 
       {/* ========== MISSION & VISION ========== */}
-      <section className="py-24 bg-gradient-to-b from-secondary/5 to-background">
+      <section className="py-24 bg-gradient-to-b from-secondary/5 to-background relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Our <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Mission & Vision</span>
-            </h2>
-          </div>
           <MissionVisionSection />
         </div>
       </section>
 
       {/* ========== EXECUTIVE INSIGHTS ========== */}
-      <section className="py-24 bg-gradient-to-b from-background to-primary/5">
+      <section className="py-24 bg-gradient-to-b from-background to-primary/5 relative z-10">
         <div className="container">
           <ExecutiveInsightsSection />
         </div>
       </section>
 
       {/* ========== SECURITY PAVILION ========== */}
-      <section className="py-24">
+      <section className="py-24 relative z-10">
         <div className="container">
           <SecurityPavilion />
         </div>
       </section>
 
       {/* ========== CORPORATE TRAINING ========== */}
-      <section className="py-24 bg-gradient-to-b from-secondary/5 to-background">
+      <section className="py-24 bg-gradient-to-b from-secondary/5 to-background relative z-10">
         <div className="container">
           <CorporateTrainingSection />
         </div>
       </section>
 
       {/* ========== HR SERVICES ========== */}
-      <section className="py-24">
+      <section className="py-24 relative z-10">
         <div className="container">
           <HRServicesSection />
         </div>
       </section>
 
       {/* ========== INSTITUTION LOGOS ========== */}
-      <section className="py-24 bg-gradient-to-b from-background to-primary/5">
+      <section className="py-24 bg-gradient-to-b from-background to-primary/5 relative z-10">
         <div className="container">
           <InstitutionLogos />
         </div>
       </section>
 
       {/* ========== CTA SECTION ========== */}
-      <section className="py-24 relative overflow-hidden">
+      <section className="py-24 relative overflow-hidden z-10">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20" />
         <div className="container relative text-center">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="max-w-3xl mx-auto">
