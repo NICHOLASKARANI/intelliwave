@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
-import { AnimationProvider } from '@/components/providers/animation-provider'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { LiveChatWidget } from '@/components/features/live-chat-widget'
@@ -21,7 +20,7 @@ export const metadata: Metadata = {
     default: 'Intelliwave - Engineering the Future with AI | Enterprise AI & Software',
     template: '%s | Intelliwave',
   },
-  description: 'Intelliwave is Africa\'s leading AI software engineering company. Building enterprise SaaS, AI agents, cloud infrastructure, and custom web solutions. Trusted by Microsoft, Tesla, NVIDIA, and 450,000+ businesses globally.',
+  description: 'Intelliwave is East Africa\'s leading AI software engineering company. Building enterprise SaaS, AI agents, cloud infrastructure, and custom web solutions. Trusted by Microsoft, Tesla, NVIDIA, and 450,000+ businesses globally.',
   keywords: [
     'AI development',
     'software engineering',
@@ -104,33 +103,31 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <AnimationProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
+          <div className="relative flex min-h-screen flex-col">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
 
-            {/* Live Chat Widget */}
-            <LiveChatWidget />
+          {/* Live Chat Widget */}
+          <LiveChatWidget />
 
-            {/* Floating WhatsApp Button */}
-            <FloatingWhatsApp />
+          {/* Floating WhatsApp Button */}
+          <FloatingWhatsApp />
 
-            {/* Toast Notifications */}
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                className: 'bg-background text-foreground border',
-                duration: 4000,
-                style: {
-                  background: 'var(--background)',
-                  color: 'var(--foreground)',
-                  border: '1px solid var(--border)',
-                },
-              }}
-            />
-          </AnimationProvider>
+          {/* Toast Notifications */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              className: 'bg-background text-foreground border',
+              duration: 4000,
+              style: {
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+                border: '1px solid var(--border)',
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

@@ -12,7 +12,6 @@ import Link from "next/link"
 // Import NEW Cinematic Effects
 import { CinematicHero } from '@/components/sections/cinematic-hero'
 import { CinematicHomepage } from '@/components/sections/cinematic-homepage'
-import { ParticleSystem } from '@/components/effects/particle-system'
 
 // Import your existing features (keep these intact)
 import { AIDemoSandbox } from '@/components/features/ai-demo-sandbox'
@@ -41,9 +40,6 @@ export default function HomePage() {
   return (
     <div className="overflow-hidden relative">
       {/* ========== NEW: GLOBAL PARTICLE BACKGROUND ========== */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <ParticleSystem />
-      </div>
 
       {/* ========== NEW: CINEMATIC HERO SECTION ========== */}
       <CinematicHero />

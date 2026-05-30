@@ -131,3 +131,35 @@ html {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Performance Optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hardware acceleration for animations */
+.animate-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimize paint performance */
+.glass,
+.glassmorphism,
+.backdrop-blur-xl {
+  will-change: transform;
+  transform: translateZ(0);
+}
