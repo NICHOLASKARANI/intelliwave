@@ -25,7 +25,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <div className="relative w-10 h-10">
+          <div className="relative w-20 h-10">
             <Image
               src="/logo.png"
               alt="Intelliwave Logo"

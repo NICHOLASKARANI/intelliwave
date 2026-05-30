@@ -26,6 +26,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toast": "^1.2.15",
     "@stripe/stripe-js": "^2.4.0",
+    "@studio-freight/lenis": "^1.0.42",
     "@tanstack/react-query": "^5.100.9",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.0",

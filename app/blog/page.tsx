@@ -11,7 +11,7 @@ const posts = [
   {
     title: 'The Future of AI in African Enterprise',
     excerpt: 'How artificial intelligence is transforming businesses across Africa and what it means for the continent\'s economic future.',
-    date: '2024-01-15',
+    date: '2026-01-15',
     readTime: '5 min read',
     category: 'AI & ML',
     author: 'Nicholas Karani',
@@ -22,7 +22,7 @@ const posts = [
   {
     title: 'Building Scalable SaaS Platforms in 2024',
     excerpt: 'Best practices for building enterprise-grade SaaS applications that can scale from 100 to 100 million users.',
-    date: '2024-01-10',
+    date: '2026-01-10',
     readTime: '7 min read',
     category: 'Web Development',
     author: 'Intelliwave Team',
@@ -33,7 +33,7 @@ const posts = [
   {
     title: 'Cloud Infrastructure Best Practices for African Businesses',
     excerpt: 'Choosing the right cloud architecture for your growing business with considerations for African markets.',
-    date: '2024-01-05',
+    date: '2026-01-05',
     readTime: '4 min read',
     category: 'Cloud',
     author: 'Intelliwave Team',
@@ -44,7 +44,7 @@ const posts = [
   {
     title: 'Why Kenyan Companies Are Investing in AI',
     excerpt: 'An analysis of the growing AI investment trend among Kenyan enterprises and the ROI they\'re seeing.',
-    date: '2023-12-28',
+    date: '2025-12-28',
     readTime: '6 min read',
     category: 'AI & ML',
     author: 'Nicholas Karani',
@@ -55,7 +55,7 @@ const posts = [
   {
     title: 'The Rise of M-Pesa Integrated E-commerce',
     excerpt: 'How mobile money integration is revolutionizing e-commerce in East Africa and what it means for developers.',
-    date: '2023-12-20',
+    date: '2025-12-20',
     readTime: '5 min read',
     category: 'Technology',
     author: 'Intelliwave Team',
@@ -66,7 +66,7 @@ const posts = [
   {
     title: 'Cybersecurity Essentials for African Startups',
     excerpt: 'Protecting your startup from cyber threats with enterprise-grade security on a startup budget.',
-    date: '2023-12-15',
+    date: '2025-12-15',
     readTime: '8 min read',
     category: 'Technology',
     author: 'Intelliwave Team',
@@ -77,7 +77,7 @@ const posts = [
   {
     title: 'How to Build a Tech Career in Africa',
     excerpt: 'A comprehensive guide to building a successful technology career in Africa\'s growing tech ecosystem.',
-    date: '2023-12-10',
+    date: '2025-12-10',
     readTime: '6 min read',
     category: 'Career',
     author: 'Nicholas Karani',
@@ -88,7 +88,7 @@ const posts = [
   {
     title: 'ERP Systems: Build vs Buy for African Enterprises',
     excerpt: 'When should African enterprises build custom ERP systems versus buying off-the-shelf solutions?',
-    date: '2023-12-05',
+    date: '2025-12-05',
     readTime: '7 min read',
     category: 'Business',
     author: 'Intelliwave Team',
@@ -99,7 +99,7 @@ const posts = [
   {
     title: 'Mobile-First Development for African Markets',
     excerpt: 'Why mobile-first development is crucial for reaching African users and best practices for implementation.',
-    date: '2023-11-28',
+    date: '2025-11-28',
     readTime: '5 min read',
     category: 'Web Development',
     author: 'Intelliwave Team',
