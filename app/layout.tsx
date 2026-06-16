@@ -7,6 +7,8 @@ import { Footer } from '@/components/layout/footer'
 import { LiveChatWidget } from '@/components/features/live-chat-widget'
 import { FloatingWhatsApp } from '@/components/features/floating-whatsapp'
 import { AICopilot } from '@/components/features/ai-copilot'
+import { CookieConsent } from '@/components/ui/cookie-consent'
+import { BackToTop } from '@/components/ui/back-to-top'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({
@@ -21,8 +23,8 @@ export const metadata: Metadata = {
     default: 'Intelliwave - Engineering the Future with AI | Enterprise AI & Software',
     template: '%s | Intelliwave',
   },
-  description: 'Intelliwave is East Africa\'s leading AI software engineering company. Building enterprise SaaS, AI agents, cloud infrastructure, and custom web solutions.',
-  keywords: ['AI development', 'software engineering', 'enterprise AI', 'SaaS development', 'web development Kenya'],
+  description: 'Intelliwave is East Africa\'s leading AI software engineering company. Building enterprise SaaS, AI agents, cloud infrastructure, IIoT automation, and custom web solutions.',
+  keywords: ['AI development', 'software engineering', 'enterprise AI', 'IIoT', 'industrial automation', 'SaaS development', 'web development Kenya'],
   authors: [{ name: 'Intelliwave', url: 'https://intelliwave.com' }],
   creator: 'Intelliwave',
   openGraph: {
@@ -57,6 +59,8 @@ export default function RootLayout({
           <LiveChatWidget />
           <FloatingWhatsApp />
           <AICopilot />
+          <BackToTop />
+          <CookieConsent />
           <Toaster position="top-right" />
         </ThemeProvider>
       </body>
