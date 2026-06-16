@@ -1,15 +1,16 @@
-"use client"
+'use client'
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { Menu, X, ChevronDown } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Services", href: "/services" },
+  { name: "IIoT", href: "/iiot-automation" },
   { name: "Pricing", href: "/pricing" },
   { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
@@ -25,7 +26,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <div className="relative w-20 h-10">
+          <div className="relative w-10 h-10">
             <Image
               src="/logo.png"
               alt="Intelliwave Logo"
@@ -57,10 +58,7 @@ export function Navbar() {
         </div>
 
         <div className="hidden lg:flex lg:gap-x-4">
-          <Link href="/login">
-            <Button variant="ghost">Login</Button>
-          </Link>
-          <Link href="/signup">
+          <Link href="/contact">
             <Button className="bg-primary hover:bg-primary/90">Get Started</Button>
           </Link>
         </div>
@@ -96,11 +94,8 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
-            <div className="flex gap-2 mt-4">
-              <Link href="/login" className="flex-1">
-                <Button variant="outline" className="w-full">Login</Button>
-              </Link>
-              <Link href="/signup" className="flex-1">
+            <div className="mt-4">
+              <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-primary">Get Started</Button>
               </Link>
             </div>
