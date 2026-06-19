@@ -7,7 +7,7 @@ import { ProductShowcase } from '@/components/sections/product-showcase'
 import { AIProposalGenerator } from '@/components/features/ai-proposal-generator'
 import { GlobalActivityFeed } from '@/components/features/global-activity-feed'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Shield, Zap } from 'lucide-react'
+import { ArrowRight, Shield } from 'lucide-react'
 import Link from 'next/link'
 
 export default function HomePage() {
@@ -106,10 +106,6 @@ export default function HomePage() {
       <section className="py-24 bg-neutral-50 dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 text-sm font-medium mb-6">
-              <Zap className="w-4 h-4" />
-              AI-Powered
-            </span>
             <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
               Get Your{' '}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">

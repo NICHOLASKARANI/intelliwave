@@ -2,15 +2,15 @@
 
 import { motion } from 'framer-motion'
 import { 
-  Shield, Lock, Server, Audit, Cloud, Key, 
-  Users, Globe, Award, CheckCircle2 
+  Shield, Lock, Server, FileCheck, Cloud, Key, 
+  Users, Globe
 } from 'lucide-react'
 
 const compliance = [
   { icon: Shield, label: 'SOC 2 Type II', description: 'Annual audit completed', color: 'text-green-500' },
   { icon: Lock, label: 'GDPR Compliant', description: 'EU data protection', color: 'text-blue-500' },
   { icon: Server, label: 'ISO 27001', description: 'Information security', color: 'text-purple-500' },
-  { icon: Audit, label: 'Kenya DPA', description: 'Data Protection Act 2019', color: 'text-orange-500' },
+  { icon: FileCheck, label: 'Kenya DPA', description: 'Data Protection Act 2019', color: 'text-orange-500' },
 ]
 
 const security = [
