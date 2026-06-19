@@ -20,33 +20,39 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://intelliwave.com'),
   title: {
-    default: 'Intelliwave - Engineering the Future with AI | Enterprise AI & Software',
-    template: '%s | Intelliwave',
+    default: 'IntelliWave - Enterprise AI Solutions | SOC 2 Certified | 10,000+ Projects',
+    template: '%s | IntelliWave',
   },
-  description: 'Intelliwave is East Africa\'s leading AI software engineering company. Building enterprise SaaS, AI agents, cloud infrastructure, IIoT automation, and custom web solutions.',
-  keywords: ['AI development', 'software engineering', 'enterprise AI', 'IIoT', 'industrial automation', 'SaaS development', 'web development Kenya'],
-  authors: [{ name: 'Intelliwave', url: 'https://intelliwave.com' }],
-  creator: 'Intelliwave',
+  description: 'Enterprise AI solutions trusted by 450,000+ businesses across 100+ countries. SOC 2 Type II certified. Custom AI, IIoT, SaaS, and cloud infrastructure. Book a consultation.',
+  keywords: ['enterprise AI', 'SOC 2 certified', 'IIoT solutions', 'SaaS development', 'AI consulting Kenya', 'cloud infrastructure', 'predictive maintenance', 'enterprise software'],
+  authors: [{ name: 'IntelliWave Ltd', url: 'https://intelliwave.com' }],
+  creator: 'IntelliWave',
+  publisher: 'IntelliWave Ltd',
   openGraph: {
     type: 'website',
     locale: 'en_KE',
     url: 'https://intelliwave.com',
-    siteName: 'Intelliwave',
-    title: 'Intelliwave - Engineering the Future with AI',
-    description: 'Building Africa\'s Global AI Giant',
+    siteName: 'IntelliWave',
+    title: 'IntelliWave - Enterprise AI Solutions | 10,000+ Projects Delivered',
+    description: 'Enterprise AI solutions. SOC 2 Type II certified. 450,000+ users. 500+ engineers. 100+ countries.',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'IntelliWave - Enterprise AI Platform' }],
   },
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+  twitter: {
+    card: 'summary_large_image',
+    title: 'IntelliWave - Enterprise AI Solutions',
+    description: 'SOC 2 Type II certified. 10,000+ projects delivered. Enterprise AI from Africa.',
+    images: ['/og-image.jpg'],
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
+  icons: { icon: '/favicon.ico', apple: '/apple-touch-icon.png' },
   manifest: '/site.webmanifest',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
