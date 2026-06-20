@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { Menu, X, ChevronDown } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import { SocialIcons } from '@/components/ui/social-icons'
@@ -11,8 +11,18 @@ import { SearchPalette } from '@/components/ui/search-palette'
 
 const navigation = [
   { name: "Home", href: "/" },
-  { name: "Services", href: "/services" },
-  { name: "IIoT", href: "/iiot-automation" },
+  { 
+    name: "Services", 
+    href: "/services",
+    children: [
+      { name: "AI Engineering", href: "/ai-engineering" },
+      { name: "Software Development", href: "/software-development" },
+      { name: "Cybersecurity", href: "/cybersecurity" },
+      { name: "Cloud & DevOps", href: "/cloud-devops" },
+      { name: "Enterprise Solutions", href: "/enterprise-solutions" },
+      { name: "IIoT Automation", href: "/iiot-automation" },
+    ]
+  },
   { name: "Pricing", href: "/pricing" },
   { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
@@ -22,6 +32,7 @@ const navigation = [
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [servicesOpen, setServicesOpen] = useState(false)
   const pathname = usePathname()
 
   return (
@@ -43,31 +54,62 @@ export function Navbar() {
         </Link>
 
         {/* Desktop navigation */}
-        <div className="hidden lg:flex lg:gap-x-8">
+        <div className="hidden lg:flex lg:gap-x-6">
           {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`text-sm font-semibold leading-6 transition-colors ${
-                pathname === item.href
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-primary"
-              }`}
-            >
-              {item.name}
-            </Link>
+            <div key={item.name} className="relative">
+              {item.children ? (
+                <div
+                  onMouseEnter={() => setServicesOpen(true)}
+                  onMouseLeave={() => setServicesOpen(false)}
+                >
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-1 text-sm font-semibold leading-6 transition-colors ${
+                      pathname === item.href || pathname.startsWith('/ai-engineering') || pathname.startsWith('/cybersecurity') || pathname.startsWith('/software-development') || pathname.startsWith('/cloud-devops') || pathname.startsWith('/enterprise-solutions')
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-primary"
+                    }`}
+                  >
+                    {item.name}
+                    <ChevronDown className="w-3 h-3" />
+                  </Link>
+                  
+                  {servicesOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-56 rounded-xl border bg-background shadow-2xl py-2 z-50">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.name}
+                          href={child.href}
+                          className={`block px-4 py-2 text-sm hover:bg-muted transition-colors ${
+                            pathname === child.href ? "text-primary font-medium" : "text-muted-foreground"
+                          }`}
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href={item.href}
+                  className={`text-sm font-semibold leading-6 transition-colors ${
+                    pathname === item.href
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-primary"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              )}
+            </div>
           ))}
         </div>
 
         {/* Desktop right section */}
         <div className="hidden lg:flex lg:items-center lg:gap-x-4">
-          {/* Search */}
           <SearchPalette />
-          
-          {/* Social Icons */}
           <SocialIcons size="sm" />
-          
-          {/* CTA */}
           <Link href="/contact">
             <Button className="bg-primary hover:bg-primary/90">Get Started</Button>
           </Link>
@@ -89,23 +131,45 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t">
-          <div className="container py-4 space-y-2">
+          <div className="container py-4 space-y-1">
             {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  pathname === item.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent"
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.name}
-              </Link>
+              <div key={item.name}>
+                {item.children ? (
+                  <>
+                    <Link
+                      href={item.href}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.name}
+                        href={child.href}
+                        className="block px-6 py-1.5 text-sm text-muted-foreground hover:text-primary"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      pathname === item.href
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-accent"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                )}
+              </div>
             ))}
             
-            {/* Mobile Social Icons */}
             <div className="px-3 py-3">
               <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Follow Us</p>
               <SocialIcons variant="mobile" size="md" />
