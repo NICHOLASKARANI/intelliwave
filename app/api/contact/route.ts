@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxArgpN-mFbXavj3ckjr68qaVagR7HvMjdSIcBK6kvkdMdpv3Cc5AowmhIs7f-r7tPbWA/exec'
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxalnaCqLSDuafOgRvVGLuYwajSouUWsQ6WVaOnZWiMasBLXUydJgRzovba0W9WwW1XjA/exec'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,61 +36,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Sending to Google Sheets:', { name: name.trim(), email: email.trim(), message: message.trim() })
+    // Prepare submission data
+    const submission = {
+      name: name.trim(),
+      email: email.trim(),
+      message: message.trim(),
+      timestamp: new Date().toISOString(),
+    }
 
-    // Send to Google Sheets with timeout
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    console.log('📩 New Contact Form Submission:', JSON.stringify(submission, null, 2))
 
+    // Send to Google Sheets
     try {
       const response = await fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          message: message.trim(),
-        }),
-        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submission),
+        signal: AbortSignal.timeout(10000),
       })
 
-      clearTimeout(timeoutId)
+      const result = await response.json()
+      console.log('Google Sheets response:', JSON.stringify(result))
 
-      const responseData = await response.json()
-      console.log('Google Sheets response:', responseData)
-
-      if (responseData.success) {
-        return NextResponse.json({
-          success: true,
-          message: 'Thank you! Your message has been sent successfully. We will get back to you within 24 hours.',
-        })
-      } else {
-        console.error('Google Sheets error:', responseData.error)
-        // Still return success to user
-        return NextResponse.json({
-          success: true,
-          message: 'Thank you! Your message has been received. We will get back to you within 24 hours.',
-        })
+      if (!result.success) {
+        console.error('Google Sheets save failed:', result.error)
       }
-    } catch (fetchError) {
-      clearTimeout(timeoutId)
-      console.error('Google Sheets fetch error:', fetchError)
-      
-      // Still return success - the message is logged server-side
-      return NextResponse.json({
-        success: true,
-        message: 'Thank you! Your message has been received. We will get back to you within 24 hours.',
-      })
+    } catch (sheetError) {
+      console.error('Google Sheets connection error:', sheetError)
+      // Continue even if sheets fails - message is logged in Vercel
     }
+
+    // Always return success to user
+    return NextResponse.json({
+      success: true,
+      message: 'Thank you! Your message has been sent to karaninicholas700@gmail.com. We will get back to you within 24 hours.',
+    })
   } catch (error) {
     console.error('Contact form error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to send message. Please try again or WhatsApp us at +254 714 694 493.' 
-      },
+      { success: false, error: 'Failed to send message. Please WhatsApp us at +254 714 694 493.' },
       { status: 500 }
     )
   }
