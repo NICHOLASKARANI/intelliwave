@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   TrendingUp, Users, Code2, Globe, Clock, 
-  Zap, ArrowUpRight, ArrowDownRight 
+  Zap, ArrowUpRight
 } from 'lucide-react'
 
 interface Metric {
@@ -18,7 +18,7 @@ interface Metric {
 }
 
 export function LiveMetrics() {
-  const [metrics, setMetrics] = useState<Metric[]>([
+  const [metrics] = useState<Metric[]>([
     { label: 'Projects Delivered', value: 10000, suffix: '+', change: 12.5, icon: Code2, color: 'from-indigo-600 to-blue-600' },
     { label: 'Active Users', value: 450000, suffix: '+', change: 8.3, icon: Users, color: 'from-purple-600 to-pink-600' },
     { label: 'Countries Served', value: 100, suffix: '+', change: 15.2, icon: Globe, color: 'from-green-600 to-emerald-600' },
@@ -51,11 +51,11 @@ export function LiveMetrics() {
     }, interval)
     
     return () => clearInterval(timer)
-  }, [])
+  }, [metrics])
 
   const formatValue = (value: number, metric: Metric) => {
     if (metric.label === 'Uptime') return value.toFixed(2)
-    if (value >= 1000) {
+    if (value >= 1000 && metric.label !== 'Revenue Growth') {
       return (value / 1000).toFixed(1) + 'K'
     }
     return Math.floor(value).toString()
