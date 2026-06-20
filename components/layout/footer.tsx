@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react"
+import { SocialIcons } from '@/components/ui/social-icons'
 
 const footerNavigation = {
   services: [
@@ -9,6 +10,7 @@ const footerNavigation = {
     { name: "Mobile Apps", href: "/services" },
     { name: "Cloud Solutions", href: "/services" },
     { name: "Enterprise AI", href: "/services" },
+    { name: "IIoT Automation", href: "/iiot-automation" },
     { name: "AI Estimator", href: "/estimator" },
   ],
   company: [
@@ -18,11 +20,13 @@ const footerNavigation = {
     { name: "Events", href: "/events" },
     { name: "Contact", href: "/contact" },
     { name: "Insights", href: "/insights" },
+    { name: "Management", href: "/management" },
   ],
   legal: [
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Terms of Service", href: "/terms" },
     { name: "Cookie Policy", href: "/cookies" },
+    { name: "Security Center", href: "/security" },
   ],
   connect: [
     { name: "WhatsApp", href: "https://wa.me/254714694493", external: true },
@@ -57,9 +61,15 @@ export function Footer() {
             </Link>
             
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-              Engineering the Future with AI. Building Africa&apos;s Global AI Giant. 
-              Enterprise SaaS, Cloud Infrastructure, AI Agents, and Custom Software Solutions.
+              Enterprise AI solutions that automate operations. SOC 2 Type II certified. 
+              Trusted by 450,000+ businesses across 100+ countries.
             </p>
+            
+            {/* Social Icons */}
+            <div className="mb-6">
+              <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Follow Us</p>
+              <SocialIcons variant="footer" />
+            </div>
             
             {/* Contact Info */}
             <div className="space-y-3">
@@ -86,7 +96,7 @@ export function Footer() {
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p>Nairobi CBD, Superior Centre Mall</p>
+                  <p>Nairobi CBD, Superior Centre</p>
                   <p>1st Floor</p>
                   <p>Kenyatta Avenue, Kenya</p>
                 </div>
@@ -191,15 +201,15 @@ export function Footer() {
               {/* Trust Badges */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span>99.9% Uptime</span>
+                <span>SOC 2 Type II</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span>500+ Engineers</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                 <span>ISO 27001</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                <span>GDPR Compliant</span>
               </div>
             </div>
           </div>
@@ -207,7 +217,7 @@ export function Footer() {
           {/* Slogan */}
           <div className="text-center mt-4">
             <p className="text-xs text-muted-foreground/60 italic">
-              &ldquo;Global Intelligence. Infinite Innovation.&rdquo;
+              &ldquo;Enterprise AI Systems That Automate Operations.&rdquo;
             </p>
           </div>
         </div>

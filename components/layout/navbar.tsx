@@ -3,9 +3,11 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X, ChevronDown } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
+import { SocialIcons } from '@/components/ui/social-icons'
+import { SearchPalette } from '@/components/ui/search-palette'
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -57,7 +59,15 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden lg:flex lg:gap-x-4">
+        {/* Desktop right section */}
+        <div className="hidden lg:flex lg:items-center lg:gap-x-4">
+          {/* Search */}
+          <SearchPalette />
+          
+          {/* Social Icons */}
+          <SocialIcons size="sm" />
+          
+          {/* CTA */}
           <Link href="/contact">
             <Button className="bg-primary hover:bg-primary/90">Get Started</Button>
           </Link>
@@ -94,7 +104,14 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
-            <div className="mt-4">
+            
+            {/* Mobile Social Icons */}
+            <div className="px-3 py-3">
+              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Follow Us</p>
+              <SocialIcons variant="mobile" size="md" />
+            </div>
+            
+            <div className="px-3 mt-4">
               <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-primary">Get Started</Button>
               </Link>
