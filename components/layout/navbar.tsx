@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, X, ChevronDown } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { SocialIcons } from '@/components/ui/social-icons'
 import { SearchPalette } from '@/components/ui/search-palette'
@@ -15,6 +15,7 @@ const navigation = [
     name: "Services", 
     href: "/services",
     children: [
+      { name: "All Services", href: "/services" },
       { name: "AI Engineering", href: "/ai-engineering" },
       { name: "Software Development", href: "/software-development" },
       { name: "Cybersecurity", href: "/cybersecurity" },
@@ -33,7 +34,32 @@ const navigation = [
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [servicesOpen, setServicesOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setServicesOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setServicesOpen(false)
+  }, [pathname])
+
+  const isServiceActive = pathname === '/services' || 
+    pathname.startsWith('/ai-engineering') || 
+    pathname.startsWith('/cybersecurity') || 
+    pathname.startsWith('/software-development') || 
+    pathname.startsWith('/cloud-devops') || 
+    pathname.startsWith('/enterprise-solutions') ||
+    pathname.startsWith('/iiot-automation')
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -56,32 +82,36 @@ export function Navbar() {
         {/* Desktop navigation */}
         <div className="hidden lg:flex lg:gap-x-6">
           {navigation.map((item) => (
-            <div key={item.name} className="relative">
+            <div key={item.name} ref={item.children ? dropdownRef : undefined} className="relative">
               {item.children ? (
-                <div
-                  onMouseEnter={() => setServicesOpen(true)}
-                  onMouseLeave={() => setServicesOpen(false)}
-                >
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-1 text-sm font-semibold leading-6 transition-colors ${
-                      pathname === item.href || pathname.startsWith('/ai-engineering') || pathname.startsWith('/cybersecurity') || pathname.startsWith('/software-development') || pathname.startsWith('/cloud-devops') || pathname.startsWith('/enterprise-solutions')
+                <div>
+                  <button
+                    onClick={() => setServicesOpen(!servicesOpen)}
+                    onMouseEnter={() => setServicesOpen(true)}
+                    className={`flex items-center gap-1 text-sm font-semibold leading-6 transition-colors py-2 ${
+                      isServiceActive
                         ? "text-primary"
                         : "text-muted-foreground hover:text-primary"
                     }`}
                   >
                     {item.name}
-                    <ChevronDown className="w-3 h-3" />
-                  </Link>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${servicesOpen ? 'rotate-180' : ''}`} />
+                  </button>
                   
                   {servicesOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-56 rounded-xl border bg-background shadow-2xl py-2 z-50">
+                    <div 
+                      className="absolute top-full left-0 mt-1 w-56 rounded-xl border bg-background shadow-2xl py-2 z-50"
+                      onMouseLeave={() => setServicesOpen(false)}
+                    >
                       {item.children.map((child) => (
                         <Link
                           key={child.name}
                           href={child.href}
-                          className={`block px-4 py-2 text-sm hover:bg-muted transition-colors ${
-                            pathname === child.href ? "text-primary font-medium" : "text-muted-foreground"
+                          onClick={() => setServicesOpen(false)}
+                          className={`block px-4 py-2.5 text-sm transition-colors ${
+                            pathname === child.href 
+                              ? "bg-primary/10 text-primary font-medium" 
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
                           }`}
                         >
                           {child.name}
@@ -93,7 +123,7 @@ export function Navbar() {
               ) : (
                 <Link
                   href={item.href}
-                  className={`text-sm font-semibold leading-6 transition-colors ${
+                  className={`text-sm font-semibold leading-6 transition-colors py-2 ${
                     pathname === item.href
                       ? "text-primary"
                       : "text-muted-foreground hover:text-primary"
@@ -130,7 +160,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t">
+        <div className="lg:hidden border-t max-h-[80vh] overflow-y-auto">
           <div className="container py-4 space-y-1">
             {navigation.map((item) => (
               <div key={item.name}>
@@ -138,21 +168,23 @@ export function Navbar() {
                   <>
                     <Link
                       href={item.href}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-accent"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      {item.name}
+                      {item.name} (Overview)
                     </Link>
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.name}
-                        href={child.href}
-                        className="block px-6 py-1.5 text-sm text-muted-foreground hover:text-primary"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        {child.name}
-                      </Link>
-                    ))}
+                    <div className="ml-4 border-l-2 border-muted pl-3 space-y-1">
+                      {item.children.filter(c => c.name !== 'All Services').map((child) => (
+                        <Link
+                          key={child.name}
+                          href={child.href}
+                          className="block px-3 py-1.5 text-sm text-muted-foreground hover:text-primary rounded-md"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
                   </>
                 ) : (
                   <Link
