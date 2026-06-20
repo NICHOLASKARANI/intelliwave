@@ -85,7 +85,7 @@ export default function ContactPage() {
                   <h3 className="font-semibold mb-1">Our Office</h3>
                   <p className="text-muted-foreground text-sm">
                     Nairobi CBD, Superior Centre<br />
-                    Shop F11, 1st Floor<br />
+                           1st Floor<br />
                     Kenyatta Avenue<br />
                     Kenya
                   </p>
@@ -122,7 +122,7 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Email</h3>
                   <p className="text-muted-foreground text-sm group-hover:text-primary transition-colors">
-                    intelliwavehr@gmail.com
+                    karaninicholas700@gmail.com
                   </p>
                 </div>
               </motion.a>
@@ -194,7 +194,7 @@ export default function ContactPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="intelliwavehr@gmail.com"
+                  placeholder="karaninicholas700@gmail.com"
                   required
                   className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
