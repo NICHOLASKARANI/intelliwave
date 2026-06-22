@@ -6,6 +6,7 @@ import { EnterpriseDashboard } from '@/components/features/enterprise-dashboard'
 import { ProductShowcase } from '@/components/sections/product-showcase'
 import { AIProposalGenerator } from '@/components/features/ai-proposal-generator'
 import { GlobalActivityFeed } from '@/components/features/global-activity-feed'
+import { RoboticsInnovation } from '@/components/sections/robotics-innovation'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Shield } from 'lucide-react'
 import Link from 'next/link'
@@ -80,6 +81,9 @@ export default function HomePage() {
 
       {/* ========== PRODUCT SHOWCASE ========== */}
       <ProductShowcase />
+
+      {/* ========== ROBOTICS & AI INNOVATION ========== */}
+      <RoboticsInnovation />
 
       {/* ========== ENTERPRISE DASHBOARD ========== */}
       <section className="py-24 bg-neutral-50 dark:bg-neutral-950">
