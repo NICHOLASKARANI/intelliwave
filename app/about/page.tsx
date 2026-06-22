@@ -2,12 +2,71 @@ import { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Award, Globe, Users, Target, Eye, Quote } from 'lucide-react'
+import { ArrowRight, Quote, Linkedin, Mail } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'About Intelliwave - Africa\'s Global AI Giant',
-  description: 'Learn about Intelliwave, our mission, vision, CEO PhD Eng. Nicholas Karani, and our team of 500+ AI engineers.',
+  title: 'About IntelliWave - Leadership Team & Company Vision',
+  description: 'Meet the leadership team driving IntelliWave: CEO Nicholas Karani, COO Gefferson Mbeere, CFO Kelvin Muchui, CTO Mark Mwangi.',
 }
+
+const leadership = [
+  {
+    name: 'Nicholas Karani',
+    title: 'CEO & Founder',
+    credentials: 'PhD, Software Engineering',
+    image: '/leadership/ceo-nicholas-karani.jpg',
+    bio: 'Visionary software engineer and founder of IntelliWave. Nicholas leads the company\'s mission to build Africa\'s first trillion-dollar AI company. With deep expertise in enterprise software architecture and AI systems, he has grown IntelliWave from a Nairobi startup to a global technology company serving 450,000+ users across 100+ countries.',
+    quote: 'We are building Africa\'s digital future. World-class technology engineered from Kenya, for the world.',
+    goals: [
+      'Build Africa\'s first trillion-dollar AI company',
+      'Deploy AI solutions to 10,000+ enterprises',
+      'Create 10,000 high-value tech jobs in Africa',
+      'Establish IntelliWave as a global technology leader',
+    ],
+  },
+  {
+    name: 'Gefferson Mbeere',
+    title: 'Chief Operations Officer',
+    credentials: 'CPA, BCOM',
+    image: '/leadership/coo-gefferson-mbeere.jpg',
+    bio: 'Certified Public Accountant and operations strategist. Gefferson oversees IntelliWave\'s global operations, ensuring seamless delivery of enterprise solutions across 100+ countries. His expertise in operational efficiency and financial management drives the company\'s scalable growth strategy.',
+    quote: 'Operational excellence is the foundation of global scale. Every process must be world-class.',
+    goals: [
+      'Scale operations to serve 195 countries',
+      'Achieve 99.99% operational efficiency',
+      'Build robust global delivery frameworks',
+      'Establish regional offices across Africa',
+    ],
+  },
+  {
+    name: 'Kelvin Muchui',
+    title: 'Chief Financial Officer',
+    credentials: 'CPA, BCOM',
+    image: '/leadership/cfo-kelvin-muchui.jpg',
+    bio: 'Certified Public Accountant and financial strategist. Kelvin manages IntelliWave\'s financial architecture, ensuring sustainable growth and investor confidence. His financial modeling expertise supports the company\'s trajectory toward trillion-dollar valuation.',
+    quote: 'Financial discipline and strategic investment are the engines of sustainable growth.',
+    goals: [
+      'Achieve $1 billion revenue milestone',
+      'Build investor-grade financial systems',
+      'Maintain 40%+ year-over-year growth',
+      'Establish global banking partnerships',
+    ],
+  },
+  {
+    name: 'Mark Mwangi',
+    title: 'Chief Technology Officer',
+    credentials: 'AI/Software Engineer',
+    image: '/leadership/cto-mark-mwangi.jpg',
+    bio: 'Senior AI and software engineer leading IntelliWave\'s technology vision. Mark architects the company\'s AI systems, cloud infrastructure, and enterprise platforms. His technical leadership ensures IntelliWave delivers cutting-edge solutions that rival the world\'s best technology companies.',
+    quote: 'Technology excellence is non-negotiable. We build systems that scale to serve billions.',
+    goals: [
+      'Build world-class AI infrastructure',
+      'Deploy 50+ enterprise AI products',
+      'Achieve 99.99% platform uptime',
+      'Lead AI research and innovation in Africa',
+    ],
+  },
+]
 
 export default function AboutPage() {
   return (
@@ -18,7 +77,7 @@ export default function AboutPage() {
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             About{' '}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-              Intelliwave
+              IntelliWave
             </span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -31,198 +90,121 @@ export default function AboutPage() {
           <div>
             <h2 className="text-4xl font-bold mb-6">Our Story</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Founded by PhD, Eng. Nicholas Karani, Intelliwave was born from a bold vision: 
+              Founded by PhD, Eng. Nicholas Karani, IntelliWave was born from a bold vision: 
               to build Africa's first trillion-dollar AI company. What started as a small team 
               of passionate engineers in Nairobi has grown into a global force of 500+ AI 
               specialists serving clients across 100+ countries.
             </p>
-            <p className="text-muted-foreground leading-relaxed mb-6">
+            <p className="text-muted-foreground leading-relaxed mb-4">
               Today, we partner with Fortune 500 companies, governments, and startups to 
               deliver enterprise-grade AI solutions, cloud infrastructure, and custom software 
               that rivals the world's best technology companies.
             </p>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { icon: Users, value: '450K+', label: 'Active Users' },
-                { icon: Globe, value: '100+', label: 'Countries' },
-                { icon: Award, value: '10K+', label: 'Projects' },
-              ].map((stat) => {
-                const Icon = stat.icon
-                return (
-                  <div key={stat.label} className="text-center p-4 rounded-xl border bg-background/50">
-                    <Icon className="w-6 h-6 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-xs text-muted-foreground">{stat.label}</div>
-                  </div>
-                )
-              })}
-            </div>
+            <p className="text-muted-foreground leading-relaxed">
+              Our leadership team combines deep technical expertise, financial acumen, and 
+              operational excellence to drive IntelliWave's mission of democratizing AI 
+              across Africa and building a global technology powerhouse.
+            </p>
           </div>
           <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
             <div className="text-center p-8">
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6 shadow-2xl">
                 <span className="text-4xl font-bold text-white">IW</span>
               </div>
-              <h3 className="text-2xl font-bold mb-2">Intelliwave</h3>
+              <h3 className="text-2xl font-bold mb-2">IntelliWave</h3>
               <p className="text-muted-foreground">Est. 2026</p>
               <p className="text-muted-foreground mt-2">Nairobi, Kenya</p>
+              <p className="text-muted-foreground">Global Operations</p>
             </div>
           </div>
         </div>
 
-        {/* Mission & Vision Section */}
+        {/* Leadership Team */}
         <div className="mb-24">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Our{' '}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                Mission & Vision
+                Leadership Team
               </span>
             </h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="p-8 rounded-2xl border bg-gradient-to-br from-primary/5 to-primary/10">
-              <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center mb-6">
-                <Target className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Our Mission</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                To democratize AI and software engineering excellence across Africa, 
-                building transformative digital solutions that empower businesses to 
-                compete globally. We strive to be the bridge between African innovation 
-                and world-class technology.
-              </p>
-            </div>
-            <div className="p-8 rounded-2xl border bg-gradient-to-br from-accent/5 to-accent/10">
-              <div className="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-6">
-                <Eye className="w-7 h-7 text-accent" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Our Vision</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                To be Africa's first trillion-dollar AI company — a global technology 
-                leader headquartered in Kenya, rivaling the world's most innovative 
-                companies. We envision an Africa where technology knows no boundaries.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* CEO & Management Section */}
-        <div className="mb-24">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">
-              Our{' '}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                Leadership
-              </span>
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Meet the visionary leading Africa's AI revolution
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Visionary leaders driving IntelliWave's mission to build Africa's global AI giant
             </p>
           </div>
 
-          {/* CEO Profile */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-            <div className="relative">
-              <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-                <Image
-                  src="/ceo.jpg"
-                  alt="PhD, Eng. Nicholas Karani - CEO & Founder of Intelliwave"
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                  <h2 className="text-3xl font-bold mb-1">Nicholas Karani</h2>
-                  <p className="text-white/80">PhD, Software Engineering</p>
+          <div className="space-y-16">
+            {leadership.map((leader, index) => (
+              <div key={leader.name} className={`grid lg:grid-cols-2 gap-12 items-center ${
+                index % 2 === 1 ? 'lg:grid-flow-dense' : ''
+              }`}>
+                {/* Image */}
+                <div className={`relative ${index % 2 === 1 ? 'lg:col-start-2' : ''}`}>
+                  <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+                    <Image
+                      src={leader.image}
+                      alt={`${leader.name} - ${leader.title} at IntelliWave`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <h3 className="text-2xl font-bold">{leader.name}</h3>
+                      <p className="text-white/80">{leader.title}</p>
+                      <p className="text-white/60 text-sm">{leader.credentials}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div className={index % 2 === 1 ? 'lg:col-start-1 lg:row-start-1' : ''}>
+                  <div className="mb-4">
+                    <h3 className="text-3xl font-bold mb-1">{leader.name}</h3>
+                    <p className="text-primary font-semibold text-lg">{leader.title}</p>
+                    <p className="text-muted-foreground text-sm">{leader.credentials}</p>
+                  </div>
+
+                  <p className="text-muted-foreground leading-relaxed mb-6">{leader.bio}</p>
+
+                  <div className="border-l-4 border-primary pl-4 py-2 mb-6">
+                    <Quote className="w-5 h-5 text-primary/50 mb-2" />
+                    <p className="italic text-muted-foreground">"{leader.quote}"</p>
+                  </div>
+
+                  <div className="mb-6">
+                    <h4 className="font-semibold mb-3">Strategic Goals</h4>
+                    <div className="space-y-2">
+                      {leader.goals.map((goal) => (
+                        <div key={goal} className="flex items-center gap-2 text-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">{goal}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Mail className="w-4 h-4" />
+                      Contact
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Linkedin className="w-4 h-4" />
+                      LinkedIn
+                    </Button>
+                  </div>
                 </div>
               </div>
-              <div className="absolute -bottom-4 -right-4 bg-background border rounded-xl p-4 shadow-xl">
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-yellow-500" />
-                  <span className="text-sm font-bold">CEO & Founder</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-4xl font-bold mb-2">PhD, Eng. Nicholas Karani</h2>
-                <p className="text-primary font-semibold text-lg">Chief Executive Officer & Founder</p>
-              </div>
-
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                A pioneering software engineer with a doctorate in Software Engineering, Nicholas 
-                combines deep technical expertise with visionary leadership to build Intelliwave 
-                into Africa's first trillion-dollar AI company.
-              </p>
-
-              <p className="text-muted-foreground leading-relaxed">
-                Under his leadership, Intelliwave has grown from a startup in Nairobi to a global 
-                enterprise with 500+ engineers serving clients across 100+ countries. His vision 
-                of democratizing AI across Africa drives every aspect of the company's strategy.
-              </p>
-
-              <div className="border-l-4 border-primary pl-4 py-2">
-                <Quote className="w-6 h-6 text-primary/50 mb-2" />
-                <p className="italic text-muted-foreground">
-                  "We are not just building a company; we are building Africa's digital future. 
-                  Our mission is to prove that world-class technology can be created right here 
-                  in Kenya, for the world."
-                </p>
-                <p className="text-sm text-primary mt-2">— Nicholas Karani, CEO</p>
-              </div>
-
-              <Link href="/contact">
-                <Button size="lg" className="group">
-                  Connect with Leadership
-                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Team Photos */}
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border shadow-xl">
-              <Image
-                src="/team-member-1.jpg"
-                alt="Intelliwave engineering team collaborating on AI solutions"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <h3 className="text-2xl font-bold">Engineering Excellence</h3>
-                <p className="text-white/80">500+ AI engineers building the future</p>
-              </div>
-            </div>
-
-            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border shadow-xl">
-              <Image
-                src="/team-member-2.jpg"
-                alt="Intelliwave team working on global AI infrastructure"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <h3 className="text-2xl font-bold">Global Collaboration</h3>
-                <p className="text-white/80">Working across 100+ countries</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* CTA Section */}
+        {/* CTA */}
         <div className="text-center">
           <Link href="/contact">
             <Button size="lg" className="group text-lg px-8 py-6">
-              Partner With Us
+              Partner With Our Leadership Team
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
