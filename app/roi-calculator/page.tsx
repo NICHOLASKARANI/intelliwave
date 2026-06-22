@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Calculator, TrendingUp, DollarSign, Clock, Users, ArrowRight, Zap } from 'lucide-react'
+import { Calculator, TrendingUp, DollarSign, ArrowRight } from 'lucide-react'
 
 export default function ROICalculatorPage() {
   const [employees, setEmployees] = useState(50)
