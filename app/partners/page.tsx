@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Handshake, Building2, ArrowRight, Globe } from 'lucide-react'
+import { Building2, ArrowRight, Globe, Shield, Zap } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Technology Partners - Strategic Alliances | IntelliWave',
@@ -25,14 +25,14 @@ export default function PartnersPage() {
       <div className="container">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 text-sm font-medium mb-6">
-            <Handshake className="w-4 h-4" /> Strategic Alliances
+            <Building2 className="w-4 h-4" /> Strategic Alliances
           </div>
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             Technology{' '}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Partners</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Strategic partnerships with the world's leading technology companies.
+            Strategic partnerships with the world&apos;s leading technology companies.
           </p>
         </div>
 
@@ -42,14 +42,24 @@ export default function PartnersPage() {
               <div className={`h-1.5 rounded-full bg-gradient-to-r ${partner.color} mb-4`} />
               <h3 className="font-bold">{partner.name}</h3>
               <p className="text-sm text-muted-foreground">{partner.type}</p>
-              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 text-xs font-medium">{partner.tier}</span>
+              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 text-xs font-medium">
+                {partner.tier}
+              </span>
             </div>
           ))}
         </div>
 
         <div className="text-center p-12 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 border">
           <h2 className="text-3xl font-bold mb-4">Become a Partner</h2>
-          <Link href="/contact"><Button size="lg" className="group">Partner With Us <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" /></Button></Link>
+          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Join our ecosystem of technology partners and grow your business with IntelliWave.
+          </p>
+          <Link href="/contact">
+            <Button size="lg" className="group">
+              Partner With Us 
+              <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
