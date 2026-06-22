@@ -10,7 +10,7 @@ import {
 
 export const metadata: Metadata = {
   title: 'Pricing - Enterprise AI Solutions | Transparent Pricing Kenya',
-  description: 'Competitive pricing for AI development, web applications, e-commerce, and enterprise solutions. Starting from KSh 100,000. Pay via M-Pesa Till 4760783.',
+  description: 'Competitive pricing for AI development, web applications, e-commerce, and enterprise solutions. Pay via M-Pesa Till 4760783.',
 }
 
 const pricingPlans = [
@@ -90,27 +90,27 @@ const addOns = [
 const faqs = [
   {
     question: 'What payment methods do you accept?',
-    answer: 'We accept Lipa Na M-Pesa (Till Number: 4760783), bank transfers, credit/debit cards via Stripe, and international wire transfers. All payments are processed securely.',
+    answer: 'We accept Lipa Na M-Pesa (Till Number: 4760783), bank transfers, credit/debit cards via Stripe, and international wire transfers.',
   },
   {
     question: 'How do I pay via M-Pesa?',
-    answer: 'Go to M-Pesa → Lipa Na M-Pesa → Buy Goods and Services → Enter Till Number: 4760783 → Enter Amount → Enter PIN → Send. Then WhatsApp your confirmation to +254 714 694 493.',
+    answer: 'Go to M-Pesa → Lipa Na M-Pesa → Buy Goods and Services → Enter Till Number: 4760783 → Enter Amount → Enter PIN → Send. Then WhatsApp confirmation to +254 714 694 493.',
   },
   {
     question: 'How long does a typical project take?',
-    answer: 'Business websites: 2-4 weeks. E-commerce: 4-8 weeks. Custom web applications: 8-16 weeks depending on complexity and features.',
+    answer: 'Business websites: 2-4 weeks. E-commerce: 4-8 weeks. Custom web applications: 8-16 weeks.',
   },
   {
     question: 'Do you offer maintenance after launch?',
-    answer: 'Yes! All projects include free support (3-12 months depending on plan). We also offer ongoing maintenance plans starting from KSh 15,000/month.',
+    answer: 'Yes! All projects include free support (3-12 months). We also offer ongoing maintenance from KSh 15,000/month.',
   },
   {
     question: 'Can I upgrade my plan later?',
-    answer: 'Absolutely. You can upgrade at any time. We will migrate your data and add new features seamlessly without downtime.',
+    answer: 'Absolutely. You can upgrade at any time with seamless data migration.',
   },
   {
     question: 'Is there a setup fee?',
-    answer: 'No hidden fees. The price you see includes everything - design, development, testing, deployment, and initial support period.',
+    answer: 'No hidden fees. The price includes everything - design, development, testing, deployment, and support.',
   },
 ]
 
@@ -131,8 +131,7 @@ export default function PricingPage() {
             </span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Enterprise-grade solutions at competitive Kenyan prices. All projects include 
-            professional design, development, testing, deployment, and support.
+            Enterprise-grade solutions at competitive Kenyan prices.
           </p>
         </div>
 
@@ -155,9 +154,7 @@ export default function PricingPage() {
                     Most Popular
                   </div>
                 )}
-
                 <div className="p-8">
-                  {/* Plan Header */}
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${plan.color} p-2.5`}>
                       <Icon className="w-full h-full text-white" />
@@ -167,23 +164,16 @@ export default function PricingPage() {
                       <p className="text-sm text-muted-foreground">{plan.description}</p>
                     </div>
                   </div>
-
-                  {/* Price */}
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1">
                       <span className="text-sm text-muted-foreground">KSh</span>
                       <span className="text-5xl font-bold">{plan.price}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm text-muted-foreground">Range: {plan.range}</span>
-                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">Range: {plan.range}</div>
                     <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>Delivery: {plan.timeline}</span>
+                      <Clock className="w-3 h-3" /> Delivery: {plan.timeline}
                     </div>
                   </div>
-
-                  {/* Features */}
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2 text-sm">
@@ -192,18 +182,9 @@ export default function PricingPage() {
                       </li>
                     ))}
                   </ul>
-
-                  {/* CTA */}
                   <Link href="/contact">
-                    <Button
-                      className={`w-full py-6 text-lg rounded-xl group ${
-                        plan.popular
-                          ? 'bg-primary hover:bg-primary/90'
-                          : 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:opacity-90'
-                      }`}
-                    >
-                      Get Started
-                      <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <Button className={`w-full py-6 text-lg rounded-xl group ${plan.popular ? 'bg-primary hover:bg-primary/90' : 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:opacity-90'}`}>
+                      Get Started <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
                 </div>
@@ -222,10 +203,7 @@ export default function PricingPage() {
             {addOns.map((addon) => {
               const Icon = addon.icon
               return (
-                <div
-                  key={addon.name}
-                  className="flex items-center justify-between p-4 rounded-xl border bg-background/50 hover:border-primary/30 transition-all"
-                >
+                <div key={addon.name} className="flex items-center justify-between p-4 rounded-xl border bg-background/50 hover:border-primary/30 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Icon className="w-5 h-5 text-primary" />
@@ -239,104 +217,70 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* ========== PAYMENT DETAILS SECTION ========== */}
+        {/* PAYMENT SECTION WITH IMAGE */}
         <div className="mb-16 rounded-3xl border-2 border-green-500/30 overflow-hidden bg-gradient-to-br from-background to-green-500/5">
-          <div className="p-8 md:p-12">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                <CreditCard className="w-7 h-7 text-green-500" />
+          <div className="grid lg:grid-cols-2">
+            {/* Payment Image - This will display your JPEG */}
+            <div className="relative min-h-[400px] bg-white dark:bg-neutral-900 flex items-center justify-center p-4">
+              <div className="relative w-full h-full min-h-[350px]">
+                <Image
+                  src="/payments/INTELLIWAVE PAYMENT.jpeg"
+                  alt="IntelliWave Payment Details - Lipa Na M-Pesa Till Number 4760783"
+                  fill
+                  className="object-contain rounded-xl"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
               </div>
-              <div>
+            </div>
+
+            {/* Payment Info */}
+            <div className="p-8 md:p-12">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                  <CreditCard className="w-6 h-6 text-green-500" />
+                </div>
                 <h2 className="text-3xl font-bold">Payment Details</h2>
-                <p className="text-muted-foreground">Secure payments via Lipa Na M-Pesa</p>
               </div>
-            </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* M-Pesa Payment */}
-              <div className="lg:col-span-2 p-8 rounded-2xl bg-green-50 dark:bg-green-950/30 border-2 border-green-300 dark:border-green-700">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="text-4xl">📱</span>
-                  <div>
-                    <h3 className="text-2xl font-bold text-green-700 dark:text-green-400">Lipa Na M-Pesa</h3>
-                    <p className="text-sm text-muted-foreground">Buy Goods and Services</p>
-                  </div>
+              {/* M-Pesa */}
+              <div className="p-6 rounded-2xl bg-green-50 dark:bg-green-950/30 border-2 border-green-300 dark:border-green-700 mb-4">
+                <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                  <span className="text-2xl">📱</span> Lipa Na M-Pesa
+                </h3>
+                <div className="text-center p-4 rounded-xl bg-white dark:bg-green-950/50 border border-green-200 dark:border-green-800 mb-3">
+                  <p className="text-sm text-muted-foreground mb-1">Till Number</p>
+                  <p className="text-4xl font-bold text-green-600 dark:text-green-400 tracking-wider">4760783</p>
+                  <p className="text-xs text-muted-foreground mt-1">IntelliWave Ltd</p>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Go to M-Pesa → Lipa Na M-Pesa → Buy Goods and Services → Enter Till: 4760783
+                </p>
+              </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-6 rounded-xl bg-white dark:bg-green-950/50 border border-green-200 dark:border-green-800 text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Till Number</p>
-                    <p className="text-4xl font-bold text-green-600 dark:text-green-400 tracking-wider">4760783</p>
-                    <p className="text-xs text-muted-foreground mt-2">IntelliWave Ltd</p>
-                  </div>
-
-                  <div className="p-6 rounded-xl bg-white dark:bg-green-950/50 border border-green-200 dark:border-green-800">
-                    <p className="text-sm text-muted-foreground mb-3">How to Pay:</p>
-                    <ol className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="font-bold text-green-600">1.</span>
-                        Go to M-Pesa → Lipa Na M-Pesa
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="font-bold text-green-600">2.</span>
-                        Select Buy Goods and Services
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="font-bold text-green-600">3.</span>
-                        Enter Till Number: <strong>4760783</strong>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="font-bold text-green-600">4.</span>
-                        Enter Amount & M-Pesa PIN
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="font-bold text-green-600">5.</span>
-                        Send & confirm payment
-                      </li>
-                    </ol>
-                  </div>
+              {/* Other Methods */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-center text-sm">
+                  <span className="text-xl">🏦</span>
+                  <p className="font-bold mt-1">Bank Transfer</p>
+                  <p className="text-xs text-muted-foreground">Available on request</p>
+                </div>
+                <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-center text-sm">
+                  <span className="text-xl">🌍</span>
+                  <p className="font-bold mt-1">International</p>
+                  <p className="text-xs text-muted-foreground">Stripe & Wire</p>
                 </div>
               </div>
 
-              {/* Quick Contact */}
-              <div className="p-8 rounded-2xl bg-primary/5 border border-primary/20 flex flex-col justify-center">
-                <h3 className="font-bold text-lg mb-4">After Payment</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  WhatsApp your M-Pesa confirmation message to us for immediate processing.
-                </p>
-                <a
-                  href="https://wa.me/254714694493"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors text-center"
-                >
-                  <Phone className="w-5 h-5" />
-                  WhatsApp: +254 714 694 493
-                </a>
-                <p className="text-xs text-muted-foreground mt-4 text-center">
-                  Or email: karaninicholas700@gmail.com
-                </p>
-              </div>
-            </div>
-
-            {/* Other Payment Methods */}
-            <div className="grid md:grid-cols-2 gap-4 mt-6">
-              <div className="p-5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-                <h4 className="font-bold mb-2 flex items-center gap-2">
-                  <span>🏦</span> Bank Transfer
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Available for large projects. Account details provided upon invoice generation.
-                </p>
-              </div>
-              <div className="p-5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
-                <h4 className="font-bold mb-2 flex items-center gap-2">
-                  <span>🌍</span> International Payments
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Stripe (Credit/Debit Cards) & Wire Transfers accepted for international clients.
-                </p>
-              </div>
+              <a
+                href="https://wa.me/254714694493"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
+              >
+                <Phone className="w-5 h-5" />
+                WhatsApp Confirmation: +254 714 694 493
+              </a>
             </div>
           </div>
         </div>
@@ -347,7 +291,7 @@ export default function PricingPage() {
             { icon: Shield, title: 'SOC 2 Certified', desc: 'Enterprise security' },
             { icon: HeadphonesIcon, title: '24/7 Support', desc: 'Always available' },
             { icon: Zap, title: 'Fast Delivery', desc: 'Agile methodology' },
-            { icon: BadgeCheck, title: 'Satisfaction Guaranteed', desc: 'Or your money back' },
+            { icon: BadgeCheck, title: 'Satisfaction Guaranteed', desc: 'Money back' },
           ].map((item) => {
             const Icon = item.icon
             return (
@@ -376,23 +320,21 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* Final CTA */}
+        {/* CTA */}
         <div className="text-center p-12 rounded-3xl bg-gradient-to-br from-primary to-accent text-white">
-          <h2 className="text-3xl font-bold mb-4">Ready to Start Your Project?</h2>
+          <h2 className="text-3xl font-bold mb-4">Ready to Start?</h2>
           <p className="text-white/80 mb-8 max-w-2xl mx-auto">
-            Pay via M-Pesa Till Number <strong className="text-white">4760783</strong> or book a free consultation.
+            Pay via M-Pesa Till <strong className="text-white">4760783</strong> or book a consultation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/contact">
               <Button size="lg" className="bg-white text-primary hover:bg-gray-100 px-8 py-6 text-lg rounded-2xl font-bold">
-                Get Free Consultation
-                <ArrowRight className="ml-2 w-5 h-5" />
+                Get Free Consultation <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <a href="https://wa.me/254714694493" target="_blank" rel="noopener noreferrer">
               <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-2xl border-white/30 text-white hover:bg-white/10">
-                <Phone className="w-5 h-5 mr-2" />
-                WhatsApp Us
+                <Phone className="w-5 h-5 mr-2" /> WhatsApp
               </Button>
             </a>
           </div>
