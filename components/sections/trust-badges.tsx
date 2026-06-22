@@ -5,6 +5,7 @@ import {
   Shield, Lock, Server, FileCheck, Cloud, Key, 
   Users, Globe
 } from 'lucide-react'
+import { logos, technologyPartners } from '@/components/ui/company-logos'
 
 const compliance = [
   { icon: Shield, label: 'SOC 2 Type II', description: 'Annual audit completed', color: 'text-green-500' },
@@ -39,7 +40,7 @@ export function TrustBadges() {
                     whileHover={{ y: -2 }}
                     className="flex items-start gap-3 p-4 rounded-xl bg-white dark:bg-neutral-900 border dark:border-neutral-800"
                   >
-                    <div className={`p-2 rounded-lg bg-${item.color}/10`}>
+                    <div className={`p-2 rounded-lg`}>
                       <Icon className={`w-5 h-5 ${item.color}`} />
                     </div>
                     <div>
@@ -80,7 +81,7 @@ export function TrustBadges() {
           </div>
         </div>
 
-        {/* Technology Partners */}
+        {/* Technology Partners with REAL LOGOS */}
         <div className="mt-12 pt-12 border-t dark:border-neutral-800">
           <div className="text-center mb-8">
             <h3 className="text-sm font-semibold tracking-widest uppercase text-neutral-500 mb-2">
@@ -88,15 +89,21 @@ export function TrustBadges() {
             </h3>
             <p className="text-xs text-neutral-400">Trusted by industry-leading platforms</p>
           </div>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-            {['AWS', 'Microsoft Azure', 'Google Cloud', 'Vercel', 'Stripe', 'M-Pesa', 'Docker', 'Kubernetes'].map((partner) => (
-              <div
-                key={partner}
-                className="text-lg font-bold text-neutral-300 dark:text-neutral-700 hover:text-neutral-600 dark:hover:text-neutral-400 transition-colors cursor-default"
-              >
-                {partner}
-              </div>
-            ))}
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+            {technologyPartners.map((partner) => {
+              const LogoComponent = logos[partner.logo as keyof typeof logos]
+              return (
+                <motion.div
+                  key={partner.name}
+                  whileHover={{ scale: 1.1 }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-default"
+                  title={partner.name}
+                >
+                  {LogoComponent && <LogoComponent />}
+                  <span className="text-xs text-neutral-500">{partner.name}</span>
+                </motion.div>
+              )
+            })}
           </div>
         </div>
       </div>
