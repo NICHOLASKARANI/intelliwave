@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { HandshakeIcon, Building2, ArrowRight, Globe } from 'lucide-react'
+import { Handshake, Building2, ArrowRight, Globe } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Technology Partners - Strategic Alliances | IntelliWave',
@@ -25,7 +25,7 @@ export default function PartnersPage() {
       <div className="container">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 text-sm font-medium mb-6">
-            <HandshakeIcon className="w-4 h-4" /> Strategic Alliances
+            <Handshake className="w-4 h-4" /> Strategic Alliances
           </div>
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             Technology{' '}
