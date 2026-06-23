@@ -14,7 +14,7 @@ import { RoboticsInnovation } from '@/components/sections/robotics-innovation'
 import { Button } from '@/components/ui/button'
 import { 
   ArrowRight, Shield, Zap, Globe, Cpu, Bot, Cloud, 
-  Code2, LineChart, CheckCircle, Star 
+  Code2, LineChart, CheckCircle, Star, Satellite, TrendingUp 
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -134,7 +134,6 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Main Platform Image */}
           <div className="relative rounded-3xl overflow-hidden border shadow-2xl mb-12">
             <Image
               src="/images/intelli-systems.png"
@@ -151,7 +150,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Platform Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { icon: Bot, title: 'AI Agents', desc: 'Custom AI agents that automate complex workflows' },
@@ -205,6 +203,88 @@ export default function HomePage() {
               <Image
                 src="/images/grow-faster.jpeg"
                 alt="Scale your business faster with IntelliWave AI automation platform"
+                width={600}
+                height={400}
+                className="w-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========== TRADERS & FINANCIAL SOLUTIONS ========== */}
+      <section className="py-24 bg-white dark:bg-neutral-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="relative rounded-2xl overflow-hidden border shadow-xl">
+              <Image
+                src="/images/Traders.jpeg"
+                alt="IntelliWave AI-powered financial trading and market analysis solutions"
+                width={600}
+                height={400}
+                className="w-full object-cover"
+              />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 text-sm font-medium mb-6">
+                <TrendingUp className="w-4 h-4" /> Financial Intelligence
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                AI-Powered{' '}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">Financial Solutions</span>
+              </h2>
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+                Real-time market analysis, predictive trading algorithms, and financial intelligence 
+                systems that give your business a competitive edge in global markets.
+              </p>
+              <div className="space-y-3 mb-8">
+                {['Real-time market data processing', 'AI-driven trading strategies', 'Risk analysis & compliance', 'Portfolio optimization'].map((item) => (
+                  <div key={item} className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                    <span className="text-muted-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/contact">
+                <Button size="lg" className="group">Explore Financial AI <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" /></Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========== SATELLITE & SPACE TECHNOLOGY ========== */}
+      <section className="py-24 bg-neutral-50 dark:bg-neutral-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-950 text-purple-600 text-sm font-medium mb-6">
+                <Satellite className="w-4 h-4" /> Space Technology
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Satellite &{' '}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Space Systems</span>
+              </h2>
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+                Advanced satellite data processing, space technology integration, and aerospace 
+                AI systems engineered for the next frontier of innovation.
+              </p>
+              <div className="space-y-3 mb-8">
+                {['Satellite data analysis', 'Aerospace AI systems', 'Remote sensing technology', 'Space communication infrastructure'].map((item) => (
+                  <div key={item} className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                    <span className="text-muted-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/innovation-lab">
+                <Button size="lg" className="group">Explore Space Tech <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" /></Button>
+              </Link>
+            </div>
+            <div className="relative rounded-2xl overflow-hidden border shadow-xl">
+              <Image
+                src="/images/Satelites.jpeg"
+                alt="IntelliWave satellite technology and space systems AI solutions"
                 width={600}
                 height={400}
                 className="w-full object-cover"
