@@ -10,6 +10,7 @@ import { AICopilot } from '@/components/features/ai-copilot'
 import { CookieConsent } from '@/components/ui/cookie-consent'
 import { BackToTop } from '@/components/ui/back-to-top'
 import { FloatingActions } from '@/components/ui/floating-actions'
+import { ScrollProgress } from '@/components/ui/scroll-progress'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({
@@ -58,23 +59,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+          {/* Scroll Progress Bar */}
+          <ScrollProgress />
+          
           <div className="relative flex min-h-screen flex-col">
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 page-enter">{children}</main>
             <Footer />
           </div>
+          
+          {/* Floating Components */}
           <LiveChatWidget />
           <FloatingWhatsApp />
           <AICopilot />
           <FloatingActions />
           <BackToTop />
           <CookieConsent />
+          
+          {/* Toast Notifications */}
           <Toaster 
             position="top-right"
             toastOptions={{
-              className: 'bg-background text-foreground border',
+              className: 'glass rounded-2xl border border-white/20',
               duration: 4000,
-              style: { background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)' },
+              style: { 
+                background: 'rgba(255,255,255,0.05)', 
+                backdropFilter: 'blur(20px)',
+                color: 'var(--foreground)', 
+                border: '1px solid rgba(255,255,255,0.1)' 
+              },
             }}
           />
         </ThemeProvider>
