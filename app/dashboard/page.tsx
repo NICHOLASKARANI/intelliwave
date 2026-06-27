@@ -4,8 +4,9 @@ import {
   Globe, Code2, Shield, Cloud, Building2, Cpu,
   Users, Briefcase, BookOpen, ArrowRight,
   CheckCircle, Activity, TrendingUp, Clock,
-  BarChart3, Server, Zap, AlertTriangle, FileText
+  BarChart3, Server, Zap, FileText, Wrench
 } from 'lucide-react'
+import { AnimatedLogo } from '@/components/ui/animated-logo'
 
 export const metadata: Metadata = {
   title: 'IntelliWave Command Center - System Overview',
@@ -16,6 +17,11 @@ export default function DashboardPage() {
   return (
     <div className="py-20">
       <div className="container">
+        {/* Animated Logo */}
+        <div className="flex justify-center mb-8">
+          <AnimatedLogo />
+        </div>
+
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-4">
@@ -32,7 +38,7 @@ export default function DashboardPage() {
             { icon: Server, label: 'System Status', value: 'Operational', color: 'text-green-500', bg: 'bg-green-500/10' },
             { icon: Activity, label: 'API Latency', value: '<100ms', color: 'text-blue-500', bg: 'bg-blue-500/10' },
             { icon: TrendingUp, label: 'Uptime', value: '99.99%', color: 'text-purple-500', bg: 'bg-purple-500/10' },
-            { icon: Clock, label: 'Last Deploy', value: '2 min ago', color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
+            { icon: Clock, label: 'Last Deploy', value: 'Just now', color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
           ].map((item) => {
             const Icon = item.icon
             return (
@@ -48,7 +54,7 @@ export default function DashboardPage() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {[
-            { label: 'Total Pages', value: '45+', icon: FileText },
+            { label: 'Total Pages', value: '65+', icon: FileText },
             { label: 'Service Pages', value: '12', icon: Briefcase },
             { label: 'API Endpoints', value: '8', icon: Code2 },
             { label: 'Components', value: '80+', icon: Cpu },
@@ -79,7 +85,7 @@ export default function DashboardPage() {
             ]}
           />
           <PageSection 
-            title="Service Pages" 
+            title: "Service Pages" 
             icon={Wrench}
             pages={[
               { name: 'Services Overview', href: '/services', status: 'live' },
@@ -122,6 +128,62 @@ export default function DashboardPage() {
           />
         </div>
 
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
+          <PageSection 
+            title="Resources & Learning" 
+            icon={BookOpen}
+            pages={[
+              { name: 'Learning Center', href: '/learning-center', status: 'live' },
+              { name: 'Knowledge Base', href: '/knowledge-base', status: 'live' },
+              { name: 'Webinars', href: '/webinars', status: 'live' },
+              { name: 'API Docs', href: '/api-docs', status: 'live' },
+              { name: 'ROI Calculator', href: '/roi-calculator', status: 'live' },
+              { name: 'Case Studies', href: '/case-studies', status: 'live' },
+              { name: 'Success Stories', href: '/success-stories', status: 'live' },
+            ]}
+          />
+          <PageSection 
+            title="Credibility & Support" 
+            icon={Shield}
+            pages={[
+              { name: 'Security Center', href: '/security', status: 'live' },
+              { name: 'Innovation Lab', href: '/innovation-lab', status: 'live' },
+              { name: 'Global Presence', href: '/global-presence', status: 'live' },
+              { name: 'Partners', href: '/partners', status: 'live' },
+              { name: 'Industry Solutions', href: '/industry-solutions', status: 'live' },
+              { name: 'Customer Support', href: '/support', status: 'live' },
+              { name: 'Employers', href: '/employers', status: 'live' },
+            ]}
+          />
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
+          <PageSection 
+            title="Legal Pages" 
+            icon={FileText}
+            pages={[
+              { name: 'Privacy Policy', href: '/privacy', status: 'live' },
+              { name: 'Terms of Service', href: '/terms', status: 'live' },
+              { name: 'Cookie Policy', href: '/cookies', status: 'live' },
+              { name: 'Testimonials', href: '/testimonials', status: 'live' },
+              { name: 'Imagine Build', href: '/imagine-build', status: 'live' },
+              { name: 'Tailored Solutions', href: '/tailored-solutions', status: 'live' },
+              { name: 'Executive Insights', href: '/executive-insights', status: 'live' },
+            ]}
+          />
+          <PageSection 
+            title="Auth Pages" 
+            icon={Shield}
+            pages={[
+              { name: 'Login', href: '/login', status: 'live' },
+              { name: 'Sign Up', href: '/signup', status: 'live' },
+              { name: 'Forgot Password', href: '/forgot-password', status: 'live' },
+              { name: 'Admin Dashboard', href: '/admin', status: 'live' },
+              { name: 'Client Portal', href: '/client', status: 'live' },
+            ]}
+          />
+        </div>
+
         {/* Activity Log */}
         <div className="p-6 rounded-2xl border mb-12">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -130,11 +192,12 @@ export default function DashboardPage() {
           </h3>
           <div className="space-y-3">
             {[
-              { action: 'New contact form submission', time: '2 min ago', type: 'info' },
-              { action: 'Page /ai-engineering deployed', time: '15 min ago', type: 'success' },
-              { action: 'System health check passed', time: '1 hour ago', type: 'success' },
-              { action: 'Google Sheets integration active', time: '2 hours ago', type: 'info' },
-              { action: 'SSL certificate renewed', time: '1 day ago', type: 'success' },
+              { action: 'New contact form submission received', time: '2 min ago', type: 'info' },
+              { action: 'AI Copilot API connected (Multi-provider)', time: '5 min ago', type: 'success' },
+              { action: 'Page /dashboard deployed successfully', time: '10 min ago', type: 'success' },
+              { action: 'System health check passed - All 65+ pages operational', time: '15 min ago', type: 'success' },
+              { action: 'Google Sheets integration active', time: '1 hour ago', type: 'info' },
+              { action: 'SSL certificate renewed automatically', time: '1 day ago', type: 'success' },
             ].map((log) => (
               <div key={log.action} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
                 <span className="flex items-center gap-2">
@@ -147,6 +210,12 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* System Info */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>IntelliWave Platform v1.0 • 65+ Pages • 8 API Endpoints • 80+ Components</p>
+          <p className="mt-1">CEO: PhD, Eng. Nicholas Karani • Nairobi, Kenya • Global Operations</p>
         </div>
       </div>
     </div>
@@ -182,6 +251,3 @@ function PageSection({ title, icon: Icon, pages }: { title: string; icon: any; p
     </div>
   )
 }
-
-// Import Wrench icon
-import { Wrench } from 'lucide-react'
