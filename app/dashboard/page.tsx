@@ -85,7 +85,7 @@ export default function DashboardPage() {
             ]}
           />
           <PageSection 
-            title: "Service Pages" 
+            title= "Service Pages" 
             icon={Wrench}
             pages={[
               { name: 'Services Overview', href: '/services', status: 'live' },
