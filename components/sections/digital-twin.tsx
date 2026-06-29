@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Factory, Building2, Hospital, Truck, Activity, Cpu } from 'lucide-react'
+import { Factory, Building2, Heart, Truck, Activity, Cpu } from 'lucide-react'
 
 const twins = [
   {
@@ -17,7 +17,7 @@ const twins = [
     metrics: ['Traffic Flow', 'Energy Grid', 'Public Safety'],
   },
   {
-    icon: Hospital,
+    icon: Heart,
     label: 'Digital Hospital',
     desc: 'Patient flow optimization and resource management for healthcare facilities.',
     metrics: ['Patient Tracking', 'Asset Management', 'Staff Scheduling'],
