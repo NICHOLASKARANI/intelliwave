@@ -15,242 +15,216 @@ import { EnterpriseTrust } from '@/components/sections/enterprise-trust'
 import { AICapabilities } from '@/components/sections/ai-capabilities'
 import { CinematicEarth } from '@/components/sections/cinematic-earth'
 import { MissionControl } from '@/components/sections/mission-control'
+import { EnterpriseArchitecture } from '@/components/sections/enterprise-architecture'
+import { DigitalTwin } from '@/components/sections/digital-twin'
+import { GlobalInfrastructure } from '@/components/sections/global-infrastructure'
+import { ExecutiveROI } from '@/components/sections/executive-roi'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, CheckCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle, Shield, Globe, Cpu, TrendingUp, Zap } from 'lucide-react'
 import Link from 'next/link'
 
 export default function HomePage() {
   return (
     <div className="overflow-hidden">
-      {/* ========== CINEMATIC EARTH HERO ========== */}
+      {/* ========================================== 1. CINEMATIC EARTH HERO ========================================== */}
       <CinematicEarth />
 
-      {/* ========== ENTERPRISE STATS ========== */}
+      {/* ========================================== 2. ENTERPRISE STATS ========================================== */}
       <EnterpriseStats />
 
-      {/* ========== MISSION CONTROL ========== */}
+      {/* ========================================== 3. MISSION CONTROL ========================================== */}
       <MissionControl />
 
-      {/* ========== TRUST BADGES (Compliance & Security) ========== */}
+      {/* ========================================== 4. TRUST BADGES ========================================== */}
       <TrustBadges />
 
-      {/* ========== GLOBAL ACTIVITY FEED ========== */}
+      {/* ========================================== 5. GLOBAL ACTIVITY FEED ========================================== */}
       <section className="py-6 bg-neutral-50 dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <GlobalActivityFeed />
         </div>
       </section>
 
-      {/* ========== AI CAPABILITIES ========== */}
+      {/* ========================================== 6. ENTERPRISE ARCHITECTURE ========================================== */}
+      <EnterpriseArchitecture />
+
+      {/* ========================================== 7. AI CAPABILITIES ========================================== */}
       <AICapabilities />
 
-      {/* ========== ENTERPRISE AI PLATFORM SHOWCASE ========== */}
+      {/* ========================================== 8. DIGITAL TWIN ========================================== */}
+      <DigitalTwin />
+
+      {/* ========================================== 9. ENTERPRISE AI PLATFORM ========================================== */}
       <section className="py-24 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 text-sm font-medium mb-6">
+              <Cpu className="w-4 h-4" /> Enterprise AI Platform
+            </div>
             <h2 className="text-4xl md:text-6xl font-bold mb-4">
-              Enterprise{' '}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">AI Platform</span>
+              Purpose-Built for{' '}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Enterprise Scale</span>
             </h2>
             <p className="text-xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto">
               A complete AI ecosystem powering governments, banks, hospitals, and global enterprises.
             </p>
           </div>
-
-          <div className="relative rounded-3xl overflow-hidden border shadow-2xl mb-12">
+          <div className="relative rounded-3xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 shadow-2xl">
             <Image
               src="/images/intelli-systems.png"
-              alt="IntelliWave Enterprise AI Platform - Complete ecosystem for global enterprises"
+              alt="IntelliWave Enterprise AI Platform"
               width={1200}
               height={600}
               className="w-full object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-              <h3 className="text-2xl font-bold mb-2">IntelliWave Enterprise AI Ecosystem</h3>
-              <p className="text-white/80">One unified platform for AI, automation, and enterprise operations</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-white">
+              <h3 className="text-2xl md:text-3xl font-bold mb-2">IntelliWave Enterprise AI Ecosystem</h3>
+              <p className="text-white/80 text-lg">One unified platform for AI, automation, and enterprise operations</p>
             </div>
+          </div>
+          <div className="grid md:grid-cols-4 gap-4 mt-8">
+            {[
+              { icon: Cpu, label: 'AI Agents', desc: 'Autonomous assistants' },
+              { icon: Shield, label: 'Zero-Trust Security', desc: 'Bank-grade protection' },
+              { icon: Globe, label: 'Global Edge', desc: '200+ locations' },
+              { icon: TrendingUp, label: 'Real-time Analytics', desc: 'Live dashboards' },
+            ].map((item) => {
+              const Icon = item.icon
+              return (
+                <div key={item.label} className="text-center p-4 rounded-xl border bg-background/50 hover:shadow-md transition-shadow">
+                  <Icon className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
+                  <div className="font-bold text-sm">{item.label}</div>
+                  <div className="text-xs text-muted-foreground">{item.desc}</div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      {/* ========== GROW FASTER SECTION ========== */}
+      {/* ========================================== 10. GROW FASTER ========================================== */}
       <section className="py-24 bg-neutral-50 dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 dark:bg-green-950 text-green-600 text-sm font-medium mb-6">
+                <Zap className="w-4 h-4" /> Accelerate Growth
+              </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 Scale Faster with{' '}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">AI Automation</span>
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                Companies using IntelliWave grow 3x faster by automating operations, reducing costs, 
-                and making data-driven decisions in real-time.
+              <p className="text-xl text-muted-foreground mb-8">
+                Companies using IntelliWave grow 3x faster by automating operations, reducing costs, and making data-driven decisions.
               </p>
               <div className="space-y-3 mb-8">
-                {[
-                  '40% cost reduction in first 6 months',
-                  '3x faster project delivery',
-                  '99.9% customer satisfaction',
-                  '24/7 AI-powered support'
-                ].map((item) => (
+                {['40% cost reduction in first 6 months', '3x faster project delivery', '99.9% customer satisfaction', '24/7 AI-powered support'].map((item) => (
                   <div key={item} className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                     <span className="text-muted-foreground">{item}</span>
                   </div>
                 ))}
               </div>
-              <Link href="/contact">
-                <Button size="lg" className="group">
-                  Start Scaling <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+              <Link href="/contact"><Button size="lg" className="group">Start Scaling <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" /></Button></Link>
             </div>
             <div className="relative rounded-2xl overflow-hidden border shadow-xl">
-              <Image
-                src="/images/grow-faster.jpeg"
-                alt="Scale your business faster with IntelliWave AI automation platform"
-                width={600}
-                height={400}
-                className="w-full object-cover"
-              />
+              <Image src="/images/grow-faster.jpeg" alt="Scale faster with IntelliWave" width={600} height={400} className="w-full object-cover" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========== TRADERS & FINANCIAL SOLUTIONS ========== */}
+      {/* ========================================== 11. TRADERS & FINANCIAL ========================================== */}
       <section className="py-24 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="relative rounded-2xl overflow-hidden border shadow-xl">
-              <Image
-                src="/images/Traders.jpeg"
-                alt="IntelliWave AI-powered financial trading and market analysis solutions"
-                width={600}
-                height={400}
-                className="w-full object-cover"
-              />
+              <Image src="/images/Traders.jpeg" alt="AI Financial Solutions" width={600} height={400} className="w-full object-cover" />
             </div>
             <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 text-sm font-medium mb-6">
+                <TrendingUp className="w-4 h-4" /> Financial Intelligence
+              </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 AI-Powered{' '}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">Financial Solutions</span>
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                Real-time market analysis, predictive trading algorithms, and financial intelligence 
-                systems that give your business a competitive edge in global markets.
-              </p>
+              <p className="text-xl text-muted-foreground mb-8">Real-time market analysis and predictive trading algorithms for global markets.</p>
               <div className="space-y-3 mb-8">
-                {[
-                  'Real-time market data processing',
-                  'AI-driven trading strategies',
-                  'Risk analysis & compliance',
-                  'Portfolio optimization'
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                    <span className="text-muted-foreground">{item}</span>
-                  </div>
+                {['Real-time market data', 'AI trading strategies', 'Risk analysis & compliance', 'Portfolio optimization'].map((item) => (
+                  <div key={item} className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-blue-500" /><span>{item}</span></div>
                 ))}
               </div>
-              <Link href="/contact">
-                <Button size="lg" className="group">
-                  Explore Financial AI <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+              <Link href="/contact"><Button size="lg">Explore Financial AI <ArrowRight className="ml-2" /></Button></Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========== SATELLITE & SPACE TECHNOLOGY ========== */}
+      {/* ========================================== 12. SATELLITE & SPACE ========================================== */}
       <section className="py-24 bg-neutral-50 dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-950 text-purple-600 text-sm font-medium mb-6">
+                <Globe className="w-4 h-4" /> Space Technology
+              </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 Satellite &{' '}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Space Systems</span>
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                Advanced satellite data processing, space technology integration, and aerospace 
-                AI systems engineered for the next frontier of innovation.
-              </p>
+              <p className="text-xl text-muted-foreground mb-8">Advanced satellite data processing and aerospace AI systems.</p>
               <div className="space-y-3 mb-8">
-                {[
-                  'Satellite data analysis',
-                  'Aerospace AI systems',
-                  'Remote sensing technology',
-                  'Space communication infrastructure'
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-purple-500 flex-shrink-0" />
-                    <span className="text-muted-foreground">{item}</span>
-                  </div>
+                {['Satellite data analysis', 'Aerospace AI systems', 'Remote sensing', 'Space communication'].map((item) => (
+                  <div key={item} className="flex items-center gap-3"><CheckCircle className="w-5 h-5 text-purple-500" /><span>{item}</span></div>
                 ))}
               </div>
-              <Link href="/innovation-lab">
-                <Button size="lg" className="group">
-                  Explore Space Tech <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+              <Link href="/innovation-lab"><Button size="lg">Explore Space Tech <ArrowRight className="ml-2" /></Button></Link>
             </div>
             <div className="relative rounded-2xl overflow-hidden border shadow-xl">
-              <Image
-                src="/images/Satelites.jpeg"
-                alt="IntelliWave satellite technology and space systems AI solutions"
-                width={600}
-                height={400}
-                className="w-full object-cover"
-              />
+              <Image src="/images/Satelites.jpeg" alt="Space Technology" width={600} height={400} className="w-full object-cover" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========== ROBOTICS & AI INNOVATION ========== */}
+      {/* ========================================== 13. EXECUTIVE ROI ========================================== */}
+      <ExecutiveROI />
+
+      {/* ========================================== 14. GLOBAL INFRASTRUCTURE ========================================== */}
+      <GlobalInfrastructure />
+
+      {/* ========================================== 15. ROBOTICS INNOVATION ========================================== */}
       <RoboticsInnovation />
 
-      {/* ========== UI/UX EXCELLENCE SECTION ========== */}
+      {/* ========================================== 16. UI/UX EXCELLENCE ========================================== */}
       <section className="py-24 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="relative rounded-2xl overflow-hidden border shadow-xl order-2 lg:order-1">
-              <Image
-                src="/images/ui.png"
-                alt="IntelliWave enterprise dashboard with premium UI/UX design"
-                width={600}
-                height={400}
-                className="w-full object-cover"
-              />
+              <Image src="/images/ui.png" alt="Enterprise UI/UX" width={600} height={400} className="w-full object-cover" />
             </div>
             <div className="order-1 lg:order-2">
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 Enterprise-Grade{' '}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">UI/UX Design</span>
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                Beautiful, intuitive interfaces designed for productivity. Every pixel crafted for enterprise users who demand excellence.
-              </p>
-              <Link href="/portfolio">
-                <Button size="lg" variant="outline" className="group">
-                  View Our Work <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+              <p className="text-xl text-muted-foreground mb-8">Beautiful, intuitive interfaces designed for productivity at enterprise scale.</p>
+              <Link href="/portfolio"><Button size="lg" variant="outline">View Our Work <ArrowRight className="ml-2" /></Button></Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========== ENTERPRISE TRUST ========== */}
+      {/* ========================================== 17. ENTERPRISE TRUST ========================================== */}
       <EnterpriseTrust />
 
-      {/* ========== PRODUCT SHOWCASE ========== */}
+      {/* ========================================== 18. PRODUCT SHOWCASE ========================================== */}
       <ProductShowcase />
 
-      {/* ========== GREAT RESULTS SECTION ========== */}
+      {/* ========================================== 19. GREAT RESULTS ========================================== */}
       <section className="py-24 bg-neutral-50 dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -259,41 +233,25 @@ export default function HomePage() {
                 Delivering{' '}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">Exceptional Results</span>
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                10,000+ projects delivered across 100+ countries with 99.7% client satisfaction rate.
-              </p>
+              <p className="text-xl text-muted-foreground mb-8">10,000+ projects delivered across 100+ countries with 99.7% client satisfaction.</p>
               <div className="grid grid-cols-3 gap-4 mb-8">
-                {[
-                  { value: '10K+', label: 'Projects' },
-                  { value: '99.7%', label: 'Satisfaction' },
-                  { value: '450K+', label: 'Users' },
-                ].map((stat) => (
+                {[{ value: '10K+', label: 'Projects' }, { value: '99.7%', label: 'Satisfaction' }, { value: '450K+', label: 'Users' }].map((stat) => (
                   <div key={stat.label} className="text-center p-4 rounded-xl bg-blue-50 dark:bg-blue-950">
                     <div className="text-2xl font-bold text-blue-600">{stat.value}</div>
                     <div className="text-xs text-muted-foreground">{stat.label}</div>
                   </div>
                 ))}
               </div>
-              <Link href="/case-studies">
-                <Button size="lg" className="group">
-                  See Case Studies <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+              <Link href="/case-studies"><Button size="lg">See Case Studies <ArrowRight className="ml-2" /></Button></Link>
             </div>
             <div className="relative rounded-2xl overflow-hidden border shadow-xl">
-              <Image
-                src="/images/great.jpeg"
-                alt="IntelliWave delivering exceptional enterprise results globally"
-                width={600}
-                height={400}
-                className="w-full object-cover"
-              />
+              <Image src="/images/great.jpeg" alt="Exceptional Results" width={600} height={400} className="w-full object-cover" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========== ENTERPRISE DASHBOARD ========== */}
+      {/* ========================================== 20. ENTERPRISE DASHBOARD ========================================== */}
       <section className="py-24 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -307,10 +265,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ========== REAL CASE STUDIES ========== */}
+      {/* ========================================== 21. REAL CASE STUDIES ========================================== */}
       <RealCaseStudies />
 
-      {/* ========== AI PROPOSAL GENERATOR ========== */}
+      {/* ========================================== 22. AI PROPOSAL GENERATOR ========================================== */}
       <section className="py-24 bg-neutral-50 dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -320,26 +278,21 @@ export default function HomePage() {
             </h2>
             <p className="text-xl text-neutral-600 dark:text-neutral-400">Generate a professional project proposal in seconds</p>
           </div>
-          <div className="max-w-2xl mx-auto">
-            <AIProposalGenerator />
-          </div>
+          <div className="max-w-2xl mx-auto"><AIProposalGenerator /></div>
         </div>
       </section>
 
-      {/* ========== CTA SECTION ========== */}
+      {/* ========================================== 23. FINAL CTA ========================================== */}
       <section className="py-24 bg-gradient-to-br from-indigo-600 to-purple-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Transform Your Business?
-          </h2>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Ready to Transform Your Enterprise?</h2>
           <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
             Join 450,000+ businesses that trust IntelliWave for enterprise AI solutions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/contact">
               <Button size="lg" className="bg-white text-indigo-600 hover:bg-neutral-100 px-8 py-6 text-lg rounded-2xl font-bold">
-                Schedule a Demo
-                <ArrowRight className="ml-2 w-5 h-5" />
+                Schedule a Demo <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <Link href="/pricing">
