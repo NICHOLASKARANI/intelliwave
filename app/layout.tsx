@@ -11,6 +11,8 @@ import { CookieConsent } from '@/components/ui/cookie-consent'
 import { BackToTop } from '@/components/ui/back-to-top'
 import { FloatingActions } from '@/components/ui/floating-actions'
 import { ScrollProgress } from '@/components/ui/scroll-progress'
+import { AIGreeting } from '@/components/features/ai-greeting'
+import { FloatingParticles } from '@/components/effects/floating-particles'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({
@@ -20,29 +22,29 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://intelliwave.com'),
+  metadataBase: new URL('https://www.intelliwavve.com'),
   title: {
-    default: 'IntelliWave - Enterprise AI Solutions | SOC 2 Certified | 10,000+ Projects',
-    template: '%s | IntelliWave',
+    default: 'IntelliWavve - Enterprise AI Platform | Building the Intelligent Operating System',
+    template: '%s | IntelliWavve',
   },
-  description: 'Enterprise AI solutions trusted by 450,000+ businesses across 100+ countries. SOC 2 Type II certified. Custom AI, IIoT, SaaS, and cloud infrastructure.',
-  keywords: ['enterprise AI', 'SOC 2 certified', 'IIoT solutions', 'SaaS development', 'AI consulting Kenya', 'cloud infrastructure'],
-  authors: [{ name: 'IntelliWave Ltd', url: 'https://intelliwave.com' }],
-  creator: 'IntelliWave',
-  publisher: 'IntelliWave Ltd',
+  description: 'Enterprise AI solutions trusted by 450,000+ businesses across 100+ countries. SOC 2 Type II certified. Custom AI, ERP, IIoT, SaaS, and cloud infrastructure. Building the Intelligent Operating System for Governments, Global Enterprises, Financial Institutions, Healthcare Systems, Universities, and the Industries of Tomorrow.',
+  keywords: ['enterprise AI', 'ERP', 'IIoT solutions', 'SaaS platform', 'AI consulting', 'cloud infrastructure', 'digital transformation', 'IntelliWavve', 'Nicholas Karani'],
+  authors: [{ name: 'IntelliWavve Ltd', url: 'https://www.intelliwavve.com' }],
+  creator: 'IntelliWavve',
+  publisher: 'IntelliWavve Ltd',
   openGraph: {
     type: 'website',
     locale: 'en_KE',
-    url: 'https://intelliwave.com',
-    siteName: 'IntelliWave',
-    title: 'IntelliWave - Enterprise AI Solutions | 10,000+ Projects Delivered',
-    description: 'Enterprise AI solutions. SOC 2 Type II certified. 450,000+ users. 500+ engineers.',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'IntelliWave - Enterprise AI Platform' }],
+    url: 'https://www.intelliwavve.com',
+    siteName: 'IntelliWavve',
+    title: 'IntelliWavve - Enterprise AI Platform | Building the Intelligent Operating System',
+    description: 'Enterprise AI solutions. SOC 2 Type II certified. 450,000+ users. 500+ engineers. Building the future of enterprise technology.',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'IntelliWavve - Enterprise AI Platform' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IntelliWave - Enterprise AI Solutions',
-    description: 'SOC 2 Type II certified. 10,000+ projects delivered.',
+    title: 'IntelliWavve - Enterprise AI Platform',
+    description: 'Building the Intelligent Operating System for global enterprises.',
     images: ['/og-image.jpg'],
   },
   robots: {
@@ -57,26 +59,36 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          {/* Scroll Progress Bar */}
+          {/* Premium Background */}
+          <FloatingParticles />
+          
+          {/* Scroll Progress */}
           <ScrollProgress />
           
-          <div className="relative flex min-h-screen flex-col">
+          {/* Main Layout */}
+          <div className="relative flex min-h-screen flex-col z-10">
             <Navbar />
-            <main className="flex-1 page-enter">{children}</main>
+            <main className="flex-1">{children}</main>
             <Footer />
           </div>
           
-          {/* Floating Components */}
+          {/* Floating UI Components */}
           <LiveChatWidget />
           <FloatingWhatsApp />
           <AICopilot />
           <FloatingActions />
           <BackToTop />
           <CookieConsent />
+          <AIGreeting />
           
-          {/* Toast Notifications */}
+          {/* Premium Toasts */}
           <Toaster 
             position="top-right"
             toastOptions={{
