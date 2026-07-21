@@ -1,5 +1,6 @@
 'use client'
 
+import { DerivOnboarding } from '@/components/sections/deriv-onboarding'
 import { useEffect, useState, useRef } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
@@ -86,27 +87,22 @@ export default function HomePage() {
 
   return (
     <div className="overflow-hidden">
-      {/* HERO */}
+      {/* ========================================== HERO ========================================== */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/30 via-slate-950/80 to-slate-950" />
-        
-        {/* World Map Background */}
         <div className="absolute inset-0 opacity-[0.06]">
           <Image src="/images/world-map-bg.png" alt="" fill className="object-cover" priority />
         </div>
-
         <motion.div animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.05, 1] }} transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
           className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-500/10 via-purple-500/5 to-transparent blur-3xl" />
         <motion.div animate={{ opacity: [0.2, 0.4, 0.2], scale: [1.05, 1, 1.05] }} transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
           className="absolute bottom-0 left-0 right-0 h-[500px] bg-gradient-to-t from-purple-500/10 via-cyan-500/5 to-transparent blur-3xl" />
-
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px]">
           <div className="absolute inset-0 rounded-full border border-blue-500/5 animate-spin" style={{ animationDuration: '40s' }} />
           <div className="absolute inset-12 rounded-full border border-purple-500/5 animate-spin" style={{ animationDuration: '25s', animationDirection: 'reverse' }} />
           <div className="absolute inset-24 rounded-full border border-cyan-500/5 animate-spin" style={{ animationDuration: '18s' }} />
           <div className="absolute inset-36 rounded-full border border-blue-400/3 animate-spin" style={{ animationDuration: '14s', animationDirection: 'reverse' }} />
         </div>
-
         <motion.div style={{ opacity: heroOpacity, scale: heroScale }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 relative z-10 w-full">
           <div className="text-center max-w-4xl mx-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/3 backdrop-blur-xl border border-white/5 mb-10">
@@ -129,24 +125,30 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      {/* ========================================== TRUST + ACTIVITY ========================================== */}
       <TrustBadges />
       <section className="py-4 bg-white dark:bg-neutral-950 border-b"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><GlobalActivityFeed /></div></section>
 
-      {/* SERVICES */}
+      {/* ========================================== DERIV TRADING ONBOARDING ========================================== */}
+      <DerivOnboarding />
+
+      {/* ========================================== SERVICES ========================================== */}
       <section className="py-28 bg-white dark:bg-neutral-950"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-20"><h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">Solutions for Every Industry</h2><p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto">Custom-built software and AI solutions tailored to your specific needs.</p></div><div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">{servicesData.map((service, index) => (<motion.div key={service.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.04 }} whileHover={{ y: -6 }} className="group relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 cursor-pointer"><Link href={service.href}><div className="relative h-52 overflow-hidden"><Image src={service.image} alt={service.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" /><div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" /><div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-blue-500/20 via-transparent to-transparent" /><div className="absolute bottom-0 left-0 right-0 p-5"><h3 className="text-white font-bold text-lg tracking-tight">{service.title}</h3><p className="text-white/60 text-xs mt-1.5 leading-relaxed">{service.desc}</p></div><ArrowUpRight className="absolute top-4 right-4 w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-all duration-300" /></div></Link></motion.div>))}</div></div></section>
 
-      {/* ENGINEERING */}
+      {/* ========================================== ENGINEERING ========================================== */}
       <section className="py-28 bg-neutral-50 dark:bg-neutral-900"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-20"><h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">Engineering Excellence</h2><p className="text-xl text-neutral-500 dark:text-neutral-400">Production-grade systems built with rigorous engineering standards.</p></div><div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">{engineeringImages.map((img) => (<div key={img.label} className="group relative rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all duration-500"><div className="relative h-72"><Image src={img.src} alt={img.alt} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 25vw" /><div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" /><div className="absolute bottom-0 left-0 right-0 p-5"><h3 className="text-white font-bold text-lg">{img.label}</h3></div></div></div>))}</div></div></section>
 
+      {/* ========================================== ARCHITECTURE + AI ========================================== */}
       <EnterpriseArchitecture />
       <AICapabilities />
 
-      {/* ENTERPRISE AI PLATFORM */}
+      {/* ========================================== ENTERPRISE AI PLATFORM ========================================== */}
       <section className="py-28 bg-white dark:bg-neutral-950"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-16"><h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">Enterprise AI Platform</h2></div><div className="relative rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-700 shadow-2xl"><Image src="/images/intelli-systems.png" alt="IntelliWavve Enterprise AI Platform" width={1200} height={600} className="w-full object-cover" priority /><div className="absolute bottom-0 left-0 right-0 p-10 text-white bg-gradient-to-t from-black/70 via-black/30 to-transparent"><h3 className="text-3xl font-bold tracking-tight">IntelliWavve Enterprise AI Ecosystem</h3><p className="text-white/70 text-lg mt-2">One unified platform for AI, automation, and enterprise operations</p></div></div></div></section>
 
-      {/* BUSINESS IMPACT */}
+      {/* ========================================== BUSINESS IMPACT ========================================== */}
       <section className="py-28 bg-neutral-50 dark:bg-neutral-900"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-20"><h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">Business Impact</h2><p className="text-xl text-neutral-500 dark:text-neutral-400">Real results across industries and technologies.</p></div><div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">{businessImages.map((img) => (<div key={img.label} className="group relative rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all duration-500"><div className="relative h-60"><Image src={img.src} alt={img.alt} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 25vw" /><div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" /><div className="absolute bottom-0 left-0 right-0 p-5"><h3 className="text-white font-bold text-lg">{img.label}</h3></div></div></div>))}</div></div></section>
 
+      {/* ========================================== REMAINING SECTIONS ========================================== */}
       <DigitalTwin />
       <WorldMap />
       <GlobalInfrastructure />
@@ -154,13 +156,13 @@ export default function HomePage() {
       <EnterpriseTrust />
       <MissionControl />
 
-      {/* DASHBOARD */}
+      {/* ========================================== DASHBOARD ========================================== */}
       <section className="py-28 bg-white dark:bg-neutral-950"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-16"><h2 className="text-4xl md:text-6xl font-bold text-neutral-900 dark:text-white tracking-tight">Enterprise Analytics</h2></div><EnterpriseDashboard /></div></section>
 
-      {/* AI PROPOSAL */}
+      {/* ========================================== AI PROPOSAL ========================================== */}
       <section className="py-28 bg-neutral-50 dark:bg-neutral-900"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-16"><h2 className="text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white tracking-tight">Get Your Custom Proposal</h2></div><div className="max-w-2xl mx-auto"><AIProposalGenerator /></div></div></section>
 
-      {/* FINAL CTA */}
+      {/* ========================================== FINAL CTA ========================================== */}
       <section className="py-36 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
