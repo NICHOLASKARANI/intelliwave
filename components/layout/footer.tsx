@@ -102,7 +102,7 @@ export function Footer() {
               <a href="mailto:intelliwavehr@gmail.com" className="flex items-center gap-2 hover:text-blue-400 transition-colors group">
                 <Mail className="w-4 h-4 text-blue-400" /><span>intelliwavehr@gmail.com</span><ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
-              <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /><div><p>Nairobi CBD, Superior Centre</p><p>Shop F11, 1st Floor, Kenyatta Avenue</p></div></div>
+              <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /><div><p>Nairobi CBD, Superior Centre</p><p>1st Floor, Kenyatta Avenue</p></div></div>
             </div>
           </div>
 
@@ -139,7 +139,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} IntelliWavve Ltd. All rights reserved. CEO: PhD, Eng. Nicholas Karani</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} IntelliWavve Ltd. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-2 text-xs text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />SOC 2 Type II</span>
             <span className="flex items-center gap-2 text-xs text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />ISO 27001</span>

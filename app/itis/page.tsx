@@ -14,7 +14,6 @@ import Link from 'next/link'
 
 const derivPartnerUrl = process.env.NEXT_PUBLIC_DERIV_PARTNER_URL || 'https://partner-tracking.deriv.com/click?a=50987&o=1&c=3&link_id=1'
 
-// Animated Counter
 function AnimatedCounter({ end, duration = 2000, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
   const [count, setCount] = useState(0)
   const [hasStarted, setHasStarted] = useState(false)
@@ -99,11 +98,8 @@ export default function ITISPage() {
       {/* ========================================== HERO ========================================== */}
       <section ref={heroRef} className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-950 via-green-950 to-slate-950 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/20 via-slate-950/80 to-slate-950" />
-        
-        {/* Animated grid */}
         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(34,197,94,0.4) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
         
-        {/* Floating trading elements */}
         <motion.div animate={{ y: [0, -20, 0], opacity: [0.5, 1, 0.5] }} transition={{ duration: 4, repeat: Infinity }} className="absolute top-20 right-20 w-32 h-32 rounded-2xl bg-green-500/10 backdrop-blur-xl border border-green-500/20 flex items-center justify-center">
           <TrendingUp className="w-12 h-12 text-green-400" />
         </motion.div>
@@ -116,6 +112,25 @@ export default function ITISPage() {
 
         <motion.div style={{ opacity: heroOpacity }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 relative z-10 w-full">
           <div className="text-center max-w-4xl mx-auto">
+            
+            {/* ========================================== ITIS LOGO ========================================== */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.5 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              transition={{ delay: 0.1, duration: 0.8, ease: 'easeOut' }}
+              className="flex justify-center mb-8"
+            >
+              <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-green-500/30 shadow-2xl shadow-green-500/25">
+                <Image 
+                  src="/images/intelliwavveitis.jpeg" 
+                  alt="IntelliWavve Trader Intelligence System" 
+                  fill 
+                  className="object-cover" 
+                  priority 
+                />
+              </div>
+            </motion.div>
+
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-green-500/10 backdrop-blur-xl border border-green-500/20 mb-8">
               <Sparkles className="w-4 h-4 text-green-400" />
               <span className="text-sm text-green-400 font-medium">IntelliWavve Trader Intelligence System</span>
@@ -147,7 +162,6 @@ export default function ITISPage() {
               </Link>
             </motion.div>
 
-            {/* Stats */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
               className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {stats.map((stat) => (
@@ -180,20 +194,14 @@ export default function ITISPage() {
       <section className="py-24 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold mb-4 text-neutral-900 dark:text-white tracking-tight">
-              Everything You Need to Trade
-            </h2>
-            <p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto">
-              Professional-grade tools powered by artificial intelligence.
-            </p>
+            <h2 className="text-4xl md:text-6xl font-bold mb-4 text-neutral-900 dark:text-white tracking-tight">Everything You Need to Trade</h2>
+            <p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto">Professional-grade tools powered by artificial intelligence.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((feature, index) => { const Icon = feature.icon; return (
               <motion.div key={feature.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.03 }}
                 whileHover={{ y: -4 }} className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 hover:border-green-300 dark:hover:border-green-700 hover:shadow-lg transition-all">
-                <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-950 flex items-center justify-center mb-3">
-                  <Icon className="w-5 h-5 text-green-600" />
-                </div>
+                <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-950 flex items-center justify-center mb-3"><Icon className="w-5 h-5 text-green-600" /></div>
                 <h3 className="font-bold text-neutral-900 dark:text-white mb-1">{feature.title}</h3>
                 <p className="text-sm text-neutral-500">{feature.desc}</p>
               </motion.div>
@@ -205,22 +213,15 @@ export default function ITISPage() {
       {/* ========================================== PRICING ========================================== */}
       <section className="py-24 bg-neutral-50 dark:bg-neutral-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold mb-4 text-neutral-900 dark:text-white tracking-tight">Simple Pricing</h2>
-            <p className="text-xl text-neutral-500 dark:text-neutral-400">Start free, upgrade as you grow.</p>
-          </div>
+          <div className="text-center mb-16"><h2 className="text-4xl md:text-6xl font-bold mb-4 text-neutral-900 dark:text-white tracking-tight">Simple Pricing</h2><p className="text-xl text-neutral-500 dark:text-neutral-400">Start free, upgrade as you grow.</p></div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {pricingPlans.map((plan) => (
               <div key={plan.name} className={`relative p-8 rounded-2xl border-2 ${plan.popular ? 'border-green-500 bg-green-50 dark:bg-green-950/20 shadow-xl scale-105' : 'border-neutral-200 dark:border-neutral-800'} bg-white dark:bg-neutral-950`}>
                 {plan.popular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-sm font-bold">Most Popular</div>}
                 <h3 className="text-2xl font-bold mb-2 text-neutral-900 dark:text-white">{plan.name}</h3>
                 <div className="text-4xl font-bold text-green-600 mb-6">{plan.price}</div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((f) => (<li key={f} className="flex items-center gap-2 text-sm"><CheckCircle className="w-4 h-4 text-green-500" />{f}</li>))}
-                </ul>
-                <a href={derivPartnerUrl} target="_blank" rel="noopener noreferrer">
-                  <Button className={`w-full ${plan.popular ? 'bg-green-600 hover:bg-green-500' : ''}`}>{plan.cta}</Button>
-                </a>
+                <ul className="space-y-3 mb-8">{plan.features.map((f) => (<li key={f} className="flex items-center gap-2 text-sm"><CheckCircle className="w-4 h-4 text-green-500" />{f}</li>))}</ul>
+                <a href={derivPartnerUrl} target="_blank" rel="noopener noreferrer"><Button className={`w-full ${plan.popular ? 'bg-green-600 hover:bg-green-500' : ''}`}>{plan.cta}</Button></a>
               </div>
             ))}
           </div>
@@ -250,15 +251,9 @@ export default function ITISPage() {
           <p className="text-xl text-white/70 mb-10 max-w-2xl mx-auto">Join thousands of traders using IntelliWavve AI for smarter trading decisions.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href={derivPartnerUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="lg" className="bg-white text-green-700 hover:bg-gray-100 px-10 py-7 text-lg rounded-2xl font-bold shadow-2xl group">
-                Start Trading Now <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <Button size="lg" className="bg-white text-green-700 hover:bg-gray-100 px-10 py-7 text-lg rounded-2xl font-bold shadow-2xl group">Start Trading Now <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" /></Button>
             </a>
-            <Link href="/contact">
-              <Button size="lg" variant="outline" className="px-10 py-7 text-lg rounded-2xl border-2 border-white/30 text-white hover:bg-white/10 font-bold">
-                Contact Sales
-              </Button>
-            </Link>
+            <Link href="/contact"><Button size="lg" variant="outline" className="px-10 py-7 text-lg rounded-2xl border-2 border-white/30 text-white hover:bg-white/10 font-bold">Contact Sales</Button></Link>
           </div>
         </div>
       </section>

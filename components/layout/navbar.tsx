@@ -25,8 +25,6 @@ const navigation = [
       { name: "Industry Solutions", href: "/industry-solutions" },
     ]
   },
-  { name: "Pricing", href: "/pricing" },
-  { name: "Portfolio", href: "/portfolio" },
   { 
     name: "Resources", 
     href: "/learning-center",
@@ -38,6 +36,8 @@ const navigation = [
       { name: "ROI Calculator", href: "/roi-calculator" },
     ]
   },
+  { name: "Pricing", href: "/pricing" },
+  { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
@@ -70,7 +70,6 @@ export function Navbar() {
   }, [pathname])
 
   const isServiceActive = pathname === '/services' || pathname.startsWith('/ai-engineering') || pathname.startsWith('/cybersecurity') || pathname.startsWith('/software-development') || pathname.startsWith('/cloud-devops') || pathname.startsWith('/enterprise-solutions') || pathname.startsWith('/iiot-automation') || pathname.startsWith('/industry-solutions')
-
   const isResourceActive = pathname.startsWith('/learning-center') || pathname.startsWith('/knowledge-base') || pathname.startsWith('/webinars') || pathname.startsWith('/api-docs') || pathname.startsWith('/roi-calculator')
 
   return (
@@ -78,9 +77,9 @@ export function Navbar() {
       <nav className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <div className="relative w-10 h-10">
-            <Image src="/logo.png" alt="Intelliwave Logo" fill className="object-contain" priority />
+            <Image src="/logo.png" alt="IntelliWavve Logo" fill className="object-contain" priority />
           </div>
-          <span className="font-display text-xl font-bold text-gradient">Intelliwave</span>
+          <span className="font-display text-xl font-bold text-gradient">IntelliWavve</span>
         </Link>
 
         <div className="hidden lg:flex lg:gap-x-5">
@@ -111,10 +110,7 @@ export function Navbar() {
                       if (item.name === "Resources") setResourcesOpen(false)
                     }}>
                       {item.children.map((child) => (
-                        <Link key={child.name} href={child.href} onClick={() => {
-                          setServicesOpen(false)
-                          setResourcesOpen(false)
-                        }}
+                        <Link key={child.name} href={child.href} onClick={() => { setServicesOpen(false); setResourcesOpen(false) }}
                           className={`block px-4 py-2.5 text-sm transition-colors ${pathname === child.href ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
                           {child.name}
                         </Link>
@@ -129,6 +125,27 @@ export function Navbar() {
               )}
             </div>
           ))}
+
+          {/* ========================================== ITIS LOGO LINK ========================================== */}
+          <Link 
+            href="/itis" 
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              pathname === '/itis' 
+                ? 'bg-green-500/10 text-green-400' 
+                : 'text-green-400 hover:text-green-300 hover:bg-green-500/5'
+            }`}
+          >
+            <div className="relative w-6 h-6 rounded overflow-hidden">
+              <Image 
+                src="/images/intelliwavveitis.jpeg" 
+                alt="ITIS" 
+                width={24} 
+                height={24} 
+                className="object-cover"
+              />
+            </div>
+            <span>ITIS</span>
+          </Link>
         </div>
 
         <div className="hidden lg:flex lg:items-center lg:gap-x-3">
@@ -153,7 +170,7 @@ export function Navbar() {
                       {item.name} (Overview)
                     </Link>
                     <div className="ml-4 border-l-2 border-muted pl-3 space-y-1">
-                      {item.children.filter(c => c.name !== 'All Services' && c.name !== 'Learning Center').map((child) => (
+                      {item.children.map((child) => (
                         <Link key={child.name} href={child.href} className="block px-3 py-1.5 text-sm text-muted-foreground hover:text-primary rounded-md" onClick={() => setMobileMenuOpen(false)}>
                           {child.name}
                         </Link>
@@ -167,6 +184,16 @@ export function Navbar() {
                 )}
               </div>
             ))}
+            
+            {/* Mobile ITIS Link */}
+            <Link href="/itis" onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium text-green-400 hover:bg-green-500/10">
+              <div className="relative w-6 h-6 rounded overflow-hidden">
+                <Image src="/images/intelliwavveitis.jpeg" alt="ITIS" width={24} height={24} className="object-cover" />
+              </div>
+              ITIS — Trader Intelligence
+            </Link>
+
             <div className="px-3 py-3"><SocialIcons variant="mobile" size="md" /></div>
             <div className="px-3 mt-4">
               <Link href="/contact" onClick={() => setMobileMenuOpen(false)}><Button className="w-full bg-primary">Get Started</Button></Link>
