@@ -24,36 +24,85 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.intelliwavve.com'),
   title: {
-    default: 'IntelliWavve - Enterprise AI Platform | Building the Intelligent Operating System',
+    default: 'IntelliWavve - Global Enterprise AI & Software Company | Building the Intelligent Operating System',
     template: '%s | IntelliWavve',
   },
-  description: 'Enterprise AI solutions trusted by 450,000+ businesses across 100+ countries. SOC 2 Type II certified. Custom AI, ERP, IIoT, SaaS, and cloud infrastructure. Building the Intelligent Operating System for Governments, Global Enterprises, Financial Institutions, Healthcare Systems, Universities, and the Industries of Tomorrow.',
-  keywords: ['enterprise AI', 'ERP', 'IIoT solutions', 'SaaS platform', 'AI consulting', 'cloud infrastructure', 'digital transformation', 'IntelliWavve', 'Nicholas Karani'],
+  description: 'IntelliWavve is a global enterprise AI and software company. Building the Intelligent Operating System for governments, financial institutions, healthcare systems, universities, and enterprises worldwide. Custom AI, ERP, IIoT, SaaS, and cloud infrastructure.',
+  keywords: [
+    'global software company',
+    'enterprise AI platform',
+    'AI software company Kenya',
+    'enterprise software development',
+    'AI consulting Africa',
+    'cloud infrastructure',
+    'digital transformation',
+    'IIoT solutions',
+    'SaaS platform',
+    'ERP systems',
+    'IntelliWavve',
+    'Nicholas Karani',
+  ],
   authors: [{ name: 'IntelliWavve Ltd', url: 'https://www.intelliwavve.com' }],
-  creator: 'IntelliWavve',
+  creator: 'IntelliWavve Technologies',
   publisher: 'IntelliWavve Ltd',
+  formatDetection: {
+    email: false,
+    address: true,
+    telephone: true,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_KE',
     url: 'https://www.intelliwavve.com',
-    siteName: 'IntelliWavve',
-    title: 'IntelliWavve - Enterprise AI Platform | Building the Intelligent Operating System',
-    description: 'Enterprise AI solutions. SOC 2 Type II certified. 450,000+ users. 500+ engineers. Building the future of enterprise technology.',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'IntelliWavve - Enterprise AI Platform' }],
+    siteName: 'IntelliWavve Technologies',
+    title: 'IntelliWavve - Global Enterprise AI & Software Company',
+    description: 'Building the Intelligent Operating System for governments, global enterprises, financial institutions, healthcare systems, universities, and the industries of tomorrow.',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'IntelliWavve - Global Enterprise AI & Software Company',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IntelliWavve - Enterprise AI Platform',
+    title: 'IntelliWavve - Global Enterprise AI & Software Company',
     description: 'Building the Intelligent Operating System for global enterprises.',
     images: ['/og-image.jpg'],
+    creator: '@intelliwavve',
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 },
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
-  icons: { icon: '/favicon.ico', apple: '/apple-touch-icon.png' },
+  verification: {
+    google: '5oLFtXvlAqeiV5AWkLpxYBWVHNF99XodEa8IMh2YS1k',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   manifest: '/site.webmanifest',
+  category: 'technology',
+  other: {
+    'og:type': 'website',
+    'business:contact_data:street_address': 'Kenyatta Avenue, Superior Centre, Shop F11, 1st Floor',
+    'business:contact_data:locality': 'Nairobi',
+    'business:contact_data:region': 'Nairobi CBD',
+    'business:contact_data:country_name': 'Kenya',
+    'business:contact_data:phone_number': '+254714694493',
+    'business:contact_data:website': 'https://www.intelliwavve.com',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -63,6 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
+        <meta name="google-site-verification" content="5oLFtXvlAqeiV5AWkLpxYBWVHNF99XodEa8IMh2YS1k" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
