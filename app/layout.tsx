@@ -13,6 +13,7 @@ import { FloatingActions } from '@/components/ui/floating-actions'
 import { ScrollProgress } from '@/components/ui/scroll-progress'
 import { AIGreeting } from '@/components/features/ai-greeting'
 import { FloatingParticles } from '@/components/effects/floating-particles'
+import { GoogleAnalytics } from '@/components/analytics/google-analytics'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({
@@ -96,7 +97,7 @@ export const metadata: Metadata = {
   category: 'technology',
   other: {
     'og:type': 'website',
-    'business:contact_data:street_address': 'Kenyatta Avenue, Superior Centre, Shop F11, 1st Floor',
+    'business:contact_data:street_address': 'Kenyatta Avenue, Superior Centre, 1st Floor',
     'business:contact_data:locality': 'Nairobi',
     'business:contact_data:region': 'Nairobi CBD',
     'business:contact_data:country_name': 'Kenya',
@@ -116,6 +117,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+          {/* Google Analytics — Option 2: Google tag in website code */}
+          <GoogleAnalytics />
+          
           {/* Premium Background */}
           <FloatingParticles />
           
