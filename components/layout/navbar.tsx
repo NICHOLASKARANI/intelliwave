@@ -36,6 +36,7 @@ const navigation = [
       { name: "ROI Calculator", href: "/roi-calculator" },
     ]
   },
+  { name: "Command Centre", href: "/command-centre" },
   { name: "Pricing", href: "/pricing" },
   { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
@@ -71,6 +72,7 @@ export function Navbar() {
 
   const isServiceActive = pathname === '/services' || pathname.startsWith('/ai-engineering') || pathname.startsWith('/cybersecurity') || pathname.startsWith('/software-development') || pathname.startsWith('/cloud-devops') || pathname.startsWith('/enterprise-solutions') || pathname.startsWith('/iiot-automation') || pathname.startsWith('/industry-solutions')
   const isResourceActive = pathname.startsWith('/learning-center') || pathname.startsWith('/knowledge-base') || pathname.startsWith('/webinars') || pathname.startsWith('/api-docs') || pathname.startsWith('/roi-calculator')
+  const isCommandCentreActive = pathname.startsWith('/command-centre')
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -119,14 +121,33 @@ export function Navbar() {
                   )}
                 </div>
               ) : (
-                <Link href={item.href} className={`text-sm font-semibold leading-6 transition-colors py-2 ${pathname === item.href ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
-                  {item.name}
+                <Link 
+                  href={item.href} 
+                  className={`text-sm font-semibold leading-6 transition-colors py-2 ${
+                    item.name === "Command Centre" && isCommandCentreActive 
+                      ? "text-blue-600 dark:text-blue-400 font-bold" 
+                      : pathname === item.href 
+                        ? "text-primary" 
+                        : "text-muted-foreground hover:text-primary"
+                  }`}
+                >
+                  {item.name === "Command Centre" ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                      </span>
+                      {item.name}
+                    </span>
+                  ) : (
+                    item.name
+                  )}
                 </Link>
               )}
             </div>
           ))}
 
-          {/* ========================================== ITIS LOGO LINK ========================================== */}
+          {/* ITIS Logo Link */}
           <Link 
             href="/itis" 
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
@@ -136,13 +157,7 @@ export function Navbar() {
             }`}
           >
             <div className="relative w-6 h-6 rounded overflow-hidden">
-              <Image 
-                src="/images/intelliwavveitis.jpeg" 
-                alt="ITIS" 
-                width={24} 
-                height={24} 
-                className="object-cover"
-              />
+              <Image src="/images/intelliwavveitis.jpeg" alt="ITIS" width={24} height={24} className="object-cover" />
             </div>
             <span>ITIS</span>
           </Link>
@@ -178,8 +193,18 @@ export function Navbar() {
                     </div>
                   </>
                 ) : (
-                  <Link href={item.href} className={`block px-3 py-2 rounded-md text-base font-medium ${pathname === item.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"}`} onClick={() => setMobileMenuOpen(false)}>
-                    {item.name}
+                  <Link 
+                    href={item.href} 
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      item.name === "Command Centre" && isCommandCentreActive
+                        ? "bg-blue-500/10 text-blue-600 font-bold"
+                        : pathname === item.href 
+                          ? "bg-primary/10 text-primary" 
+                          : "text-muted-foreground hover:bg-accent"
+                    }`} 
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.name === "Command Centre" ? "🔵 Command Centre" : item.name}
                   </Link>
                 )}
               </div>
