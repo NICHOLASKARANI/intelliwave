@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Drone, Battery, Wifi, Clock, MapPin, ArrowRight, Plus, Settings } from 'lucide-react'
+import { Plane, Battery, Wifi, Clock, MapPin, ArrowRight, Plus } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Fleet Management - IntelliWavve Command Centre',
@@ -24,9 +24,8 @@ export default function FleetPage() {
           </Link>
         </div>
 
-        {/* Empty State — Ready for first drone */}
         <div className="text-center py-20 rounded-3xl border-2 border-dashed border-neutral-300 dark:border-neutral-700">
-          <Drone className="w-20 h-20 text-neutral-300 dark:text-neutral-600 mx-auto mb-6" />
+          <Plane className="w-20 h-20 text-neutral-300 dark:text-neutral-600 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">No Drones Registered Yet</h2>
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">
             Register your first drone to begin fleet management. You'll need the drone's serial number and specifications.
@@ -38,7 +37,6 @@ export default function FleetPage() {
           </Link>
         </div>
 
-        {/* Fleet Features Preview */}
         <div className="grid md:grid-cols-3 gap-6 mt-12">
           {[
             { icon: Battery, title: 'Health Monitoring', desc: 'Real-time battery, signal, and system health for every device.' },

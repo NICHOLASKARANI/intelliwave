@@ -2,9 +2,8 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { 
   Radio, Map, Video, Bot, Activity, Shield, 
-  Battery, Wifi, Thermometer, Gauge, ArrowRight,
-  Drone, Satellite, Camera, AlertTriangle, CheckCircle,
-  Clock, Users, Globe, Zap
+  Battery, Wifi, Globe, ArrowRight,
+  Plane, Satellite, Camera, Zap, Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 const fleetStats = [
-  { icon: Drone, label: 'Active Drones', value: '0', status: 'Ready to connect' },
+  { icon: Plane, label: 'Active Drones', value: '0', status: 'Ready to connect' },
   { icon: Activity, label: 'Active Missions', value: '0', status: 'No active missions' },
   { icon: Shield, label: 'System Status', value: 'Online', status: 'All systems operational' },
   { icon: Wifi, label: 'Connected Devices', value: '0', status: 'Awaiting pairing' },
@@ -30,7 +29,7 @@ const modules = [
 ]
 
 const quickActions = [
-  { label: 'Register New Drone', href: '/command-centre/fleet/register', icon: Drone },
+  { label: 'Register New Drone', href: '/command-centre/fleet/register', icon: Plus },
   { label: 'Create Mission', href: '/command-centre/missions/create', icon: Map },
   { label: 'View Live Map', href: '/command-centre/map', icon: Globe },
   { label: 'System Settings', href: '/command-centre/settings', icon: Shield },
@@ -40,7 +39,6 @@ export default function CommandCentrePage() {
   return (
     <div className="py-20">
       <div className="container">
-        {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 text-sm font-medium mb-6">
             <Radio className="w-4 h-4" /> Enterprise Platform
@@ -54,7 +52,6 @@ export default function CommandCentrePage() {
           </p>
         </div>
 
-        {/* Fleet Status */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {fleetStats.map((stat) => {
             const Icon = stat.icon
@@ -69,7 +66,6 @@ export default function CommandCentrePage() {
           })}
         </div>
 
-        {/* Module Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {modules.map((mod) => {
             const Icon = mod.icon
@@ -86,7 +82,6 @@ export default function CommandCentrePage() {
           })}
         </div>
 
-        {/* Quick Actions */}
         <div className="p-8 rounded-2xl border bg-gradient-to-br from-background to-blue-500/5 mb-12">
           <h3 className="text-xl font-bold mb-4 text-neutral-900 dark:text-white">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -103,7 +98,6 @@ export default function CommandCentrePage() {
           </div>
         </div>
 
-        {/* Architecture Overview */}
         <div className="p-8 rounded-2xl border bg-gradient-to-br from-background to-purple-500/5 mb-12">
           <h3 className="text-xl font-bold mb-6 text-neutral-900 dark:text-white">Platform Architecture</h3>
           <div className="space-y-3 font-mono text-sm text-muted-foreground">
@@ -125,7 +119,6 @@ export default function CommandCentrePage() {
           </div>
         </div>
 
-        {/* CTA */}
         <div className="text-center p-12 rounded-3xl bg-gradient-to-br from-blue-600 to-purple-600 text-white">
           <h2 className="text-3xl font-bold mb-4">Ready to Connect Your Fleet?</h2>
           <p className="text-white/80 mb-6 max-w-2xl mx-auto">
