@@ -11,7 +11,7 @@ import {
 
 const footerNavigation = {
   products: [
-    { name: "WaveCore ERP", href: "/enterprise-solutions" },
+    { name: "WaveCore ERP", href: "/wavecore-erp" },
     { name: "AI Analytics", href: "/ai-engineering" },
     { name: "AI Agents", href: "/ai-engineering" },
     { name: "API Platform", href: "/api-docs" },
@@ -37,6 +37,7 @@ const footerNavigation = {
     { name: "Careers", href: "/careers" },
     { name: "Contact", href: "/contact" },
     { name: "Dashboard", href: "/dashboard" },
+    { name: "WaveCore ERP", href: "/wavecore-erp" },
   ],
   legal: [
     { name: "Privacy Policy", href: "/privacy" },
@@ -102,23 +103,55 @@ export function Footer() {
               <a href="mailto:intelliwavehr@gmail.com" className="flex items-center gap-2 hover:text-blue-400 transition-colors group">
                 <Mail className="w-4 h-4 text-blue-400" /><span>intelliwavehr@gmail.com</span><ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
-              <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /><div><p>Nairobi CBD, Superior Centre</p><p>1st Floor, Kenyatta Avenue</p></div></div>
+              <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /><div><p>Nairobi CBD, Superior Centre</p><p>Shop F11, 1st Floor, Kenyatta Avenue</p></div></div>
             </div>
           </div>
 
-          {['Products', 'Services', 'Industries', 'Company'].map((title) => {
-            const items = footerNavigation[title.toLowerCase() as keyof typeof footerNavigation]
-            return (
-              <div key={title}>
-                <h3 className="font-semibold mb-4 text-xs uppercase tracking-widest text-gray-500">{title}</h3>
-                <ul className="space-y-2.5">
-                  {items.map((item: any) => (
-                    <li key={item.name}><Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">{item.name}</Link></li>
-                  ))}
-                </ul>
-              </div>
-            )
-          })}
+          {/* Products */}
+          <div>
+            <h3 className="font-semibold mb-4 text-xs uppercase tracking-widest text-gray-500">Products</h3>
+            <ul className="space-y-2.5">
+              {footerNavigation.products.map((item) => (
+                <li key={item.name}><Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">{item.name}</Link></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Services */}
+          <div>
+            <h3 className="font-semibold mb-4 text-xs uppercase tracking-widest text-gray-500">Services</h3>
+            <ul className="space-y-2.5">
+              {footerNavigation.services.map((item) => (
+                <li key={item.name}><Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">{item.name}</Link></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Industries */}
+          <div>
+            <h3 className="font-semibold mb-4 text-xs uppercase tracking-widest text-gray-500">Industries</h3>
+            <ul className="space-y-2.5">
+              {footerNavigation.industries.map((item) => (
+                <li key={item.name}><Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">{item.name}</Link></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company + Legal */}
+          <div>
+            <h3 className="font-semibold mb-4 text-xs uppercase tracking-widest text-gray-500">Company</h3>
+            <ul className="space-y-2.5 mb-6">
+              {footerNavigation.company.map((item) => (
+                <li key={item.name}><Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">{item.name}</Link></li>
+              ))}
+            </ul>
+            <h3 className="font-semibold mb-4 text-xs uppercase tracking-widest text-gray-500">Legal</h3>
+            <ul className="space-y-2.5">
+              {footerNavigation.legal.map((item) => (
+                <li key={item.name}><Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">{item.name}</Link></li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Client Logos */}
