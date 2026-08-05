@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Search, Filter, LayoutDashboard, Calculator } from 'lucide-react'
+import { ArrowLeft, Plus, Search, Filter, LayoutDashboard, Calculator, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
@@ -9,9 +9,7 @@ export const metadata: Metadata = {
   description: 'View and manage journal entries in WaveCore ERP.',
 }
 
-const entries = [
-  { id: 'JE/2024/001', date: '2024-01-15', description: 'Opening balance', amount: '0.00', status: 'Draft' },
-]
+const entries: { id: string; date: string; description: string; amount: string; status: string }[] = []
 
 export default function JournalPage() {
   return (
