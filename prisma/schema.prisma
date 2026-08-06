@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================
+// CORE USER & AUTHENTICATION
+// ============================================================
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -14,7 +18,16 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
+  phone         String?
+  avatar        String?
   role          String    @default("USER")
+  isActive      Boolean   @default(true)
+  phoneVerified Boolean   @default(false)
+  otpCode       String?
+  otpExpiry     DateTime?
+  resetToken    String?
+  resetExpiry   DateTime?
+  lastLogin     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -28,6 +41,9 @@ model User {
   applications   JobApplication[]
   events         Event[]
   messages       Message[]
+  organizations  Organization[]
+  subscription   Subscription?
+  auditLogs      AuditLog[]
 }
 
 model Account {
@@ -56,6 +72,74 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ============================================================
+// SUBSCRIPTION & ORGANIZATION
+// ============================================================
+
+model Subscription {
+  id            String             @id @default(cuid())
+  plan          PlanType           @default(TRIAL)
+  status        SubscriptionStatus @default(ACTIVE)
+  amount        Float              @default(500)
+  currency      String             @default("KES")
+  startDate     DateTime           @default(now())
+  endDate       DateTime?
+  trialEndsAt   DateTime?
+  nextBillingAt DateTime?
+  cancelledAt   DateTime?
+  mpesaReceipt  String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  userId         String?        @unique
+  user           User?          @relation(fields: [userId], references: [id])
+  organizationId String?        @unique
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
+}
+
+model Organization {
+  id            String    @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  logo          String?
+  currency      String    @default("KES")
+  timezone      String    @default("Africa/Nairobi")
+  isActive      Boolean   @default(true)
+  trialEndsAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  ownerId       String
+  owner         User           @relation(fields: [ownerId], references: [id])
+  members       User[]
+  subscription  Subscription?
+  
+  chartOfAccounts ChartOfAccount[]
+  fiscalYears     FiscalYear[]
+  journalEntries  JournalEntry[]
+}
+
+enum PlanType {
+  TRIAL
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+// ============================================================
+// PROJECTS & INVOICES
+// ============================================================
 
 model Project {
   id          String   @id @default(cuid())
@@ -106,6 +190,22 @@ model Invoice {
   project     Project? @relation(fields: [projectId], references: [id])
 }
 
+model ProjectFile {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      String
+  size      Int
+  createdAt DateTime @default(now())
+  
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// BLOG & COMMENTS
+// ============================================================
+
 model BlogPost {
   id            String   @id @default(cuid())
   title         String
@@ -139,6 +239,10 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ============================================================
+// SUPPORT & MESSAGES
+// ============================================================
+
 model SupportTicket {
   id          String   @id @default(cuid())
   subject     String
@@ -166,6 +270,10 @@ model Message {
   userId    String?
   user      User?          @relation(fields: [userId], references: [id])
 }
+
+// ============================================================
+// PORTFOLIO, JOBS, EVENTS, LEADS
+// ============================================================
 
 model PortfolioItem {
   id           String   @id @default(cuid())
@@ -224,18 +332,6 @@ model Event {
   attendees       User[]
 }
 
-model ProjectFile {
-  id        String   @id @default(cuid())
-  name      String
-  url       String
-  type      String
-  size      Int
-  createdAt DateTime @default(now())
-  
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
 model Lead {
   id        String   @id @default(cuid())
   name      String
@@ -247,59 +343,21 @@ model Lead {
   status    String   @default("NEW")
   createdAt DateTime @default(now())
 }
+
 // ============================================================
-// WAVECORE ERP - GENERAL LEDGER MODULE
+// WAVECORE ERP - FINANCE MODULE
 // ============================================================
-
-model Organization {
-  id          String   @id @default(cuid())
-  name        String
-  currency    String   @default("KES")
-  fiscalYearStart Int  @default(1) // January
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  chartOfAccounts ChartOfAccount[]
-  fiscalYears     FiscalYear[]
-  journalEntries  JournalEntry[]
-}
-
-model FiscalYear {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "FY 2024"
-  startDate   DateTime
-  endDate     DateTime
-  isClosed    Boolean  @default(false)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  
-  periods     FiscalPeriod[]
-  createdAt   DateTime @default(now())
-}
-
-model FiscalPeriod {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "January 2024"
-  startDate   DateTime
-  endDate     DateTime
-  isClosed    Boolean  @default(false)
-  fiscalYearId String
-  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
-  
-  journalEntries JournalEntry[]
-  createdAt   DateTime @default(now())
-}
 
 model ChartOfAccount {
-  id          String   @id @default(cuid())
-  code        String   @unique
+  id          String      @id @default(cuid())
+  code        String      @unique
   name        String
   type        AccountType
   parentId    String?
   parent      ChartOfAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
   children    ChartOfAccount[] @relation("AccountHierarchy")
-  isActive    Boolean  @default(true)
-  isReconcilable Boolean @default(false)
+  isActive    Boolean     @default(true)
+  isReconcilable Boolean  @default(false)
   description String?
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
@@ -317,14 +375,40 @@ enum AccountType {
   EXPENSE
 }
 
-model JournalEntry {
+model FiscalYear {
   id          String   @id @default(cuid())
-  number      String   @unique // JE/2024/0001
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  isClosed    Boolean  @default(false)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  periods     FiscalPeriod[]
+  createdAt   DateTime @default(now())
+}
+
+model FiscalPeriod {
+  id          String   @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  isClosed    Boolean  @default(false)
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  
+  journalEntries JournalEntry[]
+  createdAt   DateTime @default(now())
+}
+
+model JournalEntry {
+  id          String      @id @default(cuid())
+  number      String      @unique
   date        DateTime
   reference   String?
   description String
   status      EntryStatus @default(DRAFT)
-  amount      Float    @default(0)
+  amount      Float       @default(0)
   fiscalPeriodId String
   fiscalPeriod   FiscalPeriod @relation(fields: [fiscalPeriodId], references: [id])
   organizationId String
@@ -358,105 +442,13 @@ model JournalItem {
 
 model AuditLog {
   id          String   @id @default(cuid())
-  action      String   // CREATE, UPDATE, DELETE, POST, REVERSE
-  entityType  String   // JournalEntry, ChartOfAccount, etc.
+  action      String
+  entityType  String
   entityId    String
-  changes     String?  // JSON string of changes
+  changes     String?
   userId      String?
   journalEntryId String?
   journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
   
   createdAt   DateTime @default(now())
-}
-// ============================================================
-// WAVECORE ERP - AUTHENTICATION & SUBSCRIPTIONS
-// ============================================================
-
-model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  password      String
-  phone         String?
-  avatar        String?
-  role          UserRole  @default(USER)
-  isActive      Boolean   @default(true)
-  emailVerified Boolean   @default(false)
-  phoneVerified Boolean   @default(false)
-  otpCode       String?
-  otpExpiry     DateTime?
-  resetToken    String?
-  resetExpiry   DateTime?
-  lastLogin     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  organizations Organization[]
-  subscription   Subscription?
-  auditLogs      AuditLog[]
-}
-
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  MANAGER
-  ACCOUNTANT
-  USER
-  VIEWER
-}
-
-model Organization {
-  id            String    @id @default(cuid())
-  name          String
-  email         String?
-  phone         String?
-  address       String?
-  logo          String?
-  currency      String    @default("KES")
-  timezone      String    @default("Africa/Nairobi")
-  isActive      Boolean   @default(true)
-  trialEndsAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  ownerId       String
-  owner         User      @relation(fields: [ownerId], references: [id])
-  members       User[]
-  subscription  Subscription?
-}
-
-model Subscription {
-  id            String    @id @default(cuid())
-  plan          PlanType  @default(TRIAL)
-  status        SubscriptionStatus @default(ACTIVE)
-  amount        Float     @default(500)
-  currency      String    @default("KES")
-  startDate     DateTime  @default(now())
-  endDate       DateTime?
-  trialEndsAt   DateTime?
-  nextBillingAt DateTime?
-  cancelledAt   DateTime?
-  mpesaReceipt  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  userId        String?   @unique
-  user          User?     @relation(fields: [userId], references: [id])
-  organizationId String?  @unique
-  organization  Organization? @relation(fields: [organizationId], references: [id])
-}
-
-enum PlanType {
-  TRIAL
-  STARTER
-  PROFESSIONAL
-  ENTERPRISE
-}
-
-enum SubscriptionStatus {
-  TRIAL
-  ACTIVE
-  PAST_DUE
-  CANCELLED
-  EXPIRED
 }
