@@ -7,44 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================
-// USER & AUTHENTICATION
-// ============================================================
-
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  phone         String?
-  avatar        String?
-  role          String    @default("USER")
-  isActive      Boolean   @default(true)
-  phoneVerified Boolean   @default(false)
-  otpCode       String?
-  otpExpiry     DateTime?
-  resetToken    String?
-  resetExpiry   DateTime?
-  lastLogin     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  accounts       Account[]
-  sessions       Session[]
-  projects       Project[]
-  invoices       Invoice[]
-  supportTickets SupportTicket[]
-  blogPosts      BlogPost[]
-  comments       Comment[]
-  applications   JobApplication[]
-  events         Event[]
-  messages       Message[]
+  id               String    @id @default(cuid())
+  name             String?
+  email            String    @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  phone            String?
+  avatar           String?
+  role             String    @default("USER")
+  isActive         Boolean   @default(true)
+  phoneVerified    Boolean   @default(false)
+  otpCode          String?
+  otpExpiry        DateTime?
+  resetToken       String?
+  resetExpiry      DateTime?
+  lastLogin        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  accounts         Account[]
+  sessions         Session[]
+  projects         Project[]
+  invoices         Invoice[]
+  supportTickets   SupportTicket[]
+  blogPosts        BlogPost[]
+  comments         Comment[]
+  applications     JobApplication[]
+  events           Event[]
+  messages         Message[]
   ownedOrganizations Organization[] @relation("OrganizationOwner")
   memberOrganizations Organization[] @relation("OrganizationMembers")
-  subscription   Subscription?
-  auditLogs      AuditLog[]
+  subscription     Subscription?
+  auditLogs        AuditLog[]
   assignedCustomers Customer[] @relation("AssignedCustomers")
   assignedLeads     Lead[]     @relation("AssignedLeads")
   assignedOpportunities Opportunity[] @relation("AssignedOpportunities")
@@ -76,78 +71,58 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ============================================================
-// SUBSCRIPTION & ORGANIZATION
-// ============================================================
-
 model Subscription {
-  id            String             @id @default(cuid())
-  plan          PlanType           @default(TRIAL)
-  status        SubscriptionStatus @default(ACTIVE)
-  amount        Float              @default(500)
-  currency      String             @default("KES")
-  startDate     DateTime           @default(now())
-  endDate       DateTime?
-  trialEndsAt   DateTime?
-  nextBillingAt DateTime?
-  cancelledAt   DateTime?
-  mpesaReceipt  String?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  userId         String?        @unique
-  user           User?          @relation(fields: [userId], references: [id])
-  organizationId String?        @unique
-  organization   Organization?  @relation(fields: [organizationId], references: [id])
+  id             String             @id @default(cuid())
+  plan           PlanType           @default(TRIAL)
+  status         SubscriptionStatus @default(ACTIVE)
+  amount         Float              @default(500)
+  currency       String             @default("KES")
+  startDate      DateTime           @default(now())
+  endDate        DateTime?
+  trialEndsAt    DateTime?
+  nextBillingAt  DateTime?
+  cancelledAt    DateTime?
+  mpesaReceipt   String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  userId         String?            @unique
+  user           User?              @relation(fields: [userId], references: [id])
+  organizationId String?            @unique
+  organization   Organization?      @relation(fields: [organizationId], references: [id])
 }
 
 model Organization {
-  id            String    @id @default(cuid())
-  name          String
-  email         String?
-  phone         String?
-  address       String?
-  logo          String?
-  currency      String    @default("KES")
-  timezone      String    @default("Africa/Nairobi")
-  isActive      Boolean   @default(true)
-  trialEndsAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  ownerId       String
-  owner         User           @relation("OrganizationOwner", fields: [ownerId], references: [id])
-  members       User[]         @relation("OrganizationMembers")
-  subscription  Subscription?
-  chartOfAccounts ChartOfAccount[]
-  fiscalYears     FiscalYear[]
-  journalEntries  JournalEntry[]
-  customers       Customer[]
-  leads           Lead[]
-  opportunities   Opportunity[]
-  quotations      Quotation[]
-  salesOrders     SalesOrder[]
+  id               String    @id @default(cuid())
+  name             String
+  email            String?
+  phone            String?
+  address          String?
+  logo             String?
+  currency         String    @default("KES")
+  timezone         String    @default("Africa/Nairobi")
+  isActive         Boolean   @default(true)
+  trialEndsAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  ownerId          String
+  owner            User           @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  members          User[]         @relation("OrganizationMembers")
+  subscription     Subscription?
+  chartOfAccounts  ChartOfAccount[]
+  fiscalYears      FiscalYear[]
+  journalEntries   JournalEntry[]
+  customers        Customer[]
+  leads            Lead[]
+  opportunities    Opportunity[]
+  quotations       Quotation[]
+  salesOrders      SalesOrder[]
   customerInvoices CustomerInvoice[]
   customerPayments CustomerPayment[]
-  activities      Activity[]
+  activities       Activity[]
 }
 
-enum PlanType {
-  TRIAL
-  STARTER
-  PROFESSIONAL
-  ENTERPRISE
-}
-
-enum SubscriptionStatus {
-  TRIAL
-  ACTIVE
-  PAST_DUE
-  CANCELLED
-  EXPIRED
-}
-
-// ============================================================
-// PROJECTS & INVOICES
-// ============================================================
+enum PlanType { TRIAL STARTER PROFESSIONAL ENTERPRISE }
+enum SubscriptionStatus { TRIAL ACTIVE PAST_DUE CANCELLED EXPIRED }
 
 model Project {
   id          String   @id @default(cuid())
@@ -180,18 +155,18 @@ model Milestone {
 }
 
 model Invoice {
-  id          String   @id @default(cuid())
-  number      String   @unique
-  amount      Float
-  currency    String   @default("KES")
-  status      String   @default("PENDING")
-  dueDate     DateTime
-  paidAt      DateTime?
-  createdAt   DateTime @default(now())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id])
+  id        String   @id @default(cuid())
+  number    String   @unique
+  amount    Float
+  currency  String   @default("KES")
+  status    String   @default("PENDING")
+  dueDate   DateTime
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
 }
 
 model ProjectFile {
@@ -204,10 +179,6 @@ model ProjectFile {
   projectId String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
-
-// ============================================================
-// BLOG & COMMENTS
-// ============================================================
 
 model BlogPost {
   id            String   @id @default(cuid())
@@ -240,10 +211,6 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ============================================================
-// SUPPORT & MESSAGES
-// ============================================================
-
 model SupportTicket {
   id          String   @id @default(cuid())
   subject     String
@@ -269,10 +236,6 @@ model Message {
   userId    String?
   user      User?          @relation(fields: [userId], references: [id])
 }
-
-// ============================================================
-// PORTFOLIO, JOBS, EVENTS
-// ============================================================
 
 model PortfolioItem {
   id           String   @id @default(cuid())
@@ -328,268 +291,215 @@ model Event {
   attendees       User[]
 }
 
-// ============================================================
-// WAVECORE ERP - FINANCE MODULE
-// ============================================================
-
 model ChartOfAccount {
-  id            String      @id @default(cuid())
-  code          String      @unique
-  name          String
-  type          AccountType
-  parentId      String?
-  parent        ChartOfAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
-  children      ChartOfAccount[] @relation("AccountHierarchy")
-  isActive      Boolean     @default(true)
-  isReconcilable Boolean    @default(false)
-  description   String?
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  journalItems  JournalItem[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-enum AccountType {
-  ASSET
-  LIABILITY
-  EQUITY
-  INCOME
-  EXPENSE
-}
-
-model FiscalYear {
-  id            String   @id @default(cuid())
-  name          String
-  startDate     DateTime
-  endDate       DateTime
-  isClosed      Boolean  @default(false)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  periods       FiscalPeriod[]
-  createdAt     DateTime @default(now())
-}
-
-model FiscalPeriod {
-  id            String   @id @default(cuid())
-  name          String
-  startDate     DateTime
-  endDate       DateTime
-  isClosed      Boolean  @default(false)
-  fiscalYearId  String
-  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id])
-  journalEntries JournalEntry[]
-  createdAt     DateTime @default(now())
-}
-
-model JournalEntry {
-  id            String      @id @default(cuid())
-  number        String      @unique
-  date          DateTime
-  reference     String?
-  description   String
-  status        EntryStatus @default(DRAFT)
-  amount        Float       @default(0)
-  fiscalPeriodId String
-  fiscalPeriod   FiscalPeriod @relation(fields: [fiscalPeriodId], references: [id])
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  items         JournalItem[]
-  auditLogs     AuditLog[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-enum EntryStatus {
-  DRAFT
-  POSTED
-  REVERSED
-  CANCELLED
-}
-
-model JournalItem {
-  id            String   @id @default(cuid())
-  description   String?
-  debit         Float    @default(0)
-  credit        Float    @default(0)
-  accountId     String
-  account       ChartOfAccount @relation(fields: [accountId], references: [id])
-  journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
-  createdAt     DateTime @default(now())
-}
-
-model AuditLog {
-  id            String   @id @default(cuid())
-  action        String
-  entityType    String
-  entityId      String
-  changes       String?
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id])
-  journalEntryId String?
-  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
-  createdAt     DateTime @default(now())
-}
-
-// ============================================================
-// WAVECORE ERP - CRM & SALES MODULE
-// ============================================================
-
-model Customer {
-  id            String         @id @default(cuid())
-  name          String
-  email         String?
-  phone         String?
-  company       String?
-  address       String?
-  city          String?
-  country       String?
-  taxId         String?
-  website       String?
-  notes         String?
-  type          CustomerType   @default(INDIVIDUAL)
-  status        CustomerStatus @default(ACTIVE)
-  source        String?
-  assignedToId  String?
-  assignedTo    User?          @relation("AssignedCustomers", fields: [assignedToId], references: [id])
-  organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  contacts      Contact[]
-  leads         Lead[]
-  opportunities Opportunity[]
-  quotations    Quotation[]
-  salesOrders   SalesOrder[]
-  invoices      CustomerInvoice[]
-  payments      CustomerPayment[]
-  activities    Activity[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-enum CustomerType {
-  INDIVIDUAL
-  COMPANY
-  GOVERNMENT
-  NGO
-}
-
-enum CustomerStatus {
-  ACTIVE
-  INACTIVE
-  BLOCKED
-  LEAD
-}
-
-model Contact {
-  id          String   @id @default(cuid())
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  position    String?
-  department  String?
-  isPrimary   Boolean  @default(false)
-  customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Lead {
-  id            String     @id @default(cuid())
-  name          String
-  email         String?
-  phone         String?
-  company       String?
-  source        String?
-  status        LeadStatus @default(NEW)
-  priority      Priority   @default(MEDIUM)
-  notes         String?
-  score         Int        @default(0)
-  assignedToId  String?
-  assignedTo    User?      @relation("AssignedLeads", fields: [assignedToId], references: [id])
-  customerId    String?
-  customer      Customer?  @relation(fields: [customerId], references: [id])
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  activities    Activity[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  PROPOSAL
-  NEGOTIATION
-  WON
-  LOST
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-model Opportunity {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
+  code            String      @unique
   name            String
-  amount          Float    @default(0)
-  stage           Stage    @default(QUALIFICATION)
-  probability     Int      @default(0)
-  expectedCloseDate DateTime?
-  notes           String?
-  customerId      String
-  customer        Customer @relation(fields: [customerId], references: [id])
-  assignedToId    String?
-  assignedTo      User?    @relation("AssignedOpportunities", fields: [assignedToId], references: [id])
+  type            AccountType
+  parentId        String?
+  parent          ChartOfAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children        ChartOfAccount[] @relation("AccountHierarchy")
+  isActive        Boolean     @default(true)
+  isReconcilable  Boolean     @default(false)
+  description     String?
   organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id])
-  activities      Activity[]
+  journalItems    JournalItem[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
-enum Stage {
-  QUALIFICATION
-  NEEDS_ANALYSIS
-  PROPOSAL
-  NEGOTIATION
-  CLOSED_WON
-  CLOSED_LOST
+enum AccountType { ASSET LIABILITY EQUITY INCOME EXPENSE }
+
+model FiscalYear {
+  id             String   @id @default(cuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  isClosed       Boolean  @default(false)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  periods        FiscalPeriod[]
+  createdAt      DateTime @default(now())
 }
 
-model Quotation {
-  id            String         @id @default(cuid())
-  number        String         @unique
-  date          DateTime       @default(now())
-  validUntil    DateTime?
-  status        QuotationStatus @default(DRAFT)
-  subtotal      Float          @default(0)
-  taxAmount     Float          @default(0)
-  total         Float          @default(0)
-  notes         String?
-  customerId    String
-  customer      Customer       @relation(fields: [customerId], references: [id])
+model FiscalPeriod {
+  id             String   @id @default(cuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  isClosed       Boolean  @default(false)
+  fiscalYearId   String
+  fiscalYear     FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  journalEntries JournalEntry[]
+  createdAt      DateTime @default(now())
+}
+
+model JournalEntry {
+  id              String      @id @default(cuid())
+  number          String      @unique
+  date            DateTime
+  reference       String?
+  description     String
+  status          EntryStatus @default(DRAFT)
+  amount          Float       @default(0)
+  fiscalPeriodId  String
+  fiscalPeriod    FiscalPeriod @relation(fields: [fiscalPeriodId], references: [id])
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  items           JournalItem[]
+  auditLogs       AuditLog[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum EntryStatus { DRAFT POSTED REVERSED CANCELLED }
+
+model JournalItem {
+  id              String   @id @default(cuid())
+  description     String?
+  debit           Float    @default(0)
+  credit          Float    @default(0)
+  accountId       String
+  account         ChartOfAccount @relation(fields: [accountId], references: [id])
+  journalEntryId  String
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id])
+  createdAt       DateTime @default(now())
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  action          String
+  entityType      String
+  entityId        String
+  changes         String?
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  journalEntryId  String?
+  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  createdAt       DateTime @default(now())
+}
+
+// ============================================================
+// CRM & SALES
+// ============================================================
+
+model Customer {
+  id             String         @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  company        String?
+  address        String?
+  city           String?
+  country        String?
+  taxId          String?
+  website        String?
+  notes          String?
+  type           CustomerType   @default(INDIVIDUAL)
+  status         CustomerStatus @default(ACTIVE)
+  source         String?
+  assignedToId   String?
+  assignedTo     User?          @relation("AssignedCustomers", fields: [assignedToId], references: [id])
   organizationId String
   organization   Organization   @relation(fields: [organizationId], references: [id])
-  items         QuotationItem[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  contacts       Contact[]
+  leads          Lead[]
+  opportunities  Opportunity[]
+  quotations     Quotation[]
+  salesOrders    SalesOrder[]
+  invoices       CustomerInvoice[]
+  payments       CustomerPayment[]
+  activities     Activity[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
-enum QuotationStatus {
-  DRAFT
-  SENT
-  ACCEPTED
-  REJECTED
-  EXPIRED
-  CONVERTED
+enum CustomerType { INDIVIDUAL COMPANY GOVERNMENT NGO }
+enum CustomerStatus { ACTIVE INACTIVE BLOCKED LEAD }
+
+model Contact {
+  id         String   @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  position   String?
+  department String?
+  isPrimary  Boolean  @default(false)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
+
+model Lead {
+  id             String     @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  company        String?
+  source         String?
+  status         LeadStatus @default(NEW)
+  priority       Priority   @default(MEDIUM)
+  notes          String?
+  score          Int        @default(0)
+  assignedToId   String?
+  assignedTo     User?      @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  customerId     String?
+  customer       Customer?  @relation(fields: [customerId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  activities     Activity[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum LeadStatus { NEW CONTACTED QUALIFIED PROPOSAL NEGOTIATION WON LOST }
+enum Priority { LOW MEDIUM HIGH URGENT }
+
+model Opportunity {
+  id               String   @id @default(cuid())
+  name             String
+  amount           Float    @default(0)
+  stage            Stage    @default(QUALIFICATION)
+  probability      Int      @default(0)
+  expectedCloseDate DateTime?
+  notes            String?
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id])
+  assignedToId     String?
+  assignedTo       User?    @relation("AssignedOpportunities", fields: [assignedToId], references: [id])
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  activities       Activity[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+enum Stage { QUALIFICATION NEEDS_ANALYSIS PROPOSAL NEGOTIATION CLOSED_WON CLOSED_LOST }
+
+model Quotation {
+  id             String          @id @default(cuid())
+  number         String          @unique
+  date           DateTime        @default(now())
+  validUntil     DateTime?
+  status         QuotationStatus @default(DRAFT)
+  subtotal       Float           @default(0)
+  taxAmount      Float           @default(0)
+  total          Float           @default(0)
+  notes          String?
+  customerId     String
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  items          QuotationItem[]
+  salesOrders    SalesOrder[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum QuotationStatus { DRAFT SENT ACCEPTED REJECTED EXPIRED CONVERTED }
 
 model QuotationItem {
   id          String   @id @default(cuid())
@@ -603,33 +513,26 @@ model QuotationItem {
 }
 
 model SalesOrder {
-  id            String      @id @default(cuid())
-  number        String      @unique
-  date          DateTime    @default(now())
-  status        OrderStatus @default(PENDING)
-  subtotal      Float       @default(0)
-  taxAmount     Float       @default(0)
-  total         Float       @default(0)
-  customerId    String
-  customer      Customer    @relation(fields: [customerId], references: [id])
-  quotationId   String?
-  quotation     Quotation?  @relation(fields: [quotationId], references: [id])
+  id             String      @id @default(cuid())
+  number         String      @unique
+  date           DateTime    @default(now())
+  status         OrderStatus @default(PENDING)
+  subtotal       Float       @default(0)
+  taxAmount      Float       @default(0)
+  total          Float       @default(0)
+  customerId     String
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  quotationId    String?
+  quotation      Quotation?  @relation(fields: [quotationId], references: [id])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  items         SalesOrderItem[]
-  invoices      CustomerInvoice[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  items          SalesOrderItem[]
+  invoices       CustomerInvoice[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
+enum OrderStatus { PENDING CONFIRMED PROCESSING SHIPPED DELIVERED CANCELLED }
 
 model SalesOrderItem {
   id           String   @id @default(cuid())
@@ -643,84 +546,64 @@ model SalesOrderItem {
 }
 
 model CustomerInvoice {
-  id            String       @id @default(cuid())
-  number        String       @unique
-  date          DateTime     @default(now())
-  dueDate       DateTime
-  status        InvoiceStatus @default(DRAFT)
-  subtotal      Float        @default(0)
-  taxAmount     Float        @default(0)
-  total         Float        @default(0)
-  customerId    String
-  customer      Customer     @relation(fields: [customerId], references: [id])
-  salesOrderId  String?
-  salesOrder    SalesOrder?  @relation(fields: [salesOrderId], references: [id])
+  id             String        @id @default(cuid())
+  number         String        @unique
+  date           DateTime      @default(now())
+  dueDate        DateTime
+  status         InvoiceStatus @default(DRAFT)
+  subtotal       Float         @default(0)
+  taxAmount      Float         @default(0)
+  total          Float         @default(0)
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  salesOrderId   String?
+  salesOrder     SalesOrder?   @relation(fields: [salesOrderId], references: [id])
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  payments      CustomerPayment[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  payments       CustomerPayment[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
-enum InvoiceStatus {
-  DRAFT
-  SENT
-  PAID
-  PARTIALLY_PAID
-  OVERDUE
-  CANCELLED
-}
+enum InvoiceStatus { DRAFT SENT PAID PARTIALLY_PAID OVERDUE CANCELLED }
 
 model CustomerPayment {
-  id            String       @id @default(cuid())
-  number        String       @unique
-  date          DateTime     @default(now())
-  amount        Float
-  method        PaymentMethod @default(MPESA)
-  reference     String?
-  invoiceId     String
-  invoice       CustomerInvoice @relation(fields: [invoiceId], references: [id])
-  customerId    String
-  customer      Customer     @relation(fields: [customerId], references: [id])
+  id             String          @id @default(cuid())
+  number         String          @unique
+  date           DateTime        @default(now())
+  amount         Float
+  method         PaymentMethod   @default(MPESA)
+  reference      String?
+  invoiceId      String
+  invoice        CustomerInvoice @relation(fields: [invoiceId], references: [id])
+  customerId     String
+  customer       Customer        @relation(fields: [customerId], references: [id])
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt     DateTime @default(now())
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
 }
 
-enum PaymentMethod {
-  MPESA
-  BANK_TRANSFER
-  CASH
-  CHEQUE
-  CREDIT_CARD
-}
+enum PaymentMethod { MPESA BANK_TRANSFER CASH CHEQUE CREDIT_CARD }
 
 model Activity {
-  id            String       @id @default(cuid())
-  type          ActivityType
-  subject       String
-  description   String?
-  dueDate       DateTime?
-  completed     Boolean      @default(false)
-  customerId    String?
-  customer      Customer?    @relation(fields: [customerId], references: [id])
-  leadId        String?
-  lead          Lead?        @relation(fields: [leadId], references: [id])
-  opportunityId String?
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
-  assignedToId  String?
-  assignedTo    User?        @relation("AssignedActivities", fields: [assignedToId], references: [id])
+  id             String       @id @default(cuid())
+  type           ActivityType
+  subject        String
+  description    String?
+  dueDate        DateTime?
+  completed      Boolean      @default(false)
+  customerId     String?
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  leadId         String?
+  lead           Lead?        @relation(fields: [leadId], references: [id])
+  opportunityId  String?
+  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
+  assignedToId   String?
+  assignedTo     User?        @relation("AssignedActivities", fields: [assignedToId], references: [id])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
-enum ActivityType {
-  CALL
-  MEETING
-  EMAIL
-  TASK
-  NOTE
-  WHATSAPP
-}
+enum ActivityType { CALL MEETING EMAIL TASK NOTE WHATSAPP }
