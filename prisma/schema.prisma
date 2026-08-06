@@ -458,3 +458,306 @@ model AuditLog {
   
   createdAt   DateTime @default(now())
 }
+// ============================================================
+// WAVECORE ERP - CRM & SALES MODULE
+// ============================================================
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  address     String?
+  city        String?
+  country     String?
+  taxId       String?
+  website     String?
+  notes       String?
+  type        CustomerType @default(INDIVIDUAL)
+  status      CustomerStatus @default(ACTIVE)
+  source      String?
+  assignedToId String?
+  assignedTo   User?    @relation("AssignedCustomers", fields: [assignedToId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  contacts    Contact[]
+  leads       Lead[]
+  opportunities Opportunity[]
+  quotations  Quotation[]
+  salesOrders SalesOrder[]
+  invoices    CustomerInvoice[]
+  payments    CustomerPayment[]
+  activities  Activity[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum CustomerType {
+  INDIVIDUAL
+  COMPANY
+  GOVERNMENT
+  NGO
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  LEAD
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  position    String?
+  department  String?
+  isPrimary   Boolean  @default(false)
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  source      String?
+  status      LeadStatus @default(NEW)
+  priority    Priority @default(MEDIUM)
+  notes       String?
+  score       Int      @default(0)
+  assignedToId String?
+  assignedTo   User?    @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  activities  Activity[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Opportunity {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Float    @default(0)
+  stage       Stage    @default(QUALIFICATION)
+  probability Int      @default(0)
+  expectedCloseDate DateTime?
+  notes       String?
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  assignedToId String?
+  assignedTo   User?    @relation("AssignedOpportunities", fields: [assignedToId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  activities  Activity[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Stage {
+  QUALIFICATION
+  NEEDS_ANALYSIS
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+model Quotation {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  date        DateTime @default(now())
+  validUntil  DateTime?
+  status      QuotationStatus @default(DRAFT)
+  subtotal    Float    @default(0)
+  taxAmount   Float    @default(0)
+  total       Float    @default(0)
+  notes       String?
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  items       QuotationItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+model QuotationItem {
+  id          String   @id @default(cuid())
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Float    @default(0)
+  total       Float    @default(0)
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+}
+
+model SalesOrder {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  date        DateTime @default(now())
+  status      OrderStatus @default(PENDING)
+  subtotal    Float    @default(0)
+  taxAmount   Float    @default(0)
+  total       Float    @default(0)
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  quotationId String?
+  quotation   Quotation? @relation(fields: [quotationId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  items       SalesOrderItem[]
+  invoices    CustomerInvoice[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model SalesOrderItem {
+  id          String   @id @default(cuid())
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Float    @default(0)
+  total       Float    @default(0)
+  salesOrderId String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+}
+
+model CustomerInvoice {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  date        DateTime @default(now())
+  dueDate     DateTime
+  status      InvoiceStatus @default(DRAFT)
+  subtotal    Float    @default(0)
+  taxAmount   Float    @default(0)
+  total       Float    @default(0)
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  salesOrderId String?
+  salesOrder   SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  payments    CustomerPayment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  CANCELLED
+}
+
+model CustomerPayment {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  date        DateTime @default(now())
+  amount      Float
+  method      PaymentMethod @default(MPESA)
+  reference   String?
+  invoiceId   String
+  invoice     CustomerInvoice @relation(fields: [invoiceId], references: [id])
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+enum PaymentMethod {
+  MPESA
+  BANK_TRANSFER
+  CASH
+  CHEQUE
+  CREDIT_CARD
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  type        ActivityType
+  subject     String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  leadId      String?
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+  opportunityId String?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
+  assignedToId String?
+  assignedTo   User?    @relation("AssignedActivities", fields: [assignedToId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  EMAIL
+  TASK
+  NOTE
+  WHATSAPP
+}
