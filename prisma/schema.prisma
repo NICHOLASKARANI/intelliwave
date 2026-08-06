@@ -121,8 +121,20 @@ model Organization {
   activities       Activity[]
 }
 
-enum PlanType { TRIAL STARTER PROFESSIONAL ENTERPRISE }
-enum SubscriptionStatus { TRIAL ACTIVE PAST_DUE CANCELLED EXPIRED }
+enum PlanType {
+  TRIAL
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
 
 model Project {
   id          String   @id @default(cuid())
@@ -309,7 +321,13 @@ model ChartOfAccount {
   updatedAt       DateTime @updatedAt
 }
 
-enum AccountType { ASSET LIABILITY EQUITY INCOME EXPENSE }
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
 
 model FiscalYear {
   id             String   @id @default(cuid())
@@ -353,7 +371,12 @@ model JournalEntry {
   updatedAt       DateTime @updatedAt
 }
 
-enum EntryStatus { DRAFT POSTED REVERSED CANCELLED }
+enum EntryStatus {
+  DRAFT
+  POSTED
+  REVERSED
+  CANCELLED
+}
 
 model JournalItem {
   id              String   @id @default(cuid())
@@ -379,10 +402,6 @@ model AuditLog {
   journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
   createdAt       DateTime @default(now())
 }
-
-// ============================================================
-// CRM & SALES
-// ============================================================
 
 model Customer {
   id             String         @id @default(cuid())
@@ -415,8 +434,19 @@ model Customer {
   updatedAt      DateTime @updatedAt
 }
 
-enum CustomerType { INDIVIDUAL COMPANY GOVERNMENT NGO }
-enum CustomerStatus { ACTIVE INACTIVE BLOCKED LEAD }
+enum CustomerType {
+  INDIVIDUAL
+  COMPANY
+  GOVERNMENT
+  NGO
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  LEAD
+}
 
 model Contact {
   id         String   @id @default(cuid())
@@ -455,8 +485,22 @@ model Lead {
   updatedAt      DateTime @updatedAt
 }
 
-enum LeadStatus { NEW CONTACTED QUALIFIED PROPOSAL NEGOTIATION WON LOST }
-enum Priority { LOW MEDIUM HIGH URGENT }
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
 
 model Opportunity {
   id               String   @id @default(cuid())
@@ -477,7 +521,14 @@ model Opportunity {
   updatedAt        DateTime @updatedAt
 }
 
-enum Stage { QUALIFICATION NEEDS_ANALYSIS PROPOSAL NEGOTIATION CLOSED_WON CLOSED_LOST }
+enum Stage {
+  QUALIFICATION
+  NEEDS_ANALYSIS
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
 
 model Quotation {
   id             String          @id @default(cuid())
@@ -499,7 +550,14 @@ model Quotation {
   updatedAt      DateTime @updatedAt
 }
 
-enum QuotationStatus { DRAFT SENT ACCEPTED REJECTED EXPIRED CONVERTED }
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
 
 model QuotationItem {
   id          String   @id @default(cuid())
@@ -532,7 +590,14 @@ model SalesOrder {
   updatedAt      DateTime @updatedAt
 }
 
-enum OrderStatus { PENDING CONFIRMED PROCESSING SHIPPED DELIVERED CANCELLED }
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
 
 model SalesOrderItem {
   id           String   @id @default(cuid())
@@ -565,7 +630,14 @@ model CustomerInvoice {
   updatedAt      DateTime @updatedAt
 }
 
-enum InvoiceStatus { DRAFT SENT PAID PARTIALLY_PAID OVERDUE CANCELLED }
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  CANCELLED
+}
 
 model CustomerPayment {
   id             String          @id @default(cuid())
@@ -583,7 +655,13 @@ model CustomerPayment {
   createdAt      DateTime @default(now())
 }
 
-enum PaymentMethod { MPESA BANK_TRANSFER CASH CHEQUE CREDIT_CARD }
+enum PaymentMethod {
+  MPESA
+  BANK_TRANSFER
+  CASH
+  CHEQUE
+  CREDIT_CARD
+}
 
 model Activity {
   id             String       @id @default(cuid())
@@ -606,4 +684,11 @@ model Activity {
   updatedAt      DateTime @updatedAt
 }
 
-enum ActivityType { CALL MEETING EMAIL TASK NOTE WHATSAPP }
+enum ActivityType {
+  CALL
+  MEETING
+  EMAIL
+  TASK
+  NOTE
+  WHATSAPP
+}
