@@ -247,3 +247,124 @@ model Lead {
   status    String   @default("NEW")
   createdAt DateTime @default(now())
 }
+// ============================================================
+// WAVECORE ERP - GENERAL LEDGER MODULE
+// ============================================================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  currency    String   @default("KES")
+  fiscalYearStart Int  @default(1) // January
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  chartOfAccounts ChartOfAccount[]
+  fiscalYears     FiscalYear[]
+  journalEntries  JournalEntry[]
+}
+
+model FiscalYear {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "FY 2024"
+  startDate   DateTime
+  endDate     DateTime
+  isClosed    Boolean  @default(false)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  periods     FiscalPeriod[]
+  createdAt   DateTime @default(now())
+}
+
+model FiscalPeriod {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "January 2024"
+  startDate   DateTime
+  endDate     DateTime
+  isClosed    Boolean  @default(false)
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  
+  journalEntries JournalEntry[]
+  createdAt   DateTime @default(now())
+}
+
+model ChartOfAccount {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  type        AccountType
+  parentId    String?
+  parent      ChartOfAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children    ChartOfAccount[] @relation("AccountHierarchy")
+  isActive    Boolean  @default(true)
+  isReconcilable Boolean @default(false)
+  description String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  journalItems  JournalItem[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+model JournalEntry {
+  id          String   @id @default(cuid())
+  number      String   @unique // JE/2024/0001
+  date        DateTime
+  reference   String?
+  description String
+  status      EntryStatus @default(DRAFT)
+  amount      Float    @default(0)
+  fiscalPeriodId String
+  fiscalPeriod   FiscalPeriod @relation(fields: [fiscalPeriodId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  items       JournalItem[]
+  auditLogs   AuditLog[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum EntryStatus {
+  DRAFT
+  POSTED
+  REVERSED
+  CANCELLED
+}
+
+model JournalItem {
+  id          String   @id @default(cuid())
+  description String?
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  accountId   String
+  account     ChartOfAccount @relation(fields: [accountId], references: [id])
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // CREATE, UPDATE, DELETE, POST, REVERSE
+  entityType  String   // JournalEntry, ChartOfAccount, etc.
+  entityId    String
+  changes     String?  // JSON string of changes
+  userId      String?
+  journalEntryId String?
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
