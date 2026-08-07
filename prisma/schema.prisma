@@ -49,6 +49,8 @@ model User {
   assignedOpportunities Opportunity[] @relation("AssignedOpportunities")
   assignedActivities   Activity[]   @relation("AssignedActivities")
   assignedMaintenance  MaintenanceRequest[] @relation("AssignedMaintenance")
+  approvedLeaves     LeaveRequest[] @relation("ApprovedLeaves")
+  reviewerReviews    PerformanceReview[] @relation("ReviewerReviews")
 }
 
 model Account {
@@ -135,6 +137,17 @@ model Organization {
   workOrders       WorkOrder[]
   qualityChecks    QualityCheck[]
   maintenanceRequests MaintenanceRequest[]
+  employees        Employee[]
+  attendances      Attendance[]
+  leaveTypes       LeaveType[]
+  leaveBalances    LeaveBalance[]
+  leaveRequests    LeaveRequest[]
+  payrollPeriods   PayrollPeriod[]
+  payrollItems     PayrollItem[]
+  performanceReviews PerformanceReview[]
+  trainings        Training[]
+  trainingEnrollments TrainingEnrollment[]
+  employeeDocuments EmployeeDocument[]
 }
 
 enum PlanType {
@@ -474,19 +487,8 @@ model Customer {
   updatedAt      DateTime @updatedAt
 }
 
-enum CustomerType {
-  INDIVIDUAL
-  COMPANY
-  GOVERNMENT
-  NGO
-}
-
-enum CustomerStatus {
-  ACTIVE
-  INACTIVE
-  BLOCKED
-  LEAD
-}
+enum CustomerType { INDIVIDUAL COMPANY GOVERNMENT NGO }
+enum CustomerStatus { ACTIVE INACTIVE BLOCKED LEAD }
 
 model Contact {
   id         String   @id @default(cuid())
@@ -525,22 +527,8 @@ model Lead {
   updatedAt      DateTime @updatedAt
 }
 
-enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  PROPOSAL
-  NEGOTIATION
-  WON
-  LOST
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
+enum LeadStatus { NEW CONTACTED QUALIFIED PROPOSAL NEGOTIATION WON LOST }
+enum Priority { LOW MEDIUM HIGH URGENT }
 
 model Opportunity {
   id               String   @id @default(cuid())
@@ -561,14 +549,7 @@ model Opportunity {
   updatedAt        DateTime @updatedAt
 }
 
-enum Stage {
-  QUALIFICATION
-  NEEDS_ANALYSIS
-  PROPOSAL
-  NEGOTIATION
-  CLOSED_WON
-  CLOSED_LOST
-}
+enum Stage { QUALIFICATION NEEDS_ANALYSIS PROPOSAL NEGOTIATION CLOSED_WON CLOSED_LOST }
 
 model Quotation {
   id             String          @id @default(cuid())
@@ -590,14 +571,7 @@ model Quotation {
   updatedAt      DateTime @updatedAt
 }
 
-enum QuotationStatus {
-  DRAFT
-  SENT
-  ACCEPTED
-  REJECTED
-  EXPIRED
-  CONVERTED
-}
+enum QuotationStatus { DRAFT SENT ACCEPTED REJECTED EXPIRED CONVERTED }
 
 model QuotationItem {
   id          String   @id @default(cuid())
@@ -630,14 +604,7 @@ model SalesOrder {
   updatedAt      DateTime @updatedAt
 }
 
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
+enum OrderStatus { PENDING CONFIRMED PROCESSING SHIPPED DELIVERED CANCELLED }
 
 model SalesOrderItem {
   id           String   @id @default(cuid())
@@ -670,14 +637,7 @@ model CustomerInvoice {
   updatedAt      DateTime @updatedAt
 }
 
-enum InvoiceStatus {
-  DRAFT
-  SENT
-  PAID
-  PARTIALLY_PAID
-  OVERDUE
-  CANCELLED
-}
+enum InvoiceStatus { DRAFT SENT PAID PARTIALLY_PAID OVERDUE CANCELLED }
 
 model CustomerPayment {
   id             String          @id @default(cuid())
@@ -695,13 +655,7 @@ model CustomerPayment {
   createdAt      DateTime @default(now())
 }
 
-enum PaymentMethod {
-  MPESA
-  BANK_TRANSFER
-  CASH
-  CHEQUE
-  CREDIT_CARD
-}
+enum PaymentMethod { MPESA BANK_TRANSFER CASH CHEQUE CREDIT_CARD }
 
 model Activity {
   id             String       @id @default(cuid())
@@ -724,14 +678,7 @@ model Activity {
   updatedAt      DateTime @updatedAt
 }
 
-enum ActivityType {
-  CALL
-  MEETING
-  EMAIL
-  TASK
-  NOTE
-  WHATSAPP
-}
+enum ActivityType { CALL MEETING EMAIL TASK NOTE WHATSAPP }
 
 // ============================================================
 // INVENTORY & WAREHOUSE MODULE
@@ -838,22 +785,8 @@ model StockMove {
   updatedAt      DateTime @updatedAt
 }
 
-enum StockMoveType {
-  RECEIPT
-  DELIVERY
-  TRANSFER
-  ADJUSTMENT
-  RETURN
-  SCRAP
-}
-
-enum MoveStatus {
-  DRAFT
-  CONFIRMED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
+enum StockMoveType { RECEIPT DELIVERY TRANSFER ADJUSTMENT RETURN SCRAP }
+enum MoveStatus { DRAFT CONFIRMED IN_PROGRESS COMPLETED CANCELLED }
 
 model SerialNumber {
   id             String       @id @default(cuid())
@@ -869,13 +802,7 @@ model SerialNumber {
   updatedAt      DateTime @updatedAt
 }
 
-enum SerialStatus {
-  AVAILABLE
-  SOLD
-  RESERVED
-  DAMAGED
-  LOST
-}
+enum SerialStatus { AVAILABLE SOLD RESERVED DAMAGED LOST }
 
 model Batch {
   id               String    @id @default(cuid())
@@ -914,16 +841,16 @@ model BillOfMaterial {
 }
 
 model BOMComponent {
-  id             String    @id @default(cuid())
-  bomId          String
-  bom            BillOfMaterial @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  productId      String
-  product        Product   @relation(fields: [productId], references: [id])
-  quantity       Float     @default(1)
-  unit           String    @default("Unit")
-  scrapRate      Float     @default(0)
-  operation      String?
-  createdAt      DateTime @default(now())
+  id        String    @id @default(cuid())
+  bomId     String
+  bom       BillOfMaterial @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product   @relation(fields: [productId], references: [id])
+  quantity  Float     @default(1)
+  unit      String    @default("Unit")
+  scrapRate Float     @default(0)
+  operation String?
+  createdAt DateTime @default(now())
 }
 
 model WorkCenter {
@@ -956,17 +883,17 @@ model Routing {
 }
 
 model RoutingOperation {
-  id             String    @id @default(cuid())
-  sequence       Int
-  name           String
-  description    String?
-  durationMinutes Float   @default(0)
-  setupMinutes   Float    @default(0)
-  routingId      String
-  routing        Routing  @relation(fields: [routingId], references: [id], onDelete: Cascade)
-  workCenterId   String
-  workCenter     WorkCenter @relation(fields: [workCenterId], references: [id])
-  createdAt      DateTime @default(now())
+  id              String    @id @default(cuid())
+  sequence        Int
+  name            String
+  description     String?
+  durationMinutes Float     @default(0)
+  setupMinutes    Float     @default(0)
+  routingId       String
+  routing         Routing   @relation(fields: [routingId], references: [id], onDelete: Cascade)
+  workCenterId    String
+  workCenter      WorkCenter @relation(fields: [workCenterId], references: [id])
+  createdAt       DateTime @default(now())
 }
 
 model WorkOrder {
@@ -993,19 +920,8 @@ model WorkOrder {
   updatedAt      DateTime @updatedAt
 }
 
-enum WorkOrderType {
-  MANUFACTURING
-  REPAIR
-  MAINTENANCE
-}
-
-enum WorkOrderStatus {
-  DRAFT
-  CONFIRMED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
+enum WorkOrderType { MANUFACTURING REPAIR MAINTENANCE }
+enum WorkOrderStatus { DRAFT CONFIRMED IN_PROGRESS COMPLETED CANCELLED }
 
 model QualityCheck {
   id             String    @id @default(cuid())
@@ -1023,18 +939,8 @@ model QualityCheck {
   updatedAt      DateTime @updatedAt
 }
 
-enum QualityCheckType {
-  INCOMING
-  IN_PROCESS
-  FINAL
-}
-
-enum QualityResult {
-  PENDING
-  PASSED
-  FAILED
-  PARTIAL
-}
+enum QualityCheckType { INCOMING IN_PROCESS FINAL }
+enum QualityResult { PENDING PASSED FAILED PARTIAL }
 
 model MaintenanceRequest {
   id             String    @id @default(cuid())
@@ -1055,17 +961,228 @@ model MaintenanceRequest {
   updatedAt      DateTime @updatedAt
 }
 
-enum MaintenanceType {
-  PREVENTIVE
-  CORRECTIVE
-  PREDICTIVE
-  EMERGENCY
+enum MaintenanceType { PREVENTIVE CORRECTIVE PREDICTIVE EMERGENCY }
+enum MaintenanceStatus { REQUESTED APPROVED IN_PROGRESS COMPLETED CANCELLED }
+
+// ============================================================
+// HUMAN RESOURCES MODULE
+// ============================================================
+
+model Employee {
+  id             String    @id @default(cuid())
+  employeeId     String    @unique
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  dateOfBirth    DateTime?
+  gender         String?
+  maritalStatus  String?
+  nationality    String?
+  idNumber       String?
+  taxPin         String?
+  nssfNumber     String?
+  nhifNumber     String?
+  address        String?
+  city           String?
+  country        String?
+  emergencyContact String?
+  emergencyPhone  String?
+  department     String?
+  position       String?
+  employmentType EmploymentType @default(FULL_TIME)
+  status         EmployeeStatus @default(ACTIVE)
+  hireDate       DateTime?
+  terminationDate DateTime?
+  salary         Float     @default(0)
+  currency       String    @default("KES")
+  bankName       String?
+  bankAccount    String?
+  notes          String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  attendances    Attendance[]
+  leaveRequests  LeaveRequest[]
+  leaveBalances  LeaveBalance[]
+  payrollItems   PayrollItem[]
+  performanceReviews PerformanceReview[]
+  trainings      TrainingEnrollment[]
+  documents      EmployeeDocument[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
-enum MaintenanceStatus {
-  REQUESTED
-  APPROVED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+enum EmploymentType { FULL_TIME PART_TIME CONTRACT INTERN CONSULTANT }
+enum EmployeeStatus { ACTIVE INACTIVE TERMINATED ON_LEAVE SUSPENDED }
+
+model Attendance {
+  id             String    @id @default(cuid())
+  date           DateTime  @default(now())
+  checkIn        DateTime?
+  checkOut       DateTime?
+  status         AttendanceStatus @default(PRESENT)
+  notes          String?
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum AttendanceStatus { PRESENT ABSENT LATE HALF_DAY OVERTIME }
+
+model LeaveType {
+  id               String    @id @default(cuid())
+  name             String
+  code             String    @unique
+  description      String?
+  daysPerYear      Float     @default(0)
+  isPaid           Boolean   @default(true)
+  requiresApproval Boolean   @default(true)
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  leaveRequests    LeaveRequest[]
+  leaveBalances    LeaveBalance[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model LeaveBalance {
+  id             String    @id @default(cuid())
+  totalDays      Float     @default(0)
+  usedDays       Float     @default(0)
+  remainingDays  Float     @default(0)
+  year           Int
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId    String
+  leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  @@unique([employeeId, leaveTypeId, year])
+}
+
+model LeaveRequest {
+  id             String    @id @default(cuid())
+  startDate      DateTime
+  endDate        DateTime
+  days           Float     @default(0)
+  reason         String?
+  status         LeaveStatus @default(PENDING)
+  approvedById   String?
+  approvedBy     User?     @relation("ApprovedLeaves", fields: [approvedById], references: [id])
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId    String
+  leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum LeaveStatus { PENDING APPROVED REJECTED CANCELLED }
+
+model PayrollPeriod {
+  id             String    @id @default(cuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  status         PayrollStatus @default(DRAFT)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  items          PayrollItem[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum PayrollStatus { DRAFT PROCESSED APPROVED PAID CANCELLED }
+
+model PayrollItem {
+  id             String    @id @default(cuid())
+  basicSalary    Float     @default(0)
+  allowances     Float     @default(0)
+  deductions     Float     @default(0)
+  netPay         Float     @default(0)
+  paye           Float     @default(0)
+  nssf           Float     @default(0)
+  nhif           Float     @default(0)
+  notes          String?
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  periodId       String
+  period         PayrollPeriod @relation(fields: [periodId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PerformanceReview {
+  id             String    @id @default(cuid())
+  reviewDate     DateTime  @default(now())
+  period         String?
+  rating         Float     @default(0)
+  strengths      String?
+  improvements   String?
+  goals          String?
+  reviewerId     String?
+  reviewer       User?     @relation("ReviewerReviews", fields: [reviewerId], references: [id])
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Training {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  provider       String?
+  startDate      DateTime?
+  endDate        DateTime?
+  cost           Float     @default(0)
+  status         TrainingStatus @default(PLANNED)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  enrollments    TrainingEnrollment[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum TrainingStatus { PLANNED IN_PROGRESS COMPLETED CANCELLED }
+
+model TrainingEnrollment {
+  id             String    @id @default(cuid())
+  status         EnrollmentStatus @default(ENROLLED)
+  completionDate DateTime?
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  trainingId     String
+  training       Training  @relation(fields: [trainingId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum EnrollmentStatus { ENROLLED IN_PROGRESS COMPLETED DROPPED }
+
+model EmployeeDocument {
+  id             String    @id @default(cuid())
+  name           String
+  type           String
+  url            String
+  expiryDate     DateTime?
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
