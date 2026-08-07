@@ -6,7 +6,8 @@ import {
   Package, TrendingUp, DollarSign, AlertTriangle,
   Warehouse, ArrowUpRight, ArrowRight, Truck,
   Barcode, QrCode, Layers, Boxes, Clipboard,
-  ArrowLeftRight, RotateCcw, Trash2, ClipboardList
+  ArrowLeftRight, RotateCcw, Trash2, ClipboardList,
+  BarChart3
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
