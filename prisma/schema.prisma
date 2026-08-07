@@ -692,3 +692,165 @@ enum ActivityType {
   NOTE
   WHATSAPP
 }
+// ============================================================
+// WAVECORE ERP - INVENTORY & WAREHOUSE MODULE
+// ============================================================
+
+model Warehouse {
+  id             String    @id @default(cuid())
+  name           String
+  code           String    @unique
+  address        String?
+  city           String?
+  country        String?
+  isActive       Boolean   @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  locations      StockLocation[]
+  stockMoves     StockMove[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model StockLocation {
+  id             String    @id @default(cuid())
+  name           String
+  code           String
+  warehouseId    String
+  warehouse      Warehouse @relation(fields: [warehouseId], references: [id])
+  parentId       String?
+  parent         StockLocation? @relation("LocationHierarchy", fields: [parentId], references: [id])
+  children       StockLocation[] @relation("LocationHierarchy")
+  isActive       Boolean   @default(true)
+  
+  stockQuantities StockQuantity[]
+  stockMoves      StockMove[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Product {
+  id             String    @id @default(cuid())
+  name           String
+  sku            String    @unique
+  barcode        String?
+  description    String?
+  category       String?
+  unit           String    @default("Unit")
+  costPrice      Float     @default(0)
+  sellingPrice   Float     @default(0)
+  minStock       Float     @default(0)
+  maxStock       Float     @default(0)
+  isActive       Boolean   @default(true)
+  isTracked      Boolean   @default(true)
+  trackSerial    Boolean   @default(false)
+  trackBatch     Boolean   @default(false)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  stockQuantities StockQuantity[]
+  stockMoves      StockMove[]
+  serialNumbers   SerialNumber[]
+  batches         Batch[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model StockQuantity {
+  id             String    @id @default(cuid())
+  quantity       Float     @default(0)
+  reservedQty    Float     @default(0)
+  availableQty   Float     @default(0)
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  locationId     String
+  location       StockLocation @relation(fields: [locationId], references: [id])
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([productId, locationId])
+}
+
+model StockMove {
+  id             String    @id @default(cuid())
+  type           StockMoveType
+  reference      String?
+  date           DateTime  @default(now())
+  status         MoveStatus @default(DRAFT)
+  notes          String?
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  quantity       Float     @default(0)
+  fromLocationId String?
+  fromLocation   StockLocation? @relation("FromLocation", fields: [fromLocationId], references: [id])
+  toLocationId   String?
+  toLocation     StockLocation? @relation("ToLocation", fields: [toLocationId], references: [id])
+  warehouseId    String?
+  warehouse      Warehouse? @relation(fields: [warehouseId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  serialNumbers  SerialNumber[]
+  batches        Batch[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum StockMoveType {
+  RECEIPT
+  DELIVERY
+  TRANSFER
+  ADJUSTMENT
+  RETURN
+  SCRAP
+}
+
+enum MoveStatus {
+  DRAFT
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model SerialNumber {
+  id             String    @id @default(cuid())
+  number         String    @unique
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  status         SerialStatus @default(AVAILABLE)
+  stockMoveId    String?
+  stockMove      StockMove? @relation(fields: [stockMoveId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum SerialStatus {
+  AVAILABLE
+  SOLD
+  RESERVED
+  DAMAGED
+  LOST
+}
+
+model Batch {
+  id             String    @id @default(cuid())
+  number         String
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  quantity       Float     @default(0)
+  expiryDate     DateTime?
+  manufacturingDate DateTime?
+  stockMoveId    String?
+  stockMove      StockMove? @relation(fields: [stockMoveId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
