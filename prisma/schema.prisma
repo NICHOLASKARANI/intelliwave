@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================
+// USER & AUTHENTICATION
+// ============================================================
+
 model User {
   id               String    @id @default(cuid())
   name             String?
@@ -44,6 +48,7 @@ model User {
   assignedLeads     Lead[]     @relation("AssignedLeads")
   assignedOpportunities Opportunity[] @relation("AssignedOpportunities")
   assignedActivities   Activity[]   @relation("AssignedActivities")
+  assignedMaintenance  MaintenanceRequest[] @relation("AssignedMaintenance")
 }
 
 model Account {
@@ -124,6 +129,12 @@ model Organization {
   stockMoves       StockMove[]
   serialNumbers    SerialNumber[]
   batches          Batch[]
+  boms             BillOfMaterial[]
+  workCenters      WorkCenter[]
+  routings         Routing[]
+  workOrders       WorkOrder[]
+  qualityChecks    QualityCheck[]
+  maintenanceRequests MaintenanceRequest[]
 }
 
 enum PlanType {
@@ -140,6 +151,10 @@ enum SubscriptionStatus {
   CANCELLED
   EXPIRED
 }
+
+// ============================================================
+// PROJECTS & INVOICES
+// ============================================================
 
 model Project {
   id          String   @id @default(cuid())
@@ -197,6 +212,10 @@ model ProjectFile {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
+// ============================================================
+// BLOG & COMMENTS
+// ============================================================
+
 model BlogPost {
   id            String   @id @default(cuid())
   title         String
@@ -228,6 +247,10 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ============================================================
+// SUPPORT & MESSAGES
+// ============================================================
+
 model SupportTicket {
   id          String   @id @default(cuid())
   subject     String
@@ -253,6 +276,10 @@ model Message {
   userId    String?
   user      User?          @relation(fields: [userId], references: [id])
 }
+
+// ============================================================
+// PORTFOLIO, JOBS, EVENTS
+// ============================================================
 
 model PortfolioItem {
   id           String   @id @default(cuid())
@@ -307,6 +334,10 @@ model Event {
   createdAt       DateTime @default(now())
   attendees       User[]
 }
+
+// ============================================================
+// FINANCE MODULE
+// ============================================================
 
 model ChartOfAccount {
   id              String      @id @default(cuid())
@@ -407,6 +438,10 @@ model AuditLog {
   journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
   createdAt       DateTime @default(now())
 }
+
+// ============================================================
+// CRM & SALES MODULE
+// ============================================================
 
 model Customer {
   id             String         @id @default(cuid())
@@ -699,7 +734,7 @@ enum ActivityType {
 }
 
 // ============================================================
-// INVENTORY & WAREHOUSE
+// INVENTORY & WAREHOUSE MODULE
 // ============================================================
 
 model Warehouse {
@@ -757,6 +792,9 @@ model Product {
   stockMoves      StockMove[]
   serialNumbers   SerialNumber[]
   batches         Batch[]
+  boms            BillOfMaterial[]
+  routingOperations BOMComponent[]
+  workOrders      WorkOrder[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -852,4 +890,181 @@ model Batch {
   organization     Organization @relation(fields: [organizationId], references: [id])
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+// ============================================================
+// MANUFACTURING (MRP) MODULE
+// ============================================================
+
+model BillOfMaterial {
+  id             String    @id @default(cuid())
+  name           String
+  code           String    @unique
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  quantity       Float     @default(1)
+  isActive       Boolean   @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  components     BOMComponent[]
+  workOrders     WorkOrder[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model BOMComponent {
+  id             String    @id @default(cuid())
+  bomId          String
+  bom            BillOfMaterial @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  quantity       Float     @default(1)
+  unit           String    @default("Unit")
+  scrapRate      Float     @default(0)
+  operation      String?
+  createdAt      DateTime @default(now())
+}
+
+model WorkCenter {
+  id             String    @id @default(cuid())
+  name           String
+  code           String    @unique
+  description    String?
+  capacity       Float     @default(0)
+  efficiency     Float     @default(100)
+  costPerHour    Float     @default(0)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  operations     RoutingOperation[]
+  workOrders     WorkOrder[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Routing {
+  id             String    @id @default(cuid())
+  name           String
+  code           String    @unique
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  operations     RoutingOperation[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model RoutingOperation {
+  id             String    @id @default(cuid())
+  sequence       Int
+  name           String
+  description    String?
+  durationMinutes Float   @default(0)
+  setupMinutes   Float    @default(0)
+  routingId      String
+  routing        Routing  @relation(fields: [routingId], references: [id], onDelete: Cascade)
+  workCenterId   String
+  workCenter     WorkCenter @relation(fields: [workCenterId], references: [id])
+  createdAt      DateTime @default(now())
+}
+
+model WorkOrder {
+  id             String    @id @default(cuid())
+  number         String    @unique
+  type           WorkOrderType @default(MANUFACTURING)
+  status         WorkOrderStatus @default(DRAFT)
+  quantity       Float     @default(0)
+  completedQty   Float     @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  priority       Priority  @default(MEDIUM)
+  notes          String?
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  bomId          String?
+  bom            BillOfMaterial? @relation(fields: [bomId], references: [id])
+  workCenterId   String?
+  workCenter     WorkCenter? @relation(fields: [workCenterId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  qualityChecks  QualityCheck[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum WorkOrderType {
+  MANUFACTURING
+  REPAIR
+  MAINTENANCE
+}
+
+enum WorkOrderStatus {
+  DRAFT
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model QualityCheck {
+  id             String    @id @default(cuid())
+  type           QualityCheckType
+  result         QualityResult @default(PENDING)
+  notes          String?
+  inspectedQty   Float     @default(0)
+  passedQty      Float     @default(0)
+  rejectedQty    Float     @default(0)
+  workOrderId    String
+  workOrder      WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum QualityCheckType {
+  INCOMING
+  IN_PROCESS
+  FINAL
+}
+
+enum QualityResult {
+  PENDING
+  PASSED
+  FAILED
+  PARTIAL
+}
+
+model MaintenanceRequest {
+  id             String    @id @default(cuid())
+  number         String    @unique
+  type           MaintenanceType
+  status         MaintenanceStatus @default(REQUESTED)
+  description    String
+  assetName      String
+  assetCode      String?
+  priority       Priority  @default(MEDIUM)
+  requestedDate  DateTime  @default(now())
+  completedDate  DateTime?
+  assignedToId   String?
+  assignedTo     User?     @relation("AssignedMaintenance", fields: [assignedToId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  PREDICTIVE
+  EMERGENCY
+}
+
+enum MaintenanceStatus {
+  REQUESTED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
