@@ -11,22 +11,7 @@ import {
   ChevronRight, Wrench, Truck, Store, Plane,
   Ship, HardHat, Stethoscope, GraduationCap, Heart, Landmark,
   Scale, ShoppingCart, Dumbbell, Scissors, CheckCircle,
-  Menu, X, MoreHorizontal, Eye, EyeOff, Lock, Key,
-  RefreshCw, AlertTriangle, Cloud, Server, Database, Wifi,
-  Smartphone, Palette, Layers, MousePointer, Keyboard,
-  Monitor, Laptop, Tablet, Watch, Cpu, HardDrive,
-  Printer, Camera, Music, Film, Newspaper, Radio,
-  Waves, Flame, Lightbulb, Moon, Sun, Star,
-  Compass, Map, Navigation, Route, Locate,
-  Layers3, Pocket, Archive, Bookmark, Flag,
-  ThumbsUp, ThumbsDown, MessageSquare, Share2,
-  Send, Mail, Phone, PhoneCall, PhoneForwarded,
-  PhoneIncoming, PhoneMissed, PhoneOff, PhoneOutgoing,
-  Voicemail, AtSign, Hash, Link2, Unlink,
-  ExternalLink, Copy, Clipboard, ClipboardCheck,
-  ClipboardList, ClipboardCopy, ClipboardPaste,
-  ScissorsLineDashed, Eraser, Pen, Pencil,
-  Paintbrush, PaintBucket, Ruler, Triangle
+  Cloud, Server, Database, HardDrive, Layers
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -54,7 +39,7 @@ const executiveKPIs = [
 const modules = [
   { icon: Calculator, title: 'Finance & Accounting', desc: 'GL, AP/AR, Bank Rec, Budgets, Reports, Tax Management', href: '/wavecore-erp/finance', status: 'active', color: 'from-emerald-500 to-green-500', bg: 'bg-emerald-50 dark:bg-emerald-950', submodules: ['Chart of Accounts', 'Journal Entries', 'Invoices', 'Payments', 'Bank Reconciliation', 'Trial Balance', 'Income Statement', 'Balance Sheet'] },
   { icon: Users, title: 'CRM & Sales', desc: 'Leads, Opportunities, Pipeline, Quotations, Sales Orders, Customer Portal', href: '/wavecore-erp/crm', status: 'active', color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50 dark:bg-blue-950', submodules: ['Leads', 'Opportunities', 'Customers', 'Quotations', 'Sales Orders', 'Customer Portal'] },
-  { icon: Package, title: 'Inventory & Warehouse', desc: 'Multi-Warehouse, Stock Movements, Barcode, Serial Numbers, Batch Tracking', href: '/wavecore-erp/inventory', status: 'coming', color: 'from-orange-500 to-red-500', bg: 'bg-orange-50 dark:bg-orange-950', submodules: ['Warehouses', 'Stock Levels', 'Transfers', 'Adjustments', 'Cycle Counts'] },
+  { icon: Package, title: 'Inventory & Warehouse', desc: 'Multi-Warehouse, Stock Movements, Barcode, Serial Numbers, Batch Tracking', href: '/wavecore-erp/inventory', status: 'active', color: 'from-orange-500 to-red-500', bg: 'bg-orange-50 dark:bg-orange-950', submodules: ['Warehouses', 'Stock Levels', 'Transfers', 'Adjustments', 'Cycle Counts'] },
   { icon: Factory, title: 'Manufacturing (MRP)', desc: 'Bill of Materials, Work Orders, Production Scheduling, Quality Control', href: '/wavecore-erp/manufacturing', status: 'coming', color: 'from-purple-500 to-pink-500', bg: 'bg-purple-50 dark:bg-purple-950', submodules: ['BOM', 'Work Orders', 'Production Orders', 'Routing', 'Quality Checks'] },
   { icon: Briefcase, title: 'Human Resources', desc: 'Employees, Recruitment, Payroll, Attendance, Leave, Performance', href: '/wavecore-erp/hr', status: 'coming', color: 'from-indigo-500 to-blue-500', bg: 'bg-indigo-50 dark:bg-indigo-950', submodules: ['Employees', 'Recruitment', 'Payroll', 'Attendance', 'Leave'] },
   { icon: FolderKanban, title: 'Projects', desc: 'Tasks, Kanban Boards, Gantt Charts, Time Tracking, Resource Planning', href: '/wavecore-erp/projects', status: 'coming', color: 'from-teal-500 to-green-500', bg: 'bg-teal-50 dark:bg-teal-950', submodules: ['Projects', 'Tasks', 'Kanban', 'Gantt', 'Timesheets'] },
@@ -83,6 +68,7 @@ const recentActivity = [
   { action: 'Chart of Accounts configured — 20 accounts ready', time: 'Just now', type: 'setup', icon: Calculator },
   { action: 'General Ledger module active', time: 'Just now', type: 'success', icon: CheckCircle },
   { action: 'CRM & Sales module ready', time: 'Just now', type: 'success', icon: Users },
+  { action: 'Inventory & Warehouse module active', time: 'Just now', type: 'success', icon: Package },
   { action: 'Accounts Receivable module ready', time: 'Just now', type: 'success', icon: DollarSign },
   { action: 'Accounts Payable module ready', time: 'Just now', type: 'success', icon: CreditCard },
   { action: 'Financial Reports available', time: 'Just now', type: 'info', icon: BarChart3 },
@@ -114,7 +100,6 @@ const systemHealth = [
 export default function WaveCoreERPPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      {/* ========================================== TOP NAVIGATION BAR ========================================== */}
       <header className="sticky top-0 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-between px-4 lg:px-6 h-16">
           <div className="flex items-center gap-4">
@@ -148,9 +133,7 @@ export default function WaveCoreERPPage() {
         </div>
       </header>
 
-      {/* ========================================== MAIN LAYOUT ========================================== */}
       <div className="flex">
-        {/* Sidebar Navigation */}
         <aside className="w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 min-h-[calc(100vh-64px)] p-4 hidden lg:block overflow-y-auto">
           <div className="mb-6">
             <Link href="/wavecore-erp" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 text-indigo-700 dark:text-indigo-300 text-sm font-semibold shadow-sm border border-indigo-100 dark:border-indigo-900"><LayoutDashboard className="w-5 h-5" /> Dashboard</Link>
@@ -174,21 +157,17 @@ export default function WaveCoreERPPage() {
           </div>
         </aside>
 
-        {/* ========================================== MAIN CONTENT ========================================== */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
-          {/* Welcome Banner */}
           <div className="relative rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 lg:p-10 mb-10 overflow-hidden shadow-2xl shadow-indigo-500/20">
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
             <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div>
                 <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2 tracking-tight">Welcome to WaveCore ERP</h2>
-                <p className="text-white/80 text-sm lg:text-base max-w-2xl leading-relaxed">Your enterprise business operating system is ready. Start by exploring Finance, CRM, and Settings modules.</p>
+                <p className="text-white/80 text-sm lg:text-base max-w-2xl leading-relaxed">Your enterprise business operating system is ready. Start by exploring Finance, CRM, Inventory, and Settings modules.</p>
                 <div className="flex flex-wrap gap-3 mt-5">
                   <Link href="/wavecore-erp/finance"><Button className="bg-white text-indigo-700 hover:bg-gray-100 font-semibold shadow-lg group">Go to Finance <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" /></Button></Link>
                   <Link href="/wavecore-erp/crm"><Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-medium">Go to CRM <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
-                  <Link href="/wavecore-erp/finance/journal/create"><Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-medium"><Plus className="w-4 h-4 mr-1" /> New Journal Entry</Button></Link>
+                  <Link href="/wavecore-erp/inventory"><Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-medium">Go to Inventory <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
                 </div>
               </div>
               <div className="hidden lg:flex items-center gap-4">
@@ -198,7 +177,6 @@ export default function WaveCoreERPPage() {
             </div>
           </div>
 
-          {/* Executive KPI Cards */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">Executive Overview</h3>
@@ -207,10 +185,7 @@ export default function WaveCoreERPPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {executiveKPIs.map((kpi) => { const Icon = kpi.icon; return (
                 <div key={kpi.label} className="group p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 cursor-default">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}><Icon className={`w-5 h-5 ${kpi.textColor}`} /></div>
-                    <div className={`flex items-center gap-1 text-xs font-semibold ${kpi.trend === 'up' ? 'text-green-500' : kpi.trend === 'down' ? 'text-red-500' : 'text-neutral-500'}`}>{kpi.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : kpi.trend === 'down' ? <ArrowDownRight className="w-3 h-3" /> : null}{kpi.change}</div>
-                  </div>
+                  <div className="flex items-center justify-between mb-3"><div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}><Icon className={`w-5 h-5 ${kpi.textColor}`} /></div><div className={`flex items-center gap-1 text-xs font-semibold ${kpi.trend === 'up' ? 'text-green-500' : kpi.trend === 'down' ? 'text-red-500' : 'text-neutral-500'}`}>{kpi.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : kpi.trend === 'down' ? <ArrowDownRight className="w-3 h-3" /> : null}{kpi.change}</div></div>
                   <div className="text-xl lg:text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">{kpi.value}</div>
                   <div className="text-xs text-neutral-500 mt-1">{kpi.label}</div>
                   <div className="text-[10px] text-neutral-400 mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">{kpi.insight}</div>
@@ -219,7 +194,6 @@ export default function WaveCoreERPPage() {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="mb-10">
             <h3 className="text-lg font-bold mb-5 text-neutral-900 dark:text-white tracking-tight">Quick Actions</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -233,20 +207,17 @@ export default function WaveCoreERPPage() {
             </div>
           </div>
 
-          {/* System Health */}
           <div className="mb-10">
             <h3 className="text-lg font-bold mb-5 text-neutral-900 dark:text-white tracking-tight">System Health</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {systemHealth.map((sys) => { const Icon = sys.icon; return (
                 <div key={sys.name} className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                  <Icon className={`w-5 h-5 ${sys.color}`} />
-                  <div><p className="text-sm font-medium text-neutral-900 dark:text-white">{sys.name}</p><p className="text-xs text-green-500">{sys.status}</p></div>
+                  <Icon className={`w-5 h-5 ${sys.color}`} /><div><p className="text-sm font-medium text-neutral-900 dark:text-white">{sys.name}</p><p className="text-xs text-green-500">{sys.status}</p></div>
                 </div>
               )})}
             </div>
           </div>
 
-          {/* All Modules Grid */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">All Modules</h3>
@@ -258,10 +229,7 @@ export default function WaveCoreERPPage() {
                   <div className="flex items-start gap-4">
                     <div className={`w-12 h-12 rounded-xl ${mod.bg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}><Icon className="w-6 h-6 text-indigo-600" /></div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-neutral-900 dark:text-white text-sm">{mod.title}</h3>
-                        {isActive ? <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-semibold">Active</span> : <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-500 font-medium">Coming</span>}
-                      </div>
+                      <div className="flex items-center gap-2 mb-1"><h3 className="font-bold text-neutral-900 dark:text-white text-sm">{mod.title}</h3>{isActive ? <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-semibold">Active</span> : <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-500 font-medium">Coming</span>}</div>
                       <p className="text-xs text-neutral-500 leading-relaxed mb-3">{mod.desc}</p>
                       <div className="flex flex-wrap gap-1">{mod.submodules.slice(0, 4).map((sub) => (<span key={sub} className="text-[10px] px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-500">{sub}</span>))}{mod.submodules.length > 4 && (<span className="text-[10px] px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-400">+{mod.submodules.length - 4} more</span>)}</div>
                     </div>
@@ -271,15 +239,10 @@ export default function WaveCoreERPPage() {
             </div>
           </div>
 
-          {/* Industry Solutions + Platform Capabilities + Recent Activity */}
           <div className="grid lg:grid-cols-3 gap-8 mb-10">
             <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
               <h3 className="text-lg font-bold mb-4 text-neutral-900 dark:text-white tracking-tight">Industry Solutions</h3>
-              <div className="grid grid-cols-4 gap-3">
-                {industries.map((ind) => { const Icon = ind.icon; return (
-                  <div key={ind.name} className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-default"><Icon className="w-6 h-6 text-indigo-500" /><span className="text-[10px] text-neutral-500 text-center leading-tight">{ind.name}</span></div>
-                )})}
-              </div>
+              <div className="grid grid-cols-4 gap-3">{industries.map((ind) => { const Icon = ind.icon; return (<div key={ind.name} className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-default"><Icon className="w-6 h-6 text-indigo-500" /><span className="text-[10px] text-neutral-500 text-center leading-tight">{ind.name}</span></div>)})}</div>
             </div>
             <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
               <h3 className="text-lg font-bold mb-4 text-neutral-900 dark:text-white tracking-tight">Platform Capabilities</h3>
@@ -291,8 +254,7 @@ export default function WaveCoreERPPage() {
                 {recentActivity.map((activity, i) => { const Icon = activity.icon; return (
                   <div key={i} className="flex items-center gap-3 text-sm py-2 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activity.type === 'system' ? 'bg-blue-50 dark:bg-blue-950' : activity.type === 'setup' ? 'bg-green-50 dark:bg-green-950' : activity.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950' : 'bg-neutral-100 dark:bg-neutral-800'}`}><Icon className={`w-4 h-4 ${activity.type === 'system' ? 'text-blue-600' : activity.type === 'setup' ? 'text-green-600' : activity.type === 'success' ? 'text-emerald-600' : 'text-neutral-500'}`} /></div>
-                    <span className="flex-1 text-neutral-700 dark:text-neutral-300">{activity.action}</span>
-                    <span className="text-xs text-neutral-400">{activity.time}</span>
+                    <span className="flex-1 text-neutral-700 dark:text-neutral-300">{activity.action}</span><span className="text-xs text-neutral-400">{activity.time}</span>
                   </div>
                 )})}
               </div>
