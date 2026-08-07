@@ -793,6 +793,7 @@ model Product {
   serialNumbers   SerialNumber[]
   batches         Batch[]
   boms            BillOfMaterial[]
+  routings        Routing[]
   routingOperations BOMComponent[]
   workOrders      WorkOrder[]
   createdAt       DateTime @default(now())
