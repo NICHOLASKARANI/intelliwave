@@ -119,6 +119,11 @@ model Organization {
   customerInvoices CustomerInvoice[]
   customerPayments CustomerPayment[]
   activities       Activity[]
+  warehouses       Warehouse[]
+  products         Product[]
+  stockMoves       StockMove[]
+  serialNumbers    SerialNumber[]
+  batches          Batch[]
 }
 
 enum PlanType {
@@ -692,8 +697,9 @@ enum ActivityType {
   NOTE
   WHATSAPP
 }
+
 // ============================================================
-// WAVECORE ERP - INVENTORY & WAREHOUSE MODULE
+// INVENTORY & WAREHOUSE
 // ============================================================
 
 model Warehouse {
@@ -706,7 +712,6 @@ model Warehouse {
   isActive       Boolean   @default(true)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
   locations      StockLocation[]
   stockMoves     StockMove[]
   createdAt      DateTime @default(now())
@@ -723,9 +728,9 @@ model StockLocation {
   parent         StockLocation? @relation("LocationHierarchy", fields: [parentId], references: [id])
   children       StockLocation[] @relation("LocationHierarchy")
   isActive       Boolean   @default(true)
-  
   stockQuantities StockQuantity[]
-  stockMoves      StockMove[]
+  fromMoves       StockMove[] @relation("FromLocation")
+  toMoves         StockMove[] @relation("ToLocation")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -748,7 +753,6 @@ model Product {
   trackBatch     Boolean   @default(false)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
   stockQuantities StockQuantity[]
   stockMoves      StockMove[]
   serialNumbers   SerialNumber[]
@@ -758,40 +762,37 @@ model Product {
 }
 
 model StockQuantity {
-  id             String    @id @default(cuid())
-  quantity       Float     @default(0)
-  reservedQty    Float     @default(0)
-  availableQty   Float     @default(0)
-  productId      String
-  product        Product   @relation(fields: [productId], references: [id])
-  locationId     String
-  location       StockLocation @relation(fields: [locationId], references: [id])
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
+  id           String    @id @default(cuid())
+  quantity     Float     @default(0)
+  reservedQty  Float     @default(0)
+  availableQty Float     @default(0)
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id])
+  locationId   String
+  location     StockLocation @relation(fields: [locationId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   @@unique([productId, locationId])
 }
 
 model StockMove {
-  id             String    @id @default(cuid())
+  id             String        @id @default(cuid())
   type           StockMoveType
   reference      String?
-  date           DateTime  @default(now())
-  status         MoveStatus @default(DRAFT)
+  date           DateTime      @default(now())
+  status         MoveStatus    @default(DRAFT)
   notes          String?
   productId      String
-  product        Product   @relation(fields: [productId], references: [id])
-  quantity       Float     @default(0)
+  product        Product       @relation(fields: [productId], references: [id])
+  quantity       Float         @default(0)
   fromLocationId String?
   fromLocation   StockLocation? @relation("FromLocation", fields: [fromLocationId], references: [id])
   toLocationId   String?
   toLocation     StockLocation? @relation("ToLocation", fields: [toLocationId], references: [id])
   warehouseId    String?
-  warehouse      Warehouse? @relation(fields: [warehouseId], references: [id])
+  warehouse      Warehouse?    @relation(fields: [warehouseId], references: [id])
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   serialNumbers  SerialNumber[]
   batches        Batch[]
   createdAt      DateTime @default(now())
@@ -816,16 +817,15 @@ enum MoveStatus {
 }
 
 model SerialNumber {
-  id             String    @id @default(cuid())
-  number         String    @unique
+  id             String       @id @default(cuid())
+  number         String       @unique
   productId      String
-  product        Product   @relation(fields: [productId], references: [id])
+  product        Product      @relation(fields: [productId], references: [id])
   status         SerialStatus @default(AVAILABLE)
   stockMoveId    String?
-  stockMove      StockMove? @relation(fields: [stockMoveId], references: [id])
+  stockMove      StockMove?   @relation(fields: [stockMoveId], references: [id])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -839,18 +839,17 @@ enum SerialStatus {
 }
 
 model Batch {
-  id             String    @id @default(cuid())
-  number         String
-  productId      String
-  product        Product   @relation(fields: [productId], references: [id])
-  quantity       Float     @default(0)
-  expiryDate     DateTime?
+  id               String    @id @default(cuid())
+  number           String
+  productId        String
+  product          Product   @relation(fields: [productId], references: [id])
+  quantity         Float     @default(0)
+  expiryDate       DateTime?
   manufacturingDate DateTime?
-  stockMoveId    String?
-  stockMove      StockMove? @relation(fields: [stockMoveId], references: [id])
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  stockMoveId      String?
+  stockMove        StockMove? @relation(fields: [stockMoveId], references: [id])
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
