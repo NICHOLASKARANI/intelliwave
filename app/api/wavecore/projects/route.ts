@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// GET /api/wavecore/projects - List all projects
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -22,13 +21,9 @@ export async function GET(req: NextRequest) {
     const projects = await prisma.project.findMany({
       where,
       include: {
-        client: {
-          select: { id: true, name: true, email: true, image: true }
-        },
+        client: { select: { id: true, name: true, email: true, image: true } },
         milestones: true,
-        _count: {
-          select: { files: true, messages: true }
-        }
+        _count: { select: { files: true, messages: true } }
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -40,7 +35,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/wavecore/projects - Create a new project
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -62,9 +56,7 @@ export async function POST(req: NextRequest) {
         clientId: clientId || 'default-client-id',
       },
       include: {
-        client: {
-          select: { id: true, name: true, email: true }
-        }
+        client: { select: { id: true, name: true, email: true } }
       }
     })
 
