@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Plus, Search, Filter, FileText,
   FolderOpen, Upload, Download, Star, Clock, Users,
   Shield, Tag, Grid3X3, List, MoreHorizontal, Trash2,
-  Share2, Lock, Eye, Edit3, File, Image, Video, Music,
+  Share2, Lock, Eye, Edit3, File, FileImage, Video, Music,
   Archive, FileCode, FileSpreadsheet, FileType, ChevronRight,
   HardDrive, Activity, ArrowUpRight, TrendingUp
 } from 'lucide-react'
@@ -47,7 +47,7 @@ const fileTypes = [
   { type: 'PDF', icon: File, count: 0, color: 'text-red-500' },
   { type: 'Word', icon: FileText, count: 0, color: 'text-blue-500' },
   { type: 'Excel', icon: FileSpreadsheet, count: 0, color: 'text-green-500' },
-  { type: 'Images', icon: Image, count: 0, color: 'text-purple-500' },
+  { type: 'Images', icon: FileImage, count: 0, color: 'text-purple-500' },
   { type: 'Code', icon: FileCode, count: 0, color: 'text-orange-500' },
   { type: 'Other', icon: FileType, count: 0, color: 'text-teal-500' },
 ]
