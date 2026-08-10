@@ -17,8 +17,8 @@ import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
   title: 'WaveCore ERP - Enterprise Business Operating System | IntelliWavve',
-  description: 'WaveCore ERP — Complete enterprise business operating system. Finance, CRM, Inventory, HR, Manufacturing, Projects, Helpdesk, AI Copilot, and more.',
-  keywords: ['ERP', 'Enterprise', 'Business', 'Finance', 'CRM', 'Inventory', 'HR', 'Manufacturing', 'AI'],
+  description: 'WaveCore ERP — Complete enterprise business operating system. Finance, CRM, Inventory, Manufacturing, HR, Projects, Helpdesk, AI Copilot, and more.',
+  keywords: ['ERP', 'Enterprise', 'Business', 'Finance', 'CRM', 'Inventory', 'Manufacturing', 'HR', 'AI'],
 }
 
 const executiveKPIs = [
@@ -40,9 +40,9 @@ const modules = [
   { icon: Calculator, title: 'Finance & Accounting', desc: 'GL, AP/AR, Bank Rec, Budgets, Reports, Tax Management', href: '/wavecore-erp/finance', status: 'active', color: 'from-emerald-500 to-green-500', bg: 'bg-emerald-50 dark:bg-emerald-950', submodules: ['Chart of Accounts', 'Journal Entries', 'Invoices', 'Payments', 'Bank Reconciliation', 'Trial Balance', 'Income Statement', 'Balance Sheet'] },
   { icon: Users, title: 'CRM & Sales', desc: 'Leads, Opportunities, Pipeline, Quotations, Sales Orders, Customer Portal', href: '/wavecore-erp/crm', status: 'active', color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50 dark:bg-blue-950', submodules: ['Leads', 'Opportunities', 'Customers', 'Quotations', 'Sales Orders', 'Customer Portal'] },
   { icon: Package, title: 'Inventory & Warehouse', desc: 'Multi-Warehouse, Stock Movements, Barcode, Serial Numbers, Batch Tracking', href: '/wavecore-erp/inventory', status: 'active', color: 'from-orange-500 to-red-500', bg: 'bg-orange-50 dark:bg-orange-950', submodules: ['Warehouses', 'Stock Levels', 'Transfers', 'Adjustments', 'Cycle Counts'] },
-  { icon: Factory, title: 'Manufacturing (MRP)', desc: 'Bill of Materials, Work Orders, Production Scheduling, Quality Control', href: '/wavecore-erp/manufacturing', status: 'coming', color: 'from-purple-500 to-pink-500', bg: 'bg-purple-50 dark:bg-purple-950', submodules: ['BOM', 'Work Orders', 'Production Orders', 'Routing', 'Quality Checks'] },
-  { icon: Briefcase, title: 'Human Resources', desc: 'Employees, Recruitment, Payroll, Attendance, Leave, Performance', href: '/wavecore-erp/hr', status: 'coming', color: 'from-indigo-500 to-blue-500', bg: 'bg-indigo-50 dark:bg-indigo-950', submodules: ['Employees', 'Recruitment', 'Payroll', 'Attendance', 'Leave'] },
-  { icon: FolderKanban, title: 'Projects', desc: 'Tasks, Kanban Boards, Gantt Charts, Time Tracking, Resource Planning', href: '/wavecore-erp/projects', status: 'coming', color: 'from-teal-500 to-green-500', bg: 'bg-teal-50 dark:bg-teal-950', submodules: ['Projects', 'Tasks', 'Kanban', 'Gantt', 'Timesheets'] },
+  { icon: Factory, title: 'Manufacturing (MRP)', desc: 'Bill of Materials, Work Orders, Production Scheduling, Quality Control', href: '/wavecore-erp/manufacturing', status: 'active', color: 'from-purple-500 to-pink-500', bg: 'bg-purple-50 dark:bg-purple-950', submodules: ['BOM', 'Work Orders', 'Production Orders', 'Routing', 'Quality Checks'] },
+  { icon: Briefcase, title: 'Human Resources', desc: 'Employees, Recruitment, Payroll, Attendance, Leave, Performance', href: '/wavecore-erp/hr', status: 'active', color: 'from-indigo-500 to-blue-500', bg: 'bg-indigo-50 dark:bg-indigo-950', submodules: ['Employees', 'Recruitment', 'Payroll', 'Attendance', 'Leave'] },
+  { icon: FolderKanban, title: 'Projects', desc: 'Tasks, Kanban Boards, Gantt Charts, Time Tracking, Resource Planning', href: '/wavecore-erp/projects', status: 'active', color: 'from-teal-500 to-green-500', bg: 'bg-teal-50 dark:bg-teal-950', submodules: ['Projects', 'Tasks', 'Kanban', 'Gantt', 'Timesheets'] },
   { icon: HeadphonesIcon, title: 'Helpdesk', desc: 'Tickets, SLA Management, Knowledge Base, Live Chat, AI Chatbot', href: '/wavecore-erp/helpdesk', status: 'coming', color: 'from-pink-500 to-rose-500', bg: 'bg-pink-50 dark:bg-pink-950', submodules: ['Tickets', 'SLA', 'Knowledge Base', 'Live Chat'] },
   { icon: FileText, title: 'Documents', desc: 'Document Storage, OCR, Version Control, Digital Signatures', href: '/wavecore-erp/documents', status: 'coming', color: 'from-cyan-500 to-blue-500', bg: 'bg-cyan-50 dark:bg-cyan-950', submodules: ['Storage', 'OCR', 'Version Control', 'E-Signatures'] },
   { icon: BarChart3, title: 'Business Intelligence', desc: 'Executive Dashboards, KPIs, Interactive Charts, AI Forecasting', href: '/wavecore-erp/analytics', status: 'coming', color: 'from-violet-500 to-purple-500', bg: 'bg-violet-50 dark:bg-violet-950', submodules: ['Dashboards', 'Reports', 'KPIs', 'Forecasts'] },
@@ -69,6 +69,7 @@ const recentActivity = [
   { action: 'General Ledger module active', time: 'Just now', type: 'success', icon: CheckCircle },
   { action: 'CRM & Sales module ready', time: 'Just now', type: 'success', icon: Users },
   { action: 'Inventory & Warehouse module active', time: 'Just now', type: 'success', icon: Package },
+  { action: 'Manufacturing (MRP) module active', time: 'Just now', type: 'success', icon: Factory },
   { action: 'Accounts Receivable module ready', time: 'Just now', type: 'success', icon: DollarSign },
   { action: 'Accounts Payable module ready', time: 'Just now', type: 'success', icon: CreditCard },
   { action: 'Financial Reports available', time: 'Just now', type: 'info', icon: BarChart3 },
@@ -163,16 +164,16 @@ export default function WaveCoreERPPage() {
             <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div>
                 <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2 tracking-tight">Welcome to WaveCore ERP</h2>
-                <p className="text-white/80 text-sm lg:text-base max-w-2xl leading-relaxed">Your enterprise business operating system is ready. Start by exploring Finance, CRM, Inventory, and Settings modules.</p>
+                <p className="text-white/80 text-sm lg:text-base max-w-2xl leading-relaxed">Your enterprise business operating system is ready. Finance, CRM, Inventory, Manufacturing, and Settings are active.</p>
                 <div className="flex flex-wrap gap-3 mt-5">
                   <Link href="/wavecore-erp/finance"><Button className="bg-white text-indigo-700 hover:bg-gray-100 font-semibold shadow-lg group">Go to Finance <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" /></Button></Link>
                   <Link href="/wavecore-erp/crm"><Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-medium">Go to CRM <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
-                  <Link href="/wavecore-erp/inventory"><Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-medium">Go to Inventory <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
+                  <Link href="/wavecore-erp/manufacturing"><Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-medium">Go to Manufacturing <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
                 </div>
               </div>
               <div className="hidden lg:flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-xl flex items-center justify-center"><Sparkles className="w-8 h-8 text-white" /></div>
-                <div className="text-white/80 text-sm"><div className="font-bold text-white">v1.0</div><div>Production Ready</div></div>
+                <div className="text-white/80 text-sm"><div className="font-bold text-white">v1.0</div><div>5 Modules Active</div></div>
               </div>
             </div>
           </div>

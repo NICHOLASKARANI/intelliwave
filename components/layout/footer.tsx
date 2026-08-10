@@ -103,7 +103,7 @@ export function Footer() {
               <a href="mailto:intelliwavehr@gmail.com" className="flex items-center gap-2 hover:text-blue-400 transition-colors group">
                 <Mail className="w-4 h-4 text-blue-400" /><span>intelliwavehr@gmail.com</span><ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
-              <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /><div><p>Nairobi CBD, Superior Centre</p><p>Shop F11, 1st Floor, Kenyatta Avenue</p></div></div>
+              <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /><div><p>Nairobi CBD, Superior Centre</p><p>1st Floor, Kenyatta Avenue</p></div></div>
             </div>
           </div>
 
