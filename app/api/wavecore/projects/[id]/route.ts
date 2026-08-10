@@ -1,36 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
+import { PrismaClient } from '@prisma/client'
 
-// GET /api/wavecore/projects/[id] - Get single project
+const prisma = new PrismaClient()
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const project = await prisma.project.findUnique({
       where: { id: params.id },
       include: {
-        client: {
-          select: { id: true, name: true, email: true, image: true }
-        },
-        milestones: {
-          orderBy: { dueDate: 'asc' }
-        },
-        files: {
-          orderBy: { createdAt: 'desc' }
-        },
+        client: { select: { id: true, name: true, email: true, image: true } },
+        milestones: { orderBy: { dueDate: 'asc' } },
+        files: { orderBy: { createdAt: 'desc' } },
         messages: {
-          include: {
-            user: {
-              select: { id: true, name: true, image: true }
-            }
-          },
+          include: { user: { select: { id: true, name: true, image: true } } },
           orderBy: { createdAt: 'desc' },
           take: 50
         },
@@ -49,17 +34,11 @@ export async function GET(
   }
 }
 
-// PUT /api/wavecore/projects/[id] - Update project
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const body = await req.json()
     const { title, description, budget, currency, startDate, endDate, status } = body
 
@@ -83,21 +62,12 @@ export async function PUT(
   }
 }
 
-// DELETE /api/wavecore/projects/[id] - Delete project
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    await prisma.project.delete({
-      where: { id: params.id },
-    })
-
+    await prisma.project.delete({ where: { id: params.id } })
     return NextResponse.json({ message: 'Project deleted successfully' })
   } catch (error) {
     console.error('Error deleting project:', error)
