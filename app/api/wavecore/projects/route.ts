@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 // GET /api/wavecore/projects - List all projects
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const search = searchParams.get('search')
@@ -47,11 +43,6 @@ export async function GET(req: NextRequest) {
 // POST /api/wavecore/projects - Create a new project
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const body = await req.json()
     const { title, description, budget, currency, startDate, endDate, status, clientId } = body
 
@@ -68,7 +59,7 @@ export async function POST(req: NextRequest) {
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         status: status || 'PENDING',
-        clientId: clientId || session.user.id,
+        clientId: clientId || 'default-client-id',
       },
       include: {
         client: {
