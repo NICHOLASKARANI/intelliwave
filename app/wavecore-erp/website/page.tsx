@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   LayoutDashboard, Plus, Search, Filter, Globe,
-  ShoppingCart, Palette, FileText, Image, Settings,
+  ShoppingCart, Palette, FileText, FileImage, Settings,
   TrendingUp, DollarSign, Users, Package, Eye,
   Monitor, Smartphone, Tablet, Zap, Share2,
   BarChart3, Store, Tag, Layers, MessageSquare,
