@@ -9,7 +9,7 @@ import {
   Mail, Bell, MessageSquare, FileText, Calculator,
   Users, Package, Factory, Briefcase, Globe, Webhook,
   Layers, GanttChart, Repeat, RotateCcw, TrendingUp,
-  Activity, BarChart3, ChevronDown, MoreHorizontal
+  Activity, BarChart3, ChevronDown, MoreHorizontal, RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
