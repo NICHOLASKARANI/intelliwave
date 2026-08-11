@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: {
-        memberOrganizations: {
+        membermemberOrganizations: {
           include: { subscription: true },
         },
       },
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const activeOrg = user.memberOrganizations[0]
+    const activeOrg = user.membermemberOrganizations[0]
     if (!activeOrg) {
       return NextResponse.json(
         { error: 'No organization found. Contact support.' },

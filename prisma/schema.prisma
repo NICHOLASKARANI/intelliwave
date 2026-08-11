@@ -47,7 +47,6 @@ model User {
   assignedMaintenance  MaintenanceRequest[] @relation("AssignedMaintenance")
   approvedLeaves     LeaveRequest[] @relation("ApprovedLeaves")
   reviewerReviews    PerformanceReview[] @relation("ReviewerReviews")
-  organizationMemberships OrganizationMember[]
 }
 
 model Account {
@@ -145,25 +144,9 @@ model Organization {
   trainings        Training[]
   trainingEnrollments TrainingEnrollment[]
   employeeDocuments EmployeeDocument[]
-  memberList       OrganizationMember[]
 }
 
-model OrganizationMember {
-  id             String       @id @default(cuid())
-  userId         String
-  organizationId String
-  role           String       @default("EMPLOYEE")
-  joinedAt       DateTime     @default(now())
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
 
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, organizationId])
-  @@index([organizationId])
-  @@index([userId])
-}
 
 enum PlanType {
   TRIAL
