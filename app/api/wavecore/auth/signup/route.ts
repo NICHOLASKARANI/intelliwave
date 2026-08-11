@@ -1,16 +1,17 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/wavecore/prisma'
+import { createSession } from '@/lib/wavecore/auth'
 
 const signupSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
+  name: z.string().min(2, 'Full name is required'),
   email: z.string().email('Valid email is required'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: z.string().optional(),
   organizationName: z.string().min(2, 'Organization name is required'),
+  phone: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -18,52 +19,103 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = signupSchema.parse(body)
 
-    // Check existing user
-    const existingUser = await prisma.user.findUnique({ where: { email: validated.email } })
+    const normalizedEmail = validated.email.toLowerCase().trim()
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    })
     if (existingUser) {
-      return NextResponse.json({ success: false, error: 'Email already registered' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'An account with this email already exists' },
+        { status: 409 }
+      )
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(validated.password, 12)
 
-    // Create user with organization and trial subscription
-    const user = await prisma.user.create({
-      data: {
-        name: validated.name,
-        email: validated.email,
-        password: hashedPassword,
-        phone: validated.phone,
-        organizations: {
-          create: {
-            name: validated.organizationName,
-            trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
-            subscription: {
-              create: {
-                plan: 'TRIAL',
-                status: 'TRIAL',
-                amount: 500,
-                trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-              }
-            }
-          }
-        }
-      },
-      include: { organizations: { include: { subscription: true } } }
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: validated.name,
+          email: normalizedEmail,
+          password: hashedPassword,
+          phone: validated.phone,
+          role: 'OWNER',
+          isActive: true,
+        },
+      })
+
+      const organization = await tx.organization.create({
+        data: {
+          name: validated.organizationName,
+          ownerId: user.id,
+          isActive: true,
+          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          members: {
+            connect: { id: user.id },
+          },
+        },
+      })
+
+      const subscription = await tx.subscription.create({
+        data: {
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          amount: 500,
+          currency: 'KES',
+          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          organizationId: organization.id,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'SIGNUP',
+          entityType: 'User',
+          entityId: user.id,
+          userId: user.id,
+          changes: JSON.stringify({
+            name: user.name,
+            email: user.email,
+            organization: organization.name,
+          }),
+        },
+      })
+
+      return { user, organization, subscription }
     })
+
+    await createSession(result.user.id, result.organization.id)
 
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully. Your 30-day free trial has started.',
+      message: 'Account created successfully. Your 30-day free trial has started!',
       data: {
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        organization: user.organizations[0],
-        trialEndsAt: user.organizations[0].trialEndsAt,
-      }
+        userId: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        organization: {
+          id: result.organization.id,
+          name: result.organization.name,
+        },
+        subscription: {
+          plan: result.subscription.plan,
+          status: result.subscription.status,
+          trialEndsAt: result.subscription.trialEndsAt,
+        },
+      },
     }, { status: 201 })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: error.errors },
+        { status: 422 }
+      )
+    }
+    console.error('Signup error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
