@@ -47,6 +47,7 @@ model User {
   assignedMaintenance  MaintenanceRequest[] @relation("AssignedMaintenance")
   approvedLeaves     LeaveRequest[] @relation("ApprovedLeaves")
   reviewerReviews    PerformanceReview[] @relation("ReviewerReviews")
+  organizationMemberships OrganizationMember[]
 }
 
 model Account {
@@ -144,6 +145,7 @@ model Organization {
   trainings        Training[]
   trainingEnrollments TrainingEnrollment[]
   employeeDocuments EmployeeDocument[]
+  memberList       OrganizationMember[]
 }
 
 model OrganizationMember {
