@@ -3,119 +3,76 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/wavecore/prisma'
-import { createSession } from '@/lib/wavecore/auth'
+import { Pool } from 'pg'
+import crypto from 'crypto'
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgresql://wavecore:wavecore123@127.0.0.1:5432/intelliwave",
+})
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Full name is required'),
   email: z.string().email('Valid email is required'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   organizationName: z.string().min(2, 'Organization name is required'),
-  phone: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
+  const client = await pool.connect()
   try {
     const body = await request.json()
     const validated = signupSchema.parse(body)
-
     const normalizedEmail = validated.email.toLowerCase().trim()
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    })
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
-      )
-    }
-
     const hashedPassword = await bcrypt.hash(validated.password, 12)
 
-    const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          name: validated.name,
-          email: normalizedEmail,
-          password: hashedPassword,
-          phone: validated.phone,
-          role: 'OWNER',
-          isActive: true,
-        },
-      })
+    await client.query('BEGIN')
 
-      const organization = await tx.organization.create({
-        data: {
-          name: validated.organizationName,
-          ownerId: user.id,
-          isActive: true,
-          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          members: {
-            connect: { id: user.id },
-          },
-        },
-      })
+    const existing = await client.query('SELECT id FROM "User" WHERE email = $1', [normalizedEmail])
+    if (existing.rows.length > 0) {
+      await client.query('ROLLBACK')
+      return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 })
+    }
 
-      const subscription = await tx.subscription.create({
-        data: {
-          plan: 'TRIAL',
-          status: 'TRIAL',
-          amount: 500,
-          currency: 'KES',
-          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          organizationId: organization.id,
-        },
-      })
+    const userId = crypto.randomBytes(12).toString('hex')
+    const orgId = crypto.randomBytes(12).toString('hex')
+    const subId = crypto.randomBytes(12).toString('hex')
+    const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 
-      await tx.auditLog.create({
-        data: {
-          action: 'SIGNUP',
-          entityType: 'User',
-          entityId: user.id,
-          userId: user.id,
-          changes: JSON.stringify({
-            name: user.name,
-            email: user.email,
-            organization: organization.name,
-          }),
-        },
-      })
+    await client.query(
+      'INSERT INTO "User" (id, name, email, password, role, "isActive", "createdAt", "updatedAt") VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())',
+      [userId, validated.name, normalizedEmail, hashedPassword, 'OWNER', true]
+    )
 
-      return { user, organization, subscription }
-    })
+    await client.query(
+      'INSERT INTO "Organization" (id, name, "ownerId", "isActive", "trialEndsAt", "createdAt", "updatedAt") VALUES ($1,$2,$3,$4,$5,NOW(),NOW())',
+      [orgId, validated.organizationName, userId, true, trialEnd]
+    )
 
-    await createSession(result.user.id, result.organization.id)
+    await client.query(
+      'INSERT INTO "_OrganizationMembers" ("A", "B") VALUES ($1, $2)',
+      [orgId, userId]
+    )
+
+    await client.query(
+      'INSERT INTO "Subscription" (id, plan, status, amount, currency, "trialEndsAt", "organizationId", "createdAt", "updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())',
+      [subId, 'TRIAL', 'TRIAL', 500, 'KES', trialEnd, orgId]
+    )
+
+    await client.query('COMMIT')
 
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully. Your 30-day free trial has started!',
-      data: {
-        userId: result.user.id,
-        name: result.user.name,
-        email: result.user.email,
-        organization: {
-          id: result.organization.id,
-          name: result.organization.name,
-        },
-        subscription: {
-          plan: result.subscription.plan,
-          status: result.subscription.status,
-          trialEndsAt: result.subscription.trialEndsAt,
-        },
-      },
+      message: 'Account created! 30-day free trial started.',
+      data: { userId, name: validated.name, email: normalizedEmail, organization: { id: orgId, name: validated.organizationName } },
     }, { status: 201 })
   } catch (error: any) {
+    await client.query('ROLLBACK')
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
-        { status: 422 }
-      )
+      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
     }
-    console.error('Signup error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Signup error:', error.message)
+    return NextResponse.json({ error: 'Unable to create account. Please try again.' }, { status: 500 })
+  } finally {
+    client.release()
   }
 }
