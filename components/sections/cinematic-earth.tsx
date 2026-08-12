@@ -151,7 +151,7 @@ export function CinematicEarth() {
                   Explore Platform <ArrowRight className="ml-2" />
                 </Button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/wavecore-erp">
                 <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-2xl border-white/20 text-white hover:bg-white/10">
                   View Demo
                 </Button>

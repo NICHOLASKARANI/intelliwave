@@ -36,7 +36,7 @@ const navigation = [
       { name: "ROI Calculator", href: "/roi-calculator" },
     ]
   },
-  { name: "Command Centre", href: "/command-centre" },
+  { name: "WaveCore ERP", href: "/wavecore-erp" },
   { name: "Pricing", href: "/pricing" },
   { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
@@ -72,7 +72,7 @@ export function Navbar() {
 
   const isServiceActive = pathname === '/services' || pathname.startsWith('/ai-engineering') || pathname.startsWith('/cybersecurity') || pathname.startsWith('/software-development') || pathname.startsWith('/cloud-devops') || pathname.startsWith('/enterprise-solutions') || pathname.startsWith('/iiot-automation') || pathname.startsWith('/industry-solutions')
   const isResourceActive = pathname.startsWith('/learning-center') || pathname.startsWith('/knowledge-base') || pathname.startsWith('/webinars') || pathname.startsWith('/api-docs') || pathname.startsWith('/roi-calculator')
-  const isCommandCentreActive = pathname.startsWith('/command-centre')
+  const isCommandCentreActive = pathname.startsWith('/wavecore-erp')
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

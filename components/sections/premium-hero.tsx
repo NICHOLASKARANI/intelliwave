@@ -110,7 +110,7 @@ export function PremiumHero() {
               Explore Platform <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
-          <Link href="/dashboard">
+          <Link href="/wavecore-erp">
             <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-2xl border-white/20 text-white hover:bg-white/10 backdrop-blur-xl font-semibold">
               View Live Demo
             </Button>

@@ -36,7 +36,7 @@ const footerNavigation = {
     { name: "Blog", href: "/blog" },
     { name: "Careers", href: "/careers" },
     { name: "Contact", href: "/contact" },
-    { name: "Dashboard", href: "/dashboard" },
+    { name: "WaveCore ERP", href: "/wavecore-erp" },
     { name: "WaveCore ERP", href: "/wavecore-erp" },
   ],
   legal: [
