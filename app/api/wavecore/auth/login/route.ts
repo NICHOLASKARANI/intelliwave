@@ -3,8 +3,12 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/wavecore/prisma'
-import { createSession } from '@/lib/wavecore/auth'
+import { Pool } from 'pg'
+import crypto from 'crypto'
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgresql://wavecore:wavecore123@localhost:5432/intelliwave",
+})
 
 const loginSchema = z.object({
   email: z.string().email('Valid email is required'),
@@ -12,74 +16,60 @@ const loginSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const client = await pool.connect()
   try {
     const body = await request.json()
     const validated = loginSchema.parse(body)
-
     const normalizedEmail = validated.email.toLowerCase().trim()
 
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      include: {
-        membermemberOrganizations: {
-          include: { subscription: true },
-        },
-      },
-    })
+    const result = await client.query(
+      'SELECT u.id, u.name, u.email, u.password, u.role, u."isActive", ' +
+      'o.id as org_id, o.name as org_name, o."isActive" as org_active, ' +
+      's.id as sub_id, s.plan, s.status as sub_status, s."trialEndsAt" ' +
+      'FROM "User" u ' +
+      'JOIN "_OrganizationMembers" om ON om."B" = u.id ' +
+      'JOIN "Organization" o ON o.id = om."A" ' +
+      'LEFT JOIN "Subscription" s ON s."organizationId" = o.id ' +
+      'WHERE u.email = $1',
+      [normalizedEmail]
+    )
 
-    if (!user || !user.password) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+    }
+
+    const user = result.rows[0]
+
+    if (!user.password) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
     if (!user.isActive) {
-      return NextResponse.json(
-        { error: 'Account is disabled. Contact support.' },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Account is disabled. Contact support.' }, { status: 403 })
     }
 
     const passwordMatch = await bcrypt.compare(validated.password, user.password)
     if (!passwordMatch) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
-    const activeOrg = user.membermemberOrganizations[0]
-    if (!activeOrg) {
-      return NextResponse.json(
-        { error: 'No organization found. Contact support.' },
-        { status: 403 }
-      )
+    if (!user.org_id) {
+      return NextResponse.json({ error: 'No organization found. Contact support.' }, { status: 403 })
     }
 
-    if (!activeOrg.isActive) {
-      return NextResponse.json(
-        { error: 'Organization is suspended. Contact support.' },
-        { status: 403 }
-      )
+    if (!user.org_active) {
+      return NextResponse.json({ error: 'Organization is suspended. Contact support.' }, { status: 403 })
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() },
-    })
+    // Update last login
+    await client.query('UPDATE "User" SET "lastLogin" = NOW() WHERE id = $1', [user.id])
 
-    await createSession(user.id, activeOrg.id)
-
-    await prisma.auditLog.create({
-      data: {
-        action: 'LOGIN',
-        entityType: 'User',
-        entityId: user.id,
-        userId: user.id,
-        changes: JSON.stringify({ email: user.email }),
-      },
-    })
+    // Create session
+    const sessionToken = crypto.randomBytes(64).toString('hex')
+    await client.query(
+      'INSERT INTO "Session" (id, "sessionToken", "userId", expires) VALUES ($1, $2, $3, $4)',
+      [crypto.randomBytes(12).toString('hex'), sessionToken, user.id, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)]
+    )
 
     return NextResponse.json({
       success: true,
@@ -89,24 +79,18 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
-        organization: {
-          id: activeOrg.id,
-          name: activeOrg.name,
-        },
-        subscription: activeOrg.subscription,
+        sessionToken,
+        organization: { id: user.org_id, name: user.org_name },
+        subscription: user.sub_id ? { plan: user.plan, status: user.sub_status, trialEndsAt: user.trialEndsAt } : null,
       },
     })
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
-        { status: 422 }
-      )
+      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
     }
-    console.error('Login error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Login error:', error.message)
+    return NextResponse.json({ error: 'Unable to sign in. Please try again.' }, { status: 500 })
+  } finally {
+    client.release()
   }
 }
