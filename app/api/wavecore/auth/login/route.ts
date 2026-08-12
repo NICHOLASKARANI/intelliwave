@@ -39,39 +39,25 @@ export async function POST(request: NextRequest) {
     }
 
     const user = result.rows[0]
-
-    if (!user.password) {
+    if (!user.password || !(await bcrypt.compare(validated.password, user.password))) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
-
     if (!user.isActive) {
-      return NextResponse.json({ error: 'Account is disabled. Contact support.' }, { status: 403 })
+      return NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
     }
-
-    const passwordMatch = await bcrypt.compare(validated.password, user.password)
-    if (!passwordMatch) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
-    }
-
-    if (!user.org_id) {
-      return NextResponse.json({ error: 'No organization found. Contact support.' }, { status: 403 })
-    }
-
     if (!user.org_active) {
-      return NextResponse.json({ error: 'Organization is suspended. Contact support.' }, { status: 403 })
+      return NextResponse.json({ error: 'Organization is suspended' }, { status: 403 })
     }
 
-    // Update last login
     await client.query('UPDATE "User" SET "lastLogin" = NOW() WHERE id = $1', [user.id])
 
-    // Create session
     const sessionToken = crypto.randomBytes(64).toString('hex')
     await client.query(
       'INSERT INTO "Session" (id, "sessionToken", "userId", expires) VALUES ($1, $2, $3, $4)',
       [crypto.randomBytes(12).toString('hex'), sessionToken, user.id, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)]
     )
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Login successful',
       data: {
@@ -79,17 +65,26 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
-        sessionToken,
         organization: { id: user.org_id, name: user.org_name },
-        subscription: user.sub_id ? { plan: user.plan, status: user.sub_status, trialEndsAt: user.trialEndsAt } : null,
+        subscription: user.sub_id ? { plan: user.plan, status: user.sub_status } : null,
       },
     })
+
+    response.cookies.set('wavecore_session', sessionToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    })
+
+    return response
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
+      return NextResponse.json({ error: 'Validation failed' }, { status: 422 })
     }
     console.error('Login error:', error.message)
-    return NextResponse.json({ error: 'Unable to sign in. Please try again.' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to sign in' }, { status: 500 })
   } finally {
     client.release()
   }
