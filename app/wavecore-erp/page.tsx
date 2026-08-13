@@ -14,11 +14,12 @@ import {
   Ship, HardHat, Stethoscope, GraduationCap, Heart, Landmark,
   Scale, ShoppingCart, Dumbbell, Scissors, CheckCircle,
   Cloud, Server, Database, HardDrive, Layers, LogOut, User,
-  Command, Search as SearchIcon
+  Search as SearchIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { OrganizationSwitcher } from '@/components/wavecore/organization-switcher'
+import { DashboardCharts } from '@/components/wavecore/dashboard-charts'
 
 interface DashboardData {
   organization: { id: string; name: string }
@@ -41,25 +42,24 @@ const formatKES = (amount: number) => {
 }
 
 const modules = [
-  { icon: Calculator, title: 'Finance & Accounting', desc: 'GL, AP/AR, Bank Rec, Budgets, Reports', href: '/wavecore-erp/finance', color: 'from-emerald-500 to-green-500', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-  { icon: Users, title: 'CRM & Sales', desc: 'Leads, Opportunities, Pipeline, Quotations', href: '/wavecore-erp/crm', color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50 dark:bg-blue-950' },
-  { icon: Package, title: 'Inventory', desc: 'Multi-Warehouse, Stock, Serial Numbers', href: '/wavecore-erp/inventory', color: 'from-orange-500 to-red-500', bg: 'bg-orange-50 dark:bg-orange-950' },
-  { icon: Factory, title: 'Manufacturing', desc: 'BOM, Work Orders, Quality Control', href: '/wavecore-erp/manufacturing', color: 'from-purple-500 to-pink-500', bg: 'bg-purple-50 dark:bg-purple-950' },
-  { icon: Briefcase, title: 'HR', desc: 'Employees, Payroll, Attendance, Leave', href: '/wavecore-erp/hr', color: 'from-indigo-500 to-blue-500', bg: 'bg-indigo-50 dark:bg-indigo-950' },
-  { icon: FolderKanban, title: 'Projects', desc: 'Tasks, Kanban, Gantt Charts', href: '/wavecore-erp/projects', color: 'from-teal-500 to-green-500', bg: 'bg-teal-50 dark:bg-teal-950' },
-  { icon: HeadphonesIcon, title: 'Helpdesk', desc: 'Tickets, SLA, Knowledge Base', href: '/wavecore-erp/helpdesk', color: 'from-pink-500 to-rose-500', bg: 'bg-pink-50 dark:bg-pink-950' },
-  { icon: FileText, title: 'Documents', desc: 'Storage, OCR, E-Signatures', href: '/wavecore-erp/documents', color: 'from-cyan-500 to-blue-500', bg: 'bg-cyan-50 dark:bg-cyan-950' },
-  { icon: BarChart3, title: 'BI & Analytics', desc: 'Dashboards, KPIs, AI Forecasting', href: '/wavecore-erp/analytics', color: 'from-violet-500 to-purple-500', bg: 'bg-violet-50 dark:bg-violet-950' },
-  { icon: Bot, title: 'AI Copilot', desc: 'Natural Language, AI Assistant', href: '/wavecore-erp/ai', color: 'from-rose-500 to-pink-500', bg: 'bg-rose-50 dark:bg-rose-950' },
-  { icon: Workflow, title: 'Automation', desc: 'Workflows, Approvals, Rules', href: '/wavecore-erp/automation', color: 'from-amber-500 to-orange-500', bg: 'bg-amber-50 dark:bg-amber-950' },
-  { icon: Globe, title: 'Website', desc: 'Builder, CMS, E-Commerce', href: '/wavecore-erp/website', color: 'from-sky-500 to-blue-500', bg: 'bg-sky-50 dark:bg-sky-950' },
-  { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', color: 'from-gray-500 to-slate-500', bg: 'bg-gray-50 dark:bg-gray-950' },
+  { icon: Calculator, title: 'Finance & Accounting', desc: 'GL, AP/AR, Bank Rec, Budgets, Reports', href: '/wavecore-erp/finance', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+  { icon: Users, title: 'CRM & Sales', desc: 'Leads, Opportunities, Pipeline, Quotations', href: '/wavecore-erp/crm', bg: 'bg-blue-50 dark:bg-blue-950' },
+  { icon: Package, title: 'Inventory', desc: 'Multi-Warehouse, Stock, Serial Numbers', href: '/wavecore-erp/inventory', bg: 'bg-orange-50 dark:bg-orange-950' },
+  { icon: Factory, title: 'Manufacturing', desc: 'BOM, Work Orders, Quality Control', href: '/wavecore-erp/manufacturing', bg: 'bg-purple-50 dark:bg-purple-950' },
+  { icon: Briefcase, title: 'HR', desc: 'Employees, Payroll, Attendance, Leave', href: '/wavecore-erp/hr', bg: 'bg-indigo-50 dark:bg-indigo-950' },
+  { icon: FolderKanban, title: 'Projects', desc: 'Tasks, Kanban, Gantt Charts', href: '/wavecore-erp/projects', bg: 'bg-teal-50 dark:bg-teal-950' },
+  { icon: HeadphonesIcon, title: 'Helpdesk', desc: 'Tickets, SLA, Knowledge Base', href: '/wavecore-erp/helpdesk', bg: 'bg-pink-50 dark:bg-pink-950' },
+  { icon: FileText, title: 'Documents', desc: 'Storage, OCR, E-Signatures', href: '/wavecore-erp/documents', bg: 'bg-cyan-50 dark:bg-cyan-950' },
+  { icon: BarChart3, title: 'BI & Analytics', desc: 'Dashboards, KPIs, AI Forecasting', href: '/wavecore-erp/analytics', bg: 'bg-violet-50 dark:bg-violet-950' },
+  { icon: Bot, title: 'AI Copilot', desc: 'Natural Language, AI Assistant', href: '/wavecore-erp/ai', bg: 'bg-rose-50 dark:bg-rose-950' },
+  { icon: Workflow, title: 'Automation', desc: 'Workflows, Approvals, Rules', href: '/wavecore-erp/automation', bg: 'bg-amber-50 dark:bg-amber-950' },
+  { icon: Globe, title: 'Website', desc: 'Builder, CMS, E-Commerce', href: '/wavecore-erp/website', bg: 'bg-sky-50 dark:bg-sky-950' },
+  { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', bg: 'bg-gray-50 dark:bg-gray-950' },
 ]
 
 export default function WaveCoreERPPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
@@ -76,7 +76,7 @@ export default function WaveCoreERPPage() {
         const dashboardData = await res.json()
         setData(dashboardData)
       } catch (err: any) {
-        setError(err.message)
+        console.error('Dashboard error:', err)
       } finally {
         setLoading(false)
       }
@@ -84,7 +84,6 @@ export default function WaveCoreERPPage() {
     fetchDashboard()
   }, [router])
 
-  // Keyboard shortcut for search
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -176,24 +175,19 @@ export default function WaveCoreERPPage() {
               <span className="font-bold text-lg text-neutral-900 dark:text-white">WaveCore</span>
               <span className="px-2 py-0.5 text-[9px] bg-indigo-600 text-white rounded-full">ERP</span>
             </Link>
-
-            {/* Organization Switcher */}
             <OrganizationSwitcher />
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Search trigger */}
             <button onClick={() => setSearchOpen(true)}
               className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl border bg-neutral-50 dark:bg-neutral-800 text-sm text-muted-foreground hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
               <SearchIcon className="w-4 h-4" />
               <span>Search...</span>
               <kbd className="px-2 py-0.5 text-xs bg-neutral-100 dark:bg-neutral-700 rounded">Ctrl K</kbd>
             </button>
-
             <button className="p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800">
               <Bell className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
             </button>
-
             <div className="flex items-center gap-2 pl-3 border-l border-neutral-200 dark:border-neutral-700">
               <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
                 {data?.user?.name?.[0] || 'U'}
@@ -257,6 +251,9 @@ export default function WaveCoreERPPage() {
             <KPICard label="Invoices" value={(k?.invoiceCount || 0).toString()} icon={FileText} color="text-purple-500" />
             <KPICard label="Journal Entries" value={(k?.journalEntries || 0).toString()} icon={Calculator} color="text-violet-500" />
           </div>
+
+          {/* Charts Section */}
+          <DashboardCharts organizationId={data?.organization?.id || ''} />
 
           {/* Modules Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
