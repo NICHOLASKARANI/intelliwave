@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Allow static files and Next.js internals
+  // Allow static files
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/static') ||
@@ -31,7 +31,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Only protect WaveCore ERP routes
+  // Protect WaveCore ERP routes
   if (pathname.startsWith('/wavecore-erp') || pathname.startsWith('/api/wavecore')) {
     const sessionToken = request.cookies.get(SESSION_COOKIE)?.value
 
@@ -42,7 +42,13 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  // Add security headers
+  const response = NextResponse.next()
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+
+  return response
 }
 
 export const config = {

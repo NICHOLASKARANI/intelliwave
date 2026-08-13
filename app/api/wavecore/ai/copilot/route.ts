@@ -1,92 +1,57 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-const prisma = new PrismaClient()
-
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const query = searchParams.get('query') || 'overview'
-    const module = searchParams.get('module') || 'all'
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    const data: any = {
-      timestamp: new Date().toISOString(),
-      query,
-      module,
-    }
+    const [
+      customers,
+      leads,
+      opportunities,
+      products,
+      invoices,
+      employees,
+      projects,
+    ] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [orgId]),
+      pool.query('SELECT COUNT(*) FROM "Lead" WHERE "organizationId" = $1', [orgId]),
+      pool.query('SELECT COUNT(*) FROM "Opportunity" WHERE "organizationId" = $1', [orgId]),
+      pool.query('SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [orgId]),
+      pool.query('SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [orgId]),
+      pool.query('SELECT COUNT(*) FROM "Employee" WHERE "organizationId" = $1', [orgId]),
+      pool.query('SELECT COUNT(*) FROM "Project" WHERE "organizationId" = $1', [orgId]),
+    ])
 
-    // Fetch data based on query
-    if (module === 'all' || module === 'crm') {
-      data.crm = {
-        customers: await prisma.customer.count(),
-        leads: await prisma.lead.count(),
-        opportunities: await prisma.opportunity.count(),
-      }
-    }
+    const insights: string[] = []
 
-    if (module === 'all' || module === 'finance') {
-      data.finance = {
-        invoices: await prisma.customerInvoice.count(),
-        payments: await prisma.customerPayment.count(),
-        journalEntries: await prisma.journalEntry.count(),
-      }
-    }
-
-    if (module === 'all' || module === 'inventory') {
-      data.inventory = {
-        products: await prisma.product.count(),
-        warehouses: await prisma.warehouse.count(),
-      }
-    }
-
-    if (module === 'all' || module === 'hr') {
-      data.hr = {
-        employees: await prisma.employee.count(),
-      }
-    }
-
-    if (module === 'all' || module === 'projects') {
-      data.projects = {
-        total: await prisma.project.count(),
-      }
-    }
+    if (parseInt(customers.rows[0].count) === 0) insights.push('No customers yet. Add your first customer in CRM.')
+    if (parseInt(products.rows[0].count) === 0) insights.push('No products in inventory. Add products to track stock.')
+    if (parseInt(invoices.rows[0].count) === 0) insights.push('No invoices created. Start billing customers.')
+    if (parseInt(employees.rows[0].count) === 0) insights.push('No employees registered. Set up HR module.')
+    if (insights.length === 0) insights.push('All modules have data. Your ERP is well set up!')
 
     return NextResponse.json({
       success: true,
-      insights: generateInsights(data),
-      data,
+      data: {
+        crm: {
+          customers: parseInt(customers.rows[0].count),
+          leads: parseInt(leads.rows[0].count),
+          opportunities: parseInt(opportunities.rows[0].count),
+        },
+        inventory: { products: parseInt(products.rows[0].count) },
+        finance: { invoices: parseInt(invoices.rows[0].count) },
+        hr: { employees: parseInt(employees.rows[0].count) },
+        projects: { total: parseInt(projects.rows[0].count) },
+      },
+      insights,
     })
   } catch (error) {
-    console.error('Error in AI copilot:', error)
+    console.error('AI copilot error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-}
-
-function generateInsights(data: any): string[] {
-  const insights: string[] = []
-
-  if (data.crm) {
-    if (data.crm.customers === 0) insights.push('No customers yet. Start by adding your first customer in the CRM module.')
-    if (data.crm.leads === 0) insights.push('No leads captured. Create a lead capture form to start building your pipeline.')
-  }
-
-  if (data.finance) {
-    if (data.finance.invoices === 0) insights.push('No invoices created. Set up your first invoice in the Finance module.')
-  }
-
-  if (data.inventory) {
-    if (data.inventory.products === 0) insights.push('No products in inventory. Add products to start tracking stock levels.')
-  }
-
-  if (data.hr) {
-    if (data.hr.employees === 0) insights.push('No employees registered. Add employees in the HR module.')
-  }
-
-  if (insights.length === 0) {
-    insights.push('All modules have data. Your ERP is well set up!')
-  }
-
-  return insights
 }

@@ -1,18 +1,19 @@
 import { Pool } from 'pg'
 
-const globalForDb = globalThis as unknown as {
-  pool: Pool | undefined
+const globalForWaveCore = globalThis as unknown as {
+  wavecorePool?: Pool
 }
 
-const createPool = () => {
-  return new Pool({
+export const pool =
+  globalForWaveCore.wavecorePool ??
+  new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
-    max: 10,
+    max: 20,
     idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
   })
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForWaveCore.wavecorePool = pool
 }
-
-export const pool = globalForDb.pool ?? createPool()
-
-if (process.env.NODE_ENV !== 'production') globalForDb.pool = pool

@@ -1,11 +1,10 @@
-import { getSession } from './auth'
-import { prisma } from './prisma'
+import { getSession, WaveCoreSession } from './auth'
+import { pool } from './db'
 
 export interface TenantContext {
   userId: string
   organizationId: string
   role: string
-  permissions: string[]
 }
 
 export async function getTenantContext(): Promise<TenantContext> {
@@ -18,25 +17,11 @@ export async function getTenantContext(): Promise<TenantContext> {
     userId: session.userId,
     organizationId: session.organizationId,
     role: session.role,
-    permissions: session.permissions,
   }
 }
 
-export async function scopeQuery(where: any = {}): Promise<any> {
-  const ctx = await getTenantContext()
-  return {
-    ...where,
-    organizationId: ctx.organizationId,
-  }
-}
-
-export async function verifyTenantAccess(
-  organizationId: string
-): Promise<void> {
-  const session = await getSession()
-  if (!session || session.organizationId !== organizationId) {
-    throw new Error('Access denied')
-  }
+export async function requireTenantContext(): Promise<TenantContext> {
+  return getTenantContext()
 }
 
 export async function createAuditLog(
@@ -46,16 +31,14 @@ export async function createAuditLog(
   metadata?: any
 ): Promise<void> {
   try {
-    const ctx = await getTenantContext()
-    await prisma.auditLog.create({
-      data: {
-        action,
-        entityType,
-        entityId,
-        userId: ctx.userId,
-        changes: metadata ? JSON.stringify(metadata) : null,
-      },
-    })
+    const session = await getSession()
+    if (!session) return
+
+    await pool.query(
+      `INSERT INTO "AuditLog" (id, action, "entityType", "entityId", "userId", changes, "createdAt")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW())`,
+      [action, entityType, entityId, session.userId, metadata ? JSON.stringify(metadata) : null]
+    )
   } catch (error) {
     console.error('Failed to create audit log:', error)
   }

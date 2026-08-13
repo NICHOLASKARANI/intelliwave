@@ -1,59 +1,60 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { z } from 'zod'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-const prisma = new PrismaClient()
+const ticketSchema = z.object({
+  subject: z.string().min(1),
+  description: z.string().min(1),
+  priority: z.string().default('MEDIUM'),
+})
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const status = searchParams.get('status')
-    const priority = searchParams.get('priority')
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    const where: any = {}
-    if (status && status !== 'ALL') where.status = status
-    if (priority) where.priority = priority
+    const result = await pool.query(
+      `SELECT st.id, st.subject, st.description, st.priority, st.status, st."createdAt",
+              u.name as user_name,
+              (SELECT COUNT(*) FROM "Message" m WHERE m."ticketId" = st.id) as message_count
+       FROM "SupportTicket" st
+       LEFT JOIN "User" u ON u.id = st."userId"
+       WHERE st."userId" = $1
+       ORDER BY st."createdAt" DESC
+       LIMIT 50`,
+      [session.userId]
+    )
 
-    const tickets = await prisma.supportTicket.findMany({
-      where,
-      include: {
-        user: { select: { id: true, name: true, email: true, image: true } },
-        _count: { select: { messages: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    return NextResponse.json(tickets)
+    return NextResponse.json({ tickets: result.rows })
   } catch (error) {
-    console.error('Error fetching tickets:', error)
+    console.error('Tickets GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const { subject, description, priority } = body
+    const session = await requireTenant()
 
-    if (!subject || !description) {
-      return NextResponse.json({ error: 'Subject and description are required' }, { status: 400 })
-    }
+    const body = await request.json()
+    const validated = ticketSchema.parse(body)
 
-    const ticket = await prisma.supportTicket.create({
-      data: {
-        subject,
-        description,
-        priority: priority || 'MEDIUM',
-        status: 'OPEN',
-        userId: 'default-user-id',
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true } }
-      }
-    })
+    const result = await pool.query(
+      `INSERT INTO "SupportTicket" (id, subject, description, priority, status, "userId", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, 'OPEN', $4, NOW(), NOW())
+       RETURNING id, subject, status`,
+      [validated.subject, validated.description, validated.priority, session.userId]
+    )
 
-    return NextResponse.json(ticket, { status: 201 })
+    return NextResponse.json({ success: true, ticket: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('Error creating ticket:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
+    }
+    console.error('Tickets POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

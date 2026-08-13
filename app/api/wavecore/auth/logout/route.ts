@@ -2,20 +2,18 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { destroySession, getSession } from '@/lib/wavecore/auth'
-import { prisma } from '@/lib/wavecore/prisma'
+import { pool } from '@/lib/wavecore/db'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession()
+
     if (session) {
-      await prisma.auditLog.create({
-        data: {
-          action: 'LOGOUT',
-          entityType: 'User',
-          entityId: session.userId,
-          userId: session.userId,
-        },
-      })
+      await pool.query(
+        `INSERT INTO "AuditLog" (id, action, "entityType", "entityId", "userId", "createdAt")
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, NOW())`,
+        ['LOGOUT', 'User', session.userId, session.userId]
+      )
     }
 
     await destroySession()
@@ -23,6 +21,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, message: 'Logged out successfully' })
   } catch (error) {
     console.error('Logout error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to log out' }, { status: 500 })
   }
 }

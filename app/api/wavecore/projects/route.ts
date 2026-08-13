@@ -1,68 +1,88 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { z } from 'zod'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-const prisma = new PrismaClient()
+const projectSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  budget: z.number().optional(),
+  currency: z.string().default('KES'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  status: z.string().default('PENDING'),
+})
 
-export async function GET(req: NextRequest) {
+// GET all projects for tenant
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const status = searchParams.get('status')
-    const search = searchParams.get('search')
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    const where: any = {}
-    if (status && status !== 'ALL') where.status = status
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ]
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+
+    let query = `
+      SELECT p.id, p.title, p.description, p.status, p.budget, p.currency,
+             p."startDate", p."endDate", p."createdAt",
+             u.name as client_name, u.email as client_email,
+             (SELECT COUNT(*) FROM "Milestone" m WHERE m."projectId" = p.id) as milestone_count
+      FROM "Project" p
+      LEFT JOIN "User" u ON u.id = p."clientId"
+      WHERE p."organizationId" = $1
+    `
+    const params: any[] = [orgId]
+
+    if (status && status !== 'ALL') {
+      params.push(status)
+      query += ` AND p.status = $${params.length}`
     }
 
-    const projects = await prisma.project.findMany({
-      where,
-      include: {
-        client: { select: { id: true, name: true, email: true, image: true } },
-        milestones: true,
-        _count: { select: { files: true, messages: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    query += ` ORDER BY p."createdAt" DESC LIMIT 50`
 
-    return NextResponse.json(projects)
+    const result = await pool.query(query, params)
+
+    return NextResponse.json({ projects: result.rows })
   } catch (error) {
-    console.error('Error fetching projects:', error)
+    console.error('Projects GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST create project
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const { title, description, budget, currency, startDate, endDate, status, clientId } = body
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    if (!title) {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
-    }
+    const body = await request.json()
+    const validated = projectSchema.parse(body)
 
-    const project = await prisma.project.create({
-      data: {
-        title,
-        description: description || '',
-        budget: budget ? parseFloat(budget) : null,
-        currency: currency || 'KES',
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        status: status || 'PENDING',
-        clientId: clientId || 'default-client-id',
-      },
-      include: {
-        client: { select: { id: true, name: true, email: true } }
-      }
-    })
+    const result = await pool.query(
+      `INSERT INTO "Project" (id, title, description, status, budget, currency, "startDate", "endDate", "clientId", "organizationId", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+       RETURNING id, title, status`,
+      [
+        validated.title,
+        validated.description || '',
+        validated.status,
+        validated.budget || null,
+        validated.currency,
+        validated.startDate ? new Date(validated.startDate) : null,
+        validated.endDate ? new Date(validated.endDate) : null,
+        session.userId,
+        orgId,
+      ]
+    )
 
-    return NextResponse.json(project, { status: 201 })
+    return NextResponse.json({ success: true, project: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('Error creating project:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
+    }
+    console.error('Projects POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

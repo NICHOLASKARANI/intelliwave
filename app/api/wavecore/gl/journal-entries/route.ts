@@ -1,120 +1,107 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-const prisma = new PrismaClient()
-
-// Validation schema
 const journalEntrySchema = z.object({
   date: z.string(),
   reference: z.string().optional(),
-  description: z.string().min(1, 'Description is required'),
-  fiscalPeriodId: z.string(),
-  organizationId: z.string(),
+  description: z.string().min(1),
   items: z.array(z.object({
     accountId: z.string(),
     description: z.string().optional(),
     debit: z.number().min(0),
     credit: z.number().min(0),
-  })).min(2, 'At least 2 items required'),
+  })).min(2),
 })
 
-// GET /api/wavecore/gl/journal-entries
+// GET all journal entries for tenant
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const organizationId = searchParams.get('organizationId')
-    const status = searchParams.get('status')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    const where: any = {}
-    if (organizationId) where.organizationId = organizationId
-    if (status) where.status = status
+    const result = await pool.query(
+      `SELECT je.id, je.number, je.date, je.reference, je.description, je.status, je.amount,
+              je."createdAt",
+              (SELECT json_agg(json_build_object('id', ji.id, 'description', ji.description, 'debit', ji.debit, 'credit', ji.credit, 'accountName', coa.name))
+               FROM "JournalItem" ji
+               JOIN "ChartOfAccount" coa ON coa.id = ji."accountId"
+               WHERE ji."journalEntryId" = je.id) as items
+       FROM "JournalEntry" je
+       WHERE je."organizationId" = $1
+       ORDER BY je."createdAt" DESC
+       LIMIT 50`,
+      [orgId]
+    )
 
-    const [entries, total] = await Promise.all([
-      prisma.journalEntry.findMany({
-        where,
-        include: {
-          items: { include: { account: true } },
-          fiscalPeriod: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.journalEntry.count({ where }),
-    ])
-
-    return NextResponse.json({
-      success: true,
-      data: entries,
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-    })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return NextResponse.json({ entries: result.rows })
+  } catch (error) {
+    console.error('JournalEntry GET error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST /api/wavecore/gl/journal-entries
+// POST create journal entry with transaction
 export async function POST(request: NextRequest) {
+  const client = await pool.connect()
   try {
+    const session = await requireTenant()
+    const orgId = session.organizationId
+
     const body = await request.json()
     const validated = journalEntrySchema.parse(body)
 
     // Validate debits = credits
     const totalDebit = validated.items.reduce((sum, item) => sum + item.debit, 0)
     const totalCredit = validated.items.reduce((sum, item) => sum + item.credit, 0)
-    
-    if (Math.abs(totalDebit - totalCredit) > 0.001) {
-      return NextResponse.json({
-        success: false,
-        error: `Debits (${totalDebit}) must equal Credits (${totalCredit})`,
-      }, { status: 400 })
+
+    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+      return NextResponse.json({ error: 'Debits must equal credits' }, { status: 422 })
     }
 
-    // Generate entry number
-    const count = await prisma.journalEntry.count({
-      where: { organizationId: validated.organizationId },
-    })
-    const number = `JE/${new Date().getFullYear()}/${String(count + 1).padStart(4, '0')}`
+    await client.query('BEGIN')
 
-    const entry = await prisma.journalEntry.create({
-      data: {
-        number,
-        date: new Date(validated.date),
-        reference: validated.reference,
-        description: validated.description,
-        amount: totalDebit,
-        fiscalPeriodId: validated.fiscalPeriodId,
-        organizationId: validated.organizationId,
-        items: {
-          create: validated.items.map(item => ({
-            accountId: item.accountId,
-            description: item.description,
-            debit: item.debit,
-            credit: item.credit,
-          })),
-        },
-      },
-      include: {
-        items: { include: { account: true } },
-      },
-    })
+    // Validate all accounts belong to tenant
+    for (const item of validated.items) {
+      const account = await client.query(
+        'SELECT id FROM "ChartOfAccount" WHERE id = $1 AND "organizationId" = $2',
+        [item.accountId, orgId]
+      )
+      if (account.rows.length === 0) {
+        await client.query('ROLLBACK')
+        return NextResponse.json({ error: 'Account not found' }, { status: 404 })
+      }
+    }
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        action: 'CREATE',
-        entityType: 'JournalEntry',
-        entityId: entry.id,
-        journalEntryId: entry.id,
-        changes: JSON.stringify(entry),
-      },
-    })
+    const journalId = await client.query(
+      `INSERT INTO "JournalEntry" (id, number, date, reference, description, status, amount, "organizationId", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, gen_random_uuid()::text, $1, $2, $3, 'POSTED', $4, $5, NOW(), NOW())
+       RETURNING id`,
+      [new Date(validated.date), validated.reference || null, validated.description, totalDebit, orgId]
+    )
 
-    return NextResponse.json({ success: true, data: entry }, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    for (const item of validated.items) {
+      await client.query(
+        `INSERT INTO "JournalItem" (id, description, debit, credit, "accountId", "journalEntryId", "createdAt")
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW())`,
+        [item.description || null, item.debit, item.credit, item.accountId, journalId.rows[0].id]
+      )
+    }
+
+    await client.query('COMMIT')
+
+    return NextResponse.json({ success: true, id: journalId.rows[0].id }, { status: 201 })
+  } catch (error) {
+    await client.query('ROLLBACK')
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
+    }
+    console.error('JournalEntry POST error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    client.release()
   }
 }

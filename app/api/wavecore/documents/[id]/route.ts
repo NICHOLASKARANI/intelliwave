@@ -1,45 +1,58 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+export const dynamic = 'force-dynamic'
 
-const prisma = new PrismaClient()
+import { NextRequest, NextResponse } from 'next/server'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const document = await prisma.projectFile.findUnique({
-      where: { id: params.id },
-      include: {
-        project: {
-          select: { id: true, title: true }
-        }
-      }
-    })
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    if (!document) {
+    const result = await pool.query(
+      `SELECT pf.id, pf.name, pf.url, pf.type, pf.size, pf."createdAt"
+       FROM "ProjectFile" pf
+       JOIN "Project" p ON p.id = pf."projectId"
+       WHERE pf.id = $1 AND p."organizationId" = $2`,
+      [params.id, orgId]
+    )
+
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    return NextResponse.json(document)
+    return NextResponse.json({ document: result.rows[0] })
   } catch (error) {
-    console.error('Error fetching document:', error)
+    console.error('Document [id] GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function DELETE(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.projectFile.delete({
-      where: { id: params.id },
-    })
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    return NextResponse.json({ message: 'Document deleted successfully' })
+    const result = await pool.query(
+      `DELETE FROM "ProjectFile" pf
+       USING "Project" p
+       WHERE pf.id = $1 AND pf."projectId" = p.id AND p."organizationId" = $2`,
+      [params.id, orgId]
+    )
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, message: 'Document deleted' })
   } catch (error) {
-    console.error('Error deleting document:', error)
+    console.error('Document [id] DELETE error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

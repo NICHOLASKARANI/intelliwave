@@ -1,76 +1,58 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+export const dynamic = 'force-dynamic'
 
-const prisma = new PrismaClient()
+import { NextRequest, NextResponse } from 'next/server'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const project = await prisma.project.findUnique({
-      where: { id: params.id },
-      include: {
-        client: { select: { id: true, name: true, email: true, image: true } },
-        milestones: { orderBy: { dueDate: 'asc' } },
-        files: { orderBy: { createdAt: 'desc' } },
-        messages: {
-          include: { user: { select: { id: true, name: true, image: true } } },
-          orderBy: { createdAt: 'desc' },
-          take: 50
-        },
-        invoices: true,
-      }
-    })
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    if (!project) {
+    const result = await pool.query(
+      `SELECT p.*, u.name as client_name,
+              (SELECT json_agg(json_build_object('id', m.id, 'title', m.title, 'description', m.description, 'dueDate', m."dueDate", 'completed', m.completed))
+               FROM "Milestone" m WHERE m."projectId" = p.id) as milestones
+       FROM "Project" p
+       LEFT JOIN "User" u ON u.id = p."clientId"
+       WHERE p.id = $1 AND p."organizationId" = $2`,
+      [params.id, orgId]
+    )
+
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    return NextResponse.json(project)
+    return NextResponse.json({ project: result.rows[0] })
   } catch (error) {
-    console.error('Error fetching project:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const body = await req.json()
-    const { title, description, budget, currency, startDate, endDate, status } = body
-
-    const project = await prisma.project.update({
-      where: { id: params.id },
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(budget !== undefined && { budget: parseFloat(budget) }),
-        ...(currency && { currency }),
-        ...(startDate && { startDate: new Date(startDate) }),
-        ...(endDate && { endDate: new Date(endDate) }),
-        ...(status && { status }),
-      },
-    })
-
-    return NextResponse.json(project)
-  } catch (error) {
-    console.error('Error updating project:', error)
+    console.error('Project [id] GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function DELETE(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.project.delete({ where: { id: params.id } })
-    return NextResponse.json({ message: 'Project deleted successfully' })
+    const session = await requireTenant()
+    const orgId = session.organizationId
+
+    const result = await pool.query(
+      'DELETE FROM "Project" WHERE id = $1 AND "organizationId" = $2',
+      [params.id, orgId]
+    )
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, message: 'Project deleted' })
   } catch (error) {
-    console.error('Error deleting project:', error)
+    console.error('Project [id] DELETE error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

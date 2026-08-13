@@ -1,64 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+export const dynamic = 'force-dynamic'
 
-const prisma = new PrismaClient()
+import { NextRequest, NextResponse } from 'next/server'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const organizationId = searchParams.get('organizationId')
-    const asOfDate = searchParams.get('asOfDate') || new Date().toISOString()
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    // Get all accounts with their balances
-    const accounts = await prisma.chartOfAccount.findMany({
-      where: { organizationId: organizationId || undefined, isActive: true },
-      include: {
-        journalItems: {
-          where: {
-            journalEntry: {
-              date: { lte: new Date(asOfDate) },
-              status: 'POSTED',
-            },
-          },
-        },
-      },
-      orderBy: { code: 'asc' },
-    })
+    const result = await pool.query(
+      `SELECT coa.id, coa.code, coa.name, coa.type,
+              COALESCE(SUM(ji.debit), 0) as total_debit,
+              COALESCE(SUM(ji.credit), 0) as total_credit,
+              COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) as balance
+       FROM "ChartOfAccount" coa
+       LEFT JOIN "JournalItem" ji ON ji."accountId" = coa.id
+       LEFT JOIN "JournalEntry" je ON je.id = ji."journalEntryId" AND je.status = 'POSTED'
+       WHERE coa."organizationId" = $1
+       GROUP BY coa.id, coa.code, coa.name, coa.type
+       ORDER BY coa.code ASC`,
+      [orgId]
+    )
 
-    // Calculate balances
-    const trialBalance = accounts.map(account => {
-      const totalDebit = account.journalItems.reduce((sum, item) => sum + item.debit, 0)
-      const totalCredit = account.journalItems.reduce((sum, item) => sum + item.credit, 0)
-
-      let balance = 0
-      if (['ASSET', 'EXPENSE'].includes(account.type)) {
-        balance = totalDebit - totalCredit
-      } else {
-        balance = totalCredit - totalDebit
-      }
-
-      return {
-        code: account.code,
-        name: account.name,
-        type: account.type,
-        debit: totalDebit,
-        credit: totalCredit,
-        balance,
-      }
-    })
-
-    const totalDebit = trialBalance.reduce((sum, a) => sum + a.debit, 0)
-    const totalCredit = trialBalance.reduce((sum, a) => sum + a.credit, 0)
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        accounts: trialBalance,
-        summary: { totalDebit, totalCredit, difference: totalDebit - totalCredit },
-        asOfDate,
-      },
-    })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return NextResponse.json({ accounts: result.rows })
+  } catch (error) {
+    console.error('TrialBalance error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,63 +1,65 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-const prisma = new PrismaClient()
-
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const folder = searchParams.get('folder')
-    const type = searchParams.get('type')
-    const search = searchParams.get('search')
+    const session = await requireTenant()
+    const orgId = session.organizationId
 
-    const where: any = {}
-    if (folder) where.folder = folder
-    if (type) where.type = type
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-      ]
-    }
+    const result = await pool.query(
+      `SELECT pf.id, pf.name, pf.url, pf.type, pf.size, pf."createdAt",
+              p.title as project_title
+       FROM "ProjectFile" pf
+       LEFT JOIN "Project" p ON p.id = pf."projectId"
+       WHERE p."organizationId" = $1
+       ORDER BY pf."createdAt" DESC
+       LIMIT 100`,
+      [orgId]
+    )
 
-    const documents = await prisma.projectFile.findMany({
-      where,
-      include: {
-        project: {
-          select: { id: true, title: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    return NextResponse.json(documents)
+    return NextResponse.json({ documents: result.rows })
   } catch (error) {
-    console.error('Error fetching documents:', error)
+    console.error('Documents GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
+    const session = await requireTenant()
+    const orgId = session.organizationId
+
+    const body = await request.json()
     const { name, url, type, size, projectId } = body
 
     if (!name || !url) {
       return NextResponse.json({ error: 'Name and URL are required' }, { status: 400 })
     }
 
-    const document = await prisma.projectFile.create({
-      data: {
-        name,
-        url,
-        type: type || 'other',
-        size: size || 0,
-        projectId: projectId || 'default-project-id',
-      },
-    })
+    // Verify project belongs to tenant
+    if (projectId) {
+      const project = await pool.query(
+        'SELECT id FROM "Project" WHERE id = $1 AND "organizationId" = $2',
+        [projectId, orgId]
+      )
+      if (project.rows.length === 0) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+    }
 
-    return NextResponse.json(document, { status: 201 })
+    const result = await pool.query(
+      `INSERT INTO "ProjectFile" (id, name, url, type, size, "projectId", "createdAt")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW())
+       RETURNING id, name, url`,
+      [name, url, type || 'other', size || 0, projectId]
+    )
+
+    return NextResponse.json({ success: true, document: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('Error uploading document:', error)
+    console.error('Documents POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
