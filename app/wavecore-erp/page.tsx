@@ -13,10 +13,12 @@ import {
   ChevronRight, Wrench, Truck, Store, Plane,
   Ship, HardHat, Stethoscope, GraduationCap, Heart, Landmark,
   Scale, ShoppingCart, Dumbbell, Scissors, CheckCircle,
-  Cloud, Server, Database, HardDrive, Layers, LogOut, User
+  Cloud, Server, Database, HardDrive, Layers, LogOut, User,
+  Command, Search as SearchIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { OrganizationSwitcher } from '@/components/wavecore/organization-switcher'
 
 interface DashboardData {
   organization: { id: string; name: string }
@@ -58,6 +60,8 @@ export default function WaveCoreERPPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -80,10 +84,30 @@ export default function WaveCoreERPPage() {
     fetchDashboard()
   }, [router])
 
+  // Keyboard shortcut for search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+      if (e.key === 'Escape') {
+        setSearchOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const handleLogout = async () => {
     await fetch('/api/wavecore/auth/logout', { method: 'POST' })
     router.push('/wavecore-erp/auth/login')
   }
+
+  const filteredModules = modules.filter(mod =>
+    mod.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    mod.desc.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -100,6 +124,47 @@ export default function WaveCoreERPPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      {/* Search Modal */}
+      {searchOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-24">
+          <div className="w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border">
+            <div className="flex items-center gap-3 px-5 py-4 border-b">
+              <SearchIcon className="w-5 h-5 text-muted-foreground" />
+              <input
+                autoFocus
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search modules, customers, invoices..."
+                className="flex-1 bg-transparent text-lg focus:outline-none"
+              />
+              <kbd className="px-2 py-1 text-xs bg-neutral-100 dark:bg-neutral-800 rounded">ESC</kbd>
+            </div>
+            <div className="max-h-72 overflow-y-auto p-3">
+              {filteredModules.length > 0 ? (
+                filteredModules.map((mod) => {
+                  const Icon = mod.icon
+                  return (
+                    <Link key={mod.title} href={mod.href} onClick={() => setSearchOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
+                      <div className={`w-9 h-9 rounded-lg ${mod.bg} flex items-center justify-center`}>
+                        <Icon className="w-4 h-4 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{mod.title}</p>
+                        <p className="text-xs text-muted-foreground">{mod.desc}</p>
+                      </div>
+                    </Link>
+                  )
+                })
+              ) : (
+                <p className="text-center py-8 text-sm text-muted-foreground">No results found</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-between px-4 lg:px-6 h-16">
@@ -111,17 +176,24 @@ export default function WaveCoreERPPage() {
               <span className="font-bold text-lg text-neutral-900 dark:text-white">WaveCore</span>
               <span className="px-2 py-0.5 text-[9px] bg-indigo-600 text-white rounded-full">ERP</span>
             </Link>
+
+            {/* Organization Switcher */}
+            <OrganizationSwitcher />
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Organization name */}
-            <span className="hidden md:inline text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              {data?.organization.name}
-            </span>
+            {/* Search trigger */}
+            <button onClick={() => setSearchOpen(true)}
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl border bg-neutral-50 dark:bg-neutral-800 text-sm text-muted-foreground hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+              <SearchIcon className="w-4 h-4" />
+              <span>Search...</span>
+              <kbd className="px-2 py-0.5 text-xs bg-neutral-100 dark:bg-neutral-700 rounded">Ctrl K</kbd>
+            </button>
+
             <button className="p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800">
               <Bell className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
             </button>
-            {/* User menu */}
+
             <div className="flex items-center gap-2 pl-3 border-l border-neutral-200 dark:border-neutral-700">
               <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
                 {data?.user?.name?.[0] || 'U'}
@@ -234,7 +306,7 @@ export default function WaveCoreERPPage() {
 
 function KPICard({ label, value, icon: Icon, color }: { label: string; value: string; icon: any; color: string }) {
   return (
-    <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all">
+    <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all cursor-default">
       <Icon className={`w-5 h-5 ${color} mb-3`} />
       <div className="text-xl font-bold">{value}</div>
       <div className="text-xs text-muted-foreground mt-1">{label}</div>
