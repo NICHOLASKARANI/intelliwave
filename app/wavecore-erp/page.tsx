@@ -4,19 +4,11 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  LayoutDashboard, Settings, Search, Bell, ChevronDown, Plus,
-  TrendingUp, DollarSign, Receipt, CreditCard, Users, Package,
-  Calculator, FileText, BarChart3, Bot, Workflow, Globe,
-  ArrowRight, Sparkles, Activity, Clock, Target, Zap, Shield,
-  Building2, Factory, Briefcase, FolderKanban, HeadphonesIcon,
-  ArrowUpRight, ArrowDownRight, Filter, Download,
-  ChevronRight, Wrench, Truck, Store, Plane,
-  Ship, HardHat, Stethoscope, GraduationCap, Heart, Landmark,
-  Scale, ShoppingCart, Dumbbell, Scissors, CheckCircle,
-  Cloud, Server, Database, HardDrive, Layers, LogOut, User,
-  Search as SearchIcon
+  LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
+  Users, Package, Calculator, FileText, BarChart3, Bot, Workflow, Globe,
+  Activity, Building2, Factory, Briefcase, FolderKanban, HeadphonesIcon,
+  LogOut, Search as SearchIcon, ChevronRight, ArrowUpRight
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { OrganizationSwitcher } from '@/components/wavecore/organization-switcher'
 import { DashboardCharts } from '@/components/wavecore/dashboard-charts'
@@ -35,6 +27,13 @@ interface DashboardData {
     journalEntries: number
   }
   recentActivity: Array<{ action: string; entityType: string; createdAt: string }>
+}
+
+interface SearchResult {
+  id: string
+  type: string
+  title: string
+  subtitle: string
 }
 
 const formatKES = (amount: number) => {
@@ -57,13 +56,25 @@ const modules = [
   { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', bg: 'bg-gray-50 dark:bg-gray-950' },
 ]
 
+const entityIcons: Record<string, any> = {
+  customer: Users,
+  product: Package,
+  invoice: FileText,
+  employee: Briefcase,
+  project: FolderKanban,
+  lead: Users,
+}
+
 export default function WaveCoreERPPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
   const router = useRouter()
 
+  // Fetch dashboard data
   useEffect(() => {
     async function fetchDashboard() {
       try {
@@ -84,6 +95,7 @@ export default function WaveCoreERPPage() {
     fetchDashboard()
   }, [router])
 
+  // Keyboard shortcut for search
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -92,21 +104,40 @@ export default function WaveCoreERPPage() {
       }
       if (e.key === 'Escape') {
         setSearchOpen(false)
+        setSearchQuery('')
+        setSearchResults([])
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Debounced global search
+  useEffect(() => {
+    async function performSearch() {
+      if (searchQuery.length < 2) {
+        setSearchResults([])
+        return
+      }
+      setSearchLoading(true)
+      try {
+        const res = await fetch(`/api/wavecore/search?q=${encodeURIComponent(searchQuery)}&limit=10`)
+        if (res.ok) {
+          const data = await res.json()
+          setSearchResults(data.results)
+        }
+      } catch {} finally {
+        setSearchLoading(false)
+      }
+    }
+    const debounce = setTimeout(performSearch, 300)
+    return () => clearTimeout(debounce)
+  }, [searchQuery])
+
   const handleLogout = async () => {
     await fetch('/api/wavecore/auth/logout', { method: 'POST' })
     router.push('/wavecore-erp/auth/login')
   }
-
-  const filteredModules = modules.filter(mod =>
-    mod.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    mod.desc.toLowerCase().includes(searchQuery.toLowerCase())
-  )
 
   if (loading) {
     return (
@@ -134,30 +165,41 @@ export default function WaveCoreERPPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search modules, customers, invoices..."
+                placeholder="Search customers, invoices, products, employees..."
                 className="flex-1 bg-transparent text-lg focus:outline-none"
               />
               <kbd className="px-2 py-1 text-xs bg-neutral-100 dark:bg-neutral-800 rounded">ESC</kbd>
             </div>
-            <div className="max-h-72 overflow-y-auto p-3">
-              {filteredModules.length > 0 ? (
-                filteredModules.map((mod) => {
-                  const Icon = mod.icon
+            <div className="max-h-80 overflow-y-auto p-3">
+              {searchLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((result) => {
+                  const EntityIcon = entityIcons[result.type] || FileText
                   return (
-                    <Link key={mod.title} href={mod.href} onClick={() => setSearchOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
-                      <div className={`w-9 h-9 rounded-lg ${mod.bg} flex items-center justify-center`}>
-                        <Icon className="w-4 h-4 text-indigo-600" />
+                    <Link
+                      key={`${result.type}-${result.id}`}
+                      href={`/wavecore-erp/${result.type === 'invoice' ? 'finance/invoices' : result.type === 'product' ? 'inventory/products' : result.type === 'employee' ? 'hr' : result.type === 'lead' ? 'crm/leads' : result.type === 'project' ? 'projects' : 'crm/customers'}/${result.id}`}
+                      onClick={() => { setSearchOpen(false); setSearchQuery(''); setSearchResults([]) }}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center">
+                        <EntityIcon className="w-4 h-4 text-indigo-600" />
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{mod.title}</p>
-                        <p className="text-xs text-muted-foreground">{mod.desc}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{result.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{result.subtitle} • {result.type}</p>
                       </div>
+                      <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                     </Link>
                   )
                 })
+              ) : searchQuery.length >= 2 ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">No results found for "{searchQuery}"</p>
               ) : (
-                <p className="text-center py-8 text-sm text-muted-foreground">No results found</p>
+                <p className="text-center py-8 text-sm text-muted-foreground">Type at least 2 characters to search</p>
               )}
             </div>
           </div>
@@ -252,7 +294,7 @@ export default function WaveCoreERPPage() {
             <KPICard label="Journal Entries" value={(k?.journalEntries || 0).toString()} icon={Calculator} color="text-violet-500" />
           </div>
 
-          {/* Charts Section */}
+          {/* Charts */}
           <DashboardCharts organizationId={data?.organization?.id || ''} />
 
           {/* Modules Grid */}
