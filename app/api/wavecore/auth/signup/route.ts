@@ -7,6 +7,7 @@ import { Pool } from 'pg'
 import crypto from 'crypto'
 import { rateLimit, getClientIP } from '@/lib/wavecore/rate-limit'
 import { Errors } from '@/lib/wavecore/errors'
+import { sendEmail } from '@/lib/wavecore/email'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -69,7 +70,24 @@ export async function POST(request: NextRequest) {
       [subId, 'TRIAL', 'TRIAL', 500, 'KES', trialEnd, orgId]
     )
 
+    // Create welcome notification
+    await client.query(
+      `INSERT INTO "Notification" (id, "userId", "organizationId", type, title, content, "isRead", "createdAt")
+       VALUES (gen_random_uuid()::text, $1, $2, 'SYSTEM', $3, $4, false, NOW())`,
+      [userId, orgId, 'Welcome to WaveCore ERP!', `Your ${validated.organizationName} workspace is ready. 30-day free trial started.`]
+    )
+
     await client.query('COMMIT')
+
+    // Send welcome email (async, non-blocking)
+    sendEmail({
+      to: normalizedEmail,
+      subject: `Welcome to WaveCore ERP, ${validated.name}!`,
+      text: `Your organization ${validated.organizationName} is ready. Your 30-day free trial has started.`,
+      html: `<h1>Welcome to WaveCore ERP!</h1><p>Hi ${validated.name},</p><p>Your organization <strong>${validated.organizationName}</strong> is ready.</p><p>Your <strong>30-day free trial</strong> has started.</p><p>After your trial, it's KSh 500/month.</p>`,
+      userId,
+      organizationId: orgId,
+    }).catch(err => console.error('Welcome email failed:', err))
 
     return NextResponse.json({
       success: true,
@@ -77,7 +95,7 @@ export async function POST(request: NextRequest) {
       data: { userId, name: validated.name, email: normalizedEmail, organization: { id: orgId, name: validated.organizationName } },
     }, { status: 201 })
   } catch (error: any) {
-    await client.query('ROLLBACK')
+    await client.query('ROLLBACK').catch(() => {})
     if (error instanceof z.ZodError) {
       return Errors.validation(error.errors)
     }
