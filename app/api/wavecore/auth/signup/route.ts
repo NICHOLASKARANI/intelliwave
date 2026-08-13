@@ -5,9 +5,12 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { Pool } from 'pg'
 import crypto from 'crypto'
+import { rateLimit, getClientIP } from '@/lib/wavecore/rate-limit'
+import { Errors } from '@/lib/wavecore/errors'
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://wavecore:wavecore123@127.0.0.1:5432/intelliwave",
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
 })
 
 const signupSchema = z.object({
@@ -20,6 +23,14 @@ const signupSchema = z.object({
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
+    // Rate limiting: 3 signups per hour per IP
+    const ip = getClientIP(request)
+    const rl = rateLimit(`signup:${ip}`, 3, 60 * 60 * 1000)
+
+    if (!rl.success) {
+      return Errors.rateLimited(Math.ceil((rl.resetAt - Date.now()) / 1000))
+    }
+
     const body = await request.json()
     const validated = signupSchema.parse(body)
     const normalizedEmail = validated.email.toLowerCase().trim()
@@ -30,7 +41,7 @@ export async function POST(request: NextRequest) {
     const existing = await client.query('SELECT id FROM "User" WHERE email = $1', [normalizedEmail])
     if (existing.rows.length > 0) {
       await client.query('ROLLBACK')
-      return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 })
+      return Errors.conflict('An account with this email already exists')
     }
 
     const userId = crypto.randomBytes(12).toString('hex')
@@ -68,10 +79,10 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     await client.query('ROLLBACK')
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
+      return Errors.validation(error.errors)
     }
     console.error('Signup error:', error.message)
-    return NextResponse.json({ error: 'Unable to create account. Please try again.' }, { status: 500 })
+    return Errors.internal()
   } finally {
     client.release()
   }

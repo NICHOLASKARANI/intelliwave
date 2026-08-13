@@ -5,9 +5,12 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { Pool } from 'pg'
 import crypto from 'crypto'
+import { rateLimit, getClientIP } from '@/lib/wavecore/rate-limit'
+import { Errors } from '@/lib/wavecore/errors'
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://wavecore:wavecore123@localhost:5432/intelliwave",
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
 })
 
 const loginSchema = z.object({
@@ -18,6 +21,14 @@ const loginSchema = z.object({
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
+    // Rate limiting: 5 attempts per 15 minutes per IP
+    const ip = getClientIP(request)
+    const rl = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000)
+
+    if (!rl.success) {
+      return Errors.rateLimited(Math.ceil((rl.resetAt - Date.now()) / 1000))
+    }
+
     const body = await request.json()
     const validated = loginSchema.parse(body)
     const normalizedEmail = validated.email.toLowerCase().trim()
@@ -35,18 +46,18 @@ export async function POST(request: NextRequest) {
     )
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+      return Errors.unauthorized()
     }
 
     const user = result.rows[0]
     if (!user.password || !(await bcrypt.compare(validated.password, user.password))) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+      return Errors.unauthorized()
     }
     if (!user.isActive) {
-      return NextResponse.json({ error: 'Account is disabled' }, { status: 403 })
+      return apiError(403, 'Account is disabled')
     }
     if (!user.org_active) {
-      return NextResponse.json({ error: 'Organization is suspended' }, { status: 403 })
+      return apiError(403, 'Organization is suspended')
     }
 
     await client.query('UPDATE "User" SET "lastLogin" = NOW() WHERE id = $1', [user.id])
@@ -81,11 +92,15 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed' }, { status: 422 })
+      return Errors.validation(error.errors)
     }
     console.error('Login error:', error.message)
-    return NextResponse.json({ error: 'Unable to sign in' }, { status: 500 })
+    return Errors.internal()
   } finally {
     client.release()
   }
+}
+
+function apiError(status: number, message: string) {
+  return NextResponse.json({ error: message }, { status })
 }
