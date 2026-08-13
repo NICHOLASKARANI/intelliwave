@@ -29,24 +29,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Mark all as read
 export async function PUT(request: NextRequest) {
   try {
     const session = await requireTenant()
-    const body = await request.json()
-    const { notificationId } = body
-
-    if (!notificationId) {
-      return NextResponse.json({ error: 'Notification ID required' }, { status: 400 })
-    }
 
     await pool.query(
-      'UPDATE "Notification" SET "isRead" = true WHERE id = $1 AND ("userId" = $2 OR "organizationId" = $3)',
-      [notificationId, session.userId, session.organizationId]
+      'UPDATE "Notification" SET "isRead" = true WHERE ("userId" = $1 OR "organizationId" = $2) AND "isRead" = false',
+      [session.userId, session.organizationId]
     )
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Notification update error:', error)
+    console.error('Notifications update error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
