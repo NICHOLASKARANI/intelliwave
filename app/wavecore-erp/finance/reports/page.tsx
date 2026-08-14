@@ -1,74 +1,202 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
-  LayoutDashboard, FileText, TrendingUp, DollarSign, 
-  Calculator, Download, ArrowRight, BarChart3
-} from 'lucide-react'
+import { ArrowLeft, FileText, BarChart3, TrendingUp, Download, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Financial Reports - WaveCore ERP | IntelliWavve',
-  description: 'Financial statements, reports, and analytics.',
+interface TrialBalanceData {
+  accounts: Array<{ code: string; name: string; total_debit: number; total_credit: number }>
+  totals: { totalDebit: number; totalCredit: number; balanced: boolean }
 }
 
-const reports = [
-  { icon: Calculator, title: 'Trial Balance', desc: 'Summary of all account balances', href: '/wavecore-erp/finance/gl/trial-balance', color: 'from-blue-500 to-cyan-500' },
-  { icon: TrendingUp, title: 'Income Statement', desc: 'Profit & Loss Statement', href: '/wavecore-erp/finance/gl/income-statement', color: 'from-green-500 to-emerald-500' },
-  { icon: DollarSign, title: 'Balance Sheet', desc: 'Statement of Financial Position', href: '/wavecore-erp/finance/gl/balance-sheet', color: 'from-purple-500 to-pink-500' },
-  { icon: BarChart3, title: 'Cash Flow Statement', desc: 'Cash inflows and outflows', href: '/wavecore-erp/finance/reports/cash-flow', color: 'from-orange-500 to-red-500' },
-  { icon: FileText, title: 'Aging Receivables', desc: 'Customer payment aging', href: '/wavecore-erp/finance/ar/aging', color: 'from-indigo-500 to-blue-500' },
-  { icon: FileText, title: 'Aging Payables', desc: 'Supplier payment aging', href: '/wavecore-erp/finance/ap/aging', color: 'from-teal-500 to-green-500' },
-  { icon: TrendingUp, title: 'Budget vs Actual', desc: 'Compare budget to actuals', href: '/wavecore-erp/finance/reports/budget-vs-actual', color: 'from-pink-500 to-rose-500' },
-  { icon: Calculator, title: 'General Ledger', desc: 'Full transaction listing', href: '/wavecore-erp/finance/gl', color: 'from-cyan-500 to-blue-500' },
-]
+interface IncomeStatementData {
+  revenue: number
+  expenses: number
+  netProfit: number
+  grossMargin: string
+}
 
-export default function FinancialReportsPage() {
+interface BalanceSheetData {
+  assets: number
+  liabilities: number
+  equity: number
+  balanced: boolean
+}
+
+export default function ReportsPage() {
+  const [trialBalance, setTrialBalance] = useState<TrialBalanceData | null>(null)
+  const [incomeStatement, setIncomeStatement] = useState<IncomeStatementData | null>(null)
+  const [balanceSheet, setBalanceSheet] = useState<BalanceSheetData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        const [tbRes, isRes, bsRes] = await Promise.all([
+          fetch('/api/wavecore/gl/trial-balance'),
+          fetch('/api/wavecore/finance/reports/income-statement'),
+          fetch('/api/wavecore/finance/reports/balance-sheet'),
+        ])
+
+        if (tbRes.ok) setTrialBalance(await tbRes.json())
+        if (isRes.ok) setIncomeStatement(await isRes.json())
+        if (bsRes.ok) setBalanceSheet(await bsRes.json())
+      } catch (err) {
+        console.error('Failed to load reports:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchReports()
+  }, [])
+
+  const formatKES = (amount: number) => `KSh ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}`
+
+  const exportReport = async (type: string) => {
+    const endpoint = type === 'trial-balance' 
+      ? '/api/wavecore/gl/trial-balance'
+      : type === 'income-statement'
+      ? '/api/wavecore/finance/reports/income-statement'
+      : '/api/wavecore/finance/reports/balance-sheet'
+
+    try {
+      const res = await fetch(endpoint)
+      if (res.ok) {
+        const data = await res.json()
+        const csv = jsonToCSV(data, type)
+        downloadCSV(csv, `${type}.csv`)
+      }
+    } catch (err) {
+      console.error('Export failed:', err)
+    }
+  }
+
+  const jsonToCSV = (data: any, type: string): string => {
+    let csv = ''
+    if (type === 'trial-balance') {
+      csv = 'Code,Account Name,Debit,Credit\n'
+      data.accounts?.forEach((acc: any) => {
+        csv += `${acc.code},${acc.name},${acc.total_debit},${acc.total_credit}\n`
+      })
+      csv += `TOTAL,,${data.totals?.totalDebit},${data.totals?.totalCredit}`
+    } else if (type === 'income-statement') {
+      csv = 'Item,Amount\n'
+      csv += `Revenue,${data.revenue}\n`
+      csv += `Expenses,${data.expenses}\n`
+      csv += `Net Profit,${data.netProfit}`
+    } else {
+      csv = 'Item,Amount\n'
+      csv += `Assets,${data.assets}\n`
+      csv += `Liabilities,${data.liabilities}\n`
+      csv += `Equity,${data.equity}`
+    }
+    return csv
+  }
+
+  const downloadCSV = (csv: string, filename: string) => {
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
+        <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-4">
             <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
-                <Image src="/images/Wavecore.jpeg" alt="WaveCore ERP" width={40} height={40} className="object-cover" priority />
-              </div>
-              <span className="font-bold text-xl text-neutral-900 dark:text-white">WaveCore</span>
-              <span className="ml-2 px-2 py-0.5 text-[10px] bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-medium">ERP</span>
+              <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+              <span className="font-bold">WaveCore</span>
             </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="text-sm font-medium">Financial Reports</span>
+            <span className="text-sm">Financial Reports</span>
           </div>
-          <Link href="/wavecore-erp" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted">
-            <LayoutDashboard className="w-4 h-4" /> Dashboard
+          <Link href="/wavecore-erp/finance" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="w-4 h-4" /> Finance
           </Link>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Financial Reports</h1>
-          <p className="text-muted-foreground mt-1">Generate and export financial statements and reports</p>
-        </div>
+        <h1 className="text-2xl font-bold mb-6">Financial Reports</h1>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {reports.map((report) => {
-            const Icon = report.icon
-            return (
-              <Link key={report.title} href={report.href}
-                className="group p-6 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg transition-all">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${report.color} p-2.5 mb-4 group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-full h-full text-white" />
-                </div>
-                <h3 className="font-bold text-neutral-900 dark:text-white mb-1">{report.title}</h3>
-                <p className="text-xs text-muted-foreground">{report.desc}</p>
-                <div className="flex items-center gap-1 mt-3 text-indigo-600 text-sm font-medium">
-                  View Report <ArrowRight className="w-3 h-3" />
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" />
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Trial Balance */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <BarChart3 className="w-6 h-6 text-indigo-500" />
+                <h3 className="font-bold">Trial Balance</h3>
+              </div>
+              {trialBalance ? (
+                <>
+                  <p className="text-sm mb-2">Total Debit: <span className="font-bold">{formatKES(trialBalance.totals?.totalDebit || 0)}</span></p>
+                  <p className="text-sm mb-2">Total Credit: <span className="font-bold">{formatKES(trialBalance.totals?.totalCredit || 0)}</span></p>
+                  <p className={`text-sm mb-4 ${trialBalance.totals?.balanced ? 'text-green-600' : 'text-red-600'}`}>
+                    {trialBalance.totals?.balanced ? '✓ Balanced' : '⚠ Not Balanced'}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => exportReport('trial-balance')} className="gap-1">
+                    <Download className="w-3 h-3" /> Export CSV
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No data yet</p>
+              )}
+            </div>
+
+            {/* Income Statement */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <TrendingUp className="w-6 h-6 text-green-500" />
+                <h3 className="font-bold">Income Statement</h3>
+              </div>
+              {incomeStatement ? (
+                <>
+                  <p className="text-sm mb-2">Revenue: <span className="font-bold">{formatKES(incomeStatement.revenue || 0)}</span></p>
+                  <p className="text-sm mb-2">Expenses: <span className="font-bold">{formatKES(incomeStatement.expenses || 0)}</span></p>
+                  <p className="text-sm mb-4">Net Profit: <span className={`font-bold ${(incomeStatement.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatKES(incomeStatement.netProfit || 0)}</span></p>
+                  <Button variant="outline" size="sm" onClick={() => exportReport('income-statement')} className="gap-1">
+                    <Download className="w-3 h-3" /> Export CSV
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No data yet</p>
+              )}
+            </div>
+
+            {/* Balance Sheet */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <FileText className="w-6 h-6 text-purple-500" />
+                <h3 className="font-bold">Balance Sheet</h3>
+              </div>
+              {balanceSheet ? (
+                <>
+                  <p className="text-sm mb-2">Assets: <span className="font-bold">{formatKES(balanceSheet.assets || 0)}</span></p>
+                  <p className="text-sm mb-2">Liabilities: <span className="font-bold">{formatKES(balanceSheet.liabilities || 0)}</span></p>
+                  <p className="text-sm mb-2">Equity: <span className="font-bold">{formatKES(balanceSheet.equity || 0)}</span></p>
+                  <p className={`text-sm mb-4 ${balanceSheet.balanced ? 'text-green-600' : 'text-red-600'}`}>
+                    {balanceSheet.balanced ? '✓ Balanced' : '⚠ Not Balanced'}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => exportReport('balance-sheet')} className="gap-1">
+                    <Download className="w-3 h-3" /> Export CSV
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No data yet</p>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
