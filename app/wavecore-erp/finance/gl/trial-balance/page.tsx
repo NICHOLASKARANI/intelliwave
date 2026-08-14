@@ -1,92 +1,140 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, Calculator, FileText, Download } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Trial Balance - WaveCore ERP | IntelliWavve',
-  description: 'View trial balance report in WaveCore ERP.',
+interface AccountBalance {
+  id: string
+  code: string
+  name: string
+  type: string
+  total_debit: number
+  total_credit: number
+  balance: number
 }
 
 export default function TrialBalancePage() {
+  const [accounts, setAccounts] = useState<AccountBalance[]>([])
+  const [loading, setLoading] = useState(true)
+  const [totalDebit, setTotalDebit] = useState(0)
+  const [totalCredit, setTotalCredit] = useState(0)
+
+  useEffect(() => {
+    async function fetchTrialBalance() {
+      try {
+        const res = await fetch('/api/wavecore/gl/trial-balance')
+        if (res.ok) {
+          const data = await res.json()
+          const accountList = data.accounts || []
+          setAccounts(accountList)
+          setTotalDebit(accountList.reduce((sum: number, a: any) => sum + parseFloat(a.total_debit || '0'), 0))
+          setTotalCredit(accountList.reduce((sum: number, a: any) => sum + parseFloat(a.total_credit || '0'), 0))
+        }
+      } catch {} finally {
+        setLoading(false)
+      }
+    }
+    fetchTrialBalance()
+  }, [])
+
+  const formatKES = (amount: number) => `KSh ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}`
+  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01
+
+  const handleExport = () => {
+    let csv = 'Code,Account Name,Type,Debit,Credit\n'
+    accounts.forEach(a => {
+      csv += `${a.code},"${a.name}",${a.type},${a.total_debit},${a.total_credit}\n`
+    })
+    csv += `TOTAL,,,${totalDebit},${totalCredit}`
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'trial-balance.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
+        <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-4">
             <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
-                <Image src="/images/Wavecore.jpeg" alt="WaveCore ERP" width={40} height={40} className="object-cover" priority />
-              </div>
-              <span className="font-bold text-xl text-neutral-900 dark:text-white">WaveCore</span>
-              <span className="ml-2 px-2 py-0.5 text-[10px] bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-medium">ERP</span>
+              <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+              <span className="font-bold">WaveCore</span>
             </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="text-sm font-medium">Trial Balance</span>
+            <span className="text-sm">Trial Balance</span>
           </div>
-          <Link href="/wavecore-erp" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted">
-            <LayoutDashboard className="w-4 h-4" /> Dashboard
+          <Link href="/wavecore-erp/finance" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="w-4 h-4" /> Finance
           </Link>
         </div>
       </header>
 
-      <div className="flex">
-        <aside className="w-64 bg-white dark:bg-neutral-900 border-r min-h-[calc(100vh-64px)] p-4 hidden lg:block">
-          <Link href="/wavecore-erp/finance/gl" className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted mb-6">
-            ← Back to General Ledger
-          </Link>
-          <nav className="space-y-1">
-            {[
-              { icon: Calculator, label: 'Dashboard', href: '/wavecore-erp/finance/gl' },
-              { icon: FileText, label: 'Journal Entries', href: '/wavecore-erp/finance/journal' },
-              { icon: Calculator, label: 'Trial Balance', href: '/wavecore-erp/finance/gl/trial-balance', active: true },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <Link key={item.label} href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
-                    (item as any).active 
-                      ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-semibold shadow-sm' 
-                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-muted'
-                  }`}>
-                  <Icon className="w-4 h-4" /> {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-        </aside>
+      <main className="max-w-5xl mx-auto p-4 lg:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Trial Balance</h1>
+          {accounts.length > 0 && (
+            <Button variant="outline" onClick={handleExport} className="gap-2">
+              <Download className="w-4 h-4" /> Export CSV
+            </Button>
+          )}
+        </div>
 
-        <main className="flex-1 p-4 lg:p-8">
-          <div className="flex items-center justify-between mb-8">
+        {/* Balance Indicator */}
+        <div className={`p-4 rounded-2xl border mb-6 ${isBalanced ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Trial Balance</h1>
-              <p className="text-muted-foreground mt-1">Summary of all account balances</p>
+              <p className="text-sm font-medium">Total Debits: {formatKES(totalDebit)}</p>
+              <p className="text-sm font-medium">Total Credits: {formatKES(totalCredit)}</p>
             </div>
-            <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1" /> Export PDF</Button>
+            <p className={`font-bold ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
+              {isBalanced ? '✓ Balanced' : '⚠ Not Balanced'}
+            </p>
           </div>
+        </div>
 
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden shadow-sm">
-            <div className="grid grid-cols-3 gap-4 p-6 border-b">
-              {[
-                { label: 'Total Debits', value: 'KSh 0.00' },
-                { label: 'Total Credits', value: 'KSh 0.00' },
-                { label: 'Difference', value: 'KSh 0.00' },
-              ].map((item) => (
-                <div key={item.label} className="text-center p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800">
-                  <div className="text-sm text-muted-foreground">{item.label}</div>
-                  <div className="text-xl font-bold text-neutral-900 dark:text-white mt-1">{item.value}</div>
-                </div>
-              ))}
-            </div>
-            <div className="p-12 text-center text-muted-foreground">
-              <Calculator className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Trial balance will appear here</p>
-              <p className="text-sm mt-1">Post journal entries to generate your trial balance.</p>
-            </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" />
           </div>
-        </main>
-      </div>
+        ) : accounts.length > 0 ? (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-neutral-50 dark:bg-neutral-800">
+                  <th className="text-left p-4">Code</th>
+                  <th className="text-left p-4">Account</th>
+                  <th className="text-left p-4">Type</th>
+                  <th className="text-right p-4">Debit</th>
+                  <th className="text-right p-4">Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map(acc => (
+                  <tr key={acc.id} className="border-b hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                    <td className="p-4 font-mono">{acc.code}</td>
+                    <td className="p-4">{acc.name}</td>
+                    <td className="p-4"><span className="px-2 py-1 text-xs bg-neutral-100 rounded-full">{acc.type}</span></td>
+                    <td className="p-4 text-right">{formatKES(acc.total_debit)}</td>
+                    <td className="p-4 text-right">{formatKES(acc.total_credit)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
+            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="font-medium">No data yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Post journal entries to see your trial balance</p>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
