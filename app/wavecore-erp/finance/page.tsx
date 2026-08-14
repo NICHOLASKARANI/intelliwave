@@ -42,7 +42,7 @@ const quickLinks = [
   { icon: Receipt, label: 'Invoices', desc: 'Manage customer invoices', href: '/wavecore-erp/finance/invoices' },
   { icon: CreditCard, label: 'Payments', desc: 'Record and track payments', href: '/wavecore-erp/finance/payments' },
   { icon: Building2, label: 'Bank Reconciliation', desc: 'Match bank statements', href: '/wavecore-erp/finance/reconciliation' },
-  { icon: Calculator, label: 'Budget', desc: 'Plan and track budgets', href: '/wavecore-erp/finance/budget' },
+  { icon: Calculator, label: 'Budget', desc: 'Plan and track budgets', href: '/wavecore-erp/finance/budgets' },
   { icon: TrendingUp, label: 'Reports', desc: 'Financial statements & reports', href: '/wavecore-erp/finance/reports' },
 ]
 
