@@ -40,4 +40,12 @@ next-env.d.ts
 .vscode/
 .idea/
 *.swp
-*.swo
+*.swo# WaveCore Mobile - don't deploy to Vercel
+wavecore_mobile/build/
+wavecore_mobile/.dart_tool/
+wavecore_mobile/android/.gradle/
+wavecore_mobile/.flutter-plugins
+wavecore_mobile/.flutter-plugins-dependencies
+
+# Large APK files - host separately
+public/downloads/*.apk
