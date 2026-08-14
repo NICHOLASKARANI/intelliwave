@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, Plus, FileText, Download, ArrowLeft } from 'lucide-react'
+import { Plus, Download, Zap, FileText, ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Account {
@@ -18,35 +18,58 @@ interface Account {
 export default function ChartOfAccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
+  const [quickSetupLoading, setQuickSetupLoading] = useState(false)
+
+  async function fetchAccounts() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/gl/chart-of-accounts')
+      if (res.ok) {
+        const data = await res.json()
+        setAccounts(data.accounts || [])
+      }
+    } catch (err) {
+      console.error('Failed to load accounts:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchAccounts() {
-      try {
-        const res = await fetch('/api/wavecore/gl/chart-of-accounts')
-        if (res.ok) {
-          const data = await res.json()
-          setAccounts(data.accounts || [])
-        }
-      } catch (err) {
-        console.error('Failed to load accounts:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchAccounts()
   }, [])
+
+  const handleQuickSetup = async () => {
+    setQuickSetupLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/gl/chart-of-accounts/quick-setup', {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (res.ok) {
+        await fetchAccounts()
+        alert(`✅ Created ${data.created} standard accounts! You can now create journal entries.`)
+      } else {
+        alert(data.error || 'Quick setup failed')
+      }
+    } catch (err) {
+      alert('Network error - please try again')
+    } finally {
+      setQuickSetupLoading(false)
+    }
+  }
 
   const handleExport = async () => {
     try {
       const res = await fetch('/api/wavecore/gl/chart-of-accounts/export')
       if (res.ok) {
         const blob = await res.blob()
-        const url = window.URL.createObjectURL(blob)
+        const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
         a.download = 'chart-of-accounts.csv'
         a.click()
-        window.URL.revokeObjectURL(url)
+        URL.revokeObjectURL(url)
       }
     } catch (err) {
       console.error('Export failed:', err)
@@ -54,11 +77,11 @@ export default function ChartOfAccountsPage() {
   }
 
   const typeColors: Record<string, string> = {
-    ASSET: 'bg-blue-50 text-blue-600',
-    LIABILITY: 'bg-orange-50 text-orange-600',
-    EQUITY: 'bg-purple-50 text-purple-600',
-    INCOME: 'bg-green-50 text-green-600',
-    EXPENSE: 'bg-red-50 text-red-600',
+    ASSET: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300',
+    LIABILITY: 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-300',
+    EQUITY: 'bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-300',
+    INCOME: 'bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-300',
+    EXPENSE: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300',
   }
 
   return (
@@ -84,15 +107,19 @@ export default function ChartOfAccountsPage() {
             <h1 className="text-3xl font-bold">Chart of Accounts</h1>
             <p className="text-muted-foreground mt-1">Manage your general ledger accounts</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {accounts.length > 0 && (
-              <Button variant="outline" onClick={handleExport} className="gap-2">
-                <Download className="w-4 h-4" /> Export
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-1" /> Export
               </Button>
             )}
+            <Button onClick={handleQuickSetup} disabled={quickSetupLoading} className="bg-green-600 hover:bg-green-700">
+              {quickSetupLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Zap className="w-4 h-4 mr-1" />}
+              Quick Setup (18 Accounts)
+            </Button>
             <Link href="/wavecore-erp/finance/gl/create">
-              <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="w-4 h-4" /> New Account
+              <Button className="bg-indigo-600 hover:bg-indigo-700">
+                <Plus className="w-4 h-4 mr-1" /> New Account
               </Button>
             </Link>
           </div>
@@ -100,7 +127,7 @@ export default function ChartOfAccountsPage() {
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" />
           </div>
         ) : accounts.length > 0 ? (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
@@ -110,7 +137,7 @@ export default function ChartOfAccountsPage() {
                   <th className="text-left p-4">Code</th>
                   <th className="text-left p-4">Name</th>
                   <th className="text-left p-4">Type</th>
-                  <th className="text-left p-4">Description</th>
+                  <th className="text-left p-4">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,7 +150,13 @@ export default function ChartOfAccountsPage() {
                         {account.type}
                       </span>
                     </td>
-                    <td className="p-4 text-muted-foreground">{account.description || '-'}</td>
+                    <td className="p-4">
+                      {account.isActive ? (
+                        <span className="text-green-600 text-xs font-medium">Active</span>
+                      ) : (
+                        <span className="text-red-600 text-xs font-medium">Inactive</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -132,15 +165,21 @@ export default function ChartOfAccountsPage() {
         ) : (
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium text-lg">Your Chart of Accounts is empty</p>
-            <p className="text-sm text-muted-foreground mt-1 mb-6">
-              Create accounts to start recording financial transactions
+            <p className="font-medium text-lg mb-1">Your Chart of Accounts is empty</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Create accounts manually or use Quick Setup to add all standard accounts
             </p>
-            <Link href="/wavecore-erp/finance/gl/create">
-              <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="w-4 h-4" /> Create Your First Account
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button onClick={handleQuickSetup} disabled={quickSetupLoading} className="bg-green-600 hover:bg-green-700">
+                {quickSetupLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Zap className="w-4 h-4 mr-1" />}
+                Quick Setup (18 Accounts)
               </Button>
-            </Link>
+              <Link href="/wavecore-erp/finance/gl/create">
+                <Button className="bg-indigo-600 hover:bg-indigo-700">
+                  <Plus className="w-4 h-4 mr-1" /> Create Account Manually
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
       </main>
