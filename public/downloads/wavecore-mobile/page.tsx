@@ -70,7 +70,7 @@ export default function WaveCoreDownloadPage() {
         {/* Download Button */}
         <div className="text-center">
           <a
-            href="https://github.com/NICHOLASKARANI/intelliwave/releases/latest/download/wavecore-erp.apk"
+            href="https://github.com/NICHOLASKARANI/intelliwave/releases/latest/download/app-release.apk"
             download="WaveCore-ERP.apk"
             className="inline-flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-indigo-500/30 transition-all hover:scale-105"
           >
