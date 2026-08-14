@@ -6,36 +6,68 @@ import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 const accountSchema = z.object({
-  code: z.string().min(1),
-  name: z.string().min(1),
+  code: z.string().min(1, 'Account code is required'),
+  name: z.string().min(1, 'Account name is required'),
   type: z.enum(['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE']),
-  parentId: z.string().optional(),
+  parentId: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
   isReconcilable: z.boolean().default(false),
-  description: z.string().optional(),
 })
 
-// GET all accounts for current tenant
+// GET - Returns EMPTY array for new orgs
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant()
     const orgId = session.organizationId
 
-    const result = await pool.query(
-      `SELECT id, code, name, type, "parentId", "isActive", "isReconcilable", description, "createdAt"
-       FROM "ChartOfAccount"
-       WHERE "organizationId" = $1
-       ORDER BY code ASC`,
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type')
+    const search = searchParams.get('search')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const pageSize = Math.min(100, parseInt(searchParams.get('pageSize') || '50'))
+    const offset = (page - 1) * pageSize
+
+    let query = `
+      SELECT id, code, name, type, "parentId", description, "isReconcilable", "isActive", "createdAt"
+      FROM "ChartOfAccount"
+      WHERE "organizationId" = $1
+    `
+    const params: any[] = [orgId]
+
+    if (type && type !== 'ALL') {
+      params.push(type)
+      query += ` AND type = $${params.length}`
+    }
+
+    if (search) {
+      params.push(`%${search}%`)
+      query += ` AND (name ILIKE $${params.length} OR code ILIKE $${params.length})`
+    }
+
+    query += ` ORDER BY code ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
+    params.push(pageSize, offset)
+
+    const result = await pool.query(query, params)
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM "ChartOfAccount" WHERE "organizationId" = $1',
       [orgId]
     )
 
-    return NextResponse.json({ accounts: result.rows })
+    return NextResponse.json({
+      accounts: result.rows,
+      total: parseInt(countResult.rows[0].count),
+      page,
+      pageSize,
+      totalPages: Math.ceil(parseInt(countResult.rows[0].count) / pageSize),
+    })
   } catch (error) {
     console.error('ChartOfAccount GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST create new account
+// POST - Create new account
 export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant()
@@ -44,7 +76,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = accountSchema.parse(body)
 
-    // Verify parent belongs to same org if provided
+    // Check duplicate code within org
+    const existing = await pool.query(
+      'SELECT id FROM "ChartOfAccount" WHERE code = $1 AND "organizationId" = $2',
+      [validated.code, orgId]
+    )
+    if (existing.rows.length > 0) {
+      return NextResponse.json({ error: 'Account code already exists' }, { status: 409 })
+    }
+
+    // Verify parent belongs to same org
     if (validated.parentId) {
       const parent = await pool.query(
         'SELECT id FROM "ChartOfAccount" WHERE id = $1 AND "organizationId" = $2',
@@ -56,10 +97,10 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await pool.query(
-      `INSERT INTO "ChartOfAccount" (id, code, name, type, "parentId", "isReconcilable", description, "organizationId", "createdAt", "updatedAt")
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      `INSERT INTO "ChartOfAccount" (id, code, name, type, "parentId", description, "isReconcilable", "isActive", "organizationId", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, true, $7, NOW(), NOW())
        RETURNING id, code, name, type`,
-      [validated.code, validated.name, validated.type, validated.parentId || null, validated.isReconcilable, validated.description || null, orgId]
+      [validated.code, validated.name, validated.type, validated.parentId || null, validated.description || null, validated.isReconcilable, orgId]
     )
 
     return NextResponse.json({ success: true, account: result.rows[0] }, { status: 201 })

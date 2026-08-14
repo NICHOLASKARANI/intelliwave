@@ -13,7 +13,7 @@ export async function GET(
     const orgId = session.organizationId
 
     const result = await pool.query(
-      `SELECT id, code, name, type, "parentId", "isActive", "isReconcilable", description
+      `SELECT id, code, name, type, "parentId", description, "isReconcilable", "isActive"
        FROM "ChartOfAccount"
        WHERE id = $1 AND "organizationId" = $2`,
       [params.id, orgId]
@@ -38,6 +38,15 @@ export async function DELETE(
     const session = await requireTenant()
     const orgId = session.organizationId
 
+    // Check if account has journal items (don't delete if in use)
+    const hasItems = await pool.query(
+      'SELECT COUNT(*) FROM "JournalItem" WHERE "accountId" = $1',
+      [params.id]
+    )
+    if (parseInt(hasItems.rows[0].count) > 0) {
+      return NextResponse.json({ error: 'Cannot delete account with journal entries' }, { status: 409 })
+    }
+
     const result = await pool.query(
       'DELETE FROM "ChartOfAccount" WHERE id = $1 AND "organizationId" = $2',
       [params.id, orgId]
@@ -47,7 +56,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Account not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true, message: 'Account deleted' })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('ChartOfAccount [id] DELETE error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
