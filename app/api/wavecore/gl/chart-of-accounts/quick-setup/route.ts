@@ -32,36 +32,24 @@ export async function POST(request: NextRequest) {
     const orgId = session.organizationId
 
     await client.query('BEGIN')
-
     let created = 0
-    let skipped = 0
 
     for (const account of defaultAccounts) {
       const existing = await client.query(
         'SELECT id FROM "ChartOfAccount" WHERE code = $1 AND "organizationId" = $2',
         [account.code, orgId]
       )
-
       if (existing.rows.length === 0) {
         await client.query(
-          `INSERT INTO "ChartOfAccount" (id, code, name, type, "isActive", "organizationId", "createdAt", "updatedAt")
-           VALUES (gen_random_uuid()::text, $1, $2, $3, true, $4, NOW(), NOW())`,
+          'INSERT INTO "ChartOfAccount" (id, code, name, type, "isActive", "organizationId", "createdAt", "updatedAt") VALUES (gen_random_uuid()::text, $1, $2, $3, true, $4, NOW(), NOW())',
           [account.code, account.name, account.type, orgId]
         )
         created++
-      } else {
-        skipped++
       }
     }
 
     await client.query('COMMIT')
-
-    return NextResponse.json({
-      success: true,
-      created,
-      skipped,
-      message: `Created ${created} accounts, skipped ${skipped} existing`,
-    }, { status: 201 })
+    return NextResponse.json({ success: true, created }, { status: 201 })
   } catch (error) {
     await client.query('ROLLBACK')
     console.error('Quick setup error:', error)
