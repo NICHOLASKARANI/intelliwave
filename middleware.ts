@@ -8,12 +8,18 @@ const PUBLIC_PATHS = [
   '/api/wavecore/auth/login',
   '/api/wavecore/auth/signup',
   '/api/wavecore/auth/forgot-password',
+  '/api/wavecore/health',
 ]
 
 const SESSION_COOKIE = 'wavecore_session'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Allow ALL API routes - they do their own auth via requireTenant()
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next()
+  }
 
   // Allow public paths
   if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
@@ -31,8 +37,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Protect WaveCore ERP routes
-  if (pathname.startsWith('/wavecore-erp') || pathname.startsWith('/api/wavecore')) {
+  // Only protect WaveCore ERP PAGES (not API)
+  if (pathname.startsWith('/wavecore-erp')) {
     const sessionToken = request.cookies.get(SESSION_COOKIE)?.value
 
     if (!sessionToken) {
@@ -42,13 +48,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Add security headers
-  const response = NextResponse.next()
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
