@@ -20,21 +20,12 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant()
     const orgId = session.organizationId
-
     const result = await pool.query(
-      `SELECT ci.id, ci.number, ci.date, ci."dueDate", ci.status, ci.subtotal, ci."taxAmount", ci.total,
-              c.name as customer_name,
-              COALESCE((SELECT SUM(cp.amount) FROM "CustomerPayment" cp WHERE cp."invoiceId" = ci.id), 0) as paid_amount
-       FROM "CustomerInvoice" ci
-       JOIN "Customer" c ON c.id = ci."customerId"
-       WHERE ci."organizationId" = $1
-       ORDER BY ci."createdAt" DESC
-       LIMIT 50`,
+      'SELECT * FROM "CustomerInvoice" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 50',
       [orgId]
     )
-
     return NextResponse.json({ invoices: result.rows })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Invoices GET error:', error.message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -58,45 +49,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
-    // Calculate totals server-side
     const subtotal = validated.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
     const taxAmount = subtotal * 0.16
     const total = subtotal + taxAmount
     const invoiceNumber = 'INV-' + Date.now().toString().slice(-8)
 
-    await client.query('BEGIN')
-
-    const invoiceResult = await client.query(
+    const result = await client.query(
       `INSERT INTO "CustomerInvoice" (id, number, date, "dueDate", status, subtotal, "taxAmount", total, "customerId", "organizationId", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, 'DRAFT', $4, $5, $6, $7, $8, NOW(), NOW())
-       RETURNING id, number`,
+       RETURNING id, number, total`,
       [invoiceNumber, new Date(validated.date), new Date(validated.dueDate || validated.date), subtotal, taxAmount, total, validated.customerId, orgId]
     )
 
-    const invoiceId = invoiceResult.rows[0].id
-
-    // Store line items in a simple way (using SalesOrderItem table structure)
-    for (const item of validated.items) {
-      // Check if SalesOrderItem table exists and has the columns we need
-      // We'll insert into a generic way
-      await client.query(
-        `INSERT INTO "SalesOrderItem" (id, description, quantity, "unitPrice", total, "salesOrderId", "createdAt")
-         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW())`,
-        [item.description, item.quantity, item.unitPrice, item.quantity * item.unitPrice, invoiceId]
-      )
-    }
-
-    await client.query('COMMIT')
-
     return NextResponse.json({
       success: true,
-      invoice: { id: invoiceId, number: invoiceNumber, total },
+      invoice: result.rows[0],
     }, { status: 201 })
-  } catch (error) {
-    await client.query('ROLLBACK')
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed' }, { status: 422 })
-    }
+  } catch (error: any) {
     console.error('Invoices POST error:', error.message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   } finally {
