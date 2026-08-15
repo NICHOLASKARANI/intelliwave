@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, FileText, Download, ArrowLeft, Loader2 } from 'lucide-react'
+import { Plus, FileText, Download, ArrowLeft, Loader2, Trash2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface JournalEntry {
@@ -41,6 +41,21 @@ export default function JournalEntriesPage() {
   }, [])
 
   const formatKES = (amount: number) => 'KSh ' + (amount || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this journal entry? This cannot be undone.')) return
+    try {
+      const res = await fetch(`/api/wavecore/gl/journal-entries/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchEntries()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to delete')
+      }
+    } catch {
+      alert('Network error')
+    }
+  }
 
   const handleExport = async () => {
     try {
@@ -80,7 +95,7 @@ export default function JournalEntriesPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Journal Entries</h1>
-            <p className="text-muted-foreground mt-1">All posted journal entries</p>
+            <p className="text-muted-foreground mt-1">All journal entries</p>
           </div>
           <div className="flex gap-2">
             {entries.length > 0 && (
@@ -111,6 +126,7 @@ export default function JournalEntriesPage() {
                   <th className="text-left p-4">Reference</th>
                   <th className="text-right p-4">Amount</th>
                   <th className="text-left p-4">Status</th>
+                  <th className="text-center p-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,6 +139,16 @@ export default function JournalEntriesPage() {
                     <td className="p-4 text-right font-medium">{formatKES(entry.amount)}</td>
                     <td className="p-4">
                       <span className="px-2 py-1 text-xs bg-green-50 text-green-600 rounded-full">{entry.status}</span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700" title="View">
+                          <Eye className="w-4 h-4 text-blue-500" />
+                        </button>
+                        <button onClick={() => handleDelete(entry.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950" title="Delete">
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
