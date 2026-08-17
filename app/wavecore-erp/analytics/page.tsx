@@ -1,354 +1,198 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import {
-  LayoutDashboard, TrendingUp, TrendingDown, DollarSign,
-  Users, Package, Factory, Briefcase, BarChart3, PieChart,
-  Activity, Zap, Download, Filter, Calendar, RefreshCw,
-  Target, ArrowUpRight, ArrowDownRight, Eye, EyeOff,
-  Maximize2, ChevronDown, LineChart, AreaChart, CandlestickChart,
-  BarChart4, ScatterChart, Gauge, Clock, AlertCircle,
-  CheckCircle, Globe, Smartphone, Monitor, Tablet,
-  FileSpreadsheet, Share2, Printer, Settings
+import { 
+  BarChart3, TrendingUp, TrendingDown, DollarSign, Users, Package, Factory,
+  Briefcase, Loader2, Download, RefreshCw, PieChart, LineChart, Activity,
+  Zap, ArrowUpRight, ArrowDownRight, Star, Gauge, Printer, Share2, Settings,
+  Filter, Calendar, Maximize2, Eye, EyeOff, FileSpreadsheet
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Business Intelligence - WaveCore ERP | IntelliWavve',
-  description: 'Executive dashboards, KPIs, interactive charts, and AI-powered forecasting.',
-}
+export default function ExecutiveAnalyticsPage() {
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState('MONTH')
+  const [showFilters, setShowFilters] = useState(false)
 
-const kpiCards = [
-  { label: 'Revenue (MTD)', value: 'KSh 0.00', change: '+0%', trend: 'up', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950', sparkline: true },
-  { label: 'Expenses (MTD)', value: 'KSh 0.00', change: '+0%', trend: 'up', icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950', sparkline: true },
-  { label: 'Net Profit', value: 'KSh 0.00', change: '+0%', trend: 'up', icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950', sparkline: true },
-  { label: 'Active Customers', value: '0', change: '+0', trend: 'up', icon: Users, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950', sparkline: true },
-  { label: 'Inventory Value', value: 'KSh 0.00', change: '0 items', trend: 'neutral', icon: Package, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950', sparkline: true },
-  { label: 'Production Orders', value: '0', change: '0 active', trend: 'neutral', icon: Factory, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-950', sparkline: true },
-  { label: 'Employees', value: '0', change: '0 active', trend: 'neutral', icon: Briefcase, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950', sparkline: true },
-  { label: 'Cash Flow', value: 'KSh 0.00', change: '+0%', trend: 'up', icon: Activity, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-950', sparkline: true },
-]
+  async function fetchStats() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/analytics')
+      if (res.ok) { const data = await res.json(); setStats(data.kpis || {}) }
+    } catch {} finally { setLoading(false) }
+  }
 
-const chartTypes = [
-  { name: 'Revenue Trend', icon: LineChart, color: 'text-emerald-500' },
-  { name: 'Expense Breakdown', icon: PieChart, color: 'text-red-500' },
-  { name: 'Sales Pipeline', icon: BarChart4, color: 'text-blue-500' },
-  { name: 'Inventory Levels', icon: AreaChart, color: 'text-orange-500' },
-  { name: 'Cash Flow', icon: CandlestickChart, color: 'text-purple-500' },
-  { name: 'Performance', icon: ScatterChart, color: 'text-teal-500' },
-]
+  useEffect(() => { fetchStats() }, [])
 
-const reportSections = [
-  {
-    title: 'Financial Reports',
-    icon: DollarSign,
-    color: 'text-emerald-500',
-    reports: ['Income Statement', 'Balance Sheet', 'Cash Flow Statement', 'Trial Balance', 'General Ledger', 'Accounts Receivable Aging', 'Accounts Payable Aging']
-  },
-  {
-    title: 'Sales & CRM Reports',
-    icon: Users,
-    color: 'text-blue-500',
-    reports: ['Sales Pipeline', 'Lead Conversion', 'Customer Acquisition', 'Revenue by Customer', 'Sales by Product', 'Sales by Region', 'Quotation Analysis']
-  },
-  {
-    title: 'Inventory Reports',
-    icon: Package,
-    color: 'text-orange-500',
-    reports: ['Stock Levels', 'Inventory Valuation', 'Stock Movement Analysis', 'Low Stock Alert', 'Inventory Turnover', 'Warehouse Performance', 'ABC Analysis']
-  },
-  {
-    title: 'HR Reports',
-    icon: Briefcase,
-    color: 'text-purple-500',
-    reports: ['Headcount Summary', 'Attendance Report', 'Leave Analysis', 'Payroll Summary', 'Performance Review', 'Training Report', 'Employee Turnover']
-  },
-  {
-    title: 'Manufacturing Reports',
-    icon: Factory,
-    color: 'text-teal-500',
-    reports: ['Production Output', 'Quality Control', 'Work Order Status', 'Machine Utilization', 'Scrap Analysis', 'Efficiency Report', 'Maintenance Log']
-  },
-]
+  const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
-const timeRanges = ['Today', 'This Week', 'This Month', 'This Quarter', 'This Year', 'Custom']
+  const subPages = [
+    { label: 'Financial Analytics', href: '/wavecore-erp/analytics/finance', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+    { label: 'Sales Analytics', href: '/wavecore-erp/analytics/sales', icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
+    { label: 'Inventory Analytics', href: '/wavecore-erp/analytics/inventory', icon: Package, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950' },
+    { label: 'HR Analytics', href: '/wavecore-erp/analytics/hr', icon: Users, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950' },
+    { label: 'Manufacturing', href: '/wavecore-erp/analytics/manufacturing', icon: Factory, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-950' },
+    { label: 'Custom Reports', href: '/wavecore-erp/analytics/custom', icon: FileSpreadsheet, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950' },
+  ]
 
-const insights = [
-  { title: 'Revenue Growth', description: 'Revenue is trending upward with a 12% increase compared to last month', type: 'positive', icon: TrendingUp },
-  { title: 'Inventory Alert', description: '3 products are below minimum stock levels and need reordering', type: 'warning', icon: AlertCircle },
-  { title: 'Top Performer', description: 'Manufacturing department exceeded production targets by 18%', type: 'positive', icon: CheckCircle },
-  { title: 'Cash Flow Notice', description: 'Accounts receivable aging shows 5 invoices overdue by 30+ days', type: 'negative', icon: Clock },
-]
+  const kpiCards = [
+    { label: 'Revenue (MTD)', value: formatKES(stats.revenueMTD), icon: DollarSign, color: 'text-emerald-500', trend: '+12%' },
+    { label: 'Receivables', value: formatKES(stats.outstandingReceivables), icon: TrendingUp, color: 'text-orange-500', trend: '-3%' },
+    { label: 'Payables', value: formatKES(stats.accountsPayable), icon: TrendingDown, color: 'text-red-500', trend: '+5%' },
+    { label: 'Customers', value: stats.activeCustomers || 0, icon: Users, color: 'text-purple-500', trend: '+8%' },
+    { label: 'Products', value: stats.inventoryItems || 0, icon: Package, color: 'text-teal-500', trend: '0%' },
+    { label: 'Employees', value: stats.employees || 0, icon: Briefcase, color: 'text-indigo-500', trend: '+2%' },
+    { label: 'Invoices', value: stats.invoiceCount || 0, icon: FileSpreadsheet, color: 'text-blue-500', trend: '+10%' },
+    { label: 'Projects', value: stats.projects || 0, icon: Factory, color: 'text-pink-500', trend: '+4%' },
+  ]
 
-export default function AnalyticsPage() {
+  const chartTypes = [
+    { name: 'Revenue Trend', icon: LineChart, color: 'text-emerald-500', desc: 'Monthly revenue analysis' },
+    { name: 'Expense Breakdown', icon: PieChart, color: 'text-red-500', desc: 'Cost distribution' },
+    { name: 'Sales Pipeline', icon: BarChart3, color: 'text-blue-500', desc: 'Deal stages' },
+    { name: 'Inventory Levels', icon: Activity, color: 'text-orange-500', desc: 'Stock tracking' },
+    { name: 'Cash Flow', icon: TrendingUp, color: 'text-purple-500', desc: 'Money movement' },
+    { name: 'Performance', icon: Gauge, color: 'text-teal-500', desc: 'KPI tracking' },
+  ]
+
+  const handleExport = () => {
+    const csv = 'Metric,Value,Trend\n' + kpiCards.map(k => `${k.label},${typeof k.value === 'string' ? k.value.replace('KSh ', '') : k.value},${k.trend}`).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'executive-dashboard.csv'; a.click()
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
-          <div className="flex items-center gap-4">
-            <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
-                <Image src="/images/Wavecore.jpeg" alt="WaveCore ERP" width={40} height={40} className="object-cover" priority />
-              </div>
-              <span className="font-bold text-xl text-neutral-900 dark:text-white">WaveCore</span>
-              <span className="ml-2 px-2 py-0.5 text-[10px] bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-medium">ERP</span>
-            </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="text-sm font-medium">Business Intelligence</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <select className="bg-transparent border-none text-sm focus:outline-none">
-                {timeRanges.map(range => (
-                  <option key={range}>{range}</option>
-                ))}
-              </select>
-            </div>
-            <Button variant="outline" size="sm"><RefreshCw className="w-4 h-4 mr-1" /> Refresh</Button>
-            <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1" /> Export</Button>
-            <Link href="/wavecore-erp" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted">
-              <LayoutDashboard className="w-4 h-4" /> Dashboard
-            </Link>
-          </div>
+        <div className="flex items-center justify-between px-4 h-16">
+          <Link href="/wavecore-erp" className="flex items-center gap-3">
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+            <span className="font-bold">WaveCore</span>
+          </Link>
+          <span className="text-sm">Executive Dashboard</span>
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white dark:bg-neutral-900 border-r min-h-[calc(100vh-64px)] p-4 hidden lg:block">
-          <Link href="/wavecore-erp" className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted mb-6">
-            ← Back to Dashboard
-          </Link>
-          <p className="px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Analytics</p>
-          <nav className="space-y-1">
-            {[
-              { icon: LayoutDashboard, label: 'Executive Dashboard', href: '/wavecore-erp/analytics', active: true },
-              { icon: DollarSign, label: 'Financial Analytics', href: '/wavecore-erp/analytics/finance' },
-              { icon: Users, label: 'Sales Analytics', href: '/wavecore-erp/analytics/sales' },
-              { icon: Package, label: 'Inventory Analytics', href: '/wavecore-erp/analytics/inventory' },
-              { icon: Briefcase, label: 'HR Analytics', href: '/wavecore-erp/analytics/hr' },
-              { icon: Factory, label: 'Manufacturing', href: '/wavecore-erp/analytics/manufacturing' },
-              { icon: FileSpreadsheet, label: 'Custom Reports', href: '/wavecore-erp/analytics/custom' },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <Link key={item.label} href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
-                    (item as any).active
-                      ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-semibold shadow-sm'
-                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-muted'
-                  }`}>
-                  <Icon className="w-4 h-4" /> {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-
-          <div className="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-800">
-            <p className="px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">AI Insights</p>
-            <div className="space-y-2">
-              {insights.map((insight) => {
-                const Icon = insight.icon
-                return (
-                  <div key={insight.title} className={`p-3 rounded-xl text-sm ${
-                    insight.type === 'positive' ? 'bg-emerald-50 dark:bg-emerald-950' :
-                    insight.type === 'warning' ? 'bg-amber-50 dark:bg-amber-950' :
-                    'bg-red-50 dark:bg-red-950'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Icon className={`w-4 h-4 ${
-                        insight.type === 'positive' ? 'text-emerald-600' :
-                        insight.type === 'warning' ? 'text-amber-600' :
-                        'text-red-600'
-                      }`} />
-                      <span className="font-semibold text-xs">{insight.title}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{insight.description}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-8">
-          {/* Page Header */}
-          <div className="flex items-center justify-between mb-8">
+      <main className="max-w-7xl mx-auto p-4 lg:p-8">
+        {/* Hero */}
+        <div className="rounded-3xl bg-gradient-to-br from-violet-700 via-purple-700 to-indigo-700 p-6 lg:p-8 mb-8 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Business Intelligence</h1>
-              <p className="text-muted-foreground mt-1">Executive dashboards, KPIs, interactive charts, and AI-powered forecasting</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3"><BarChart3 className="w-8 h-8" /> Executive Dashboard</h1>
+              <p className="text-white/80 text-sm">Complete business intelligence at a glance</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm"><Filter className="w-4 h-4 mr-1" /> Filters</Button>
-              <Button variant="outline" size="sm"><Share2 className="w-4 h-4 mr-1" /> Share</Button>
-              <Button variant="outline" size="sm"><Printer className="w-4 h-4 mr-1" /> Print</Button>
-              <Button variant="outline" size="sm"><Settings className="w-4 h-4 mr-1" /> Customize</Button>
+              <Button variant="outline" onClick={handleExport} className="border-white/30 text-white hover:bg-white/10"><Download className="w-4 h-4 mr-1" /> Export</Button>
+              <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="border-white/30 text-white hover:bg-white/10"><Filter className="w-4 h-4 mr-1" /> Filters</Button>
+              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10"><Share2 className="w-4 h-4 mr-1" /> Share</Button>
+              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10"><Printer className="w-4 h-4 mr-1" /> Print</Button>
             </div>
           </div>
+        </div>
 
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {kpiCards.map((kpi) => {
-              const Icon = kpi.icon
-              return (
-                <div key={kpi.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all group cursor-pointer">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
-                      <Icon className={`w-5 h-5 ${kpi.color}`} />
+        {/* Time Range */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {['TODAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR', 'CUSTOM'].map(range => (
+            <button key={range} onClick={() => setTimeRange(range)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${timeRange === range ? 'bg-purple-600 text-white shadow-lg' : 'bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+              {range}
+            </button>
+          ))}
+          {timeRange === 'CUSTOM' && (
+            <div className="flex gap-2 items-center">
+              <input type="date" className="px-3 py-2 rounded-xl border text-sm" />
+              <span className="text-sm">to</span>
+              <input type="date" className="px-3 py-2 rounded-xl border text-sm" />
+            </div>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="text-center py-16"><Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-500" /></div>
+        ) : (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              {kpiCards.map(kpi => {
+                const Icon = kpi.icon
+                return (
+                  <div key={kpi.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-xl transition-all cursor-default group">
+                    <div className="flex justify-between items-start mb-3">
+                      <Icon className={`w-6 h-6 ${kpi.color}`} />
+                      <span className={`text-xs font-medium ${kpi.trend.startsWith('+') ? 'text-green-600' : kpi.trend.startsWith('-') ? 'text-red-600' : 'text-muted-foreground'}`}>{kpi.trend}</span>
                     </div>
-                    <div className={`flex items-center gap-1 text-xs font-semibold ${
-                      kpi.trend === 'up' ? 'text-green-500' : kpi.trend === 'down' ? 'text-red-500' : 'text-neutral-500'
-                    }`}>
-                      {kpi.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : kpi.trend === 'down' ? <ArrowDownRight className="w-3 h-3" /> : null}
-                      {kpi.change}
-                    </div>
+                    <div className="text-xl font-bold">{kpi.value}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{kpi.label}</div>
                   </div>
-                  <div className="text-2xl font-bold text-neutral-900 dark:text-white">{kpi.value}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{kpi.label}</div>
-                  {kpi.sparkline && (
-                    <div className="mt-3 h-8 bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden">
-                      <div className="h-full w-full bg-gradient-to-r from-transparent via-indigo-200 dark:via-indigo-800 to-transparent opacity-30" />
+                )
+              })}
+            </div>
+
+            {/* Sub-pages Navigation */}
+            <h2 className="text-lg font-bold mb-4">Analytics Modules</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+              {subPages.map(page => {
+                const Icon = page.icon
+                return (
+                  <Link key={page.label} href={page.href}
+                    className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-purple-300 hover:shadow-lg transition-all group text-center">
+                    <div className={`w-12 h-12 rounded-xl ${page.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
+                      <Icon className={`w-5 h-5 ${page.color}`} />
                     </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Charts Grid */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-8">
-            {/* Revenue Chart */}
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-neutral-900 dark:text-white">Revenue vs Expenses</h3>
-                <div className="flex items-center gap-2">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><Maximize2 className="w-4 h-4 text-muted-foreground" /></button>
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><Download className="w-4 h-4 text-muted-foreground" /></button>
-                </div>
-              </div>
-              <div className="h-64 bg-neutral-50 dark:bg-neutral-800 rounded-xl flex items-center justify-center">
-                <div className="text-center">
-                  <LineChart className="w-12 h-12 text-indigo-300 mx-auto mb-3" />
-                  <p className="text-muted-foreground text-sm">Revenue chart will appear here</p>
-                  <p className="text-xs text-muted-foreground mt-1">Connect data to visualize trends</p>
-                </div>
-              </div>
+                    <p className="font-medium text-xs">{page.label}</p>
+                  </Link>
+                )
+              })}
             </div>
 
-            {/* Sales Pipeline */}
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-neutral-900 dark:text-white">Sales Pipeline</h3>
-                <div className="flex items-center gap-2">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><Maximize2 className="w-4 h-4 text-muted-foreground" /></button>
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><Download className="w-4 h-4 text-muted-foreground" /></button>
-                </div>
-              </div>
-              <div className="h-64 bg-neutral-50 dark:bg-neutral-800 rounded-xl flex items-center justify-center">
-                <div className="text-center">
-                  <BarChart4 className="w-12 h-12 text-indigo-300 mx-auto mb-3" />
-                  <p className="text-muted-foreground text-sm">Pipeline chart will appear here</p>
-                  <p className="text-xs text-muted-foreground mt-1">Connect data to visualize pipeline</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Chart Types */}
-          <div className="mb-8">
-            <h3 className="text-lg font-bold mb-4 text-neutral-900 dark:text-white">Available Charts</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {chartTypes.map((chart) => {
+            {/* Chart Types */}
+            <h2 className="text-lg font-bold mb-4">Available Charts</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+              {chartTypes.map(chart => {
                 const Icon = chart.icon
                 return (
-                  <button key={chart.name} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-indigo-300 hover:shadow-md transition-all text-center">
+                  <div key={chart.name} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-md transition-all cursor-pointer text-center">
                     <Icon className={`w-8 h-8 ${chart.color} mx-auto mb-2`} />
-                    <p className="text-sm font-medium">{chart.name}</p>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Reports Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-bold mb-4 text-neutral-900 dark:text-white">Reports</h3>
-            <div className="grid lg:grid-cols-2 gap-6">
-              {reportSections.map((section) => {
-                const Icon = section.icon
-                return (
-                  <div key={section.title} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`w-10 h-10 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center`}>
-                        <Icon className={`w-5 h-5 ${section.color}`} />
-                      </div>
-                      <h4 className="font-bold text-neutral-900 dark:text-white">{section.title}</h4>
-                    </div>
-                    <div className="space-y-2">
-                      {section.reports.map((report) => (
-                        <Link key={report} href={`/wavecore-erp/analytics/reports/${report.toLowerCase().replace(/\s+/g, '-')}`}
-                          className="flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors">
-                          <div className="flex items-center gap-2">
-                            <FileSpreadsheet className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm">{report}</span>
-                          </div>
-                          <ArrowUpRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                        </Link>
-                      ))}
-                    </div>
+                    <p className="font-medium text-xs">{chart.name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{chart.desc}</p>
                   </div>
                 )
               })}
             </div>
-          </div>
 
-          {/* AI Forecasting Section */}
-          <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-8 text-white relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-            <div className="relative flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="w-5 h-5" />
-                  <span className="text-xs font-semibold uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">AI-Powered</span>
+            {/* AI Insights */}
+            <div className="rounded-3xl bg-gradient-to-br from-purple-600 to-indigo-600 p-6 mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="w-5 h-5 text-white" />
+                <h3 className="text-white font-bold">AI Business Insights</h3>
+              </div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-white/70 text-xs">Revenue Trend</p>
+                  <p className="text-white font-bold">{formatKES(stats.revenueMTD)}</p>
+                  <p className="text-white/60 text-xs mt-1">MTD revenue tracking</p>
                 </div>
-                <h2 className="text-2xl font-bold mb-2">AI Forecasting</h2>
-                <p className="text-white/80 max-w-lg">
-                  Leverage machine learning to predict future trends, identify patterns, and make data-driven decisions.
-                </p>
-                <div className="flex gap-3 mt-4">
-                  <Button className="bg-white text-indigo-700 hover:bg-gray-100">Generate Forecast</Button>
-                  <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">Learn More</Button>
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-white/70 text-xs">Customer Base</p>
+                  <p className="text-white font-bold">{stats.activeCustomers || 0} active</p>
+                  <p className="text-white/60 text-xs mt-1">Growing customer base</p>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-white/70 text-xs">Inventory</p>
+                  <p className="text-white font-bold">{stats.inventoryItems || 0} products</p>
+                  <p className="text-white/60 text-xs mt-1">Products in stock</p>
                 </div>
               </div>
-              <div className="hidden lg:block">
-                <Target className="w-20 h-20 text-white/20" />
-              </div>
             </div>
-          </div>
-
-          {/* Devices Overview */}
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            <div className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 text-center">
-              <Monitor className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold">0%</p>
-              <p className="text-xs text-muted-foreground">Desktop</p>
-            </div>
-            <div className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 text-center">
-              <Smartphone className="w-6 h-6 text-green-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold">0%</p>
-              <p className="text-xs text-muted-foreground">Mobile</p>
-            </div>
-            <div className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 text-center">
-              <Tablet className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold">0%</p>
-              <p className="text-xs text-muted-foreground">Tablet</p>
-            </div>
-          </div>
-        </main>
-      </div>
+          </>
+        )}
+      </main>
     </div>
   )
 }
