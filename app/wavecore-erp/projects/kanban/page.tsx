@@ -3,19 +3,8 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Search, Trash2, Loader2, GripVertical, MoreHorizontal, AlertCircle } from 'lucide-react'
+import { Plus, Trash2, Loader2, GripVertical, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-
-interface Project {
-  id: string
-  title: string
-  description: string
-  status: string
-  budget: number
-  startDate: string
-  endDate: string
-  priority: string
-}
 
 const COLUMNS = [
   { id: 'PENDING', title: 'Pending', color: 'bg-gray-400' },
@@ -25,12 +14,13 @@ const COLUMNS = [
 ]
 
 export default function KanbanPage() {
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [draggedId, setDraggedId] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState('MEDIUM')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   async function fetchProjects() {
     setLoading(true)
@@ -42,35 +32,27 @@ export default function KanbanPage() {
 
   useEffect(() => { fetchProjects() }, [])
 
-  const handleDragStart = (id: string) => setDraggedId(id)
-
-  const handleDrop = (status: string) => {
-    if (!draggedId) return
-    setProjects(projects.map(p => p.id === draggedId ? { ...p, status } : p))
-    setDraggedId(null)
-  }
-
   const handleAdd = async () => {
-    if (!title) return
+    setError(''); setSuccess('')
+    if (!title) { setError('Card title required'); return }
     try {
       const res = await fetch('/api/wavecore/projects', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, status: 'PENDING', priority, budget: 0 }),
       })
-      if (res.ok) { setShowAdd(false); setTitle(''); fetchProjects() }
-    } catch {}
+      const data = await res.json()
+      if (res.ok) { setSuccess('Card added!'); setShowAdd(false); setTitle(''); fetchProjects() }
+      else { setError(data.error || 'Failed') }
+    } catch { setError('Network error') }
   }
 
-  const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
-
-  const priorityColors: Record<string, string> = {
-    LOW: 'bg-gray-50 text-gray-600', MEDIUM: 'bg-amber-50 text-amber-600',
-    HIGH: 'bg-orange-50 text-orange-600', URGENT: 'bg-red-50 text-red-600',
+  const handleDelete = async (id: string) => {
+    try { await fetch(`/api/wavecore/projects/${id}`, { method: 'DELETE' }); fetchProjects() } catch {}
   }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
         <div className="flex items-center justify-between px-4 h-16">
           <Link href="/wavecore-erp/projects" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
@@ -79,12 +61,14 @@ export default function KanbanPage() {
           <span className="text-sm">Kanban Board</span>
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto p-4 lg:p-8">
         <div className="flex justify-between mb-6">
           <h1 className="text-2xl font-bold">Kanban Board</h1>
           <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-teal-600"><Plus className="w-4 h-4" /> Add Card</Button>
         </div>
+
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
 
         {showAdd && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
@@ -103,12 +87,7 @@ export default function KanbanPage() {
         ) : (
           <div className="grid md:grid-cols-4 gap-4">
             {COLUMNS.map(col => (
-              <div
-                key={col.id}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => handleDrop(col.id)}
-                className="bg-neutral-100 dark:bg-neutral-800 rounded-2xl p-3 min-h-[400px]"
-              >
+              <div key={col.id} className="bg-neutral-100 dark:bg-neutral-800 rounded-2xl p-3 min-h-[400px]">
                 <div className="flex items-center gap-2 mb-3 px-2">
                   <div className={`w-2 h-2 rounded-full ${col.color}`} />
                   <span className="font-bold text-sm">{col.title}</span>
@@ -116,30 +95,14 @@ export default function KanbanPage() {
                     {projects.filter(p => p.status === col.id).length}
                   </span>
                 </div>
-
                 <div className="space-y-2">
                   {projects.filter(p => p.status === col.id).map(p => (
-                    <div
-                      key={p.id}
-                      draggable
-                      onDragStart={() => handleDragStart(p.id)}
-                      className="bg-white dark:bg-neutral-900 rounded-xl border p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-                    >
+                    <div key={p.id} className="bg-white dark:bg-neutral-900 rounded-xl border p-3 hover:shadow-md transition-all">
                       <div className="flex items-start gap-2">
                         <GripVertical className="w-4 h-4 text-muted-foreground mt-1 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{p.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{formatKES(p.budget)}</p>
-                        </div>
-                        <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${priorityColors[p.priority || 'MEDIUM']}`}>
-                          {p.priority || 'MEDIUM'}
-                        </span>
+                        <p className="font-medium text-sm flex-1">{p.title}</p>
+                        <button onClick={() => handleDelete(p.id)} className="text-red-500"><Trash2 className="w-3 h-3" /></button>
                       </div>
-                      {p.startDate && (
-                        <p className="text-[10px] text-muted-foreground mt-2">
-                          {new Date(p.startDate).toLocaleDateString()}
-                        </p>
-                      )}
                     </div>
                   ))}
                 </div>
