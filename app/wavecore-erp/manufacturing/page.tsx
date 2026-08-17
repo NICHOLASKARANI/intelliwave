@@ -1,130 +1,146 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  LayoutDashboard, Plus, Search, Filter, Factory,
-  TrendingUp, Package, AlertTriangle, CheckCircle,
-  ClipboardList, Wrench, Activity, ArrowRight,
-  BarChart3, Layers, Cog, Timer, Gauge
+  Factory, Layers, ClipboardList, CheckCircle, Cog, Wrench,
+  TrendingUp, Package, AlertTriangle, Plus, Search, Download,
+  Loader2, BarChart3, Gauge, Timer, Truck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Manufacturing (MRP) - WaveCore ERP | IntelliWavve',
-  description: 'Bill of Materials, Work Orders, Production Scheduling, Capacity Planning, Quality Control.',
-}
-
-const manufacturingKPIs = [
-  { label: 'Active Work Orders', value: '0', icon: ClipboardList, color: 'text-blue-500', change: '0 in progress' },
-  { label: 'Production Output', value: '0', icon: Factory, color: 'text-green-500', change: 'This month' },
-  { label: 'Quality Pass Rate', value: '0%', icon: CheckCircle, color: 'text-emerald-500', change: '0 inspections' },
-  { label: 'Efficiency Rate', value: '0%', icon: Gauge, color: 'text-purple-500', change: 'Overall' },
-  { label: 'Bill of Materials', value: '0', icon: Layers, color: 'text-teal-500', change: 'Active BOMs' },
-  { label: 'Work Centers', value: '0', icon: Cog, color: 'text-orange-500', change: 'Active' },
-]
-
-const quickActions = [
-  { label: 'Create Work Order', href: '/wavecore-erp/manufacturing/orders/create', icon: Plus, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950' },
-  { label: 'New BOM', href: '/wavecore-erp/manufacturing/bom/create', icon: Layers, color: 'text-green-600 bg-green-50 dark:bg-green-950' },
-  { label: 'Quality Check', href: '/wavecore-erp/manufacturing/quality/create', icon: CheckCircle, color: 'text-purple-600 bg-purple-50 dark:bg-purple-950' },
-  { label: 'Add Work Center', href: '/wavecore-erp/manufacturing/centers/create', icon: Cog, color: 'text-orange-600 bg-orange-50 dark:bg-orange-950' },
-  { label: 'Maintenance Request', href: '/wavecore-erp/manufacturing/maintenance/create', icon: Wrench, color: 'text-teal-600 bg-teal-50 dark:bg-teal-950' },
-  { label: 'View Reports', href: '/wavecore-erp/manufacturing/reports', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950' },
-]
-
 export default function ManufacturingPage() {
+  const [stats, setStats] = useState({
+    activeWorkOrders: 0, productionOutput: 0, qualityPassRate: 0,
+    efficiencyRate: 0, boms: 0, workCenters: 0,
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 500)
+  }, [])
+
+  const quickActions = [
+    { label: 'Work Orders', href: '/wavecore-erp/manufacturing/orders', icon: ClipboardList, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
+    { label: 'Bill of Materials', href: '/wavecore-erp/manufacturing/bom', icon: Layers, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950' },
+    { label: 'Quality Control', href: '/wavecore-erp/manufacturing/quality', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+    { label: 'Work Centers', href: '/wavecore-erp/manufacturing/centers', icon: Cog, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950' },
+    { label: 'Maintenance', href: '/wavecore-erp/manufacturing/maintenance', icon: Wrench, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950' },
+    { label: 'Routing', href: '/wavecore-erp/manufacturing/routing', icon: Gauge, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-950' },
+  ]
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
-          <div className="flex items-center gap-4">
-            <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
-                <Image src="/images/Wavecore.jpeg" alt="WaveCore ERP" width={40} height={40} className="object-cover" priority />
-              </div>
-              <span className="font-bold text-xl text-neutral-900 dark:text-white">WaveCore</span>
-              <span className="ml-2 px-2 py-0.5 text-[10px] bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-medium">ERP</span>
-            </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="text-sm font-medium">Manufacturing</span>
-          </div>
-          <Link href="/wavecore-erp" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted">
-            <LayoutDashboard className="w-4 h-4" /> Dashboard
+        <div className="flex items-center justify-between px-4 h-16">
+          <Link href="/wavecore-erp" className="flex items-center gap-3">
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+            <span className="font-bold">WaveCore</span>
           </Link>
+          <span className="text-sm">Manufacturing</span>
         </div>
       </header>
 
-      <div className="flex">
-        <aside className="w-64 bg-white dark:bg-neutral-900 border-r min-h-[calc(100vh-64px)] p-4 hidden lg:block">
-          <Link href="/wavecore-erp" className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted mb-6">← Back to Dashboard</Link>
-          <p className="px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Manufacturing</p>
-          <nav className="space-y-1">
-            {[
-              { icon: LayoutDashboard, label: 'Dashboard', href: '/wavecore-erp/manufacturing', active: true },
-              { icon: Layers, label: 'Bill of Materials', href: '/wavecore-erp/manufacturing/bom' },
-              { icon: Cog, label: 'Work Centers', href: '/wavecore-erp/manufacturing/centers' },
-              { icon: ClipboardList, label: 'Work Orders', href: '/wavecore-erp/manufacturing/orders' },
-              { icon: CheckCircle, label: 'Quality Control', href: '/wavecore-erp/manufacturing/quality' },
-              { icon: Wrench, label: 'Maintenance', href: '/wavecore-erp/manufacturing/maintenance' },
-              { icon: BarChart3, label: 'Reports', href: '/wavecore-erp/manufacturing/reports' },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <Link key={item.label} href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
-                    (item as any).active ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-semibold shadow-sm' : 'text-neutral-700 dark:text-neutral-300 hover:bg-muted'
-                  }`}><Icon className="w-4 h-4" /> {item.label}</Link>
-              )
-            })}
-          </nav>
-        </aside>
-
-        <main className="flex-1 p-4 lg:p-8">
-          <div className="flex items-center justify-between mb-8">
-            <div><h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Manufacturing (MRP)</h1><p className="text-muted-foreground mt-1">Bill of Materials, Work Orders, Production, Quality Control</p></div>
-            <Link href="/wavecore-erp/manufacturing/orders/create"><Button className="gap-2"><Plus className="w-4 h-4" /> Create Work Order</Button></Link>
+      <main className="max-w-7xl mx-auto p-4 lg:p-8">
+        {/* Hero Banner */}
+        <div className="rounded-3xl bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 p-6 lg:p-8 mb-8 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+          <div className="relative">
+            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3">
+              <Factory className="w-8 h-8" /> Manufacturing (MRP)
+            </h1>
+            <p className="text-white/80 text-sm lg:text-base">
+              Bill of Materials • Work Orders • Production Scheduling • Quality Control • Maintenance
+            </p>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            {manufacturingKPIs.map((kpi) => { const Icon = kpi.icon; return (
-              <div key={kpi.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all">
-                <Icon className={`w-5 h-5 ${kpi.color} mb-3`} />
-                <div className="text-2xl font-bold text-neutral-900 dark:text-white">{kpi.value}</div>
-                <div className="text-xs text-muted-foreground mt-1">{kpi.label}</div>
-                <div className="text-[10px] text-neutral-400 mt-1">{kpi.change}</div>
+        {loading ? (
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-500" /></div>
+        ) : (
+          <>
+            {/* KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+              <KPICard label="Active Work Orders" value={stats.activeWorkOrders} icon={ClipboardList} color="text-blue-500" />
+              <KPICard label="Production Output" value={stats.productionOutput} icon={Factory} color="text-green-500" />
+              <KPICard label="Quality Pass Rate" value={stats.qualityPassRate + '%'} icon={CheckCircle} color="text-emerald-500" />
+              <KPICard label="Efficiency" value={stats.efficiencyRate + '%'} icon={Gauge} color="text-purple-500" />
+              <KPICard label="BOMs" value={stats.boms} icon={Layers} color="text-teal-500" />
+              <KPICard label="Work Centers" value={stats.workCenters} icon={Cog} color="text-orange-500" />
+            </div>
+
+            {/* Quick Actions */}
+            <h2 className="text-lg font-bold mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+              {quickActions.map(a => {
+                const Icon = a.icon
+                return (
+                  <Link key={a.label} href={a.href} className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-purple-300 hover:shadow-lg transition-all text-center">
+                    <div className={`w-12 h-12 rounded-xl ${a.bg} flex items-center justify-center`}><Icon className={`w-5 h-5 ${a.color}`} /></div>
+                    <span className="text-xs font-medium">{a.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* Production Overview */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Work Order Status */}
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+                <h3 className="font-bold mb-4">Work Order Status</h3>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Draft', count: 0, color: 'bg-gray-400' },
+                    { label: 'Confirmed', count: 0, color: 'bg-blue-500' },
+                    { label: 'In Progress', count: 0, color: 'bg-purple-500' },
+                    { label: 'Completed', count: 0, color: 'bg-green-500' },
+                    { label: 'Cancelled', count: 0, color: 'bg-red-500' },
+                  ].map(s => (
+                    <div key={s.label} className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${s.color}`} />
+                      <span className="flex-1 text-sm">{s.label}</span>
+                      <span className="font-bold">{s.count}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )})}
-          </div>
 
-          <div className="mb-8">
-            <h3 className="text-lg font-bold mb-4 text-neutral-900 dark:text-white">Quick Actions</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {quickActions.map((action) => { const Icon = action.icon; return (
-                <Link key={action.label} href={action.href} className="flex items-center gap-3 p-4 rounded-xl border bg-white dark:bg-neutral-900 hover:border-indigo-300 hover:shadow-md transition-all">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${action.color}`}><Icon className="w-4 h-4" /></div>
-                  <span className="text-sm font-medium">{action.label}</span>
-                </Link>
-              )})}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-bold">Active Work Orders</h2>
-              <div className="flex gap-2">
-                <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search..." className="pl-9 pr-4 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48" /></div>
-                <Button variant="outline" size="sm"><Filter className="w-4 h-4" /></Button>
+              {/* Production Metrics */}
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+                <h3 className="font-bold mb-4">Production Metrics</h3>
+                <div className="space-y-3">
+                  {[
+                    { label: 'On-Time Delivery', value: '0%', icon: Truck },
+                    { label: 'Scrap Rate', value: '0%', icon: AlertTriangle },
+                    { label: 'Machine Utilization', value: '0%', icon: Cog },
+                    { label: 'Cycle Time', value: '0 min', icon: Timer },
+                  ].map(m => {
+                    const Icon = m.icon
+                    return (
+                      <div key={m.label} className="flex items-center gap-3 py-2 border-b last:border-0">
+                        <Icon className="w-5 h-5 text-purple-500" />
+                        <span className="flex-1 text-sm">{m.label}</span>
+                        <span className="font-bold">{m.value}</span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
-            <div className="p-12 text-center text-muted-foreground">
-              <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No work orders yet</p>
-              <p className="text-sm mt-1">Create your first work order to begin production.</p>
-              <Link href="/wavecore-erp/manufacturing/orders/create" className="inline-block mt-4"><Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Create Work Order</Button></Link>
-            </div>
-          </div>
-        </main>
-      </div>
+          </>
+        )}
+      </main>
+    </div>
+  )
+}
+
+function KPICard({ label, value, icon: Icon, color }: { label: string; value: any; icon: any; color: string }) {
+  return (
+    <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all">
+      <Icon className={`w-5 h-5 ${color} mb-3`} />
+      <div className="text-xl font-bold">{value}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   )
 }
