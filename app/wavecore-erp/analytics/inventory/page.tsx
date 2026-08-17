@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BarChart3, Loader2, Download } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { BarChart3, Loader2, Package, Users, Factory, TrendingUp } from 'lucide-react'
 
 export default function AnalyticsSubPage() {
   const [stats, setStats] = useState<any>({})
@@ -13,8 +12,6 @@ export default function AnalyticsSubPage() {
   useEffect(() => {
     fetch('/api/wavecore/analytics').then(r => r.json()).then(d => setStats(d.kpis || {})).catch(() => {}).finally(() => setLoading(false))
   }, [])
-
-  const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -33,10 +30,10 @@ export default function AnalyticsSubPage() {
         </div>
         {loading ? <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-teal-500" /></div> : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><p className="text-xl font-bold">{stats.inventoryItems || 0}</p><p className="text-xs">Inventory Items</p></div>
-            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><p className="text-xl font-bold">{stats.employees || 0}</p><p className="text-xs">Employees</p></div>
-            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><p className="text-xl font-bold">{stats.projects || 0}</p><p className="text-xs">Projects</p></div>
-            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><p className="text-xl font-bold">{stats.tickets || 0}</p><p className="text-xs">Tickets</p></div>
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><Package className="w-6 h-6 text-orange-500 mb-3" /><p className="text-xl font-bold">{stats.inventoryItems || 0}</p><p className="text-xs">Inventory</p></div>
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><Users className="w-6 h-6 text-purple-500 mb-3" /><p className="text-xl font-bold">{stats.employees || 0}</p><p className="text-xs">Employees</p></div>
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><Factory className="w-6 h-6 text-teal-500 mb-3" /><p className="text-xl font-bold">{stats.projects || 0}</p><p className="text-xs">Projects</p></div>
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900"><TrendingUp className="w-6 h-6 text-blue-500 mb-3" /><p className="text-xl font-bold">{stats.tickets || 0}</p><p className="text-xs">Tickets</p></div>
           </div>
         )}
       </main>
