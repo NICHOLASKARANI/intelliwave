@@ -1,57 +1,74 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, Plus, Search, Filter, Package, ArrowLeft } from 'lucide-react'
+import { Plus, Search, Trash2, Package, Download, Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Products - WaveCore ERP | IntelliWavve',
-  description: 'Manage your product catalog with SKU, barcode, pricing, and stock tracking.',
-}
-
 export default function ProductsPage() {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+
+  async function fetchProducts() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/inventory/products')
+      if (res.ok) { const data = await res.json(); setProducts(data.products || []) }
+    } catch {} finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchProducts() }, [])
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this product?')) return
+    try { await fetch(`/api/wavecore/inventory/products/${id}`, { method: 'DELETE' }); fetchProducts() } catch {}
+  }
+
+  const filtered = products.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()))
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
-          <div className="flex items-center gap-4">
-            <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
-                <Image src="/images/Wavecore.jpeg" alt="WaveCore ERP" width={40} height={40} className="object-cover" priority />
-              </div>
-              <span className="font-bold text-xl text-neutral-900 dark:text-white">WaveCore</span>
-              <span className="ml-2 px-2 py-0.5 text-[10px] bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-medium">ERP</span>
-            </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="text-sm font-medium">Products</span>
-          </div>
-          <Link href="/wavecore-erp/inventory" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted">
-            <LayoutDashboard className="w-4 h-4" /> Inventory
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
+        <div className="flex items-center justify-between px-4 h-16">
+          <Link href="/wavecore-erp/inventory" className="flex items-center gap-3">
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+            <span className="font-bold">WaveCore</span>
           </Link>
+          <span className="text-sm">Products</span>
         </div>
       </header>
-
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div><h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Products</h1><p className="text-muted-foreground mt-1">Manage your product catalog</p></div>
-          <Link href="/wavecore-erp/inventory/products/create"><Button className="gap-2"><Plus className="w-4 h-4" /> Add Product</Button></Link>
+        <div className="flex justify-between mb-6">
+          <h1 className="text-2xl font-bold">Products</h1>
+          <Link href="/wavecore-erp/inventory/products/create"><Button className="gap-2 bg-orange-600"><Plus className="w-4 h-4" /> Add Product</Button></Link>
         </div>
-
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="font-bold">All Products</h2>
-            <div className="flex gap-2">
-              <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search products..." className="pl-9 pr-4 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48" /></div>
-              <Button variant="outline" size="sm"><Filter className="w-4 h-4" /></Button>
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl border text-sm w-full" placeholder="Search products..." />
+        </div>
+        {loading ? <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-500" /></div> :
+          filtered.length > 0 ? (
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b bg-neutral-50 dark:bg-neutral-800">
+                  <th className="text-left p-4">Product</th><th className="text-left p-4">SKU</th>
+                  <th className="text-right p-4">Stock</th><th className="text-right p-4">Cost</th>
+                  <th className="text-right p-4">Selling</th><th className="text-center p-4">Actions</th>
+                </tr></thead>
+                <tbody>{filtered.map(p => (
+                  <tr key={p.id} className="border-b">
+                    <td className="p-4 font-medium">{p.name}</td><td className="p-4">{p.sku}</td>
+                    <td className="p-4 text-right">{p.total_stock || 0}</td>
+                    <td className="p-4 text-right">{p.costPrice}</td><td className="p-4 text-right">{p.sellingPrice}</td>
+                    <td className="p-4 text-center"><button onClick={() => handleDelete(p.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button></td>
+                  </tr>
+                ))}</tbody>
+              </table>
             </div>
-          </div>
-          <div className="p-12 text-center text-muted-foreground">
-            <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No products yet</p>
-            <p className="text-sm mt-1">Add your first product to begin tracking inventory.</p>
-            <Link href="/wavecore-erp/inventory/products/create" className="inline-block mt-4"><Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Add Product</Button></Link>
-          </div>
-        </div>
+          ) : <p className="text-center py-12 text-muted-foreground">No products found</p>
+        }
       </main>
     </div>
   )
