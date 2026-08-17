@@ -26,10 +26,11 @@ export async function GET(request: NextRequest) {
         workCenters: parseInt(wc.rows[0].count),
         maintenanceRequests: parseInt(mr.rows[0].count),
         qualityChecks: totalQC,
+        totalRoutes: 0,
       },
     })
   } catch (error: any) {
-    console.error('Dashboard stats:', error.message)
+    console.error('Dashboard:', error.message)
     return NextResponse.json({ stats: {} }, { status: 500 })
   }
 }

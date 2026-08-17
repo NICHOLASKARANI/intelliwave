@@ -5,7 +5,7 @@ import { pool } from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await pool.query(`SELECT * FROM "WorkOrder" ORDER BY "createdAt" DESC LIMIT 100`)
+    const result = await pool.query(`SELECT * FROM "WorkOrder" ORDER BY "createdAt" DESC LIMIT 50`)
     return NextResponse.json({ workOrders: result.rows })
   } catch (error: any) {
     console.error('WorkOrder GET:', error.message)
@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
     const number = 'WO-' + Date.now().toString().slice(-6)
 
     const result = await pool.query(
-      `INSERT INTO "WorkOrder" ("id", "number", "productName", "quantity", "priority", "status", "organizationId", "createdAt") 
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'DRAFT', $5, NOW()) 
-       RETURNING "id", "number", "productName", "quantity", "priority", "status"`,
-      [number, body.productName, parseInt(body.quantity) || 1, body.priority || 'MEDIUM', body.organizationId || 'org-1']
+      `INSERT INTO "WorkOrder" ("id", "number", "type", "status", "quantity", "completedQty", "priority", "productId", "organizationId", "createdAt", "updatedAt") 
+       VALUES (gen_random_uuid()::text, $1, 'MANUFACTURING', 'DRAFT', $2, 0, $3, 'product-1', 'org-1', NOW(), NOW()) 
+       RETURNING *`,
+      [number, parseInt(body.quantity) || 1, body.priority || 'MEDIUM']
     )
 
     return NextResponse.json({ success: true, workOrder: result.rows[0] }, { status: 201 })

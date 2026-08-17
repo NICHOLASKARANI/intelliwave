@@ -5,7 +5,7 @@ import { pool } from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await pool.query(`SELECT * FROM "MaintenanceRequest" ORDER BY "createdAt" DESC LIMIT 100`)
+    const result = await pool.query(`SELECT * FROM "MaintenanceRequest" ORDER BY "createdAt" DESC LIMIT 50`)
     return NextResponse.json({ requests: result.rows })
   } catch (error: any) {
     console.error('Maintenance GET:', error.message)
@@ -18,10 +18,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     const result = await pool.query(
-      `INSERT INTO "MaintenanceRequest" ("id", "assetName", "description", "priority", "status", "organizationId", "createdAt") 
-       VALUES (gen_random_uuid()::text, $1, $2, $3, 'REQUESTED', $4, NOW()) 
-       RETURNING "id", "assetName", "priority", "status"`,
-      [body.assetName, body.description || null, body.priority || 'MEDIUM', body.organizationId || 'org-1']
+      `INSERT INTO "MaintenanceRequest" ("id", "number", "type", "status", "description", "assetName", "assetCode", "priority", "requestedDate", "organizationId", "createdAt", "updatedAt") 
+       VALUES (gen_random_uuid()::text, $1, 'CORRECTIVE', 'REQUESTED', $2, $3, null, $4, NOW(), 'org-1', NOW(), NOW()) 
+       RETURNING *`,
+      ['MR-' + Date.now().toString().slice(-6), body.description || null, body.assetName, body.priority || 'MEDIUM']
     )
 
     return NextResponse.json({ success: true, request: result.rows[0] }, { status: 201 })
