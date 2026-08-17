@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { FileText, Search, ArrowLeft, Loader2, Trash2, Trash2 } from 'lucide-react'
+import { FileText, Search, ArrowLeft, Loader2, Trash2 } from 'lucide-react'
 
-export default function Trash2Page() {
+export default function TrashPage() {
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -38,10 +38,10 @@ export default function Trash2Page() {
             <div className="space-y-3">{filtered.map(d => (
               <div key={d.id} className="p-4 rounded-xl border bg-white dark:bg-neutral-900 flex justify-between">
                 <div className="flex items-center gap-3"><FileText className="w-5 h-5 text-cyan-500" /><p className="font-medium">{d.name}</p></div>
-                <Trash2 className="w-4 h-4 text-muted-foreground" />
+                <Trash2 className="w-4 h-4 text-red-400" />
               </div>
             ))}</div>
-          ) : <p className="text-center py-12 text-muted-foreground">No archived documents</p>
+          ) : <p className="text-center py-12 text-muted-foreground">Trash is empty</p>
         }
       </main>
     </div>
