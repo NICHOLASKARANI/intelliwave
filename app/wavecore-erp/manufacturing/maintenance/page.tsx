@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Wrench, Plus, Trash2, Loader2 } from 'lucide-react'
+import { Wrench, Plus, Trash2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function MaintenancePage() {
@@ -13,6 +13,8 @@ export default function MaintenancePage() {
   const [assetName, setAssetName] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('MEDIUM')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   async function fetchRequests() {
     setLoading(true)
@@ -25,14 +27,17 @@ export default function MaintenancePage() {
   useEffect(() => { fetchRequests() }, [])
 
   const handleAdd = async () => {
-    if (!assetName) return
+    setError(''); setSuccess('')
+    if (!assetName) { setError('Asset name required'); return }
     try {
       const res = await fetch('/api/wavecore/manufacturing/maintenance', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assetName, description, priority }),
+        body: JSON.stringify({ assetName, description: description || null, priority }),
       })
-      if (res.ok) { setShowAdd(false); setAssetName(''); setDescription(''); fetchRequests() }
-    } catch {}
+      const data = await res.json()
+      if (res.ok) { setSuccess('Request submitted!'); setShowAdd(false); setAssetName(''); setDescription(''); fetchRequests() }
+      else { setError(data.error || 'Failed') }
+    } catch { setError('Network error') }
   }
 
   const handleDelete = async (id: string) => {
@@ -53,19 +58,29 @@ export default function MaintenancePage() {
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
         <div className="flex justify-between mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2"><Wrench className="w-6 h-6 text-orange-500" /> Maintenance</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-orange-600 hover:bg-orange-700"><Plus className="w-4 h-4" /> New Request</Button>
+          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-orange-600"><Plus className="w-4 h-4" /> New Request</Button>
         </div>
 
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
+
         {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
-            <div className="grid grid-cols-2 gap-3">
-              <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Asset Name *" />
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="px-4 py-2.5 rounded-xl border">
-                <option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="EMERGENCY">Emergency</option>
-              </select>
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h3 className="font-bold mb-4">New Maintenance Request</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium mb-2">Asset Name *</label>
+                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Asset Name" />
+              </div>
+              <div><label className="block text-sm font-medium mb-2">Priority</label>
+                <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">
+                  <option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="EMERGENCY">Emergency</option>
+                </select>
+              </div>
             </div>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border mt-3" placeholder="Description" rows={3} />
-            <Button onClick={handleAdd} className="mt-3">Submit Request</Button>
+            <div className="mt-4"><label className="block text-sm font-medium mb-2">Description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" rows={3} placeholder="Describe the issue" />
+            </div>
+            <Button onClick={handleAdd} className="mt-4 gap-2"><Plus className="w-4 h-4" /> Submit Request</Button>
           </div>
         )}
 

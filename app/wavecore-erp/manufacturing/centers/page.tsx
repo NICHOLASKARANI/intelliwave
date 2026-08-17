@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Cog, Plus, Trash2, Loader2 } from 'lucide-react'
+import { Cog, Plus, Trash2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function WorkCentersPage() {
@@ -13,6 +13,8 @@ export default function WorkCentersPage() {
   const [name, setName] = useState('')
   const [capacity, setCapacity] = useState('')
   const [efficiency, setEfficiency] = useState('100')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   async function fetchCenters() {
     setLoading(true)
@@ -25,18 +27,21 @@ export default function WorkCentersPage() {
   useEffect(() => { fetchCenters() }, [])
 
   const handleAdd = async () => {
-    if (!name) return
+    setError(''); setSuccess('')
+    if (!name) { setError('Center name required'); return }
     try {
       const res = await fetch('/api/wavecore/manufacturing/centers', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, capacity: parseFloat(capacity) || 0, efficiency: parseFloat(efficiency) || 100 }),
       })
-      if (res.ok) { setShowAdd(false); setName(''); setCapacity(''); setEfficiency('100'); fetchCenters() }
-    } catch {}
+      const data = await res.json()
+      if (res.ok) { setSuccess('Work Center added!'); setShowAdd(false); setName(''); setCapacity(''); setEfficiency('100'); fetchCenters() }
+      else { setError(data.error || 'Failed') }
+    } catch { setError('Network error') }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this work center?')) return
+    if (!confirm('Delete this center?')) return
     try { await fetch(`/api/wavecore/manufacturing/centers/${id}`, { method: 'DELETE' }); fetchCenters() } catch {}
   }
 
@@ -54,18 +59,27 @@ export default function WorkCentersPage() {
       <main className="max-w-5xl mx-auto p-4 lg:p-8">
         <div className="flex justify-between mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2"><Cog className="w-6 h-6 text-purple-500" /> Work Centers</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-purple-600 hover:bg-purple-700"><Plus className="w-4 h-4" /> Add Center</Button>
+          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-purple-600"><Plus className="w-4 h-4" /> Add Center</Button>
         </div>
 
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
+
         {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
-            <h3 className="font-bold mb-3">Add Work Center</h3>
-            <div className="grid grid-cols-3 gap-3">
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Center Name *" />
-              <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Capacity" />
-              <input type="number" value={efficiency} onChange={(e) => setEfficiency(e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Efficiency %" />
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h3 className="font-bold mb-4">Add Work Center</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div><label className="block text-sm font-medium mb-2">Center Name *</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Center Name" />
+              </div>
+              <div><label className="block text-sm font-medium mb-2">Capacity</label>
+                <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="0" />
+              </div>
+              <div><label className="block text-sm font-medium mb-2">Efficiency %</label>
+                <input type="number" value={efficiency} onChange={(e) => setEfficiency(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="100" />
+              </div>
             </div>
-            <Button onClick={handleAdd} className="mt-3">Add Center</Button>
+            <Button onClick={handleAdd} className="mt-4 gap-2"><Plus className="w-4 h-4" /> Add Center</Button>
           </div>
         )}
 
@@ -73,7 +87,7 @@ export default function WorkCentersPage() {
           centers.length > 0 ? (
             <div className="grid md:grid-cols-2 gap-4">
               {centers.map(c => (
-                <div key={c.id} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all">
+                <div key={c.id} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg">
                   <div className="flex justify-between items-start">
                     <div><Cog className="w-6 h-6 text-purple-500 mb-2" /><p className="font-bold">{c.name}</p><p className="text-sm text-muted-foreground">Capacity: {c.capacity} | Efficiency: {c.efficiency}%</p></div>
                     <button onClick={() => handleDelete(c.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500"><Trash2 className="w-4 h-4" /></button>
