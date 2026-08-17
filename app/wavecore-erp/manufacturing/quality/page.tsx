@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircle, Plus, Trash2, Loader2 } from 'lucide-react'
+import { CheckCircle, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function QualityPage() {
@@ -12,6 +12,8 @@ export default function QualityPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [workOrder, setWorkOrder] = useState('')
   const [result, setResult] = useState('PASSED')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   async function fetchChecks() {
     setLoading(true)
@@ -24,14 +26,17 @@ export default function QualityPage() {
   useEffect(() => { fetchChecks() }, [])
 
   const handleAdd = async () => {
-    if (!workOrder) return
+    setError(''); setSuccess('')
+    if (!workOrder) { setError('Work Order required'); return }
     try {
       const res = await fetch('/api/wavecore/manufacturing/quality', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workOrder, result }),
       })
-      if (res.ok) { setShowAdd(false); setWorkOrder(''); fetchChecks() }
-    } catch {}
+      const data = await res.json()
+      if (res.ok) { setSuccess('Check recorded!'); setShowAdd(false); setWorkOrder(''); fetchChecks() }
+      else { setError(data.error || 'Failed') }
+    } catch { setError('Network error') }
   }
 
   const handleDelete = async (id: string) => {
@@ -52,18 +57,25 @@ export default function QualityPage() {
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
         <div className="flex justify-between mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2"><CheckCircle className="w-6 h-6 text-emerald-500" /> Quality Control</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> New Check</Button>
+          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-emerald-600"><Plus className="w-4 h-4" /> New Check</Button>
         </div>
 
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
+
         {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
-            <div className="grid grid-cols-2 gap-3">
-              <input type="text" value={workOrder} onChange={(e) => setWorkOrder(e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Work Order #" />
-              <select value={result} onChange={(e) => setResult(e.target.value)} className="px-4 py-2.5 rounded-xl border">
-                <option value="PASSED">Passed</option><option value="FAILED">Failed</option><option value="PARTIAL">Partial</option>
-              </select>
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium mb-2">Work Order # *</label>
+                <input type="text" value={workOrder} onChange={(e) => setWorkOrder(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="WO-xxxxxx" />
+              </div>
+              <div><label className="block text-sm font-medium mb-2">Result</label>
+                <select value={result} onChange={(e) => setResult(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">
+                  <option value="PASSED">Passed</option><option value="FAILED">Failed</option><option value="PARTIAL">Partial</option>
+                </select>
+              </div>
             </div>
-            <Button onClick={handleAdd} className="mt-3">Record Check</Button>
+            <Button onClick={handleAdd} className="mt-4">Record Check</Button>
           </div>
         )}
 
