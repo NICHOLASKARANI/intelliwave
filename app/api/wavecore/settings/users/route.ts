@@ -1,28 +1,71 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { pool } from '@/lib/wavecore/db'
-import { requireTenant } from '@/lib/wavecore/auth'
+import { prisma } from '@/lib/prisma'
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const session = await requireTenant()
-
-    const result = await pool.query(
-      `SELECT u.id, u.name, u.email, u.role, u."isActive", u."createdAt",
-              o.name as org_name
-       FROM "User" u
-       JOIN "_OrganizationMembers" om ON om."B" = u.id
-       JOIN "Organization" o ON o.id = om."A"
-       WHERE o.id = $1
-       ORDER BY u."createdAt" DESC`,
-      [session.organizationId]
-    )
-
-    return NextResponse.json({ users: result.rows })
+    const { searchParams } = new URL(req.url)
+    const search = searchParams.get('search') || ''
+    
+    const users = await prisma.userProfile.findMany({
+      where: search ? {
+        OR: [
+          { fullName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ],
+      } : {},
+      orderBy: { createdAt: 'desc' },
+    })
+    
+    return NextResponse.json({ users })
   } catch (error) {
-    console.error('Users GET error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const user = await prisma.userProfile.create({
+      data: {
+        fullName: body.fullName,
+        email: body.email,
+        phone: body.phone || '',
+        role: body.role || 'User',
+        status: 'Active',
+      },
+    })
+    return NextResponse.json({ user }, { status: 201 })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 })
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const user = await prisma.userProfile.update({
+      where: { id: body.id },
+      data: {
+        fullName: body.fullName,
+        email: body.email,
+        phone: body.phone,
+        role: body.role,
+        status: body.status,
+      },
+    })
+    return NextResponse.json({ user })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = parseInt(searchParams.get('id') || '0')
+    await prisma.userProfile.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 })
   }
 }

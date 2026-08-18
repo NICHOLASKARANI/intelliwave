@@ -1286,3 +1286,66 @@ model EmployeeDocument {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
+model UserProfile {
+  id        Int      @id @default(autoincrement())
+  userId    String?  @unique
+  fullName  String
+  email     String   @unique
+  phone     String?
+  avatar    String?
+  role      String   @default("User")
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrganizationSetting {
+  id             Int      @id @default(autoincrement())
+  companyName    String   @default("WaveCore ERP")
+  email          String?
+  phone          String?
+  address        String?
+  website        String?
+  timezone       String   @default("Africa/Nairobi")
+  language       String   @default("English")
+  currency       String   @default("KES")
+  dateFormat     String   @default("DD/MM/YYYY")
+  currencySymbol String   @default("KSh")
+  numberFormat   String   @default("1,234.56")
+  updatedAt      DateTime @updatedAt
+}
+
+model TaxRate {
+  id        Int      @id @default(autoincrement())
+  name      String
+  rate      Decimal  @db.Decimal(5, 2)
+  type      String   @default("VAT")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model DocumentNumbering {
+  id           Int      @id @default(autoincrement())
+  documentType String   @unique
+  prefix       String
+  nextNumber   Int      @default(1)
+  updatedAt    DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String
+  subject   String
+  body      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Integration {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String
+  apiKey    String?
+  status    String   @default("Disconnected")
+  createdAt DateTime @default(now())
+}
