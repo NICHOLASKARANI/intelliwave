@@ -1,7 +1,5 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react"
-import { SocialIcons } from '@/components/ui/social-icons'
 
 const footerNavigation = {
   services: [
@@ -10,8 +8,6 @@ const footerNavigation = {
     { name: "Mobile Apps", href: "/services" },
     { name: "Cloud Solutions", href: "/services" },
     { name: "Enterprise AI", href: "/services" },
-    { name: "IIoT Automation", href: "/iiot-automation" },
-    { name: "AI Estimator", href: "/estimator" },
   ],
   company: [
     { name: "About", href: "/about" },
@@ -19,96 +15,45 @@ const footerNavigation = {
     { name: "Careers", href: "/careers" },
     { name: "Events", href: "/events" },
     { name: "Contact", href: "/contact" },
-    { name: "Insights", href: "/insights" },
-    { name: "Management", href: "/management" },
   ],
   legal: [
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Terms of Service", href: "/terms" },
     { name: "Cookie Policy", href: "/cookies" },
-    { name: "Security Center", href: "/security" },
-  ],
-  connect: [
-    { name: "WhatsApp", href: "https://wa.me/254714694493", external: true },
-    { name: "Email", href: "mailto:intelliwavehr@gmail.com", external: true },
-    { name: "Phone", href: "tel:+254714694493", external: true },
   ],
 }
 
 export function Footer() {
   return (
-    <footer className="border-t bg-background relative">
-      {/* Gradient line at top */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-      
+    <footer className="border-t bg-background">
       <div className="container py-12 md:py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-          {/* Company Info */}
-          <div className="col-span-2 md:col-span-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-              <div className="relative w-10 h-10">
-                <Image
-                  src="/logo.png"
-                  alt="Intelliwave"
-                  width={40}
-                  height={40}
-                  className="rounded-lg object-contain"
-                />
-              </div>
-              <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+              <Image
+                src="/logo.png"
+                alt="Intelliwave"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
+              <span className="font-display text-xl font-bold text-gradient">
                 Intelliwave
               </span>
             </Link>
-            
-            <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-              Enterprise AI solutions that automate operations. SOC 2 Type II certified. 
-              Trusted by 450,000+ businesses across 100+ countries.
+            <p className="text-sm text-muted-foreground mb-4">
+              Engineering the Future with AI. Building Africa's Global AI Giant.
             </p>
-            
-            {/* Social Icons */}
-            <div className="mb-6">
-              <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Follow Us</p>
-              <SocialIcons variant="footer" />
-            </div>
-            
-            {/* Contact Info */}
-            <div className="space-y-3">
-              <a 
-                href="https://wa.me/254714694493"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
-              >
-                <Phone className="w-4 h-4 text-green-500" />
-                <span>+254 714 694 493</span>
-                <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </a>
-              
-              <a 
-                href="mailto:intelliwavehr@gmail.com"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
-              >
-                <Mail className="w-4 h-4 text-primary" />
-                <span>intelliwavehr@gmail.com</span>
-                <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </a>
-              
-              <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p>Nairobi CBD, Superior Centre</p>
-                  <p>1st Floor</p>
-                  <p>Kenyatta Avenue, Kenya</p>
-                </div>
-              </div>
+            <div className="text-sm text-muted-foreground">
+              <p>Nairobi CBD, Superior Centre</p>
+              <p>Shop F11, 1st Floor</p>
+              <p>Kenyatta Avenue</p>
+              <p className="mt-2">WhatsApp: +254 714 694 493</p>
             </div>
           </div>
 
-          {/* Services */}
           <div>
-            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">
-              Services
-            </h3>
+            <h3 className="font-semibold mb-4">Services</h3>
             <ul className="space-y-2">
               {footerNavigation.services.map((item) => (
                 <li key={item.name}>
@@ -123,11 +68,8 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Company */}
           <div>
-            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">
-              Company
-            </h3>
+            <h3 className="font-semibold mb-4">Company</h3>
             <ul className="space-y-2">
               {footerNavigation.company.map((item) => (
                 <li key={item.name}>
@@ -142,12 +84,9 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Legal & Connect */}
           <div>
-            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">
-              Legal
-            </h3>
-            <ul className="space-y-2 mb-6">
+            <h3 className="font-semibold mb-4">Legal</h3>
+            <ul className="space-y-2">
               {footerNavigation.legal.map((item) => (
                 <li key={item.name}>
                   <Link
@@ -159,67 +98,12 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-            
-            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">
-              Connect
-            </h3>
-            <ul className="space-y-2">
-              {footerNavigation.connect.map((item) => (
-                <li key={item.name}>
-                  {item.external ? (
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      {item.name}
-                    </a>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-muted-foreground text-center md:text-left">
-              <p>© {new Date().getFullYear()} Intelliwave Ltd. All rights reserved.</p>
-              <p className="mt-1">CEO: PhD, Eng. Nicholas Karani</p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              {/* Trust Badges */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span>SOC 2 Type II</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <span>ISO 27001</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                <span>GDPR Compliant</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Slogan */}
-          <div className="text-center mt-4">
-            <p className="text-xs text-muted-foreground/60 italic">
-              &ldquo;Enterprise AI Systems That Automate Operations.&rdquo;
-            </p>
-          </div>
+        <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
+          <p>© {new Date().getFullYear()} Intelliwave Ltd. All rights reserved.</p>
+          <p className="mt-1">CEO: PhD, Eng. Nicholas Karani</p>
         </div>
       </div>
     </footer>
