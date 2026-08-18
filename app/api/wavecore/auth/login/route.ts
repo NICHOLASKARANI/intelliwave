@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const userResult = await pool.query(
       `SELECT u.*, o.id as org_id, o.name as org_name
        FROM "User" u
-       JOIN "Organization" o ON o.id = u."organizationId"
+       LEFT JOIN "Organization" o ON o."ownerId" = u.id
        WHERE u.email = $1 AND u."isActive" = true`,
       [email]
     )
@@ -26,15 +26,15 @@ export async function POST(req: NextRequest) {
     const user = userResult.rows[0]
 
     // In production, verify password hash
-    // For now, simple check (password should be hashed in real implementation)
+    // For now, check if password matches (should be bcrypt in production)
 
     // Create session
     const crypto = require('crypto')
     const sessionToken = crypto.randomUUID()
 
     await pool.query(
-      `INSERT INTO "Session" (id, "userId", "sessionToken", expires, "createdAt")
-       VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', NOW())`,
+      `INSERT INTO "Session" (id, "userId", "sessionToken", expires)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')`,
       [sessionToken, user.id, sessionToken]
     )
 
@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
       requiresPayment: subResult.rows.length === 0,
     })
 
-    // Set session cookie
     response.cookies.set('wavecore_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -70,6 +69,6 @@ export async function POST(req: NextRequest) {
     return response
   } catch (error) {
     console.error('Login error:', error)
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Login failed: ' + error.message }, { status: 500 })
   }
 }

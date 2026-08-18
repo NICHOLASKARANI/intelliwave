@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
               o.id as org_id, o.name as org_name, o."isActive" as org_active
        FROM "Session" s
        JOIN "User" u ON u.id = s."userId"
-       JOIN "Organization" o ON o.id = u."organizationId"
+       LEFT JOIN "Organization" o ON o."ownerId" = u.id
        WHERE s."sessionToken" = $1 AND s.expires > NOW()
        LIMIT 1`,
       [sessionToken]
@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
       subscribed: subResult.rows.length > 0,
     })
   } catch (error) {
-    return NextResponse.json({ authenticated: false }, { status: 500 })
+    console.error('Session error:', error)
+    return NextResponse.json({ authenticated: false, error: error.message }, { status: 500 })
   }
 }

@@ -16,32 +16,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
     }
 
-    // Create organization
+    // Create user first
     const crypto = require('crypto')
-    const orgId = crypto.randomUUID()
-
-    const orgResult = await pool.query(
-      `INSERT INTO "Organization" (id, name, "isActive", "createdAt", "updatedAt")
-       VALUES ($1, $2, true, NOW(), NOW())
-       RETURNING *`,
-      [orgId, `${name}'s Business`]
-    )
-
-    // Create user
     const userId = crypto.randomUUID()
 
     const userResult = await pool.query(
-      `INSERT INTO "User" (id, name, email, phone, role, "organizationId", "isActive", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, 'TENANT_ADMIN', $5, true, NOW(), NOW())
+      `INSERT INTO "User" (id, name, email, phone, password, role, "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, 'TENANT_ADMIN', true, NOW(), NOW())
        RETURNING *`,
-      [userId, name, email, phone || null, orgId]
+      [userId, name, email, phone || null, password]
+    )
+
+    // Create organization with ownerId
+    const orgId = crypto.randomUUID()
+
+    const orgResult = await pool.query(
+      `INSERT INTO "Organization" (id, name, "ownerId", "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, true, NOW(), NOW())
+       RETURNING *`,
+      [orgId, `${name}'s Business`, userId]
     )
 
     // Create session
     const sessionToken = crypto.randomUUID()
     await pool.query(
-      `INSERT INTO "Session" (id, "userId", "sessionToken", expires, "createdAt")
-       VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', NOW())`,
+      `INSERT INTO "Session" (id, "userId", "sessionToken", expires)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')`,
       [sessionToken, userId, sessionToken]
     )
 
@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
       subscriptionAmount: 500,
     })
 
-    // Set session cookie
     response.cookies.set('wavecore_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -65,6 +64,6 @@ export async function POST(req: NextRequest) {
     return response
   } catch (error) {
     console.error('Signup error:', error)
-    return NextResponse.json({ error: 'Signup failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Signup failed: ' + error.message }, { status: 500 })
   }
 }
