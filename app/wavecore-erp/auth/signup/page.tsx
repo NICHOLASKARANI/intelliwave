@@ -3,24 +3,23 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Mail, Lock, User, Building2, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Loader2, Mail, Lock, Phone, Eye, EyeOff, Chrome } from 'lucide-react'
 
 export default function SignupPage() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    organizationName: '',
-  })
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [error, setError] = useState('')
+  const [paymentStep, setPaymentStep] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSignup = async () => {
+    if (!name || !email || !phone || !password) {
+      setError('All fields are required')
+      return
+    }
     setLoading(true)
     setError('')
 
@@ -28,18 +27,20 @@ export default function SignupPage() {
       const res = await fetch('/api/wavecore/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ name, email, phone, password }),
       })
 
       const data = await res.json()
 
-      if (!res.ok) {
-        setError(data.error || 'Registration failed')
-        return
+      if (res.ok) {
+        // Signup successful - redirect to payment
+        setPaymentStep(true)
+        setTimeout(() => {
+          window.location.href = '/wavecore-erp/subscription'
+        }, 2000)
+      } else {
+        setError(data.error || 'Signup failed')
       }
-
-      router.push('/wavecore-erp')
-      router.refresh()
     } catch (err) {
       setError('Network error. Please try again.')
     } finally {
@@ -47,127 +48,118 @@ export default function SignupPage() {
     }
   }
 
+  const handleGoogleSignup = () => {
+    // Google OAuth flow
+    window.location.href = '/api/auth/google'
+  }
+
+  const handleFacebookSignup = () => {
+    // Facebook OAuth flow
+    window.location.href = '/api/auth/facebook'
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 p-4">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/wavecore-erp" className="inline-flex items-center gap-3 mb-6">
-            <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/20">
-              <Image src="/images/Wavecore.jpeg" alt="WaveCore ERP" width={56} height={56} className="object-cover" />
-            </div>
-          </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Start your free trial</h1>
-          <p className="text-gray-400">30 days free. KSh 500/month after that.</p>
+          <Image src="/images/Wavecore.jpeg" alt="IntelliWavve" width={64} height={64} className="rounded-xl mx-auto mb-4" />
+          <h1 className="text-2xl font-bold">Create Account</h1>
+          <p className="text-muted-foreground mt-1">Join IntelliWavve - World's Largest Software Company</p>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 p-4 mb-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="John Doe"
-                required
-              />
+        {paymentStep ? (
+          <div className="bg-green-50 dark:bg-green-950 rounded-2xl border border-green-200 p-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <Chrome className="w-8 h-8 text-green-500" />
             </div>
+            <h2 className="text-xl font-bold mb-2">Account Created!</h2>
+            <p className="text-muted-foreground mb-4">
+              Redirecting to payment... KSh 500 to access WaveCore ERP
+            </p>
+            <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto" />
           </div>
+        ) : (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 space-y-4">
+            {error && (
+              <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm text-center">
+                {error}
+              </div>
+            )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Company Name</label>
-            <div className="relative">
-              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input
-                type="text"
-                value={formData.organizationName}
-                onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Your Company Ltd"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="you@company.com"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pl-11 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Min. 8 characters"
-                required
-                minLength={8}
-              />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2">
-                {showPassword ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
+            {/* Social Login */}
+            <div className="space-y-2">
+              <button onClick={handleGoogleSignup}
+                className="w-full py-3 rounded-xl border flex items-center justify-center gap-2 hover:bg-neutral-50">
+                <Chrome className="w-5 h-5 text-red-500" />
+                <span className="text-sm font-medium">Continue with Google</span>
+              </button>
+              <button onClick={handleFacebookSignup}
+                className="w-full py-3 rounded-xl bg-blue-600 text-white flex items-center justify-center gap-2 hover:bg-blue-700">
+                <span className="text-sm font-medium">f</span>
+                <span className="text-sm font-medium">Continue with Facebook</span>
               </button>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              30-day free trial, no credit card required
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-neutral-200" />
+              <span className="text-xs text-muted-foreground">OR</span>
+              <div className="flex-1 h-px bg-neutral-200" />
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              KSh 500/month after trial
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Full Name</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border" placeholder="Enter your name" />
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              Cancel anytime
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border" placeholder="Enter your email" />
+              </div>
             </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Phone Number</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border" placeholder="e.g., 0712345678" />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-10 py-3 rounded-xl border" placeholder="Create a password" />
+                <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                </button>
+              </div>
+            </div>
+
+            <button onClick={handleSignup} disabled={loading || !name || !email || !phone || !password}
+              className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {loading ? 'Creating account...' : 'Create Account Now'}
+            </button>
+
+            <p className="text-sm text-center text-muted-foreground">
+              Already have an account?{' '}
+              <Link href="/wavecore-erp/auth/login" className="text-blue-600 font-medium">
+                Login
+              </Link>
+            </p>
+
+            <p className="text-xs text-center text-muted-foreground">
+              By creating an account, you agree to pay KSh 500/month for WaveCore ERP access
+            </p>
           </div>
-
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold group disabled:opacity-50"
-          >
-            {loading ? 'Creating account...' : (
-              <>Start Free Trial <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
-            )}
-          </Button>
-
-          <div className="text-center text-sm text-gray-400">
-            Already have an account?{' '}
-            <Link href="/wavecore-erp/auth/login" className="text-indigo-400 hover:text-indigo-300 font-semibold">
-              Sign in
-            </Link>
-          </div>
-        </form>
-
-        <p className="text-center text-xs text-gray-600 mt-6">
-          Pay via M-Pesa Till: 4760783 • Protected by enterprise-grade encryption
-        </p>
+        )}
       </div>
     </div>
   )
