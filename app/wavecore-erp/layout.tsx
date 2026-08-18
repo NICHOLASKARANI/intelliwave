@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, createContext, useContext } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
 
 interface Session {
   authenticated: boolean
@@ -22,8 +21,6 @@ const SessionContext = createContext<Session>({ authenticated: false })
 
 export const useSession = () => useContext(SessionContext)
 
-const PUBLIC_PATHS = ['/wavecore-erp/auth/login', '/wavecore-erp/auth/signup', '/wavecore-erp/subscription']
-
 export default function WaveCoreLayout({
   children,
 }: {
@@ -31,8 +28,6 @@ export default function WaveCoreLayout({
 }) {
   const [session, setSession] = useState<Session>({ authenticated: false })
   const [loading, setLoading] = useState(true)
-  const pathname = usePathname()
-  const router = useRouter()
 
   useEffect(() => {
     async function checkSession() {
@@ -41,11 +36,6 @@ export default function WaveCoreLayout({
         if (res.ok) {
           const data = await res.json()
           setSession(data)
-          
-          // If authenticated but not subscribed and not on payment page, redirect to subscription
-          if (data.authenticated && !data.subscribed && !pathname.startsWith('/wavecore-erp/subscription') && !pathname.startsWith('/wavecore-erp/auth')) {
-            router.push('/wavecore-erp/subscription')
-          }
         } else {
           setSession({ authenticated: false })
         }
@@ -57,7 +47,7 @@ export default function WaveCoreLayout({
     }
 
     checkSession()
-  }, [pathname])
+  }, [])
 
   if (loading) {
     return (
