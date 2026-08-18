@@ -1,107 +1,70 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import bcrypt from 'bcryptjs'
-import { Pool } from 'pg'
-import crypto from 'crypto'
-import { rateLimit, getClientIP } from '@/lib/wavecore/rate-limit'
-import { Errors } from '@/lib/wavecore/errors'
-import { sendEmail } from '@/lib/wavecore/email'
+import { pool } from '@/lib/wavecore/db'
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
-})
-
-const signupSchema = z.object({
-  name: z.string().min(2, 'Full name is required'),
-  email: z.string().email('Valid email is required'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  organizationName: z.string().min(2, 'Organization name is required'),
-})
-
-export async function POST(request: NextRequest) {
-  const client = await pool.connect()
+export async function POST(req: NextRequest) {
   try {
-    // Rate limiting: 3 signups per hour per IP
-    const ip = getClientIP(request)
-    const rl = rateLimit(`signup:${ip}`, 3, 60 * 60 * 1000)
+    const body = await req.json()
+    const { name, email, phone, password } = body
 
-    if (!rl.success) {
-      return Errors.rateLimited(Math.ceil((rl.resetAt - Date.now()) / 1000))
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: 'Name, email, and password required' }, { status: 400 })
     }
 
-    const body = await request.json()
-    const validated = signupSchema.parse(body)
-    const normalizedEmail = validated.email.toLowerCase().trim()
-    const hashedPassword = await bcrypt.hash(validated.password, 12)
-
-    await client.query('BEGIN')
-
-    const existing = await client.query('SELECT id FROM "User" WHERE email = $1', [normalizedEmail])
+    // Check if email exists
+    const existing = await pool.query('SELECT id FROM "User" WHERE email = $1', [email])
     if (existing.rows.length > 0) {
-      await client.query('ROLLBACK')
-      return Errors.conflict('An account with this email already exists')
+      return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
     }
 
-    const userId = crypto.randomBytes(12).toString('hex')
-    const orgId = crypto.randomBytes(12).toString('hex')
-    const subId = crypto.randomBytes(12).toString('hex')
-    const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    // Create organization
+    const crypto = require('crypto')
+    const orgId = crypto.randomUUID()
 
-    await client.query(
-      'INSERT INTO "User" (id, name, email, password, role, "isActive", "createdAt", "updatedAt") VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())',
-      [userId, validated.name, normalizedEmail, hashedPassword, 'OWNER', true]
+    const orgResult = await pool.query(
+      `INSERT INTO "Organization" (id, name, "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, true, NOW(), NOW())
+       RETURNING *`,
+      [orgId, `${name}'s Business`]
     )
 
-    await client.query(
-      'INSERT INTO "Organization" (id, name, "ownerId", "isActive", "trialEndsAt", "createdAt", "updatedAt") VALUES ($1,$2,$3,$4,$5,NOW(),NOW())',
-      [orgId, validated.organizationName, userId, true, trialEnd]
+    // Create user
+    const userId = crypto.randomUUID()
+
+    const userResult = await pool.query(
+      `INSERT INTO "User" (id, name, email, phone, role, "organizationId", "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, 'TENANT_ADMIN', $5, true, NOW(), NOW())
+       RETURNING *`,
+      [userId, name, email, phone || null, orgId]
     )
 
-    await client.query(
-      'INSERT INTO "_OrganizationMembers" ("A", "B") VALUES ($1, $2)',
-      [orgId, userId]
+    // Create session
+    const sessionToken = crypto.randomUUID()
+    await pool.query(
+      `INSERT INTO "Session" (id, "userId", "sessionToken", expires, "createdAt")
+       VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', NOW())`,
+      [sessionToken, userId, sessionToken]
     )
 
-    await client.query(
-      'INSERT INTO "Subscription" (id, plan, status, amount, currency, "trialEndsAt", "organizationId", "createdAt", "updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())',
-      [subId, 'TRIAL', 'TRIAL', 500, 'KES', trialEnd, orgId]
-    )
-
-    // Create welcome notification
-    await client.query(
-      `INSERT INTO "Notification" (id, "userId", "organizationId", type, title, content, "isRead", "createdAt")
-       VALUES (gen_random_uuid()::text, $1, $2, 'SYSTEM', $3, $4, false, NOW())`,
-      [userId, orgId, 'Welcome to WaveCore ERP!', `Your ${validated.organizationName} workspace is ready. 30-day free trial started.`]
-    )
-
-    await client.query('COMMIT')
-
-    // Send welcome email (async, non-blocking)
-    sendEmail({
-      to: normalizedEmail,
-      subject: `Welcome to WaveCore ERP, ${validated.name}!`,
-      text: `Your organization ${validated.organizationName} is ready. Your 30-day free trial has started.`,
-      html: `<h1>Welcome to WaveCore ERP!</h1><p>Hi ${validated.name},</p><p>Your organization <strong>${validated.organizationName}</strong> is ready.</p><p>Your <strong>30-day free trial</strong> has started.</p><p>After your trial, it's KSh 500/month.</p>`,
-      userId,
-      organizationId: orgId,
-    }).catch(err => console.error('Welcome email failed:', err))
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
-      message: 'Account created! 30-day free trial started.',
-      data: { userId, name: validated.name, email: normalizedEmail, organization: { id: orgId, name: validated.organizationName } },
-    }, { status: 201 })
-  } catch (error: any) {
-    await client.query('ROLLBACK').catch(() => {})
-    if (error instanceof z.ZodError) {
-      return Errors.validation(error.errors)
-    }
-    console.error('Signup error:', error.message)
-    return Errors.internal()
-  } finally {
-    client.release()
+      user: userResult.rows[0],
+      organization: orgResult.rows[0],
+      requiresPayment: true,
+      subscriptionAmount: 500,
+    })
+
+    // Set session cookie
+    response.cookies.set('wavecore_session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    })
+
+    return response
+  } catch (error) {
+    console.error('Signup error:', error)
+    return NextResponse.json({ error: 'Signup failed' }, { status: 500 })
   }
 }

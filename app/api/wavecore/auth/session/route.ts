@@ -1,24 +1,22 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const sessionToken = request.cookies.get('wavecore_session')?.value
+    const sessionToken = req.cookies.get('wavecore_session')?.value
 
     if (!sessionToken) {
       return NextResponse.json({ authenticated: false }, { status: 401 })
     }
 
     const result = await pool.query(
-      `SELECT s."userId", u.name, u.email, u.role,
-              o.id as org_id, o.name as org_name
+      `SELECT s."userId", s.expires,
+              u.name, u.email, u.role, u."isActive",
+              o.id as org_id, o.name as org_name, o."isActive" as org_active
        FROM "Session" s
        JOIN "User" u ON u.id = s."userId"
-       JOIN "_OrganizationMembers" om ON om."B" = u.id
-       JOIN "Organization" o ON o.id = om."A"
-       WHERE s."sessionToken" = $1
+       JOIN "Organization" o ON o.id = u."organizationId"
+       WHERE s."sessionToken" = $1 AND s.expires > NOW()
        LIMIT 1`,
       [sessionToken]
     )
@@ -28,6 +26,12 @@ export async function GET(request: NextRequest) {
     }
 
     const row = result.rows[0]
+
+    // Check subscription
+    const subResult = await pool.query(
+      `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
+      [row.org_id]
+    )
 
     return NextResponse.json({
       authenticated: true,
@@ -41,10 +45,9 @@ export async function GET(request: NextRequest) {
         id: row.org_id,
         name: row.org_name,
       },
-      permissions: [],
+      subscribed: subResult.rows.length > 0,
     })
-  } catch (error: any) {
-    console.error('Session API error:', error.message)
+  } catch (error) {
     return NextResponse.json({ authenticated: false }, { status: 500 })
   }
 }
