@@ -1,4 +1,5 @@
-// Simple in-memory cache
+// In-memory cache with TTL
+// For production multi-instance, replace with Redis
 const cacheMap = new Map<string, { data: any; expiry: number }>()
 
 export function getCache(key: string): any | null {
@@ -26,3 +27,13 @@ export function clearCache(prefix?: string): void {
     }
   }
 }
+
+// Cleanup expired entries every minute
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of cacheMap.entries()) {
+    if (now > entry.expiry) {
+      cacheMap.delete(key)
+    }
+  }
+}, 60 * 1000)
