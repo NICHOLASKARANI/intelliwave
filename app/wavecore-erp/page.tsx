@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
   Users, Package, Calculator, FileText, BarChart3, Bot, Workflow, Globe,
   Activity, Building2, Factory, Briefcase, FolderKanban, HeadphonesIcon,
-  LogOut, Search as SearchIcon, ArrowUpRight, Menu, X, BellRing, CheckCheck
+  LogOut, Search as SearchIcon, ArrowUpRight, Menu, X, BellRing, CheckCheck, Store, ShoppingCart
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { OrganizationSwitcher } from '@/components/wavecore/organization-switcher'
@@ -227,7 +227,7 @@ export default function WaveCoreERPPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{result.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{result.subtitle} Ã¢â‚¬Â¢ {result.type}</p>
+                        <p className="text-xs text-muted-foreground truncate">{result.subtitle} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ {result.type}</p>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                     </Link>
@@ -381,7 +381,7 @@ export default function WaveCoreERPPage() {
                 Welcome back, {data?.user?.name}
               </h1>
               <p className="text-white/80 text-sm">
-                {data?.organization.name} Ã¢â‚¬Â¢ {data?.user?.role}
+                {data?.organization.name} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ {data?.user?.role}
               </p>
             </div>
           </div>
