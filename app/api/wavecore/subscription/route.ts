@@ -2,28 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { getSession } from '@/lib/wavecore/auth'
 
-const SUBSCRIPTION_AMOUNT = 500 // KSH
+const SUBSCRIPTION_AMOUNT = 500
 const SUBSCRIPTION_CURRENCY = 'KES'
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT s.*, o.name as org_name
-       FROM "Subscription" s
-       JOIN "Organization" o ON o.id = s."organizationId"
-       WHERE s."organizationId" = $1
-       ORDER BY s."createdAt" DESC
-       LIMIT 1`,
+      `SELECT * FROM "Subscription"
+       WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW()
+       ORDER BY "createdAt" DESC LIMIT 1`,
       [session.organizationId]
     )
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         subscribed: false,
         amount: SUBSCRIPTION_AMOUNT,
         currency: SUBSCRIPTION_CURRENCY,
@@ -32,25 +27,19 @@ export async function GET(req: NextRequest) {
 
     const sub = result.rows[0]
     const endDate = sub.endDate || sub.trialEndsAt
-    const isActive = sub.status === 'ACTIVE' && new Date(endDate) > new Date()
 
     return NextResponse.json({
-      subscribed: isActive,
+      subscribed: true,
       amount: sub.amount || SUBSCRIPTION_AMOUNT,
       currency: sub.currency || SUBSCRIPTION_CURRENCY,
       plan: sub.plan,
       status: sub.status,
       startedAt: sub.startDate,
       expiresAt: endDate,
-      trialEndsAt: sub.trialEndsAt,
-      nextBillingAt: sub.nextBillingAt,
-      paymentMethod: 'MPESA',
-      lastPayment: sub.updatedAt,
+      daysRemaining: Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
       mpesaReceipt: sub.mpesaReceipt,
-      daysRemaining: isActive ? Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0,
     })
   } catch (error) {
-    console.error('Subscription fetch error:', error)
     return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 })
   }
 }
@@ -58,58 +47,53 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const { paymentMethod = 'MPESA', phoneNumber, mpesaReceipt } = body
+    const { phoneNumber, mpesaReceipt } = body
 
-    // Verify payment (in production, this would call M-Pesa API)
     if (!mpesaReceipt) {
-      return NextResponse.json({ error: 'M-Pesa receipt required' }, { status: 400 })
+      return NextResponse.json({ error: 'M-Pesa receipt number required' }, { status: 400 })
+    }
+
+    // Check if receipt already used
+    const existingReceipt = await pool.query(
+      `SELECT id FROM "Subscription" WHERE "mpesaReceipt" = $1`,
+      [mpesaReceipt]
+    )
+
+    if (existingReceipt.rows.length > 0) {
+      return NextResponse.json({ error: 'This receipt number has already been used' }, { status: 400 })
     }
 
     // Calculate dates
-    const now = new Date()
     const endDate = new Date()
-    endDate.setDate(endDate.getDate() + 30) // 30 days
+    endDate.setDate(endDate.getDate() + 30)
     const nextBillingAt = new Date(endDate)
 
-    // Deactivate any existing active subscriptions
+    // Deactivate existing subscriptions
     await pool.query(
-      `UPDATE "Subscription" SET status = 'EXPIRED' 
-       WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
+      `UPDATE "Subscription" SET status = 'EXPIRED' WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
       [session.organizationId]
     )
 
-    // Create new subscription
+    // Create subscription
     const result = await pool.query(
       `INSERT INTO "Subscription" 
        ("organizationId", "userId", plan, status, amount, currency, "startDate", "endDate", "nextBillingAt", "mpesaReceipt", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8, $9, NOW(), NOW())
+       VALUES ($1, $2, 'MONTHLY', 'ACTIVE', $3, $4, NOW(), $5, $6, $7, NOW(), NOW())
        RETURNING *`,
-      [
-        session.organizationId,
-        session.userId,
-        'MONTHLY',
-        'ACTIVE',
-        SUBSCRIPTION_AMOUNT,
-        SUBSCRIPTION_CURRENCY,
-        endDate,
-        nextBillingAt,
-        mpesaReceipt,
-      ]
+      [session.organizationId, session.userId, SUBSCRIPTION_AMOUNT, SUBSCRIPTION_CURRENCY, endDate, nextBillingAt, mpesaReceipt]
     )
 
     return NextResponse.json({
       success: true,
       subscription: result.rows[0],
-      message: 'Subscription activated successfully',
+      message: 'Subscription activated successfully for 30 days',
       expiresAt: endDate,
     })
   } catch (error) {
     console.error('Subscription create error:', error)
-    return NextResponse.json({ error: 'Failed to create subscription' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to activate subscription' }, { status: 500 })
   }
 }
