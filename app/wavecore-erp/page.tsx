@@ -93,7 +93,7 @@ export default function WaveCoreERPPage() {
       try {
         const res = await fetch('/api/wavecore/dashboard')
         if (res.status === 401) {
-          router.push('/wavecore-erp/auth/login')
+          // Removed redirect - show content instead
           return
         }
         if (!res.ok) throw new Error('Failed to load dashboard')
@@ -167,7 +167,7 @@ export default function WaveCoreERPPage() {
 
   const handleLogout = async () => {
     await fetch('/api/wavecore/auth/logout', { method: 'POST' })
-    router.push('/wavecore-erp/auth/login')
+    // Removed redirect - show content instead
   }
 
   const markAllRead = async () => {
@@ -227,7 +227,7 @@ export default function WaveCoreERPPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{result.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{result.subtitle} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ {result.type}</p>
+                        <p className="text-xs text-muted-foreground truncate">{result.subtitle} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ {result.type}</p>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                     </Link>
@@ -381,7 +381,7 @@ export default function WaveCoreERPPage() {
                 Welcome back, {data?.user?.name}
               </h1>
               <p className="text-white/80 text-sm">
-                {data?.organization.name} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ {data?.user?.role}
+                {data?.organization.name} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ {data?.user?.role}
               </p>
             </div>
           </div>

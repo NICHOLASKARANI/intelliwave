@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, createContext, useContext } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 interface Session {
   authenticated: boolean
@@ -14,17 +14,12 @@ interface Session {
   organization?: {
     id: string
     name: string
-    trialEndsAt: string
-    subscription: any
   }
-  permissions?: string[]
 }
 
 const SessionContext = createContext<Session>({ authenticated: false })
 
 export const useSession = () => useContext(SessionContext)
-
-const PUBLIC_PATHS = ['/wavecore-erp/auth/login', '/wavecore-erp/auth/signup']
 
 export default function WaveCoreLayout({
   children,
@@ -33,10 +28,7 @@ export default function WaveCoreLayout({
 }) {
   const [session, setSession] = useState<Session>({ authenticated: false })
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
   const pathname = usePathname()
-
-  const isPublicPath = PUBLIC_PATHS.includes(pathname)
 
   useEffect(() => {
     async function checkSession() {
@@ -45,27 +37,18 @@ export default function WaveCoreLayout({
         if (res.ok) {
           const data = await res.json()
           setSession(data)
-          if (isPublicPath) {
-            router.push('/wavecore-erp')
-          }
         } else {
           setSession({ authenticated: false })
-          if (!isPublicPath) {
-            router.push('/wavecore-erp/auth/login')
-          }
         }
       } catch {
         setSession({ authenticated: false })
-        if (!isPublicPath) {
-          router.push('/wavecore-erp/auth/login')
-        }
       } finally {
         setLoading(false)
       }
     }
 
     checkSession()
-  }, [pathname])
+  }, [])
 
   if (loading) {
     return (
@@ -76,10 +59,6 @@ export default function WaveCoreLayout({
         </div>
       </div>
     )
-  }
-
-  if (!session.authenticated && !isPublicPath) {
-    return null
   }
 
   return (
