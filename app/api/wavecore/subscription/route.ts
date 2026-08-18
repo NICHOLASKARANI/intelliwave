@@ -31,19 +31,23 @@ export async function GET(req: NextRequest) {
     }
 
     const sub = result.rows[0]
-    const isActive = sub.status === 'ACTIVE' && new Date(sub.expiresAt) > new Date()
+    const endDate = sub.endDate || sub.trialEndsAt
+    const isActive = sub.status === 'ACTIVE' && new Date(endDate) > new Date()
 
     return NextResponse.json({
       subscribed: isActive,
-      amount: SUBSCRIPTION_AMOUNT,
-      currency: SUBSCRIPTION_CURRENCY,
+      amount: sub.amount || SUBSCRIPTION_AMOUNT,
+      currency: sub.currency || SUBSCRIPTION_CURRENCY,
       plan: sub.plan,
       status: sub.status,
-      startedAt: sub.createdAt,
-      expiresAt: sub.expiresAt,
-      paymentMethod: sub.paymentMethod,
-      lastPayment: sub.lastPayment,
-      daysRemaining: isActive ? Math.ceil((new Date(sub.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0,
+      startedAt: sub.startDate,
+      expiresAt: endDate,
+      trialEndsAt: sub.trialEndsAt,
+      nextBillingAt: sub.nextBillingAt,
+      paymentMethod: 'MPESA',
+      lastPayment: sub.updatedAt,
+      mpesaReceipt: sub.mpesaReceipt,
+      daysRemaining: isActive ? Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0,
     })
   } catch (error) {
     console.error('Subscription fetch error:', error)
@@ -59,16 +63,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { paymentMethod = 'MPESA', phoneNumber, transactionId } = body
+    const { paymentMethod = 'MPESA', phoneNumber, mpesaReceipt } = body
 
     // Verify payment (in production, this would call M-Pesa API)
-    if (!transactionId) {
-      return NextResponse.json({ error: 'Payment verification required' }, { status: 400 })
+    if (!mpesaReceipt) {
+      return NextResponse.json({ error: 'M-Pesa receipt required' }, { status: 400 })
     }
 
-    // Calculate expiry: 30 days from now
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 30)
+    // Calculate dates
+    const now = new Date()
+    const endDate = new Date()
+    endDate.setDate(endDate.getDate() + 30) // 30 days
+    const nextBillingAt = new Date(endDate)
 
     // Deactivate any existing active subscriptions
     await pool.query(
@@ -80,19 +86,19 @@ export async function POST(req: NextRequest) {
     // Create new subscription
     const result = await pool.query(
       `INSERT INTO "Subscription" 
-       ("organizationId", plan, status, amount, currency, paymentMethod, "transactionId", "phoneNumber", "startsAt", "expiresAt", "lastPayment", "createdAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9, NOW(), NOW())
+       ("organizationId", "userId", plan, status, amount, currency, "startDate", "endDate", "nextBillingAt", "mpesaReceipt", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8, $9, NOW(), NOW())
        RETURNING *`,
       [
         session.organizationId,
+        session.userId,
         'MONTHLY',
         'ACTIVE',
         SUBSCRIPTION_AMOUNT,
         SUBSCRIPTION_CURRENCY,
-        paymentMethod,
-        transactionId,
-        phoneNumber || null,
-        expiresAt,
+        endDate,
+        nextBillingAt,
+        mpesaReceipt,
       ]
     )
 
@@ -100,7 +106,7 @@ export async function POST(req: NextRequest) {
       success: true,
       subscription: result.rows[0],
       message: 'Subscription activated successfully',
-      expiresAt,
+      expiresAt: endDate,
     })
   } catch (error) {
     console.error('Subscription create error:', error)

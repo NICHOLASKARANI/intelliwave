@@ -10,7 +10,9 @@ export default function SubscriptionPage() {
   const [status, setStatus] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [mpesaReceipt, setMpesaReceipt] = useState('')
   const [paying, setPaying] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchStatus()
@@ -27,27 +29,38 @@ export default function SubscriptionPage() {
   }
 
   const handlePay = async () => {
-    if (!phoneNumber) return
+    if (!phoneNumber || !mpesaReceipt) {
+      setError('Please enter your M-Pesa phone number and receipt')
+      return
+    }
     setPaying(true)
+    setError('')
     
-    // In production, this would trigger M-Pesa STK push
-    // For now, simulate payment
-    setTimeout(async () => {
-      try {
-        const res = await fetch('/api/wavecore/subscription', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentMethod: 'MPESA',
-            phoneNumber,
-            transactionId: 'MPESA' + Date.now(),
-          }),
-        })
-        if (res.ok) {
-          fetchStatus()
-        }
-      } catch {} finally { setPaying(false) }
-    }, 2000)
+    try {
+      const res = await fetch('/api/wavecore/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentMethod: 'MPESA',
+          phoneNumber,
+          mpesaReceipt,
+        }),
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        setStatus(data)
+        setPhoneNumber('')
+        setMpesaReceipt('')
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Payment verification failed')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    } finally {
+      setPaying(false)
+    }
   }
 
   if (loading) {
@@ -96,9 +109,15 @@ export default function SubscriptionPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="w-4 h-4 text-blue-500" />
-                  <span>Cancel anytime</span>
+                  <span>30 days access</span>
                 </div>
               </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm mb-3">
+                  {error}
+                </div>
+              )}
 
               <div className="space-y-3">
                 <input
@@ -106,15 +125,22 @@ export default function SubscriptionPage() {
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border text-center"
-                  placeholder="Enter M-Pesa phone number (e.g., 0712345678)"
+                  placeholder="M-Pesa phone number (e.g., 0712345678)"
+                />
+                <input
+                  type="text"
+                  value={mpesaReceipt}
+                  onChange={(e) => setMpesaReceipt(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border text-center"
+                  placeholder="M-Pesa receipt number (e.g., RBT123456789)"
                 />
                 <Button 
                   onClick={handlePay} 
-                  disabled={paying || !phoneNumber}
+                  disabled={paying || !phoneNumber || !mpesaReceipt}
                   className="w-full gap-2 bg-green-600 hover:bg-green-700"
                 >
                   {paying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                  {paying ? 'Processing...' : 'Pay KSh 500 via M-Pesa'}
+                  {paying ? 'Processing...' : 'Activate KSh 500 Subscription'}
                 </Button>
               </div>
             </div>
