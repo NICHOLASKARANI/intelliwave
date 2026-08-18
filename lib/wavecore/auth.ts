@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { getCache, setCache } from './cache'
 import { pool } from './db'
 import { redirect } from 'next/navigation'
 
@@ -24,6 +25,10 @@ export async function getSession(): Promise<WaveCoreSession | null> {
   if (!sessionToken) return null
 
   try {
+    const sessionKey = session:
+    const cached = getCache(sessionKey)
+    if (cached) return cached
+    
     const result = await pool.query(
       `SELECT s.id as session_id, s."userId", s.expires,
               u.name, u.email, u.role, u."isActive",

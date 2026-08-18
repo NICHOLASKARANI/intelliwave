@@ -1,56 +1,29 @@
-// Simple in-memory rate limiter for serverless
-// For production with multiple instances, replace with Redis
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
-interface RateLimitEntry {
-  count: number
-  resetAt: number
-}
-
-const globalForRateLimit = globalThis as unknown as {
-  rateLimitStore: Map<string, RateLimitEntry> | undefined
-}
-
-const store = globalForRateLimit.rateLimitStore ?? new Map<string, RateLimitEntry>()
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForRateLimit.rateLimitStore = store
-}
-
-// Clean up expired entries periodically
-setInterval(() => {
+export function rateLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now()
-  for (const [key, entry] of store.entries()) {
-    if (entry.resetAt < now) {
-      store.delete(key)
-    }
-  }
-}, 60 * 1000)
+  const entry = rateLimitMap.get(key)
 
-export function rateLimit(
-  key: string,
-  maxRequests: number,
-  windowMs: number
-): { success: boolean; remaining: number; resetAt: number } {
-  const now = Date.now()
-  const entry = store.get(key)
-
-  if (!entry || entry.resetAt < now) {
-    store.set(key, { count: 1, resetAt: now + windowMs })
-    return { success: true, remaining: maxRequests - 1, resetAt: now + windowMs }
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs })
+    return true
   }
 
-  if (entry.count >= maxRequests) {
-    return { success: false, remaining: 0, resetAt: entry.resetAt }
+  if (entry.count >= limit) {
+    return false
   }
 
   entry.count++
-  return { success: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt }
+  return true
 }
 
-export function getClientIP(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    return forwarded.split(',')[0].trim()
+// Clean up old entries every 5 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetTime) {
+      rateLimitMap.delete(key)
+    }
   }
-  return request.headers.get('x-real-ip') || 'unknown'
-}
+}, 5 * 60 * 1000)
