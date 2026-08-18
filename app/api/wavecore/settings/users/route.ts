@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
     
     return NextResponse.json({ users })
   } catch (error) {
+    console.error('Users fetch error:', error)
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
   }
 }
@@ -29,13 +30,14 @@ export async function POST(req: NextRequest) {
       data: {
         fullName: body.fullName,
         email: body.email,
-        phone: body.phone || '',
+        phone: body.phone || null,
         role: body.role || 'User',
         status: 'Active',
       },
     })
     return NextResponse.json({ user }, { status: 201 })
   } catch (error) {
+    console.error('User create error:', error)
     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 })
   }
 }
@@ -44,7 +46,7 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json()
     const user = await prisma.userProfile.update({
-      where: { id: body.id },
+      where: { id: parseInt(body.id) },
       data: {
         fullName: body.fullName,
         email: body.email,

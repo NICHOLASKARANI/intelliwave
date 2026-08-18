@@ -20,12 +20,36 @@ export async function PUT(req: NextRequest) {
     if (existing) {
       const updated = await prisma.organizationSetting.update({
         where: { id: existing.id },
-        data: body,
+        data: {
+          companyName: body.companyName,
+          email: body.email,
+          phone: body.phone,
+          address: body.address,
+          website: body.website,
+          timezone: body.timezone,
+          language: body.language,
+          currency: body.currency,
+          dateFormat: body.dateFormat,
+          currencySymbol: body.currencySymbol,
+          numberFormat: body.numberFormat,
+        },
       })
       return NextResponse.json({ settings: updated })
     } else {
       const created = await prisma.organizationSetting.create({
-        data: body,
+        data: {
+          companyName: body.companyName || 'WaveCore ERP',
+          email: body.email,
+          phone: body.phone,
+          address: body.address,
+          website: body.website,
+          timezone: body.timezone || 'Africa/Nairobi',
+          language: body.language || 'English',
+          currency: body.currency || 'KES',
+          dateFormat: body.dateFormat || 'DD/MM/YYYY',
+          currencySymbol: body.currencySymbol || 'KSh',
+          numberFormat: body.numberFormat || '1,234.56',
+        },
       })
       return NextResponse.json({ settings: created }, { status: 201 })
     }
