@@ -14,12 +14,17 @@ interface Session {
   organization?: {
     id: string
     name: string
+    trialEndsAt: string
+    subscription: any
   }
+  permissions?: string[]
 }
 
 const SessionContext = createContext<Session>({ authenticated: false })
 
 export const useSession = () => useContext(SessionContext)
+
+const PUBLIC_PATHS = ['/wavecore-erp/auth/login', '/wavecore-erp/auth/signup']
 
 export default function WaveCoreLayout({
   children,
@@ -31,27 +36,50 @@ export default function WaveCoreLayout({
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    // Check session without redirecting
-    fetch('/api/wavecore/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (data.authenticated) {
-          setSession(data)
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const isPublicPath = PUBLIC_PATHS.includes(pathname)
 
-  // IMPORTANT: Do NOT redirect here!
-  // Let pages handle their own auth logic
-  // This prevents infinite loops
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/wavecore/auth/session')
+        if (res.ok) {
+          const data = await res.json()
+          setSession(data)
+          if (isPublicPath) {
+            router.push('/wavecore-erp')
+          }
+        } else {
+          setSession({ authenticated: false })
+          if (!isPublicPath) {
+            router.push('/wavecore-erp/auth/login')
+          }
+        }
+      } catch {
+        setSession({ authenticated: false })
+        if (!isPublicPath) {
+          router.push('/wavecore-erp/auth/login')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkSession()
+  }, [pathname])
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-    </div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading WaveCore ERP...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session.authenticated && !isPublicPath) {
+    return null
   }
 
   return (
