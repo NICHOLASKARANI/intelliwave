@@ -1,10 +1,7 @@
-import { cookies } from 'next/headers'
-import { getCache, setCache } from './cache'
 import { pool } from './db'
-import { checkSubscription } from './subscription'
+import { getCache, setCache } from './cache'
 
 const SESSION_COOKIE = 'wavecore_session'
-const SESSION_MAX_AGE = 7 * 24 * 60 * 60 // 7 days in seconds
 
 export interface WaveCoreSession {
   sessionId: string
@@ -17,13 +14,10 @@ export interface WaveCoreSession {
   isActive: boolean
   orgActive: boolean
   subscribed: boolean
-  subscriptionExpires: Date | null
 }
 
-export async function getSession(): Promise<WaveCoreSession | null> {
-  const cookieStore = cookies()
-  const sessionToken = cookieStore.get(SESSION_COOKIE)?.value
-
+// For API routes - pass sessionToken directly
+export async function getSessionFromToken(sessionToken: string): Promise<WaveCoreSession | null> {
   if (!sessionToken) return null
 
   try {
@@ -32,12 +26,12 @@ export async function getSession(): Promise<WaveCoreSession | null> {
     if (cached) return cached as WaveCoreSession
 
     const result = await pool.query(
-      `SELECT s.id as session_id, s."userId", s.expires,
+      `SELECT s."userId", s.expires,
               u.name, u.email, u.role, u."isActive",
               o.id as org_id, o.name as org_name, o."isActive" as org_active
        FROM "Session" s
        JOIN "User" u ON u.id = s."userId"
-       JOIN "Organization" o ON o.id = u."organizationId"
+       LEFT JOIN "Organization" o ON o."ownerId" = u.id
        WHERE s."sessionToken" = $1 AND s.expires > NOW()`,
       [sessionToken]
     )
@@ -47,10 +41,17 @@ export async function getSession(): Promise<WaveCoreSession | null> {
     const row = result.rows[0]
     
     // Check subscription
-    const subscribed = await checkSubscription(row.org_id)
-    
+    let subscribed = false
+    try {
+      const subResult = await pool.query(
+        `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
+        [row.org_id]
+      )
+      subscribed = subResult.rows.length > 0
+    } catch {}
+
     const session: WaveCoreSession = {
-      sessionId: row.session_id,
+      sessionId: sessionToken,
       userId: row.userId,
       organizationId: row.org_id,
       role: row.role,
@@ -60,44 +61,24 @@ export async function getSession(): Promise<WaveCoreSession | null> {
       isActive: row.isActive,
       orgActive: row.org_active,
       subscribed,
-      subscriptionExpires: null,
     }
 
-    setCache(sessionKey, session, 30) // Cache for 30 seconds
-
+    setCache(sessionKey, session, 30)
     return session
   } catch (error) {
-    console.error('Session fetch error:', error)
+    console.error('Session error:', error)
     return null
   }
 }
 
-export async function requireTenant(): Promise<WaveCoreSession | null> {
-  const session = await getSession()
-  if (!session) return null
-  if (!session.isActive || !session.orgActive) return null
-  return session
-}
-
-export async function requireSubscription(): Promise<boolean> {
-  const session = await getSession()
-  if (!session) return false
-  return session.subscribed
-}
-
-export async function createSession(userId: string, organizationId: string): Promise<string> {
-  const crypto = require('crypto')
-  const sessionId = crypto.randomUUID()
-  
-  await pool.query(
-    `INSERT INTO "Session" (id, "userId", "sessionToken", expires, "createdAt")
-     VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', NOW())`,
-    [sessionId, userId, sessionId]
-  )
-  
-  return sessionId
-}
-
-export async function destroySession(sessionToken: string): Promise<void> {
-  await pool.query('DELETE FROM "Session" WHERE "sessionToken" = $1', [sessionToken])
+// For server components - use cookies()
+export async function getSession(): Promise<WaveCoreSession | null> {
+  try {
+    const { cookies } = await import('next/headers')
+    const cookieStore = cookies()
+    const sessionToken = cookieStore.get(SESSION_COOKIE)?.value
+    return getSessionFromToken(sessionToken || '')
+  } catch {
+    return null
+  }
 }

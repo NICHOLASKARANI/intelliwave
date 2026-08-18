@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -8,86 +8,55 @@ import {
   Users, Package, Calculator, FileText, BarChart3, Bot, Workflow, Globe,
   Activity, Building2, Factory, Briefcase, FolderKanban, HeadphonesIcon,
   LogOut, Search as SearchIcon, ArrowUpRight, Menu, X, BellRing,
-  CheckCheck, Store, ShoppingCart, Loader2
+  CheckCheck, Store, ShoppingCart, Loader2, CalendarDays, Wallet,
+  Sparkles, ChevronRight, PieChart, LineChart, Download, Filter
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { OrganizationSwitcher } from '@/components/wavecore/organization-switcher'
-import { DashboardCharts } from '@/components/wavecore/dashboard-charts'
-
-interface DashboardData {
-  organization: { id: string; name: string }
-  user: { id: string; name: string; email: string; role: string }
-  kpis: {
-    revenueMTD: number
-    outstandingReceivables: number
-    accountsPayable: number
-    activeCustomers: number
-    inventoryItems: number
-    employees: number
-    invoiceCount: number
-    journalEntries: number
-  }
-  recentActivity: Array<{ action: string; entityType: string; createdAt: string }>
-}
 
 const modules = [
-  { icon: Calculator, title: 'Finance & Accounting', desc: 'GL, AP/AR, Bank Rec, Budgets', href: '/wavecore-erp/finance', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-  { icon: Users, title: 'CRM & Sales', desc: 'Leads, Opportunities, Pipeline', href: '/wavecore-erp/crm', bg: 'bg-blue-50 dark:bg-blue-950' },
-  { icon: Store, title: 'Point of Sale', desc: 'Products, Sales, Stock, Suppliers', href: '/wavecore-erp/store', bg: 'bg-pink-50 dark:bg-pink-950' },
-  { icon: Package, title: 'Inventory', desc: 'Warehouses, Stock, Serial', href: '/wavecore-erp/inventory', bg: 'bg-orange-50 dark:bg-orange-950' },
-  { icon: Factory, title: 'Manufacturing', desc: 'BOM, Work Orders, Quality', href: '/wavecore-erp/manufacturing', bg: 'bg-purple-50 dark:bg-purple-950' },
-  { icon: Briefcase, title: 'HR', desc: 'Employees, Payroll, Attendance', href: '/wavecore-erp/hr', bg: 'bg-indigo-50 dark:bg-indigo-950' },
-  { icon: FolderKanban, title: 'Projects', desc: 'Tasks, Kanban, Gantt', href: '/wavecore-erp/projects', bg: 'bg-teal-50 dark:bg-teal-950' },
-  { icon: HeadphonesIcon, title: 'Helpdesk', desc: 'Tickets, SLA, Knowledge', href: '/wavecore-erp/helpdesk', bg: 'bg-pink-50 dark:bg-pink-950' },
-  { icon: FileText, title: 'Documents', desc: 'Storage, OCR, Signatures', href: '/wavecore-erp/documents', bg: 'bg-cyan-50 dark:bg-cyan-950' },
-  { icon: BarChart3, title: 'BI & Analytics', desc: 'Dashboards, KPIs, Forecasts', href: '/wavecore-erp/analytics', bg: 'bg-violet-50 dark:bg-violet-950' },
-  { icon: Bot, title: 'AI Copilot', desc: 'AI Assistant, Smart Search', href: '/wavecore-erp/ai', bg: 'bg-rose-50 dark:bg-rose-950' },
-  { icon: Workflow, title: 'Automation', desc: 'Workflows, Approvals, Rules', href: '/wavecore-erp/automation', bg: 'bg-amber-50 dark:bg-amber-950' },
-  { icon: Globe, title: 'Website', desc: 'Builder, CMS, E-Commerce', href: '/wavecore-erp/website', bg: 'bg-sky-50 dark:bg-sky-950' },
-  { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', bg: 'bg-gray-50 dark:bg-gray-950' },
+  { icon: Calculator, title: 'Finance & Accounting', desc: 'GL, AP/AR, Bank Rec, Budgets', href: '/wavecore-erp/finance', bg: 'from-emerald-500 to-green-600', color: 'text-emerald-500' },
+  { icon: Users, title: 'CRM & Sales', desc: 'Leads, Opportunities, Pipeline', href: '/wavecore-erp/crm', bg: 'from-blue-500 to-indigo-600', color: 'text-blue-500' },
+  { icon: Store, title: 'Point of Sale', desc: 'Products, Sales, Stock', href: '/wavecore-erp/store', bg: 'from-pink-500 to-rose-600', color: 'text-pink-500' },
+  { icon: Package, title: 'Inventory', desc: 'Warehouses, Stock, Serial', href: '/wavecore-erp/inventory', bg: 'from-orange-500 to-amber-600', color: 'text-orange-500' },
+  { icon: Factory, title: 'Manufacturing', desc: 'BOM, Work Orders, Quality', href: '/wavecore-erp/manufacturing', bg: 'from-purple-500 to-violet-600', color: 'text-purple-500' },
+  { icon: Briefcase, title: 'HR', desc: 'Employees, Payroll, Attendance', href: '/wavecore-erp/hr', bg: 'from-indigo-500 to-blue-600', color: 'text-indigo-500' },
+  { icon: FolderKanban, title: 'Projects', desc: 'Tasks, Kanban, Gantt', href: '/wavecore-erp/projects', bg: 'from-teal-500 to-cyan-600', color: 'text-teal-500' },
+  { icon: HeadphonesIcon, title: 'Helpdesk', desc: 'Tickets, SLA, Knowledge', href: '/wavecore-erp/helpdesk', bg: 'from-rose-500 to-pink-600', color: 'text-rose-500' },
+  { icon: FileText, title: 'Documents', desc: 'Storage, OCR, Signatures', href: '/wavecore-erp/documents', bg: 'from-cyan-500 to-sky-600', color: 'text-cyan-500' },
+  { icon: BarChart3, title: 'BI & Analytics', desc: 'Dashboards, KPIs, Forecasts', href: '/wavecore-erp/analytics', bg: 'from-violet-500 to-purple-600', color: 'text-violet-500' },
+  { icon: Bot, title: 'AI Copilot', desc: 'AI Assistant, Smart Search', href: '/wavecore-erp/ai', bg: 'from-rose-500 to-red-600', color: 'text-rose-500' },
+  { icon: Workflow, title: 'Automation', desc: 'Workflows, Approvals', href: '/wavecore-erp/automation', bg: 'from-amber-500 to-orange-600', color: 'text-amber-500' },
+  { icon: Globe, title: 'Website', desc: 'Builder, CMS, E-Commerce', href: '/wavecore-erp/website', bg: 'from-sky-500 to-blue-600', color: 'text-sky-500' },
+  { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', bg: 'from-gray-500 to-slate-600', color: 'text-gray-500' },
 ]
 
-export default function WaveCoreERPPage() {
-  const [data, setData] = useState<DashboardData | null>(null)
+export default function ExecutiveDashboard() {
+  const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [subscribed, setSubscribed] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  const router = useRouter()
+  const [kpis, setKpis] = useState<any>({})
+  const [subscription, setSubscription] = useState<any>(null)
 
   useEffect(() => {
-    checkAuthAndFetch()
+    fetchAllData()
   }, [])
 
-  async function checkAuthAndFetch() {
+  async function fetchAllData() {
     try {
       const sessionRes = await fetch('/api/wavecore/auth/session')
-      if (!sessionRes.ok) {
-        setLoading(false)
-        return
-      }
-      
-      const sessionData = await sessionRes.json()
-      if (!sessionData.authenticated) {
-        setLoading(false)
-        return
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json()
+        setSession(sessionData)
       }
 
-      if (!sessionData.subscribed) {
-        setSubscribed(false)
-        setLoading(false)
-        return
+      const subRes = await fetch('/api/wavecore/subscription')
+      if (subRes.ok) {
+        const subData = await subRes.json()
+        setSubscription(subData)
       }
 
-      setSubscribed(true)
-
-      // Fetch dashboard data
       const dashRes = await fetch('/api/wavecore/dashboard')
       if (dashRes.ok) {
         const dashData = await dashRes.json()
-        setData(dashData)
+        setKpis(dashData.kpis || {})
       }
     } catch {} finally {
       setLoading(false)
@@ -96,143 +65,142 @@ export default function WaveCoreERPPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-      </div>
-    )
-  }
-
-  // Not authenticated - show landing
-  if (!subscribed && !data) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={80} height={80} className="rounded-xl mx-auto mb-6" />
-          <h1 className="text-3xl font-bold mb-2">WaveCore ERP</h1>
-          <p className="text-muted-foreground mb-8">
-            Complete business management for Kenyan businesses
-          </p>
-          <div className="space-y-3">
-            <Link href="/wavecore-erp/auth/login" className="block w-full py-3 rounded-xl bg-blue-600 text-white text-center font-medium hover:bg-blue-700">
-              Sign In
-            </Link>
-            <Link href="/wavecore-erp/auth/signup" className="block w-full py-3 rounded-xl border text-center font-medium hover:bg-neutral-100">
-              Create Account - KSh 500/month
-            </Link>
-            <Link href="/marketplace" className="block w-full py-3 rounded-xl border text-center font-medium hover:bg-neutral-100">
-              Browse Marketplace
-            </Link>
-            <Link href="/ride" className="block w-full py-3 rounded-xl border text-center font-medium hover:bg-neutral-100">
-              Wavve Ride
-            </Link>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mx-auto mb-4" />
+          <p className="text-slate-400">Loading Executive Dashboard...</p>
         </div>
       </div>
     )
   }
 
-  // Need subscription
-  if (!subscribed) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <CreditCard className="w-16 h-16 text-amber-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Subscription Required</h1>
-          <p className="text-muted-foreground mb-6">
-            Pay KSh 500/month to access WaveCore ERP
-          </p>
-          <Link href="/wavecore-erp/subscription" className="block w-full py-3 rounded-xl bg-green-600 text-white text-center font-medium hover:bg-green-700">
-            Pay KSh 500 - Activate Now
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  // Full dashboard
   const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800">
         <div className="flex items-center justify-between px-4 h-16">
+          <Link href="/wavecore-erp" className="flex items-center gap-3">
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+            <div>
+              <span className="font-bold text-lg">WaveCore ERP</span>
+              <p className="text-xs text-slate-400">{session?.organization?.name || 'Executive Dashboard'}</p>
+            </div>
+          </Link>
+
           <div className="flex items-center gap-3">
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden p-2">
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-            <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
-              <span className="font-bold hidden sm:block">WaveCore</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <OrganizationSwitcher />
-            <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 rounded-xl hover:bg-neutral-100">
-              <SearchIcon className="w-5 h-5" />
-            </button>
-            <button className="p-2 rounded-xl hover:bg-neutral-100 relative">
-              <Bell className="w-5 h-5" />
+            {/* Subscription Badge */}
+            {subscription?.subscribed ? (
+              <span className="px-3 py-1 text-xs bg-green-500/20 text-green-400 rounded-full flex items-center gap-1">
+                <CheckCheck className="w-3 h-3" /> Active until {new Date(subscription.expiresAt).toLocaleDateString()}
+              </span>
+            ) : (
+              <Link href="/wavecore-erp/subscription" className="px-3 py-1 text-xs bg-amber-500/20 text-amber-400 rounded-full flex items-center gap-1">
+                <CreditCard className="w-3 h-3" /> Subscribe KSh 500
+              </Link>
+            )}
+
+            <button className="p-2 rounded-xl hover:bg-slate-800 relative">
+              <Bell className="w-5 h-5 text-slate-400" />
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
             </button>
+
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
+                <span className="text-sm font-bold">{session?.user?.name?.[0] || 'U'}</span>
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-sm font-medium">{session?.user?.name || 'User'}</p>
+                <p className="text-xs text-slate-400">{session?.user?.role || 'Role'}</p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8">
-        {/* Welcome */}
-        <div className="rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 lg:p-8 mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
-            Welcome back, {data?.user?.name || 'User'}!
-          </h1>
-          <p className="text-white/80">
-            {data?.organization?.name || 'Your Business'} • {new Date().toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
+        {/* Welcome Hero */}
+        <div className="rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 lg:p-8 mb-8 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+          <div className="relative">
+            <h1 className="text-2xl lg:text-3xl font-bold mb-2">
+              Welcome back, {session?.user?.name?.split(' ')[0] || 'Executive'}
+            </h1>
+            <p className="text-white/80 text-sm">
+              {new Date().toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
         </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
-            <TrendingUp className="w-6 h-6 text-emerald-500 mb-3" />
-            <p className="text-xl font-bold">{formatKES(data?.kpis?.revenueMTD)}</p>
-            <p className="text-xs text-muted-foreground">Revenue (MTD)</p>
+          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500 transition-all">
+            <TrendingUp className="w-6 h-6 text-emerald-400 mb-3" />
+            <p className="text-2xl font-bold">{formatKES(kpis.revenueMTD)}</p>
+            <p className="text-xs text-slate-400">Revenue (MTD)</p>
           </div>
-          <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
-            <Users className="w-6 h-6 text-blue-500 mb-3" />
-            <p className="text-xl font-bold">{data?.kpis?.activeCustomers || 0}</p>
-            <p className="text-xs text-muted-foreground">Active Customers</p>
+          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-blue-500 transition-all">
+            <Users className="w-6 h-6 text-blue-400 mb-3" />
+            <p className="text-2xl font-bold">{kpis.activeCustomers || 0}</p>
+            <p className="text-xs text-slate-400">Active Customers</p>
           </div>
-          <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
-            <DollarSign className="w-6 h-6 text-orange-500 mb-3" />
-            <p className="text-xl font-bold">{formatKES(data?.kpis?.outstandingReceivables)}</p>
-            <p className="text-xs text-muted-foreground">Receivables</p>
+          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-orange-500 transition-all">
+            <DollarSign className="w-6 h-6 text-orange-400 mb-3" />
+            <p className="text-2xl font-bold">{formatKES(kpis.outstandingReceivables)}</p>
+            <p className="text-xs text-slate-400">Receivables</p>
           </div>
-          <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
-            <Package className="w-6 h-6 text-purple-500 mb-3" />
-            <p className="text-xl font-bold">{data?.kpis?.inventoryItems || 0}</p>
-            <p className="text-xs text-muted-foreground">Inventory Items</p>
+          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-purple-500 transition-all">
+            <Package className="w-6 h-6 text-purple-400 mb-3" />
+            <p className="text-2xl font-bold">{kpis.inventoryItems || 0}</p>
+            <p className="text-xs text-slate-400">Inventory Items</p>
           </div>
         </div>
 
-        {/* Modules */}
-        <h2 className="text-lg font-bold mb-4">Modules</h2>
+        {/* Subscription Status Card */}
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Wallet className="w-6 h-6 text-amber-400" />
+              <div>
+                <p className="font-bold">Subscription Status</p>
+                <p className="text-sm text-slate-400">
+                  {subscription?.subscribed 
+                    ? `Active until ${new Date(subscription.expiresAt).toLocaleDateString()} (${subscription.daysRemaining} days remaining)`
+                    : 'No active subscription'}
+                </p>
+              </div>
+            </div>
+            {subscription?.subscribed ? (
+              <span className="px-3 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">ACTIVE</span>
+            ) : (
+              <Link href="/wavecore-erp/subscription" className="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600">
+                Subscribe Now
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Modules Grid */}
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-indigo-400" /> ERP Modules
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
           {modules.map(module => {
             const Icon = module.icon
             return (
               <Link key={module.title} href={module.href}
-                className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all group">
-                <div className={`w-10 h-10 rounded-xl ${module.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-5 h-5" />
+                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 transition-all group">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${module.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                  <Icon className="w-5 h-5 text-white" />
                 </div>
                 <p className="font-bold text-sm">{module.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">{module.desc}</p>
+                <p className="text-xs text-slate-400 mt-1">{module.desc}</p>
+                <ChevronRight className="w-4 h-4 text-slate-600 mt-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </Link>
             )
           })}
         </div>
-
-        {/* Charts */}
-        <DashboardCharts data={data} />
       </main>
     </div>
   )
