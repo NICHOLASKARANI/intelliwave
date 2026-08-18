@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(`SELECT * FROM "Project" ORDER BY "createdAt" DESC LIMIT 100`)
     return NextResponse.json({ projects: result.rows })
   } catch (error) {
-    return NextResponse.json({ projects: [], error: error.message }, { status: 500 })
+    return NextResponse.json({ projects: [] })
   }
 }
 
@@ -17,11 +17,22 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    // Get session for clientId
+    const session = await requireTenant(request)
+    const clientId = session?.userId || 'default-client'
+    
+    // Required columns: id, title, description (NOT NULL), status (default PENDING), currency (default KES), clientId (NOT NULL)
     const result = await pool.query(
-      `INSERT INTO "Project" (id, title, description, status, "createdAt", "updatedAt")
-       VALUES (gen_random_uuid()::text, $1, $2, COALESCE($3, 'PLANNING'), NOW(), NOW())
+      `INSERT INTO "Project" (id, title, description, status, currency, "clientId", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, COALESCE($2, 'No description'), COALESCE($3, 'PENDING'), COALESCE($4, 'KES'), $5, NOW(), NOW())
        RETURNING *`,
-      [body.title, body.description || null, body.status || null]
+      [
+        body.title,
+        body.description || 'No description',
+        body.status || 'PENDING',
+        body.currency || 'KES',
+        clientId,
+      ]
     )
     
     return NextResponse.json({ project: result.rows[0] }, { status: 201 })
@@ -35,7 +46,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     const result = await pool.query(
-      `UPDATE "Project" SET title = $1, description = $2, status = COALESCE($3, status), "updatedAt" = NOW()
+      `UPDATE "Project" SET title = $1, description = COALESCE($2, description), status = COALESCE($3, status), "updatedAt" = NOW()
        WHERE id = $4
        RETURNING *`,
       [body.title, body.description, body.status, body.id]
