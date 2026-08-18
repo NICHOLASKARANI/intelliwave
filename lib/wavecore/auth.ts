@@ -16,7 +16,18 @@ export interface WaveCoreSession {
   subscribed: boolean
 }
 
-// For API routes - pass sessionToken directly
+// Parse cookies from header string
+function parseCookies(cookieHeader: string): Record<string, string> {
+  const cookies: Record<string, string> = {}
+  if (!cookieHeader) return cookies
+  cookieHeader.split(';').forEach(cookie => {
+    const [name, ...value] = cookie.trim().split('=')
+    if (name) cookies[name] = decodeURIComponent(value.join('='))
+  })
+  return cookies
+}
+
+// Core session lookup by token
 export async function getSessionFromToken(sessionToken: string): Promise<WaveCoreSession | null> {
   if (!sessionToken) return null
 
@@ -71,8 +82,21 @@ export async function getSessionFromToken(sessionToken: string): Promise<WaveCor
   }
 }
 
-// For server components - use cookies()
-export async function getSession(): Promise<WaveCoreSession | null> {
+// Read session from Request object (API routes use this)
+export async function getSessionFromRequest(req: Request): Promise<WaveCoreSession | null> {
+  const cookieHeader = req.headers.get('cookie') || ''
+  const cookies = parseCookies(cookieHeader)
+  const sessionToken = cookies[SESSION_COOKIE]
+  return getSessionFromToken(sessionToken || '')
+}
+
+// Alias for getSessionFromRequest - used by APIs
+export async function requireTenant(req?: Request): Promise<WaveCoreSession | null> {
+  if (req) {
+    return getSessionFromRequest(req)
+  }
+  
+  // No request object - try next/headers (server components)
   try {
     const { cookies } = await import('next/headers')
     const cookieStore = cookies()
@@ -81,4 +105,9 @@ export async function getSession(): Promise<WaveCoreSession | null> {
   } catch {
     return null
   }
+}
+
+// For server components
+export async function getSession(): Promise<WaveCoreSession | null> {
+  return requireTenant()
 }

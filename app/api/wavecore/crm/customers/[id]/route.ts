@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const result = await pool.query(
@@ -32,7 +32,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const body = await request.json()
@@ -59,7 +59,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const result = await pool.query(

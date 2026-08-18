@@ -6,7 +6,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     return NextResponse.json({
       workflows: [],
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const body = await request.json()
     const { name, description, trigger, steps } = body

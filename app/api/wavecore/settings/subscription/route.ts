@@ -6,7 +6,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const result = await pool.query(
       `SELECT s.*, o.name as org_name

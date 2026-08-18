@@ -16,7 +16,7 @@ const transactionSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const { searchParams } = new URL(request.url)
     const bankAccountId = searchParams.get('bankAccountId')
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const body = await request.json()
     const validated = transactionSchema.parse(body)

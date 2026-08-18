@@ -6,7 +6,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     // Only allow OWNER or ADMIN to view logs
     if (session.role !== 'OWNER' && session.role !== 'ADMIN') {

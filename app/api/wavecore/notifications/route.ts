@@ -6,7 +6,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const result = await pool.query(
       `SELECT id, type, title, content, "isRead", "createdAt"
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 // Mark all as read
 export async function PUT(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     await pool.query(
       'UPDATE "Notification" SET "isRead" = true WHERE ("userId" = $1 OR "organizationId" = $2) AND "isRead" = false',

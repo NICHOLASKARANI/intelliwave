@@ -9,7 +9,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const result = await pool.query(
       'DELETE FROM "Webhook" WHERE id = $1 AND "organizationId" = $2',

@@ -8,7 +8,7 @@ import { generateCSV, parseCSV, validateCSV } from '@/lib/wavecore/csv'
 // GET - Export customers as CSV
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const result = await pool.query(
       `SELECT name, email, phone, company, address, city, country, type, status
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const body = await request.json()
     const { csvText } = body

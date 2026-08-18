@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     // Verify transaction belongs to tenant
     const txn = await pool.query(

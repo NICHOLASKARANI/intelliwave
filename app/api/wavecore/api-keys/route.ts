@@ -7,7 +7,7 @@ import crypto from 'crypto'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const result = await pool.query(
       `SELECT id, name, prefix, "lastUsedAt", "createdAt"
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const body = await request.json()
     const { name } = body

@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const result = await pool.query(
       'SELECT * FROM "Lead" WHERE id = $1 AND "organizationId" = $2',
       [params.id, session.organizationId]
@@ -28,7 +28,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const body = await request.json()
 
     const result = await pool.query(
@@ -51,7 +51,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const result = await pool.query(
       'DELETE FROM "Lead" WHERE id = $1 AND "organizationId" = $2',
       [params.id, session.organizationId]

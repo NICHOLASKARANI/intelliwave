@@ -7,7 +7,7 @@ import { generateCSV, parseCSV, validateCSV } from '@/lib/wavecore/csv'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const result = await pool.query(
       `SELECT name, sku, barcode, description, category, unit, "costPrice", "sellingPrice", "minStock", "maxStock"
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const body = await request.json()
     const { csvText } = body

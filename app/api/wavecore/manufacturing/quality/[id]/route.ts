@@ -9,7 +9,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const tableName = request.url.includes('work-orders') ? 'WorkOrder' :
       request.url.includes('bom') ? 'BillOfMaterial' :
       request.url.includes('quality') ? 'QualityCheck' :

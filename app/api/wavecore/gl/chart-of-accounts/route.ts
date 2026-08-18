@@ -17,7 +17,7 @@ const accountSchema = z.object({
 // GET - Returns EMPTY array for new orgs
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const { searchParams } = new URL(request.url)
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 // POST - Create new account
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const body = await request.json()

@@ -7,7 +7,7 @@ import { pool } from '@/lib/wavecore/db'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const formData = await request.formData()
     const file = formData.get('file') as File

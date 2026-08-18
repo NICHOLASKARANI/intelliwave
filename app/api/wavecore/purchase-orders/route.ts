@@ -17,7 +17,7 @@ const purchaseOrderSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const result = await pool.query(
       `SELECT po.id, po.number, po.date, po.status, po.subtotal, po.taxAmount, po.total, po."supplierName", po.notes,
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
 
     const body = await request.json()
     const validated = purchaseOrderSchema.parse(body)

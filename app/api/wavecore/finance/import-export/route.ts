@@ -8,7 +8,7 @@ import { generateCSV, parseCSV } from '@/lib/wavecore/csv'
 // GET - Export Chart of Accounts
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const { searchParams } = new URL(request.url)
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const body = await request.json()

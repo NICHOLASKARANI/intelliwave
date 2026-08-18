@@ -18,7 +18,7 @@ const invoiceSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
     const result = await pool.query(
       'SELECT * FROM "CustomerInvoice" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 50',
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     const body = await request.json()

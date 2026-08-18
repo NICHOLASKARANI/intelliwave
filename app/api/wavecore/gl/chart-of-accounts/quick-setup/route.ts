@@ -28,7 +28,7 @@ const defaultAccounts = [
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     await client.query('BEGIN')

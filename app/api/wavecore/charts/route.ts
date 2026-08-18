@@ -6,7 +6,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant()
+    const session = await requireTenant(request)
     const orgId = session.organizationId
 
     // Revenue trend (last 6 months)
