@@ -1,35 +1,41 @@
-import { prisma } from './prisma'
-import { getTenantContext } from './tenant'
+import { pool } from './db'
 
-export async function checkSubscriptionAccess(): Promise<{
-  active: boolean
-  plan: string
-  trialEndsAt: Date | null
-}> {
-  const ctx = await getTenantContext()
+export async function checkSubscription(organizationId: string): Promise<boolean> {
+  try {
+    const result = await pool.query(
+      `SELECT status, "expiresAt" FROM "Subscription"
+       WHERE "organizationId" = $1 AND status = 'ACTIVE'
+       ORDER BY "createdAt" DESC LIMIT 1`,
+      [organizationId]
+    )
 
-  const subscription = await prisma.subscription.findFirst({
-    where: { organizationId: ctx.organizationId },
-  })
+    if (result.rows.length === 0) return false
 
-  if (!subscription) {
-    return { active: false, plan: 'NONE', trialEndsAt: null }
-  }
+    const sub = result.rows[0]
+    const isActive = sub.status === 'ACTIVE' && new Date(sub.expiresAt) > new Date()
 
-  const isActive = 
-    subscription.status === 'ACTIVE' ||
-    subscription.status === 'TRIAL'
+    if (!isActive) {
+      // Mark as expired if past date
+      if (new Date(sub.expiresAt) <= new Date()) {
+        await pool.query(
+          `UPDATE "Subscription" SET status = 'EXPIRED' WHERE id = $1`,
+          [sub.id]
+        )
+      }
+      return false
+    }
 
-  return {
-    active: isActive,
-    plan: subscription.plan,
-    trialEndsAt: subscription.trialEndsAt,
+    return true
+  } catch (error) {
+    console.error('Subscription check error:', error)
+    return false
   }
 }
 
-export async function requireActiveSubscription(): Promise<void> {
-  const access = await checkSubscriptionAccess()
-  if (!access.active) {
-    throw new Error('Subscription required')
-  }
+export function getSubscriptionAmount(): number {
+  return 500 // KSH
+}
+
+export function getSubscriptionCurrency(): string {
+  return 'KES'
 }

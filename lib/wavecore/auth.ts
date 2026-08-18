@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { getCache, setCache } from './cache'
 import { pool } from './db'
-import { redirect } from 'next/navigation'
+import { checkSubscription } from './subscription'
 
 const SESSION_COOKIE = 'wavecore_session'
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60 // 7 days in seconds
@@ -16,6 +16,8 @@ export interface WaveCoreSession {
   orgName: string
   isActive: boolean
   orgActive: boolean
+  subscribed: boolean
+  subscriptionExpires: Date | null
 }
 
 export async function getSession(): Promise<WaveCoreSession | null> {
@@ -43,6 +45,10 @@ export async function getSession(): Promise<WaveCoreSession | null> {
     if (result.rows.length === 0) return null
 
     const row = result.rows[0]
+    
+    // Check subscription
+    const subscribed = await checkSubscription(row.org_id)
+    
     const session: WaveCoreSession = {
       sessionId: row.session_id,
       userId: row.userId,
@@ -53,9 +59,11 @@ export async function getSession(): Promise<WaveCoreSession | null> {
       orgName: row.org_name,
       isActive: row.isActive,
       orgActive: row.org_active,
+      subscribed,
+      subscriptionExpires: null,
     }
 
-    setCache(sessionKey, session, 60)
+    setCache(sessionKey, session, 30) // Cache for 30 seconds
 
     return session
   } catch (error) {
@@ -64,23 +72,17 @@ export async function getSession(): Promise<WaveCoreSession | null> {
   }
 }
 
-export async function requireTenant(): Promise<WaveCoreSession> {
+export async function requireTenant(): Promise<WaveCoreSession | null> {
   const session = await getSession()
-  if (!session) {
-    redirect('/wavecore-erp/auth/login')
-  }
-  if (!session.isActive || !session.orgActive) {
-    redirect('/wavecore-erp/auth/login?error=inactive')
-  }
+  if (!session) return null
+  if (!session.isActive || !session.orgActive) return null
   return session
 }
 
-export async function requireRole(allowedRoles: string[]): Promise<WaveCoreSession> {
-  const session = await requireTenant()
-  if (!allowedRoles.includes(session.role)) {
-    redirect('/wavecore-erp?error=unauthorized')
-  }
-  return session
+export async function requireSubscription(): Promise<boolean> {
+  const session = await getSession()
+  if (!session) return false
+  return session.subscribed
 }
 
 export async function createSession(userId: string, organizationId: string): Promise<string> {
@@ -88,14 +90,14 @@ export async function createSession(userId: string, organizationId: string): Pro
   const sessionId = crypto.randomUUID()
   
   await pool.query(
-    `INSERT INTO "Session" (id, "userId", expires, "createdAt")
-     VALUES ($1, $2, NOW() + INTERVAL '7 days', NOW())`,
-    [sessionId, userId]
+    `INSERT INTO "Session" (id, "userId", "sessionToken", expires, "createdAt")
+     VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', NOW())`,
+    [sessionId, userId, sessionId]
   )
   
   return sessionId
 }
 
-export async function destroySession(sessionId: string): Promise<void> {
-  await pool.query('DELETE FROM "Session" WHERE id = $1', [sessionId])
+export async function destroySession(sessionToken: string): Promise<void> {
+  await pool.query('DELETE FROM "Session" WHERE "sessionToken" = $1', [sessionToken])
 }
