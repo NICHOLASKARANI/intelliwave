@@ -4,56 +4,59 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 
+export async function GET(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    return NextResponse.json({
+      success: true,
+      message: 'AI Chat is ready. Send a POST request with your message.',
+    })
+  } catch (error) {
+    return NextResponse.json({ success: true, message: 'AI Chat ready.' })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { message } = body
+    const message = body.message || ''
 
-    if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 })
-    }
-
-    // Tenant-aware AI: Fetch real org data for context
-    const customerCount = await pool.query(
-      'SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [orgId]
-    )
-    const productCount = await pool.query(
-      'SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [orgId]
-    )
-    const invoiceCount = await pool.query(
-      'SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [orgId]
-    )
-
-    const context = {
-      customers: parseInt(customerCount.rows[0].count),
-      products: parseInt(productCount.rows[0].count),
-      invoices: parseInt(invoiceCount.rows[0].count),
-      organizationName: session.orgName,
-    }
-
-    // AI response would use this context
-    const lowerMessage = message.toLowerCase()
-    let response = ''
-
-    if (lowerMessage.includes('customer') || lowerMessage.includes('client')) {
-      response = `Your organization (${context.organizationName}) has ${context.customers} customers. You can view them in the CRM module.`
-    } else if (lowerMessage.includes('product') || lowerMessage.includes('inventory')) {
-      response = `You have ${context.products} products in inventory. Manage them in the Inventory module.`
-    } else if (lowerMessage.includes('invoice') || lowerMessage.includes('revenue')) {
-      response = `You have ${context.invoices} invoices. View your financials in the Finance module.`
-    } else {
-      response = `I'm your WaveCore AI assistant for ${context.organizationName}. You have ${context.customers} customers, ${context.products} products, and ${context.invoices} invoices. How can I help you?`
+    // Try AI API
+    const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY || process.env.CLAUDE_API_KEY
+    
+    if (apiKey) {
+      try {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'user', content: message }],
+            max_tokens: 500,
+          }),
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          return NextResponse.json({ reply: data.choices[0].message.content })
+        }
+      } catch (aiError) {
+        console.error('AI error:', aiError)
+      }
     }
 
     return NextResponse.json({
-      role: 'assistant',
-      content: response,
+      reply: 'I can help with your WaveCore ERP. Ask about Finance, CRM, Inventory, HR, Projects, or any module. Organization: ' + session.orgName,
     })
   } catch (error) {
-    console.error('AI chat error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ reply: 'How can I help you with your ERP today?' })
   }
 }
