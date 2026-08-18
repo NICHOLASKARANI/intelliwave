@@ -81,7 +81,7 @@ export default function ExecutiveDashboard() {
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800">
         <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp" className="flex items-center gap-3">
+          <Link prefetch={true} href="/wavecore-erp" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <div>
               <span className="font-bold text-lg">WaveCore ERP</span>
@@ -96,7 +96,7 @@ export default function ExecutiveDashboard() {
                 <CheckCheck className="w-3 h-3" /> Active until {new Date(subscription.expiresAt).toLocaleDateString()}
               </span>
             ) : (
-              <Link href="/wavecore-erp/subscription" className="px-3 py-1 text-xs bg-amber-500/20 text-amber-400 rounded-full flex items-center gap-1">
+              <Link prefetch={true} href="/wavecore-erp/subscription" className="px-3 py-1 text-xs bg-amber-500/20 text-amber-400 rounded-full flex items-center gap-1">
                 <CreditCard className="w-3 h-3" /> Subscribe KSh 500
               </Link>
             )}
@@ -174,7 +174,7 @@ export default function ExecutiveDashboard() {
             {subscription?.subscribed ? (
               <span className="px-3 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">ACTIVE</span>
             ) : (
-              <Link href="/wavecore-erp/subscription" className="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600">
+              <Link prefetch={true} href="/wavecore-erp/subscription" className="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600">
                 Subscribe Now
               </Link>
             )}
