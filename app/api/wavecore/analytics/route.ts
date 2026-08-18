@@ -25,17 +25,17 @@ export async function GET(request: NextRequest) {
       tickets,
     ] = await Promise.all([
       pool.query(
-        `SELECT COALESCE(SUM(total), 0) as total FROM "CustomerInvoice"
+        `SELECT COALESCE(SUM(subtotal + "taxAmount"), 0) as total FROM "CustomerInvoice"
          WHERE "organizationId" = $1 AND status IN ('PAID','PARTIALLY_PAID') AND date >= date_trunc('month', CURRENT_DATE)`,
         [orgId]
       ),
       pool.query(
-        `SELECT COALESCE(SUM(total), 0) as total FROM "CustomerInvoice"
+        `SELECT COALESCE(SUM(subtotal + "taxAmount"), 0) as total FROM "CustomerInvoice"
          WHERE "organizationId" = $1 AND status IN ('SENT','PARTIALLY_PAID','OVERDUE')`,
         [orgId]
       ),
       pool.query(
-        `SELECT COALESCE(SUM(total), 0) as total FROM "CustomerPayment"
+        `SELECT COALESCE(SUM(amount), 0) as total FROM "CustomerPayment"
          WHERE "organizationId" = $1`,
         [orgId]
       ),
@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
         [orgId]
       ),
       pool.query(
-        `SELECT COUNT(*) as count FROM "Project" WHERE "organizationId" = $1`,
-        [orgId]
+        `SELECT COUNT(*) as count FROM "Project"`,
+        []
       ),
       pool.query(
         `SELECT COUNT(*) as count FROM "SupportTicket" WHERE "userId" = $1`,
