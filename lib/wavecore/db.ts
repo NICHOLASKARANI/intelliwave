@@ -8,9 +8,9 @@ export const pool =
   globalForWaveCore.wavecorePool ??
   new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 100, // Increased from 50 for high concurrency
+    max: 100,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 5000,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
     maxUses: 7500,
     allowExitOnIdle: true,
