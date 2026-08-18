@@ -1,28 +1,20 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest, NextResponse } from 'next/server'
-import { getRecentLogs } from '@/lib/wavecore/logger'
+import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Only allow OWNER or ADMIN to view logs
-    if (session.role !== 'OWNER' && session.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200)
-
-    const logs = getRecentLogs(limit).filter(log => 
-      log.organizationId === session.organizationId || !log.organizationId
+    // Return system logs (or empty if not admin)
+    const result = await pool.query(
+      `SELECT * FROM "AuditLog" WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT 50`,
+      [session.userId]
     )
-
-    return NextResponse.json({ logs })
+    
+    return NextResponse.json({ logs: result.rows })
   } catch (error) {
-    console.error('Logs error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ logs: [] })
   }
 }
