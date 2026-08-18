@@ -17,19 +17,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Get session for clientId
     const session = await requireTenant(request)
     const clientId = session?.userId || 'default-client'
     
-    // Required columns: id, title, description (NOT NULL), status (default PENDING), currency (default KES), clientId (NOT NULL)
     const result = await pool.query(
       `INSERT INTO "Project" (id, title, description, status, currency, "clientId", "createdAt", "updatedAt")
-       VALUES (gen_random_uuid()::text, $1, COALESCE($2, 'No description'), COALESCE($3, 'PENDING'), COALESCE($4, 'KES'), $5, NOW(), NOW())
+       VALUES (gen_random_uuid()::text, $1, COALESCE($2, 'No description'), 'ACTIVE', COALESCE($3, 'KES'), $4, NOW(), NOW())
        RETURNING *`,
       [
         body.title,
         body.description || 'No description',
-        body.status || 'PENDING',
         body.currency || 'KES',
         clientId,
       ]
@@ -46,10 +43,10 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     const result = await pool.query(
-      `UPDATE "Project" SET title = $1, description = COALESCE($2, description), status = COALESCE($3, status), "updatedAt" = NOW()
+      `UPDATE "Project" SET title = $1, description = COALESCE($2, description), status = COALESCE($3, 'ACTIVE'), "updatedAt" = NOW()
        WHERE id = $4
        RETURNING *`,
-      [body.title, body.description, body.status, body.id]
+      [body.title, body.description, body.status || 'ACTIVE', body.id]
     )
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ project: result.rows[0] })
