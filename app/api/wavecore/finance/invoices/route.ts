@@ -72,3 +72,35 @@ export async function POST(request: NextRequest) {
     client.release()
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await req.json()
+    const result = await pool.query(
+      `UPDATE "CustomerInvoice" SET status = $1, "updatedAt" = NOW()
+       WHERE id = $2 AND "organizationId" = $3
+       RETURNING *`,
+      [body.status, body.id, session.organizationId]
+    )
+    return NextResponse.json({ invoice: result.rows[0] })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "CustomerInvoice" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete invoice' }, { status: 500 })
+  }
+}

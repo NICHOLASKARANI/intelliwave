@@ -104,3 +104,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await req.json()
+    const result = await pool.query(
+      `UPDATE "Product" SET name = $1, sku = $2, price = $3, "updatedAt" = NOW()
+       WHERE id = $4 AND "organizationId" = $5
+       RETURNING *`,
+      [body.name, body.sku, body.price, body.id, session.organizationId]
+    )
+    return NextResponse.json({ product: result.rows[0] })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update product' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
+  }
+}

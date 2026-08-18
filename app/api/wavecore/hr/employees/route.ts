@@ -97,3 +97,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await req.json()
+    const result = await pool.query(
+      `UPDATE "Employee" SET "firstName" = $1, "lastName" = $2, email = $3, department = $4, "updatedAt" = NOW()
+       WHERE id = $5 AND "organizationId" = $6
+       RETURNING *`,
+      [body.firstName, body.lastName, body.email, body.department, body.id, session.organizationId]
+    )
+    return NextResponse.json({ employee: result.rows[0] })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update employee' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "Employee" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete employee' }, { status: 500 })
+  }
+}

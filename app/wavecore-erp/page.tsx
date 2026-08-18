@@ -61,7 +61,7 @@ const modules = [
   { icon: BarChart3, title: 'BI & Analytics', desc: 'Dashboards, KPIs, Forecasts', href: '/wavecore-erp/analytics', bg: 'bg-violet-50 dark:bg-violet-950' },
   { icon: Bot, title: 'AI Copilot', desc: 'AI Assistant, Smart Search', href: '/wavecore-erp/ai', bg: 'bg-rose-50 dark:bg-rose-950' },
   { icon: Workflow, title: 'Automation', desc: 'Workflows, Approvals, Rules', href: '/wavecore-erp/automation', bg: 'bg-amber-50 dark:bg-amber-950' },
-  { icon: Globe, title: 'Website', desc: 'Builder, CMS, E-Commerce', href: '/wavecore-erp/website', bg: 'bg-sky-50 dark:bg-sky-950' },
+    { icon: Store, title: 'Point of Sale', desc: 'Products, Sales, Stock, Suppliers', href: '/wavecore-erp/store', bg: 'bg-pink-50 dark:bg-pink-950' },{ icon: Globe, title: 'Website', desc: 'Builder, CMS, E-Commerce', href: '/wavecore-erp/website', bg: 'bg-sky-50 dark:bg-sky-950' },
   { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', bg: 'bg-gray-50 dark:bg-gray-950' },
 ]
 
@@ -227,7 +227,7 @@ export default function WaveCoreERPPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{result.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{result.subtitle} • {result.type}</p>
+                        <p className="text-xs text-muted-foreground truncate">{result.subtitle} â€¢ {result.type}</p>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                     </Link>
@@ -381,7 +381,7 @@ export default function WaveCoreERPPage() {
                 Welcome back, {data?.user?.name}
               </h1>
               <p className="text-white/80 text-sm">
-                {data?.organization.name} • {data?.user?.role}
+                {data?.organization.name} â€¢ {data?.user?.role}
               </p>
             </div>
           </div>
