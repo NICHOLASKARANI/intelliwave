@@ -1,56 +1,16 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = [
-  '/wavecore-erp/auth/login',
-  '/wavecore-erp/auth/signup',
-  '/wavecore-erp/auth/forgot-password',
-  '/api/wavecore/auth/login',
-  '/api/wavecore/auth/signup',
-  '/api/wavecore/auth/forgot-password',
-  '/api/wavecore/health',
-]
-
-const SESSION_COOKIE = 'wavecore_session'
+// IMPORTANT: No redirects here!
+// Pages and APIs handle their own authentication
+// This prevents infinite redirect loops
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Allow ALL API routes - they do their own auth via requireTenant()
-  if (pathname.startsWith('/api/')) {
-    return NextResponse.next()
-  }
-
-  // Allow public paths
-  if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
-    return NextResponse.next()
-  }
-
-  // Allow static files
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/static') ||
-    pathname.startsWith('/images') ||
-    pathname.startsWith('/favicon') ||
-    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
-  ) {
-    return NextResponse.next()
-  }
-
-  // Only protect WaveCore ERP PAGES (not API)
-  if (pathname.startsWith('/wavecore-erp')) {
-    const sessionToken = request.cookies.get(SESSION_COOKIE)?.value
-
-    if (!sessionToken) {
-      const loginUrl = new URL('/wavecore-erp/auth/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
-  }
-
+  // Allow ALL requests to pass through
+  // Auth is handled at the page/API level
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/wavecore-erp/:path*', '/api/wavecore/:path*'],
+  matcher: [], // Don't intercept any routes
 }
