@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
         [orgId]
       ),
       pool.query(
-        `SELECT COUNT(*) as count FROM "SupportTicket" WHERE "organizationId" = $1`,
-        [orgId]
+        `SELECT COUNT(*) as count FROM "SupportTicket" WHERE "userId" = $1`,
+        [session.userId]
       ),
     ])
 
