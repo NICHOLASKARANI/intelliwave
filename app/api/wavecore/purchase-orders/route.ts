@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ purchaseOrders: result.rows })
   } catch (error) {
-    console.error('PO fetch error:', error)
     return NextResponse.json({ error: 'Failed to fetch purchase orders: ' + error.message }, { status: 500 })
   }
 }
@@ -50,14 +49,35 @@ export async function POST(request: NextRequest) {
 
     const poNumber = 'PO-' + Date.now()
 
+    // Calculate totals
+    let subtotal = 0
+    for (const item of validated.items) {
+      subtotal += item.quantity * item.unitPrice
+    }
+    const taxAmount = subtotal * 0.16 // 16% VAT
+    const total = subtotal + taxAmount
+
+    // Insert PO with gen_random_uuid() for id
     const result = await pool.query(
-      `INSERT INTO "PurchaseOrder" ("organizationId", number, date, status, "supplierName", notes, subtotal, "taxAmount", total, "createdAt", "updatedAt")
-       VALUES ($1, $2, NOW(), 'DRAFT', $3, $4, 0, 0, 0, NOW(), NOW())
+      `INSERT INTO "PurchaseOrder" (id, "organizationId", number, date, status, "supplierName", notes, subtotal, "taxAmount", total, "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, $2, NOW(), 'DRAFT', $3, $4, $5, $6, $7, NOW(), NOW())
        RETURNING *`,
-      [session.organizationId, poNumber, validated.supplierName, validated.notes || null]
+      [session.organizationId, poNumber, validated.supplierName, validated.notes || null, subtotal, taxAmount, total]
     )
 
-    return NextResponse.json({ purchaseOrder: result.rows[0] }, { status: 201 })
+    const po = result.rows[0]
+
+    // Insert PO items
+    for (const item of validated.items) {
+      const itemTotal = item.quantity * item.unitPrice
+      await pool.query(
+        `INSERT INTO "PurchaseOrderItem" (id, description, quantity, "unitPrice", total, "purchaseOrderId", "createdAt")
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW())`,
+        [item.description, item.quantity, item.unitPrice, itemTotal, po.id]
+      )
+    }
+
+    return NextResponse.json({ purchaseOrder: po }, { status: 201 })
   } catch (error) {
     console.error('PO create error:', error)
     return NextResponse.json({ error: 'Failed to create purchase order: ' + error.message }, { status: 500 })
