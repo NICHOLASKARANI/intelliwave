@@ -2,55 +2,60 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
-
-async function getOrgAndClient() {
-  const org = await pool.query('SELECT id FROM "Organization" LIMIT 1')
-  const orgId = org.rows.length > 0 ? org.rows[0].id : null
-  const user = await pool.query('SELECT id FROM "User" LIMIT 1')
-  const clientId = user.rows.length > 0 ? user.rows[0].id : null
-  return { orgId, clientId }
-}
+import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const result = await pool.query(
-      `SELECT p.*, (SELECT COUNT(*) FROM "Milestone" m WHERE m."projectId" = p.id) as milestone_count
-       FROM "Project" p ORDER BY p."createdAt" DESC LIMIT 100`
+      `SELECT * FROM "Project" ORDER BY "createdAt" DESC LIMIT 100`
     )
     return NextResponse.json({ projects: result.rows })
-  } catch (error: any) {
-    console.error('Projects GET:', error.message)
-    return NextResponse.json({ projects: [] })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { orgId, clientId } = await getOrgAndClient()
-
-    if (!orgId || !clientId) {
-      return NextResponse.json({ error: 'No organization or user found in database' }, { status: 400 })
-    }
-
     const result = await pool.query(
-      `INSERT INTO "Project" ("id", "title", "description", "status", "budget", "currency", "startDate", "endDate", "clientId", "createdAt", "updatedAt") 
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'KES', $5, $6, $7, NOW(), NOW()) 
-       RETURNING "id", "title", "description", "status", "budget", "startDate", "endDate", "createdAt"`,
-      [
-        body.title,
-        body.description || '',
-        body.status || 'PENDING',
-        parseFloat(body.budget) || 0,
-        body.startDate ? new Date(body.startDate) : null,
-        body.endDate ? new Date(body.endDate) : null,
-        clientId,
-      ]
+      `INSERT INTO "Project" (id, title, description, status, "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, $2, 'ACTIVE', NOW(), NOW())
+       RETURNING *`,
+      [body.title, body.description || null]
     )
+    return NextResponse.json({ project: result.rows[0] }, { status: 201 })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
 
-    return NextResponse.json({ success: true, project: result.rows[0] }, { status: 201 })
-  } catch (error: any) {
-    console.error('Projects POST error:', error.message)
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const result = await pool.query(
+      `UPDATE "Project" SET title = $1, description = $2, status = $3, "updatedAt" = NOW()
+       WHERE id = $4
+       RETURNING *`,
+      [body.title, body.description, body.status || 'ACTIVE', body.id]
+    )
+    if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ project: result.rows[0] })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "Project" WHERE id = $1`, [id])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
