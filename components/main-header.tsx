@@ -17,7 +17,7 @@ export default function MainHeader() {
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
       <div className="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
-        <Link prefetch={true} href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <Image src="/images/Wavecore.jpeg" alt="IntelliWavve" width={40} height={40} className="rounded-xl object-cover" />
           <span className="font-bold text-lg hidden sm:block">IntelliWavve</span>
         </Link>
@@ -37,10 +37,10 @@ export default function MainHeader() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link prefetch={true} href="/wavecore-erp/auth/login" className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-neutral-100">
+          <Link href="/wavecore-erp/auth/login" className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-neutral-100">
             Sign In
           </Link>
-          <Link prefetch={true} href="/wavecore-erp/auth/signup" className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 flex items-center gap-1">
+          <Link href="/wavecore-erp/auth/signup" className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 flex items-center gap-1">
             Get Started <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
@@ -71,12 +71,12 @@ export default function MainHeader() {
             )
           })}
           <div className="pt-3 space-y-2">
-            <Link prefetch={true} href="/wavecore-erp/auth/login"
+            <Link href="/wavecore-erp/auth/login"
               onClick={() => setMobileOpen(false)}
               className="block px-4 py-3 rounded-xl border text-center font-medium">
               Sign In
             </Link>
-            <Link prefetch={true} href="/wavecore-erp/auth/signup"
+            <Link href="/wavecore-erp/auth/signup"
               onClick={() => setMobileOpen(false)}
               className="block px-4 py-3 rounded-xl bg-blue-600 text-white text-center font-medium">
               Create Account
