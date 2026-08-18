@@ -35,7 +35,7 @@ const navigation = [
       { name: "ROI Calculator", href: "/roi-calculator", desc: "Calculate your ROI" },
     ]
   },
-  { name: "WaveCore ERP", href: "/wavecore-erp" },
+  { name: "WaveCore ERP", href: "/wavecore-erp/auth/signup" },
   { name: "Pricing", href: "/pricing" },
   { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
