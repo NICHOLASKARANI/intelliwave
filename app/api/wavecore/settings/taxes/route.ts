@@ -1,41 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { pool } from '@/lib/wavecore/db'
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const taxes = await prisma.taxRate.findMany({
-      orderBy: { createdAt: 'asc' },
-    })
-    return NextResponse.json({ taxes })
+    const result = await pool.query(
+      `SELECT * FROM "TaxRate" ORDER BY "createdAt" ASC`
+    )
+    return NextResponse.json({ taxes: result.rows })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch taxes' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch taxes: ' + error.message }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const tax = await prisma.taxRate.create({
-      data: {
-        name: body.name,
-        rate: parseFloat(body.rate) || 0,
-        type: body.type || 'VAT',
-        active: true,
-      },
-    })
-    return NextResponse.json({ tax }, { status: 201 })
+    const body = await request.json()
+    const result = await pool.query(
+      `INSERT INTO "TaxRate" (name, rate, type, active, "createdAt")
+       VALUES ($1, $2, $3, true, NOW())
+       RETURNING *`,
+      [body.name, parseFloat(body.rate) || 0, body.type || 'VAT']
+    )
+    return NextResponse.json({ tax: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create tax' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create tax: ' + error.message }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const id = parseInt(searchParams.get('id') || '0')
-    await prisma.taxRate.delete({ where: { id } })
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "TaxRate" WHERE id = $1`, [id])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete tax' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete tax: ' + error.message }, { status: 500 })
   }
 }

@@ -1,59 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const roles = await prisma.role.findMany({
-      orderBy: { createdAt: 'asc' },
-    })
-    return NextResponse.json({ roles })
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const result = await pool.query(
+      `SELECT * FROM "Role" ORDER BY "createdAt" ASC`
+    )
+    return NextResponse.json({ roles: result.rows })
   } catch (error) {
-    console.error('Roles fetch error:', error)
-    return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch roles: ' + error.message }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const role = await prisma.role.create({
-      data: {
-        name: body.name,
-        description: body.description || null,
-        permissions: body.permissions || [],
-      },
-    })
-    return NextResponse.json({ role }, { status: 201 })
+    const body = await request.json()
+    const result = await pool.query(
+      `INSERT INTO "Role" (name, description, permissions, "createdAt")
+       VALUES ($1, $2, $3, NOW())
+       RETURNING *`,
+      [body.name, body.description || null, body.permissions || []]
+    )
+    return NextResponse.json({ role: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('Role create error:', error)
-    return NextResponse.json({ error: 'Failed to create role' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create role: ' + error.message }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    const body = await req.json()
-    const role = await prisma.role.update({
-      where: { id: parseInt(body.id) },
-      data: {
-        name: body.name,
-        description: body.description,
-        permissions: body.permissions,
-      },
-    })
-    return NextResponse.json({ role })
+    const body = await request.json()
+    const result = await pool.query(
+      `UPDATE "Role" SET name = $1, description = $2, permissions = $3
+       WHERE id = $4
+       RETURNING *`,
+      [body.name, body.description, body.permissions, body.id]
+    )
+    return NextResponse.json({ role: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update role: ' + error.message }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const id = parseInt(searchParams.get('id') || '0')
-    await prisma.role.delete({ where: { id } })
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "Role" WHERE id = $1`, [id])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete role' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete role: ' + error.message }, { status: 500 })
   }
 }

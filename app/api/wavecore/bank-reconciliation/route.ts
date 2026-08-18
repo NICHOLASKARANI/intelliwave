@@ -7,17 +7,22 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const bankAccountId = searchParams.get('bankAccountId')
 
+    // If no bankAccountId, return list of accounts instead of 400
     if (!bankAccountId) {
-      return NextResponse.json({ error: 'Bank account ID required' }, { status: 400 })
+      const accounts = await pool.query(
+        `SELECT id, name, "currentBalance" FROM "BankAccount" WHERE "organizationId" = $1`,
+        [session.organizationId]
+      )
+      return NextResponse.json({ accounts: accounts.rows, message: 'Select a bank account' })
     }
 
-    // Verify bank account belongs to tenant
     const account = await pool.query(
-      'SELECT id, name, "openingBalance", "currentBalance" FROM "BankAccount" WHERE id = $1 AND "organizationId" = $2',
+      `SELECT id, name FROM "BankAccount" WHERE id = $1 AND "organizationId" = $2`,
       [bankAccountId, session.organizationId]
     )
 
@@ -25,26 +30,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })
     }
 
-    const summary = await pool.query(
-      `SELECT 
-         COUNT(*) as total_transactions,
-         COUNT(*) FILTER (WHERE matched = true) as matched,
-         COUNT(*) FILTER (WHERE matched = false) as unmatched,
-         COALESCE(SUM(CASE WHEN type = 'CREDIT' AND matched = true THEN amount ELSE 0 END), 0) as total_credits,
-         COALESCE(SUM(CASE WHEN type = 'DEBIT' AND matched = true THEN amount ELSE 0 END), 0) as total_debits,
-         COALESCE(SUM(CASE WHEN type = 'CREDIT' AND matched = false THEN amount ELSE 0 END), 0) as unmatched_credits,
-         COALESCE(SUM(CASE WHEN type = 'DEBIT' AND matched = false THEN amount ELSE 0 END), 0) as unmatched_debits
-       FROM "BankTransaction"
-       WHERE "bankAccountId" = $1 AND "organizationId" = $2`,
-      [bankAccountId, session.organizationId]
+    const transactions = await pool.query(
+      `SELECT * FROM "BankTransaction" WHERE "bankAccountId" = $1 ORDER BY date DESC`,
+      [bankAccountId]
     )
 
     return NextResponse.json({
-      bankAccount: account.rows[0],
-      summary: summary.rows[0],
+      account: account.rows[0],
+      transactions: transactions.rows,
+      reconciled: 0,
+      unreconciled: transactions.rows.length,
     })
   } catch (error) {
-    console.error('Reconciliation error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch reconciliation: ' + error.message }, { status: 500 })
   }
 }
