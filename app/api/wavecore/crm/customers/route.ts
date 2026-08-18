@@ -1,13 +1,30 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { pool } from '@/lib/wavecore/db'
-import { getSession } from '@/lib/wavecore/auth'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-export async function GET(req: NextRequest) {
+const customerSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  company: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  country: z.string().optional().nullable(),
+  type: z.string().default('INDIVIDUAL'),
+  status: z.string().default('ACTIVE'),
+})
+
+export async function GET(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await requireTenant(request)
+    if (!session || !session.organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const limit = parseInt(searchParams.get('limit') || '100')
 
@@ -22,40 +39,65 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ customers: result.rows })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch customers: ' + error.message }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await requireTenant(request)
+    if (!session || !session.organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const body = await req.json()
+    const body = await request.json()
+    const validated = customerSchema.parse(body)
+
+    const crypto = require('crypto')
+    const customerId = crypto.randomUUID()
+
     const result = await pool.query(
-      `INSERT INTO "Customer" (name, email, phone, "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, NOW(), NOW())
+      `INSERT INTO "Customer" 
+       (id, name, email, phone, company, address, city, country, type, status, "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
        RETURNING *`,
-      [body.name, body.email, body.phone, session.organizationId]
+      [
+        customerId,
+        validated.name,
+        validated.email || null,
+        validated.phone || null,
+        validated.company || null,
+        validated.address || null,
+        validated.city || null,
+        validated.country || null,
+        validated.type,
+        validated.status,
+        session.organizationId,
+      ]
     )
 
     return NextResponse.json({ customer: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 })
+    console.error('Customer create error:', error)
+    return NextResponse.json({ error: 'Failed to create customer: ' + error.message }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await requireTenant(request)
+    if (!session || !session.organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const body = await req.json()
+    const body = await request.json()
+    
     const result = await pool.query(
-      `UPDATE "Customer" SET name = $1, email = $2, phone = $3, "updatedAt" = NOW()
-       WHERE id = $4 AND "organizationId" = $5
+      `UPDATE "Customer" 
+       SET name = $1, email = $2, phone = $3, company = $4, address = $5, city = $6, country = $7, "updatedAt" = NOW()
+       WHERE id = $8 AND "organizationId" = $9
        RETURNING *`,
-      [body.name, body.email, body.phone, body.id, session.organizationId]
+      [body.name, body.email, body.phone, body.company, body.address, body.city, body.country, body.id, session.organizationId]
     )
 
     if (result.rows.length === 0) {
@@ -64,16 +106,18 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ customer: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update customer' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update customer: ' + error.message }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await requireTenant(request)
+    if (!session || !session.organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
     const result = await pool.query(
@@ -83,6 +127,6 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete customer' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete customer: ' + error.message }, { status: 500 })
   }
 }
