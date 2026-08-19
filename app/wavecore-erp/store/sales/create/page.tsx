@@ -1,20 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Trash2, ShoppingCart, Search, AlertCircle, CheckCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-
-interface Product {
-  id: string
-  name: string
-  sku: string
-  sellingPrice: number
-  total_stock: number
-  category: string
-}
+import { ShoppingCart, Download, Loader2, Plus, Trash2 } from 'lucide-react'
 
 interface CartItem {
   productId: string
@@ -23,106 +12,84 @@ interface CartItem {
   price: number
 }
 
-export default function CreateSalePage() {
-  const [products, setProducts] = useState<Product[]>([])
+export default function SalesCreatePage() {
+  const [products, setProducts] = useState<any[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
-  const [search, setSearch] = useState('')
   const [customerName, setCustomerName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const res = await fetch('/api/wavecore/inventory/products')
-        if (res.ok) {
-          const data = await res.json()
-          setProducts(data.products || [])
-        }
-      } catch {}
-    }
-    fetchProducts()
+    fetch('/api/wavecore/store')
+      .then(r => r.json())
+      .then(d => setProducts(d.products || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
-  const addToCart = (product: Product) => {
-    const existing = cart.find(c => c.productId === product.id)
+  const addToCart = (product: any) => {
+    const existing = cart.find(item => item.productId === product.id)
     if (existing) {
-      setCart(cart.map(c => c.productId === product.id ? { ...c, quantity: c.quantity + 1 } : c))
+      setCart(cart.map(item => item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item))
     } else {
-      setCart([...cart, { productId: product.id, name: product.name, quantity: 1, price: product.sellingPrice }])
+      setCart([...cart, { productId: product.id, name: product.name, quantity: 1, price: product.sellingPrice || 0 }])
     }
   }
 
   const removeFromCart = (productId: string) => {
-    setCart(cart.filter(c => c.productId !== productId))
+    setCart(cart.filter(item => item.productId !== productId))
   }
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) { removeFromCart(productId); return }
-    setCart(cart.map(c => c.productId === productId ? { ...c, quantity } : c))
-  }
-
-  const filteredProducts = products.filter(p =>
-    p.name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(search.toLowerCase()) ||
-    p.category?.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const total = cart.reduce((sum, item) => sum + item.quantity * item.price, 0)
-
-  const handleCompleteSale = async () => {
-    if (cart.length === 0) { setError('Cart is empty'); return }
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      // Create customer if name provided
-      let customerId = null
-      if (customerName) {
-        const custRes = await fetch('/api/wavecore/crm/customers', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: customerName }),
-        })
-        const custData = await custRes.json()
-        if (custRes.ok) customerId = custData.customer?.id
+  const updateQuantity = (productId: string, delta: number) => {
+    setCart(cart.map(item => {
+      if (item.productId === productId) {
+        const newQty = item.quantity + delta
+        return newQty > 0 ? { ...item, quantity: newQty } : item
       }
+      return item
+    }))
+  }
 
-      // Create sale (invoice)
-      const res = await fetch('/api/wavecore/finance/invoices', {
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  const handleSave = async () => {
+    if (cart.length === 0) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/wavecore/store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId: customerId || (await getWalkInCustomer()),
-          date: new Date().toISOString().split('T')[0],
-          dueDate: new Date().toISOString().split('T')[0],
-          items: cart.map(c => ({ description: c.name, quantity: c.quantity, unitPrice: c.price })),
-        }),
+        body: JSON.stringify({ items: cart, total, customerName }),
       })
-
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Sale failed'); return }
-
-      setSuccess('Sale completed! Total: KSh ' + total.toFixed(2))
-      setCart([])
-      setCustomerName('')
-      setTimeout(() => router.push('/wavecore-erp/store'), 2000)
-    } catch {
-      setError('Network error')
-    } finally { setLoading(false) }
+      if (res.ok) {
+        setSuccess(true)
+        setTimeout(() => window.location.href = '/wavecore-erp/store', 2000)
+      }
+    } catch {} finally { setSaving(false) }
   }
 
-  async function getWalkInCustomer(): Promise<string> {
-    try {
-      const res = await fetch('/api/wavecore/crm/customers', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Walk-in Customer' }),
-      })
-      const data = await res.json()
-      return data.customer?.id || ''
-    } catch { return '' }
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Sales Receipt',
+      '='.repeat(40),
+      'Date: ' + new Date().toLocaleString(),
+      'Customer: ' + (customerName || 'Walk-in'),
+      '='.repeat(40),
+      '',
+      ...cart.map((item, i) => `${i+1}. ${item.name} x${item.quantity} = KSh ${(item.price * item.quantity).toLocaleString()}`),
+      '',
+      '='.repeat(40),
+      'TOTAL: KSh ' + total.toLocaleString(),
+      '='.repeat(40),
+      '',
+      'Thank you for shopping!',
+      '© 2026 IntelliWavve'
+    ].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'sales-receipt.pdf'; a.click()
   }
 
   return (
@@ -133,77 +100,86 @@ export default function CreateSalePage() {
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">New Sale</span>
+          <span className="text-sm">Create Sale</span>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8">
-        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
-        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Products Panel */}
-          <div className="lg:col-span-2">
-            <h2 className="text-lg font-bold mb-4">Products</h2>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-3 rounded-xl border text-sm w-full" placeholder="Search products by name, SKU, or category..." />
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 max-h-96 overflow-y-auto">
-              {filteredProducts.map((product) => (
-                <button key={product.id} onClick={() => addToCart(product)}
-                  className="p-4 rounded-xl border bg-white dark:bg-neutral-900 text-left hover:border-indigo-300 hover:shadow-md transition-all">
-                  <p className="font-medium text-sm truncate">{product.name}</p>
-                  <p className="text-xs text-muted-foreground">{product.sku} • {product.category}</p>
-                  <p className="text-green-600 font-bold mt-1">KSh {product.sellingPrice?.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Stock: {product.total_stock || 0}</p>
-                </button>
-              ))}
-              {filteredProducts.length === 0 && (
-                <p className="text-sm text-muted-foreground col-span-3 text-center py-8">No products found</p>
-              )}
-            </div>
+        {success ? (
+          <div className="text-center py-20">
+            <ShoppingCart className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Sale Completed!</h1>
+            <p className="text-muted-foreground">Redirecting to dashboard...</p>
           </div>
-
-          {/* Cart Panel */}
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 h-fit sticky top-20">
-            <h3 className="font-bold mb-3 flex items-center gap-2"><ShoppingCart className="w-4 h-4" /> Cart ({cart.length})</h3>
-
-            <div className="mb-3">
-              <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border text-sm" placeholder="Customer name (optional)" />
-            </div>
-
-            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-              {cart.map((item) => (
-                <div key={item.productId} className="flex items-center gap-2 py-2 border-b">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">KSh {item.price.toLocaleString()} x {item.quantity}</p>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Products */}
+            <div>
+              <h2 className="text-lg font-bold mb-4">Products</h2>
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 max-h-[500px] overflow-y-auto">
+                {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+                  <div className="space-y-2">
+                    {products.map(p => (
+                      <button key={p.id} onClick={() => addToCart(p)}
+                        className="w-full flex justify-between items-center p-3 rounded-xl border hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                        <div className="text-left">
+                          <p className="font-medium">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">Stock: {p.stock_level || 0}</p>
+                        </div>
+                        <p className="font-bold text-green-600">KSh {p.sellingPrice || 0}</p>
+                      </button>
+                    ))}
+                    {products.length === 0 && <p className="text-center py-8 text-muted-foreground">No products available</p>}
                   </div>
-                  <input type="number" value={item.quantity} min="1"
-                    onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value) || 1)}
-                    className="w-16 px-2 py-1 rounded-lg border text-sm text-center" />
-                  <button onClick={() => removeFromCart(item.productId)} className="p-1 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                )}
+              </div>
+            </div>
+
+            {/* Cart */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold">Cart ({cart.length})</h2>
+                <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-medium">
+                  <Download className="w-3.5 h-3.5" /> PDF
+                </button>
+              </div>
+
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4">
+                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border mb-4" placeholder="Customer name (optional)" />
+
+                <div className="space-y-2 max-h-[300px] overflow-y-auto mb-4">
+                  {cart.map(item => (
+                    <div key={item.productId} className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800">
+                      <div>
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">KSh {item.price} x {item.quantity}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => updateQuantity(item.productId, -1)} className="w-7 h-7 rounded-lg bg-neutral-200 dark:bg-neutral-700">-</button>
+                        <span className="font-bold">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.productId, 1)} className="w-7 h-7 rounded-lg bg-neutral-200 dark:bg-neutral-700">+</button>
+                        <button onClick={() => removeFromCart(item.productId)} className="p-1 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                  {cart.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm">Cart is empty</p>}
                 </div>
-              ))}
-              {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Cart is empty</p>}
-            </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between text-sm mb-1"><span>Subtotal</span><span>KSh {total.toFixed(2)}</span></div>
-              <div className="flex justify-between text-sm mb-2"><span>VAT (16%)</span><span>KSh {(total * 0.16).toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-lg"><span>Total</span><span className="text-green-600">KSh {(total * 1.16).toFixed(2)}</span></div>
-            </div>
+                <div className="flex justify-between items-center p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950 mb-4">
+                  <span className="font-bold">TOTAL</span>
+                  <span className="text-2xl font-extrabold text-indigo-600">KSh {total.toLocaleString()}</span>
+                </div>
 
-            <Button onClick={handleCompleteSale} disabled={loading || cart.length === 0}
-              className="w-full mt-4 gap-2 bg-green-600 hover:bg-green-700 py-3 text-base">
-              <ShoppingCart className="w-5 h-5" /> {loading ? 'Processing...' : 'Complete Sale'}
-            </Button>
+                <button onClick={handleSave} disabled={saving || cart.length === 0}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                  {saving ? 'Saving...' : 'Complete Sale'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   )
