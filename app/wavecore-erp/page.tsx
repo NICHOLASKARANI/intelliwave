@@ -8,7 +8,7 @@ import {
   Users, Package, Calculator, FileText, BarChart3, Bot, Workflow, Globe,
   Activity, Building2, Factory, Briefcase, FolderKanban, HeadphonesIcon,
   LogOut, Search as SearchIcon, ArrowUpRight, Menu, X, BellRing,
-  CheckCheck, Store, ShoppingCart, Loader2, CalendarDays, Wallet,
+  CheckCheck, Store, ShoppingCart, Bike, Loader2, CalendarDays, Wallet,
   Sparkles, ChevronRight, PieChart, LineChart, Download, Filter
 } from 'lucide-react'
 
