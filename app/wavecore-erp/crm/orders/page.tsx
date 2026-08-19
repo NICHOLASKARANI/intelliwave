@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, ShoppingCart, Loader2 } from 'lucide-react'
-import { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([])
@@ -42,8 +41,6 @@ export default function OrdersPage() {
 
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6">Sales Orders</h1>
-          <button onClick={() => downloadPDF('orders.pdf', generatePDFContent('WaveCore ERP - Orders', orders))} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
-          <button onClick={() => downloadPDF('orders.pdf', generatePDFContent('WaveCore ERP - Orders', orders))} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
 
         {loading ? (
           <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>

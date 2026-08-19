@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Target, DollarSign, Trash2 } from 'lucide-react'
-import { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
 
 interface Opportunity {
   id: string
@@ -56,8 +55,6 @@ export default function OpportunitiesPage() {
 
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6">Opportunities</h1>
-          <button onClick={() => downloadPDF('opportunities.pdf', generatePDFContent('WaveCore ERP - Opportunities', opportunities))} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
-          <button onClick={() => downloadPDF('opportunities.pdf', generatePDFContent('WaveCore ERP - Opportunities', opportunities))} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
 
         {loading ? (
           <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
