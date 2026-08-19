@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Download, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Search, Trash2, Edit3, ArrowLeft, Loader2, Target } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Download, Plus, Search, Trash2, Edit3, ArrowLeft, Loader2, Target } from 'lucide-react'\nimport { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
+import { Download, Button } from '@/components/ui/button'
 
 interface Lead {
   id: string
@@ -82,6 +82,7 @@ export default function LeadsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Leads</h1>
+          <button onClick={() => downloadPDF('leads.pdf', generatePDFContent('WaveCore ERP - Leads', leads))} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
             <p className="text-muted-foreground mt-1">Manage your sales leads</p>
           </div>
           <div className="flex gap-2">

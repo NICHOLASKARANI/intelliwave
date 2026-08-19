@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Download, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Users, Search, Trash2, Edit3, ArrowLeft, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Download, Plus, Users, Search, Trash2, Edit3, ArrowLeft, Loader2 } from 'lucide-react'\nimport { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
+import { Download, Button } from '@/components/ui/button'
 
 interface Customer {
   id: string
@@ -69,6 +69,8 @@ export default function CustomersPage() {
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Customers</h1>
+          <button onClick={() => downloadPDF('customers.pdf', generatePDFContent('WaveCore ERP - Customers', customers))} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
+          <button onClick={() => downloadPDF('customers.pdf', generatePDFContent('WaveCore ERP - Customers', customers))} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
           <div className="flex gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
