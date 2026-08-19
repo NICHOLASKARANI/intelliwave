@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Package, Search, Download, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Package, Download, Loader2, Search } from 'lucide-react'
 
 export default function StockPage() {
   const [products, setProducts] = useState<any[]>([])
@@ -12,17 +11,18 @@ export default function StockPage() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetch('/api/wavecore/inventory/products').then(r => r.json()).then(d => setProducts(d.products || [])).catch(() => {}).finally(() => setLoading(false))
+    fetch('/api/wavecore/store').then(r => r.json()).then(d => setProducts(d.products || [])).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const filtered = products.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()))
+  const filtered = products.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()))
+  const totalStock = filtered.reduce((s, p) => s + (p.stock_level || 0), 0)
 
-  const handleExport = () => {
-    const csv = 'Product,SKU,Stock,Cost,Selling\n' + filtered.map(p => `${p.name},${p.sku},${p.total_stock},${p.costPrice},${p.sellingPrice}`).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Stock', '='.repeat(50), `Total Stock: ${totalStock}`, '', ...filtered.map((p, i) => `${i+1}. ${p.name} - Qty: ${p.stock_level || 0}`), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = 'my-stock.csv'; a.click()
+    a.href = url; a.download = 'stock.pdf'; a.click()
   }
 
   return (
@@ -33,38 +33,31 @@ export default function StockPage() {
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">My Stock</span>
+          <span className="text-sm">Stock</span>
         </div>
       </header>
       <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold">My Stock</h1>
-          <Button variant="outline" onClick={handleExport}><Download className="w-4 h-4 mr-1" /> Export</Button>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="w-6 h-6 text-orange-500" /> Stock ({totalStock})</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium">
+            <Download className="w-4 h-4" /> PDF
+          </button>
         </div>
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2.5 rounded-xl border text-sm w-full" placeholder="Search stock..." />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search stock..." />
         </div>
-        {loading ? <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div> :
-          filtered.length > 0 ? (
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b bg-neutral-50 dark:bg-neutral-800">
-                  <th className="text-left p-4">Product</th><th className="text-left p-4">SKU</th>
-                  <th className="text-right p-4">Stock</th><th className="text-right p-4">Cost</th><th className="text-right p-4">Selling</th>
-                </tr></thead>
-                <tbody>{filtered.map(p => (
-                  <tr key={p.id} className="border-b">
-                    <td className="p-4 font-medium">{p.name}</td><td className="p-4">{p.sku}</td>
-                    <td className="p-4 text-right">{p.total_stock || 0}</td>
-                    <td className="p-4 text-right">{p.costPrice}</td><td className="p-4 text-right">{p.sellingPrice}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-          ) : <p className="text-center py-12 text-muted-foreground">No stock items</p>
-        }
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+            {filtered.map(p => (
+              <div key={p.id} className="flex justify-between p-4 border-b">
+                <span className="font-medium">{p.name}</span>
+                <span className={`font-bold ${p.stock_level > 0 ? 'text-green-600' : 'text-red-500'}`}>{p.stock_level || 0}</span>
+              </div>
+            ))}
+            {filtered.length === 0 && <p className="text-center py-8 text-muted-foreground">No stock</p>}
+          </div>
+        )}
       </main>
     </div>
   )
