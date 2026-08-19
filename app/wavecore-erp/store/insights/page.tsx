@@ -3,56 +3,42 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, AlertTriangle, ArrowLeft, Loader2, Download } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { BarChart3, Download, Loader2, TrendingUp, TrendingDown, Package, DollarSign } from 'lucide-react'
 
 export default function InsightsPage() {
-  const [stats, setStats] = useState<any>({
-    totalSales: 0, totalStockIn: 0, totalProducts: 0, lowStock: 0,
-    totalRevenue: 0, totalProfit: 0, totalOrders: 0, totalCustomers: 0,
-  })
+  const [data, setData] = useState<any>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchInsights() {
-      try {
-        const [prodRes, stockRes] = await Promise.all([
-          fetch('/api/wavecore/inventory/products'),
-          fetch('/api/wavecore/inventory/summary'),
-        ])
-        const prodData = await prodRes.json()
-        const stockData = await stockRes.json()
-        setStats({
-          totalProducts: prodData.products?.length || 0,
-          totalStockValue: stockData.summary?.totalStockValue || 0,
-          lowStock: stockData.summary?.lowStockItems || 0,
-          totalSales: 0, totalStockIn: 0, totalRevenue: 0, totalProfit: 0, totalOrders: 0, totalCustomers: 0,
-        })
-      } catch {} finally { setLoading(false) }
-    }
-    fetchInsights()
+    fetch('/api/wavecore/store')
+      .then(r => r.json())
+      .then(d => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
-  const formatKES = (amount: number) => 'KSh ' + (amount || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
-
-  const insightCards = [
-    { label: 'Total Revenue', value: formatKES(stats.totalRevenue), icon: DollarSign, color: 'text-emerald-500', trend: '+0%' },
-    { label: 'Total Sales', value: String(stats.totalSales), icon: ShoppingCart, color: 'text-blue-500', trend: '0' },
-    { label: 'Stock In', value: String(stats.totalStockIn), icon: TrendingUp, color: 'text-orange-500', trend: '0' },
-    { label: 'Stock Value', value: formatKES(stats.totalStockValue), icon: Package, color: 'text-purple-500', trend: '0' },
-    { label: 'Products', value: String(stats.totalProducts), icon: Package, color: 'text-teal-500', trend: '0' },
-    { label: 'Low Stock', value: String(stats.lowStock), icon: AlertTriangle, color: 'text-red-500', trend: '0' },
-  ]
-
-  const handleExport = () => {
-    const csv = 'Metric,Value\n' + insightCards.map(c => `${c.label},${c.value}`).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Store Insights',
+      '='.repeat(50),
+      'Generated: ' + new Date().toLocaleString(),
+      'IntelliWavve - Point of Sale',
+      '='.repeat(50),
+      '',
+      'Total Products: ' + (data.totalProducts || 0),
+      'Total Sales: ' + (data.totalSales || 0),
+      'Revenue: KSh ' + (data.sales?.reduce((sum: number, s: any) => sum + (s.total || 0), 0) || 0),
+      '',
+      '© 2026 IntelliWavve - All Rights Reserved'
+    ].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = 'store-insights.csv'
-    a.click()
+    a.href = url; a.download = 'insights.pdf'; a.click()
+    URL.revokeObjectURL(url)
   }
+
+  const totalRevenue = data.sales?.reduce((sum: number, s: any) => sum + (parseFloat(s.total) || 0), 0) || 0
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -65,43 +51,37 @@ export default function InsightsPage() {
           <span className="text-sm">Insights</span>
         </div>
       </header>
-
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold">Store Insights</h1>
-          <Button variant="outline" onClick={handleExport} className="gap-2"><Download className="w-4 h-4" /> Export</Button>
+      <main className="max-w-6xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><BarChart3 className="w-6 h-6 text-violet-500" /> Store Insights</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium">
+            <Download className="w-4 h-4" /> PDF
+          </button>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-              {insightCards.map((card) => {
-                const Icon = card.icon
-                return (
-                  <div key={card.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
-                    <Icon className={`w-5 h-5 ${card.color} mb-3`} />
-                    <p className="text-xl font-bold">{card.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{card.label}</p>
-                  </div>
-                )
-              })}
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+              <Package className="w-6 h-6 text-orange-500 mb-3" />
+              <p className="text-2xl font-bold">{data.totalProducts || 0}</p>
+              <p className="text-xs text-muted-foreground">Products</p>
             </div>
-
-            {/* Profit Estimate */}
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-              <h3 className="font-bold mb-4">Profit Estimate</h3>
-              <p className="text-3xl font-bold text-green-600">{formatKES(stats.totalProfit)}</p>
-              <p className="text-xs text-muted-foreground mt-2">Estimated profit = (Selling Price - Cost Price) × Quantity Sold</p>
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+              <DollarSign className="w-6 h-6 text-green-500 mb-3" />
+              <p className="text-2xl font-bold">KSh {totalRevenue.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Revenue</p>
             </div>
-
-            {/* Top Products */}
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-              <h3 className="font-bold mb-4">Top Products</h3>
-              <p className="text-sm text-muted-foreground text-center py-8">Sales data will appear here as you make sales</p>
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+              <TrendingUp className="w-6 h-6 text-emerald-500 mb-3" />
+              <p className="text-2xl font-bold">{data.totalSales || 0}</p>
+              <p className="text-xs text-muted-foreground">Sales</p>
             </div>
-          </>
+            <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+              <TrendingDown className="w-6 h-6 text-red-500 mb-3" />
+              <p className="text-2xl font-bold">0</p>
+              <p className="text-xs text-muted-foreground">Returns</p>
+            </div>
+          </div>
         )}
       </main>
     </div>
