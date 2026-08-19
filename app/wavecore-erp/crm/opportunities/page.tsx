@@ -1,9 +1,10 @@
 'use client'
 
-import { Download, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Download, ArrowLeft, Loader2, Target, DollarSign, Trash2 } from 'lucide-react'\nimport { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
+import { ArrowLeft, Loader2, Target, DollarSign, Trash2 } from 'lucide-react'
+import { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
 
 interface Opportunity {
   id: string

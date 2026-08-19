@@ -1,9 +1,10 @@
 'use client'
 
-import { Download, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Download, ArrowLeft, ShoppingCart, Loader2 } from 'lucide-react'\nimport { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
+import { ArrowLeft, ShoppingCart, Loader2 } from 'lucide-react'
+import { downloadPDF, generatePDFContent } from '@/lib/wavecore/pdf-export'
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([])
