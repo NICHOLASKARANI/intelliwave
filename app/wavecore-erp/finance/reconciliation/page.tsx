@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, Plus, ArrowLeft, CheckCircle, AlertCircle, Building2 } from 'lucide-react'
+import { LayoutDashboard, Plus, ArrowLeft, CheckCircle, AlertCircle, Building2 , Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface BankAccount {
@@ -82,6 +82,31 @@ export default function ReconciliationPage() {
   const matchedCount = transactions.filter(t => t.matched).length
   const unmatchedCount = transactions.filter(t => !t.matched).length
 
+
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Bank Reconciliation',
+      '='.repeat(50),
+      'Generated: ' + new Date().toLocaleString(),
+      'IntelliWavve - Enterprise ERP',
+      '='.repeat(50),
+      '',
+      'Reconciliation Summary',
+      '  Total Transactions: ' + (transactions?.length || 0),
+      '  Reconciled: 0',
+      '  Unreconciled: ' + (transactions?.length || 0),
+      '',
+      '© 2026 IntelliWavve - All Rights Reserved'
+    ].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'reconciliation.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
@@ -101,6 +126,7 @@ export default function ReconciliationPage() {
 
       <main className="max-w-5xl mx-auto p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6">Bank Reconciliation</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
 
         {/* Select Bank Account */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">

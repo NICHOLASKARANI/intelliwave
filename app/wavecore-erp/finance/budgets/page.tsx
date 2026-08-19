@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, TrendingUp, AlertCircle, Save } from 'lucide-react'
+import { Plus, TrendingUp, AlertCircle, Save , Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Budget {
@@ -76,6 +76,34 @@ export default function BudgetsPage() {
 
   const formatKES = (amount: number) => `KSh ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}`
 
+
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Budgets',
+      '='.repeat(50),
+      'Generated: ' + new Date().toLocaleString(),
+      'IntelliWavve - Enterprise ERP',
+      '='.repeat(50),
+      '',
+      ...budgets.map((b: any, i: number) => 
+        'Budget #' + (i + 1) + '\n' +
+        '  Name: ' + (b.name || 'N/A') + '\n' +
+        '  Amount: ' + (b.amount || '0') + '\n' +
+        '  Spent: ' + (b.spent || '0') + '\n' +
+        '-'.repeat(40)
+      ),
+      '',
+      '© 2026 IntelliWavve - All Rights Reserved'
+    ].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'budgets.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
@@ -95,6 +123,7 @@ export default function BudgetsPage() {
 
       <main className="max-w-5xl mx-auto p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6">Budgets</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
 
         {/* Create Budget Form */}
         {showCreate && (
