@@ -5,10 +5,21 @@ import { getSessionFromRequest } from '@/lib/wavecore/auth'
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
     const category = searchParams.get('category') || ''
     const search = searchParams.get('search') || ''
     const limit = parseInt(searchParams.get('limit') || '50')
 
+    // Get single listing by ID
+    if (id) {
+      const result = await pool.query(
+        `SELECT * FROM "MarketplaceListing" WHERE id = $1 AND status = 'ACTIVE'`,
+        [parseInt(id)]
+      )
+      return NextResponse.json({ listing: result.rows[0] || null })
+    }
+
+    // Get all listings with filters
     let query = `SELECT * FROM "MarketplaceListing" WHERE status = 'ACTIVE'`
     const params: any[] = []
 
@@ -46,7 +57,10 @@ export async function POST(req: NextRequest) {
       [session.userId, body.title, body.description || '', body.price, body.category, body.condition || 'Used', body.location || '', body.images || []]
     )
 
-    await pool.query(`UPDATE "MarketplaceCategory" SET "listingCount" = "listingCount" + 1 WHERE name = $1`, [body.category])
+    await pool.query(
+      `UPDATE "MarketplaceCategory" SET "listingCount" = "listingCount" + 1 WHERE name = $1`,
+      [body.category]
+    )
 
     return NextResponse.json({ listing: result.rows[0] }, { status: 201 })
   } catch (error) {
