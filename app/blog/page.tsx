@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { 
   ArrowRight, Search, Calendar, Clock, User, Tag, TrendingUp,
-  Sparkles, Globe, Shield, Zap, BarChart3, Rocket, Star,
+  Sparkles, Globe, Shield, Zap, BarChart3, Rocket, Star, Users,
   ChevronRight, BookOpen, Award, Target, Eye, Heart, Share2
 } from 'lucide-react'
 
