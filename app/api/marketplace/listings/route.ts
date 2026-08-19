@@ -43,27 +43,28 @@ export async function POST(req: NextRequest) {
       `INSERT INTO "MarketplaceListing" ("sellerId", title, description, price, category, condition, location, images, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE')
        RETURNING *`,
-      [
-        session.userId,
-        body.title,
-        body.description || '',
-        body.price,
-        body.category,
-        body.condition || 'Used',
-        body.location || '',
-        body.images || [],
-      ]
+      [session.userId, body.title, body.description || '', body.price, body.category, body.condition || 'Used', body.location || '', body.images || []]
     )
 
-    // Update category count
-    await pool.query(
-      `UPDATE "MarketplaceCategory" SET "listingCount" = "listingCount" + 1 WHERE name = $1`,
-      [body.category]
-    )
+    await pool.query(`UPDATE "MarketplaceCategory" SET "listingCount" = "listingCount" + 1 WHERE name = $1`, [body.category])
 
     return NextResponse.json({ listing: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('Listing create error:', error)
     return NextResponse.json({ error: 'Failed to create listing: ' + error.message }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+    await pool.query(`DELETE FROM "MarketplaceListing" WHERE id = $1`, [parseInt(id)])
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Delete failed: ' + error.message }, { status: 500 })
   }
 }
