@@ -49,11 +49,11 @@ export default function CustomersPage() {
       '© 2026 IntelliWavve - All Rights Reserved'
     ].join('\n')
 
-    const blob = new Blob([content], { type: 'text/plain' })
+    const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'customers.txt'
+    a.download = 'customers.pdf'
     a.click()
     URL.revokeObjectURL(url)
   }

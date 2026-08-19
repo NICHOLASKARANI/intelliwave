@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Download, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, FileText, Loader2 } from 'lucide-react'
+import { Download, ArrowLeft, FileText, Loader2 } from 'lucide-react'
 
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
@@ -21,6 +21,35 @@ export default function QuotationsPage() {
     }
     fetchQuotations()
   }, [])
+
+
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Quotations',
+      '='.repeat(50),
+      'Generated: ' + new Date().toLocaleString(),
+      'IntelliWavve - Enterprise ERP',
+      '='.repeat(50),
+      '',
+      ...quotations.map((q: any, i: number) => 
+        'Record #' + (i + 1) + '\n' +
+        '  Quotation Number: ' + (q.number || 'N/A') + '\n' +
+        '  Customer: ' + (q.customer || 'N/A') + '\n' +
+        '  Total: ' + (q.total || 'N/A') + '\n' +
+        '-'.repeat(30)
+      ),
+      '',
+      '© 2026 IntelliWavve - All Rights Reserved'
+    ].join('\n')
+
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'quotations.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -41,6 +70,7 @@ export default function QuotationsPage() {
 
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6">Quotations</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
 
         {loading ? (
           <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>

@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Download, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Target, DollarSign, Trash2 } from 'lucide-react'
+import { Download, ArrowLeft, Loader2, Target, DollarSign, Trash2 } from 'lucide-react'
 
 interface Opportunity {
   id: string
@@ -36,6 +36,35 @@ export default function OpportunitiesPage() {
 
   const formatKES = (amount: number) => 'KSh ' + (amount || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
+
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Opportunities',
+      '='.repeat(50),
+      'Generated: ' + new Date().toLocaleString(),
+      'IntelliWavve - Enterprise ERP',
+      '='.repeat(50),
+      '',
+      ...opportunities.map((o: any, i: number) => 
+        'Record #' + (i + 1) + '\n' +
+        '  Title: ' + o.title + '\n' +
+        '  Value: ' + (o.value || 'N/A') + '\n' +
+        '  Stage: ' + (o.stage || 'N/A') + '\n' +
+        '-'.repeat(30)
+      ),
+      '',
+      '© 2026 IntelliWavve - All Rights Reserved'
+    ].join('\n')
+
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'opportunities.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
@@ -55,6 +84,7 @@ export default function OpportunitiesPage() {
 
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6">Opportunities</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
 
         {loading ? (
           <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
