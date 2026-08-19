@@ -1,10 +1,10 @@
 'use client'
 
-import { Download, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Download, Plus, Search, Trash2, Edit3, ArrowLeft, Loader2, Target } from 'lucide-react'
-import { Download, Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 
 interface Lead {
   id: string
