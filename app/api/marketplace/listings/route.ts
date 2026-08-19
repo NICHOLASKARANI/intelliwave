@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
-import { getSession } from '@/lib/wavecore/auth'
+import { getSessionFromRequest } from '@/lib/wavecore/auth'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession()
     const { searchParams } = new URL(req.url)
     const category = searchParams.get('category') || ''
     const search = searchParams.get('search') || ''
@@ -35,15 +34,25 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionFromRequest(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
+    
     const result = await pool.query(
-      `INSERT INTO "MarketplaceListing" ("sellerId", title, description, price, category, condition, location, images)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO "MarketplaceListing" ("sellerId", title, description, price, category, condition, location, images, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE')
        RETURNING *`,
-      [session.userId, body.title, body.description, body.price, body.category, body.condition, body.location, body.images || []]
+      [
+        session.userId,
+        body.title,
+        body.description || '',
+        body.price,
+        body.category,
+        body.condition || 'Used',
+        body.location || '',
+        body.images || [],
+      ]
     )
 
     // Update category count
@@ -54,21 +63,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ listing: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
-
-    await pool.query(`DELETE FROM "MarketplaceListing" WHERE id = $1 AND "sellerId" = $2`, [id, session.userId])
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete listing' }, { status: 500 })
+    console.error('Listing create error:', error)
+    return NextResponse.json({ error: 'Failed to create listing: ' + error.message }, { status: 500 })
   }
 }
