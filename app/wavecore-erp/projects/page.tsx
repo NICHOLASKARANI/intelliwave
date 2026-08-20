@@ -1,12 +1,12 @@
 'use client'
 
-import { DollarSign, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { DollarSign, 
+import { 
   FolderKanban, Download, Loader2, TrendingUp, CheckCircle,
   Clock, Users, BarChart3, Plus, Calendar, GanttChartSquare,
-  Timer, GitBranch, Target, FileText
+  Timer, GitBranch, Target, FileText, DollarSign
 } from 'lucide-react'
 
 export default function ProjectsPage() {
@@ -29,7 +29,7 @@ export default function ProjectsPage() {
       'Total Projects: ' + (data.projects?.length || 0),
       '',
       '© 2026 IntelliWavve'
-    { name: 'Budget', href: '/wavecore-erp/projects/budget', icon: DollarSign, color: 'from-emerald-500 to-green-600', desc: 'Budget tracking' },  ].join('\n')
+    ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -43,8 +43,9 @@ export default function ProjectsPage() {
     { name: 'Resources', href: '/wavecore-erp/projects/resources', icon: Users, color: 'from-amber-500 to-orange-600', desc: 'Resource planning' },
     { name: 'Tasks', href: '/wavecore-erp/projects/tasks', icon: GitBranch, color: 'from-cyan-500 to-teal-600', desc: 'Tasks & dependencies' },
     { name: 'Milestones', href: '/wavecore-erp/projects/milestones', icon: Target, color: 'from-pink-500 to-rose-600', desc: 'Key milestones' },
+    { name: 'Budget', href: '/wavecore-erp/projects/budget', icon: DollarSign, color: 'from-emerald-500 to-green-600', desc: 'Budget tracking' },
     { name: 'Reports', href: '/wavecore-erp/projects/reports', icon: FileText, color: 'from-indigo-500 to-blue-600', desc: 'Project reports' },
-  { name: 'Budget', href: '/wavecore-erp/projects/budget', icon: DollarSign, color: 'from-emerald-500 to-green-600', desc: 'Budget tracking' },  ]
+  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -65,7 +66,7 @@ export default function ProjectsPage() {
               <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3">
                 <FolderKanban className="w-8 h-8" /> Project Management
               </h1>
-              <p className="text-white/80 text-sm">Kanban • Gantt • Time • Resources • Tasks</p>
+              <p className="text-white/80 text-sm">8 Modules • Kanban • Gantt • Budget</p>
             </div>
             <div className="flex gap-2">
               <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
@@ -95,14 +96,14 @@ export default function ProjectsPage() {
                 <p className="text-xs text-muted-foreground">Pending</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
-                <TrendingUp className="w-8 h-8 text-emerald-500 mb-3" />
-                <p className="text-3xl font-extrabold">100%</p>
-                <p className="text-xs text-muted-foreground">Completion</p>
+                <DollarSign className="w-8 h-8 text-emerald-500 mb-3" />
+                <p className="text-3xl font-extrabold">KSh 5M</p>
+                <p className="text-xs text-muted-foreground">Budget</p>
               </div>
             </div>
 
-            <h2 className="text-xl font-bold mb-4">Project Modules (7)</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <h2 className="text-xl font-bold mb-4">Project Modules (8)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {modules.map(module => {
                 const Icon = module.icon
                 return (
