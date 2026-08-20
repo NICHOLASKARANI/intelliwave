@@ -3,46 +3,26 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Cog, Plus, Trash2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Cog, Download, Loader2 } from 'lucide-react'
 
-export default function WorkCentersPage() {
+export default function CentersPage() {
   const [centers, setCenters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
-  const [name, setName] = useState('')
-  const [capacity, setCapacity] = useState('')
-  const [efficiency, setEfficiency] = useState('100')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
-  async function fetchCenters() {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/wavecore/manufacturing/centers')
-      if (res.ok) { const data = await res.json(); setCenters(data.centers || []) }
-    } catch {} finally { setLoading(false) }
-  }
+  useEffect(() => {
+    fetch('/api/wavecore/manufacturing/centers')
+      .then(r => r.json())
+      .then(d => setCenters(d.centers || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
-  useEffect(() => { fetchCenters() }, [])
-
-  const handleAdd = async () => {
-    setError(''); setSuccess('')
-    if (!name) { setError('Center name required'); return }
-    try {
-      const res = await fetch('/api/wavecore/manufacturing/centers', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, capacity: parseFloat(capacity) || 0, efficiency: parseFloat(efficiency) || 100 }),
-      })
-      const data = await res.json()
-      if (res.ok) { setSuccess('Work Center added!'); setShowAdd(false); setName(''); setCapacity(''); setEfficiency('100'); fetchCenters() }
-      else { setError(data.error || 'Failed') }
-    } catch { setError('Network error') }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this center?')) return
-    try { await fetch(`/api/wavecore/manufacturing/centers/${id}`, { method: 'DELETE' }); fetchCenters() } catch {}
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Work Centers', '='.repeat(50), `Total: ${centers.length}`, '', ...centers.map((c, i) => `${i+1}. ${c.name}`), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'work-centers.pdf'; a.click()
   }
 
   return (
@@ -56,47 +36,22 @@ export default function WorkCentersPage() {
           <span className="text-sm">Work Centers</span>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Cog className="w-6 h-6 text-purple-500" /> Work Centers</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-purple-600"><Plus className="w-4 h-4" /> Add Center</Button>
+      <main className="max-w-4xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Cog className="w-6 h-6 text-amber-500" /> Work Centers ({centers.length})</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
         </div>
-
-        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
-        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
-
-        {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <h3 className="font-bold mb-4">Add Work Center</h3>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div><label className="block text-sm font-medium mb-2">Center Name *</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Center Name" />
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {centers.map((c, i) => (
+              <div key={c.id || i} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+                <Cog className="w-6 h-6 text-amber-500 mb-3" />
+                <p className="font-bold">{c.name}</p>
               </div>
-              <div><label className="block text-sm font-medium mb-2">Capacity</label>
-                <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="0" />
-              </div>
-              <div><label className="block text-sm font-medium mb-2">Efficiency %</label>
-                <input type="number" value={efficiency} onChange={(e) => setEfficiency(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="100" />
-              </div>
-            </div>
-            <Button onClick={handleAdd} className="mt-4 gap-2"><Plus className="w-4 h-4" /> Add Center</Button>
+            ))}
+            {centers.length === 0 && <p className="text-center py-8 text-muted-foreground">No work centers</p>}
           </div>
         )}
-
-        {loading ? <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-500" /></div> :
-          centers.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-4">
-              {centers.map(c => (
-                <div key={c.id} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg">
-                  <div className="flex justify-between items-start">
-                    <div><Cog className="w-6 h-6 text-purple-500 mb-2" /><p className="font-bold">{c.name}</p><p className="text-sm text-muted-foreground">Capacity: {c.capacity} | Efficiency: {c.efficiency}%</p></div>
-                    <button onClick={() => handleDelete(c.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border"><Cog className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>No work centers yet</p></div>
-        }
       </main>
     </div>
   )

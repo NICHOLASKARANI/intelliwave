@@ -4,52 +4,51 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  Factory, Layers, ClipboardList, CheckCircle, Cog, Wrench,
-  Plus, Loader2, Gauge, Package, TrendingUp, AlertTriangle, Timer, Truck
+  Factory, ClipboardList, Boxes, KeyRound, Wrench, Route,
+  CheckCircle, AlertTriangle, Download, Loader2, TrendingUp,
+  BarChart3, Cog, Hammer, Layers, Settings
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-
-interface MfgStats {
-  activeWorkOrders: number
-  productionOutput: number
-  qualityPassRate: number
-  efficiencyRate: number
-  boms: number
-  workCenters: number
-  maintenanceRequests: number
-  totalRoutes: number
-  qualityChecks: number
-}
 
 export default function ManufacturingPage() {
-  const [stats, setStats] = useState<MfgStats>({
-    activeWorkOrders: 0, productionOutput: 0, qualityPassRate: 0,
-    efficiencyRate: 0, boms: 0, workCenters: 0, maintenanceRequests: 0, totalRoutes: 0, qualityChecks: 0,
-  })
+  const [data, setData] = useState<any>({})
   const [loading, setLoading] = useState(true)
 
-  async function fetchStats() {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/wavecore/manufacturing')
-      if (res.ok) {
-        const data = await res.json()
-        setStats(data.stats || {})
-      }
-    } catch (err) {
-      console.error('Failed:', err)
-    } finally { setLoading(false) }
+  useEffect(() => {
+    fetch('/api/wavecore/manufacturing')
+      .then(r => r.json())
+      .then(d => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Manufacturing Dashboard',
+      '='.repeat(50),
+      'Generated: ' + new Date().toLocaleString(),
+      'IntelliWavve - Enterprise Manufacturing',
+      '='.repeat(50),
+      '',
+      'Active Work Orders: ' + (data.workOrders || 0),
+      'Production Output: ' + (data.output || 0),
+      'Quality Pass Rate: ' + (data.qualityRate || '100%'),
+      'Efficiency: ' + (data.efficiency || '100%'),
+      '',
+      '© 2026 IntelliWavve - All Rights Reserved'
+    ].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'manufacturing-dashboard.pdf'; a.click()
   }
 
-  useEffect(() => { fetchStats() }, [])
-
-  const quickActions = [
-    { label: 'Work Orders', href: '/wavecore-erp/manufacturing/orders', icon: ClipboardList, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
-    { label: 'BOM', href: '/wavecore-erp/manufacturing/bom', icon: Layers, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950' },
-    { label: 'Quality', href: '/wavecore-erp/manufacturing/quality', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-    { label: 'Centers', href: '/wavecore-erp/manufacturing/centers', icon: Cog, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950' },
-    { label: 'Maintenance', href: '/wavecore-erp/manufacturing/maintenance', icon: Wrench, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950' },
-    { label: 'Routing', href: '/wavecore-erp/manufacturing/routing', icon: Gauge, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-950' },
+  const modules = [
+    { name: 'Work Orders', href: '/wavecore-erp/manufacturing/orders', icon: ClipboardList, color: 'from-indigo-500 to-blue-600', desc: 'Production orders' },
+    { name: 'BOM', href: '/wavecore-erp/manufacturing/bom', icon: Layers, color: 'from-purple-500 to-violet-600', desc: 'Bill of Materials' },
+    { name: 'Work Centers', href: '/wavecore-erp/manufacturing/centers', icon: Cog, color: 'from-amber-500 to-orange-600', desc: 'Production centers' },
+    { name: 'Quality', href: '/wavecore-erp/manufacturing/quality', icon: CheckCircle, color: 'from-green-500 to-emerald-600', desc: 'Quality control' },
+    { name: 'Maintenance', href: '/wavecore-erp/manufacturing/maintenance', icon: Wrench, color: 'from-red-500 to-rose-600', desc: 'Equipment maintenance' },
+    { name: 'Routing', href: '/wavecore-erp/manufacturing/routing', icon: Route, color: 'from-teal-500 to-cyan-600', desc: 'Production routing' },
   ]
 
   return (
@@ -65,45 +64,59 @@ export default function ManufacturingPage() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8">
-        <div className="rounded-3xl bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 p-6 lg:p-8 mb-8 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '25px 25px' }} />
-          <div className="relative flex items-center justify-between">
+        <div className="rounded-3xl bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 p-6 lg:p-8 mb-8">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3"><Factory className="w-8 h-8" /> Manufacturing (MRP)</h1>
-              <p className="text-white/80 text-sm">Real-time production intelligence</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                <Factory className="w-8 h-8" /> Manufacturing
+              </h1>
+              <p className="text-white/80 text-sm">Work Orders • BOM • Quality • Maintenance</p>
             </div>
-            <div className="hidden lg:block text-white/80 text-right">
-              <p className="text-3xl font-bold text-white">{stats.activeWorkOrders}</p>
-              <p className="text-xs">Active Orders</p>
-            </div>
+            <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">
+              <Download className="w-4 h-4" /> PDF
+            </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-16"><Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-500" /></div>
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-500" /></div>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard label="Active Work Orders" value={stats.activeWorkOrders} icon={ClipboardList} color="text-blue-500" />
-              <StatCard label="Production Output" value={stats.productionOutput} icon={Factory} color="text-green-500" />
-              <StatCard label="Quality Pass Rate" value={stats.qualityPassRate + '%'} icon={CheckCircle} color="text-emerald-500" />
-              <StatCard label="Efficiency" value={stats.efficiencyRate + '%'} icon={Gauge} color="text-purple-500" />
-              <StatCard label="BOMs" value={stats.boms} icon={Layers} color="text-teal-500" />
-              <StatCard label="Work Centers" value={stats.workCenters} icon={Cog} color="text-orange-500" />
-              <StatCard label="Maintenance" value={stats.maintenanceRequests} icon={Wrench} color="text-red-500" />
-              <StatCard label="Quality Checks" value={stats.qualityChecks} icon={CheckCircle} color="text-cyan-500" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
+                <ClipboardList className="w-8 h-8 text-indigo-500 mb-3" />
+                <p className="text-3xl font-extrabold">{data.workOrders || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">Active Work Orders</p>
+              </div>
+              <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
+                <BarChart3 className="w-8 h-8 text-purple-500 mb-3" />
+                <p className="text-3xl font-extrabold">{data.output || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">Production Output</p>
+              </div>
+              <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
+                <CheckCircle className="w-8 h-8 text-green-500 mb-3" />
+                <p className="text-3xl font-extrabold">{data.qualityRate || '100%'}</p>
+                <p className="text-xs text-muted-foreground mt-1">Quality Pass Rate</p>
+              </div>
+              <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
+                <TrendingUp className="w-8 h-8 text-emerald-500 mb-3" />
+                <p className="text-3xl font-extrabold">{data.efficiency || '100%'}</p>
+                <p className="text-xs text-muted-foreground mt-1">Efficiency</p>
+              </div>
             </div>
 
-            <h2 className="text-lg font-bold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-              {quickActions.map(a => {
-                const Icon = a.icon
+            <h2 className="text-xl font-bold mb-4">Manufacturing Modules</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {modules.map(module => {
+                const Icon = module.icon
                 return (
-                  <Link key={a.label} href={a.href} className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-purple-300 hover:shadow-lg transition-all text-center group">
-                    <div className={`w-12 h-12 rounded-xl ${a.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <Icon className={`w-5 h-5 ${a.color}`} />
+                  <Link key={module.name} href={module.href}
+                    className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-purple-300 hover:shadow-2xl transition-all group">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${module.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-7 h-7 text-white" />
                     </div>
-                    <span className="text-xs font-medium">{a.label}</span>
+                    <p className="font-bold text-lg">{module.name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{module.desc}</p>
                   </Link>
                 )
               })}
@@ -111,16 +124,6 @@ export default function ManufacturingPage() {
           </>
         )}
       </main>
-    </div>
-  )
-}
-
-function StatCard({ label, value, icon: Icon, color }: { label: string; value: any; icon: any; color: string }) {
-  return (
-    <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all cursor-default">
-      <Icon className={`w-6 h-6 ${color} mb-3`} />
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   )
 }

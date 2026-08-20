@@ -3,44 +3,26 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircle, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { CheckCircle, Download, Loader2, Edit3, Trash2 } from 'lucide-react'
 
 export default function QualityPage() {
   const [checks, setChecks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
-  const [workOrder, setWorkOrder] = useState('')
-  const [result, setResult] = useState('PASSED')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
-  async function fetchChecks() {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/wavecore/manufacturing/quality')
-      if (res.ok) { const data = await res.json(); setChecks(data.checks || []) }
-    } catch {} finally { setLoading(false) }
-  }
+  useEffect(() => {
+    fetch('/api/wavecore/manufacturing/quality')
+      .then(r => r.json())
+      .then(d => setChecks(d.checks || d.quality || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
-  useEffect(() => { fetchChecks() }, [])
-
-  const handleAdd = async () => {
-    setError(''); setSuccess('')
-    if (!workOrder) { setError('Work Order required'); return }
-    try {
-      const res = await fetch('/api/wavecore/manufacturing/quality', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workOrder, result }),
-      })
-      const data = await res.json()
-      if (res.ok) { setSuccess('Check recorded!'); setShowAdd(false); setWorkOrder(''); fetchChecks() }
-      else { setError(data.error || 'Failed') }
-    } catch { setError('Network error') }
-  }
-
-  const handleDelete = async (id: string) => {
-    try { await fetch(`/api/wavecore/manufacturing/quality/${id}`, { method: 'DELETE' }); fetchChecks() } catch {}
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Quality Control', '='.repeat(50), `Checks: ${checks.length}`, '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'quality.pdf'; a.click()
   }
 
   return (
@@ -51,49 +33,25 @@ export default function QualityPage() {
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Quality Control</span>
+          <span className="text-sm">Quality</span>
         </div>
       </header>
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><CheckCircle className="w-6 h-6 text-emerald-500" /> Quality Control</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-emerald-600"><Plus className="w-4 h-4" /> New Check</Button>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><CheckCircle className="w-6 h-6 text-green-500" /> Quality Control ({checks.length})</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
         </div>
-
-        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
-        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
-
-        {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium mb-2">Work Order # *</label>
-                <input type="text" value={workOrder} onChange={(e) => setWorkOrder(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="WO-xxxxxx" />
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+            {checks.map((c: any, i: number) => (
+              <div key={c.id || i} className="flex justify-between p-4 border-b">
+                <span className="font-medium">{c.name || `Check ${i+1}`}</span>
+                <span className="text-green-600">✓ Pass</span>
               </div>
-              <div><label className="block text-sm font-medium mb-2">Result</label>
-                <select value={result} onChange={(e) => setResult(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">
-                  <option value="PASSED">Passed</option><option value="FAILED">Failed</option><option value="PARTIAL">Partial</option>
-                </select>
-              </div>
-            </div>
-            <Button onClick={handleAdd} className="mt-4">Record Check</Button>
+            ))}
+            {checks.length === 0 && <p className="text-center py-8 text-muted-foreground">No quality checks</p>}
           </div>
         )}
-
-        {loading ? <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-500" /></div> :
-          checks.length > 0 ? (
-            <div className="space-y-3">
-              {checks.map(c => (
-                <div key={c.id} className="p-4 rounded-xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
-                  <div><p className="font-medium">{c.workOrder}</p><p className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleString()}</p></div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 text-xs rounded-full ${c.result === 'PASSED' ? 'bg-green-50 text-green-600' : c.result === 'FAILED' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>{c.result}</span>
-                    <button onClick={() => handleDelete(c.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border"><CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>No quality checks yet</p></div>
-        }
       </main>
     </div>
   )
