@@ -1,12 +1,13 @@
 'use client'
 
-import { Calculator, Calendar, Monitor, Gauge, AlertTriangle, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Calculator, Calendar, Monitor, Gauge, AlertTriangle, 
+import { 
   Factory, ClipboardList, Boxes, KeyRound, Wrench, Route,
   CheckCircle, AlertTriangle, Download, Loader2, TrendingUp,
-  BarChart3, Cog, Hammer, Layers, Settings
+  BarChart3, Cog, Hammer, Layers, Settings,
+  Calculator, Calendar, Monitor, Gauge
 } from 'lucide-react'
 
 export default function ManufacturingPage() {
@@ -35,11 +36,7 @@ export default function ManufacturingPage() {
       'Efficiency: ' + (data.efficiency || '100%'),
       '',
       '© 2026 IntelliWavve - All Rights Reserved'
-    { name: 'MRP', href: '/wavecore-erp/manufacturing/mrp', icon: Calculator, color: 'from-indigo-500 to-blue-600', desc: 'Material planning' },
-  { name: 'Scheduling', href: '/wavecore-erp/manufacturing/scheduling', icon: Calendar, color: 'from-blue-500 to-cyan-600', desc: 'Production schedule' },
-  { name: 'Shop Floor', href: '/wavecore-erp/manufacturing/shop-floor', icon: Monitor, color: 'from-emerald-500 to-green-600', desc: 'Real-time control' },
-  { name: 'Capacity', href: '/wavecore-erp/manufacturing/capacity', icon: Gauge, color: 'from-purple-500 to-violet-600', desc: 'Capacity planning' },
-  { name: 'Scrap', href: '/wavecore-erp/manufacturing/scrap', icon: AlertTriangle, color: 'from-red-500 to-rose-600', desc: 'Scrap & rework' },  ].join('\n')
+    ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -53,11 +50,12 @@ export default function ManufacturingPage() {
     { name: 'Quality', href: '/wavecore-erp/manufacturing/quality', icon: CheckCircle, color: 'from-green-500 to-emerald-600', desc: 'Quality control' },
     { name: 'Maintenance', href: '/wavecore-erp/manufacturing/maintenance', icon: Wrench, color: 'from-red-500 to-rose-600', desc: 'Equipment maintenance' },
     { name: 'Routing', href: '/wavecore-erp/manufacturing/routing', icon: Route, color: 'from-teal-500 to-cyan-600', desc: 'Production routing' },
-  { name: 'MRP', href: '/wavecore-erp/manufacturing/mrp', icon: Calculator, color: 'from-indigo-500 to-blue-600', desc: 'Material planning' },
-  { name: 'Scheduling', href: '/wavecore-erp/manufacturing/scheduling', icon: Calendar, color: 'from-blue-500 to-cyan-600', desc: 'Production schedule' },
-  { name: 'Shop Floor', href: '/wavecore-erp/manufacturing/shop-floor', icon: Monitor, color: 'from-emerald-500 to-green-600', desc: 'Real-time control' },
-  { name: 'Capacity', href: '/wavecore-erp/manufacturing/capacity', icon: Gauge, color: 'from-purple-500 to-violet-600', desc: 'Capacity planning' },
-  { name: 'Scrap', href: '/wavecore-erp/manufacturing/scrap', icon: AlertTriangle, color: 'from-red-500 to-rose-600', desc: 'Scrap & rework' },  ]
+    { name: 'MRP', href: '/wavecore-erp/manufacturing/mrp', icon: Calculator, color: 'from-sky-500 to-blue-600', desc: 'Material planning' },
+    { name: 'Scheduling', href: '/wavecore-erp/manufacturing/scheduling', icon: Calendar, color: 'from-cyan-500 to-teal-600', desc: 'Production schedule' },
+    { name: 'Shop Floor', href: '/wavecore-erp/manufacturing/shop-floor', icon: Monitor, color: 'from-emerald-500 to-green-600', desc: 'Real-time control' },
+    { name: 'Capacity', href: '/wavecore-erp/manufacturing/capacity', icon: Gauge, color: 'from-violet-500 to-purple-600', desc: 'Capacity planning' },
+    { name: 'Scrap', href: '/wavecore-erp/manufacturing/scrap', icon: AlertTriangle, color: 'from-pink-500 to-rose-600', desc: 'Scrap & rework' },
+  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -78,7 +76,7 @@ export default function ManufacturingPage() {
               <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3">
                 <Factory className="w-8 h-8" /> Manufacturing
               </h1>
-              <p className="text-white/80 text-sm">Work Orders • BOM • Quality • Maintenance</p>
+              <p className="text-white/80 text-sm">11 Modules • MRP • Scheduling • Shop Floor</p>
             </div>
             <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">
               <Download className="w-4 h-4" /> PDF
@@ -94,37 +92,37 @@ export default function ManufacturingPage() {
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <ClipboardList className="w-8 h-8 text-indigo-500 mb-3" />
                 <p className="text-3xl font-extrabold">{data.workOrders || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Active Work Orders</p>
+                <p className="text-xs text-muted-foreground mt-1">Work Orders</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <BarChart3 className="w-8 h-8 text-purple-500 mb-3" />
                 <p className="text-3xl font-extrabold">{data.output || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Production Output</p>
+                <p className="text-xs text-muted-foreground mt-1">Output</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <CheckCircle className="w-8 h-8 text-green-500 mb-3" />
                 <p className="text-3xl font-extrabold">{data.qualityRate || '100%'}</p>
-                <p className="text-xs text-muted-foreground mt-1">Quality Pass Rate</p>
+                <p className="text-xs text-muted-foreground mt-1">Quality</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
-                <TrendingUp className="w-8 h-8 text-emerald-500 mb-3" />
+                <Gauge className="w-8 h-8 text-emerald-500 mb-3" />
                 <p className="text-3xl font-extrabold">{data.efficiency || '100%'}</p>
                 <p className="text-xs text-muted-foreground mt-1">Efficiency</p>
               </div>
             </div>
 
-            <h2 className="text-xl font-bold mb-4">Manufacturing Modules</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <h2 className="text-xl font-bold mb-4">Manufacturing Modules (11)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {modules.map(module => {
                 const Icon = module.icon
                 return (
                   <Link key={module.name} href={module.href}
-                    className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-purple-300 hover:shadow-2xl transition-all group">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${module.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                      <Icon className="w-7 h-7 text-white" />
+                    className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-purple-300 hover:shadow-2xl transition-all group">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${module.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <p className="font-bold text-lg">{module.name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{module.desc}</p>
+                    <p className="font-bold text-sm">{module.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{module.desc}</p>
                   </Link>
                 )
               })}
