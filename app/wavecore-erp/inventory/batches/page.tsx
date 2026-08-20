@@ -1,14 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Layers, Search, Plus, Download } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Boxes, Download, Loader2 } from 'lucide-react'
 
 export default function BatchesPage() {
   const [batches, setBatches] = useState<any[]>([])
-  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/wavecore/inventory/products')
+      .then(r => r.json())
+      .then(d => setBatches(d.products || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Batch Tracking', '='.repeat(50), `Total: ${batches.length}`, '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'batches.pdf'; a.click()
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -21,16 +36,17 @@ export default function BatchesPage() {
           <span className="text-sm">Batches</span>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Layers className="w-6 h-6 text-teal-500" /> Batches</h1>
-          <Button className="gap-2 bg-teal-600"><Plus className="w-4 h-4" /> Add Batch</Button>
+      <main className="max-w-4xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Boxes className="w-6 h-6 text-teal-500" /> Batch Tracking</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
         </div>
-        <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-          <Layers className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No batches yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Track products by batch/lot numbers</p>
-        </div>
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 text-center">
+            <p className="text-2xl font-bold">{batches.length}</p>
+            <p className="text-sm text-muted-foreground">Products with batch tracking capability</p>
+          </div>
+        )}
       </main>
     </div>
   )

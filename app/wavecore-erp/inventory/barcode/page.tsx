@@ -1,24 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Barcode, Search, Package } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Scan, Search, Download, Loader2, Package } from 'lucide-react'
 
 export default function BarcodePage() {
-  const [barcodeValue, setBarcodeValue] = useState('')
-  const [result, setResult] = useState<any>(null)
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [barcode, setBarcode] = useState('')
+  const [scannedProduct, setScannedProduct] = useState<any>(null)
+  const [scanHistory, setScanHistory] = useState<any[]>([])
 
-  const searchBarcode = async () => {
-    if (!barcodeValue) return
-    try {
-      const res = await fetch(`/api/wavecore/inventory/products?barcode=${barcodeValue}`)
-      if (res.ok) {
-        const data = await res.json()
-        setResult(data.products?.[0] || null)
-      }
-    } catch {}
+  useEffect(() => {
+    fetch('/api/wavecore/inventory/products')
+      .then(r => r.json())
+      .then(d => setProducts(d.products || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleScan = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const code = e.target.value
+    setBarcode(code)
+    const found = products.find(p => p.sku === code || p.barcode === code)
+    if (found) {
+      setScannedProduct(found)
+      setScanHistory(prev => [{ ...found, scannedAt: new Date().toLocaleTimeString() }, ...prev])
+      setBarcode('')
+    }
+  }
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Barcode Scan History', '='.repeat(50), '', ...scanHistory.map((s, i) => `${i+1}. ${s.name} (SKU: ${s.sku}) - ${s.scannedAt}`), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'barcode-scan.pdf'; a.click()
   }
 
   return (
@@ -32,27 +50,43 @@ export default function BarcodePage() {
           <span className="text-sm">Barcode Scanner</span>
         </div>
       </header>
-      <main className="max-w-lg mx-auto p-4 lg:p-8">
-        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2"><Barcode className="w-6 h-6 text-indigo-500" /> Barcode Scanner</h1>
-        <div className="flex gap-3 mb-4">
-          <input type="text" value={barcodeValue} onChange={(e) => setBarcodeValue(e.target.value)}
-            className="flex-1 px-4 py-3 rounded-xl border text-lg" placeholder="Scan or type barcode..." autoFocus />
-          <Button onClick={searchBarcode}><Search className="w-4 h-4" /></Button>
+      <main className="max-w-3xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Scan className="w-6 h-6 text-purple-500" /> Barcode Scanner</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
         </div>
-        {result ? (
-          <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
-            <Package className="w-8 h-8 text-indigo-500 mb-3" />
-            <p className="font-bold text-lg">{result.name}</p>
-            <p className="text-sm text-muted-foreground">SKU: {result.sku}</p>
-            <p className="text-sm text-muted-foreground">Stock: {result.total_stock}</p>
-            <p className="text-green-600 font-bold mt-2">KSh {result.sellingPrice}</p>
+
+        {/* Scan Input */}
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+          <label className="text-xs font-medium text-muted-foreground mb-2 block">Scan Barcode</label>
+          <div className="relative">
+            <Scan className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
+            <input type="text" value={barcode} onChange={handleScan}
+              className="w-full pl-12 pr-4 py-4 rounded-xl border text-lg font-mono" placeholder="Scan or type barcode..." autoFocus />
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <Barcode className="w-16 h-16 mx-auto mb-3 opacity-30" />
-            <p className="text-muted-foreground">Scan a barcode to find product</p>
+        </div>
+
+        {/* Scanned Product */}
+        {scannedProduct && (
+          <div className="bg-green-50 dark:bg-green-950 rounded-2xl border border-green-200 p-6 mb-6">
+            <p className="font-bold text-green-700 dark:text-green-400 mb-2">✓ Product Found!</p>
+            <p className="text-lg font-bold">{scannedProduct.name}</p>
+            <p className="text-sm">SKU: {scannedProduct.sku}</p>
+            <p className="text-sm">Stock: {scannedProduct.stock_level || 0}</p>
           </div>
         )}
+
+        {/* Scan History */}
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+          <p className="font-bold p-4 border-b">Scan History ({scanHistory.length})</p>
+          {scanHistory.map((s, i) => (
+            <div key={i} className="flex justify-between p-3 border-b">
+              <span className="font-medium">{s.name}</span>
+              <span className="text-xs text-muted-foreground">{s.scannedAt}</span>
+            </div>
+          ))}
+          {scanHistory.length === 0 && <p className="text-center py-8 text-muted-foreground">No scans yet</p>}
+        </div>
       </main>
     </div>
   )

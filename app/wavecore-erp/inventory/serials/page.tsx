@@ -1,14 +1,31 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Barcode, Search, Plus, Download, Tag } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { KeyRound, Download, Loader2 } from 'lucide-react'
 
-export default function SerialNumbersPage() {
-  const [serials, setSerials] = useState<any[]>([])
-  const [search, setSearch] = useState('')
+export default function SerialsPage() {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/wavecore/inventory/products')
+      .then(r => r.json())
+      .then(d => setProducts(d.products || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const trackable = products.filter((p: any) => p.trackSerial)
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Serial Numbers', '='.repeat(50), `Trackable: ${trackable.length}`, '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'serials.pdf'; a.click()
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -18,23 +35,20 @@ export default function SerialNumbersPage() {
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Serial Numbers</span>
+          <span className="text-sm">Serials</span>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Barcode className="w-6 h-6 text-indigo-500" /> Serial Numbers</h1>
-          <Button className="gap-2 bg-indigo-600"><Plus className="w-4 h-4" /> Add Serial</Button>
+      <main className="max-w-4xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><KeyRound className="w-6 h-6 text-purple-500" /> Serial Numbers</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
         </div>
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl border text-sm w-full" placeholder="Search serial numbers..." />
-        </div>
-        <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-          <Tag className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No serial numbers yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Track individual items with serial numbers</p>
-        </div>
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 text-center">
+            <p className="text-2xl font-bold">{trackable.length}</p>
+            <p className="text-sm text-muted-foreground">Products with serial tracking</p>
+          </div>
+        )}
       </main>
     </div>
   )

@@ -35,7 +35,10 @@ export default function InventoryPage() {
       'Total Stock Value: KSh ' + (data.stockValue || 0).toLocaleString(),
       '',
       '© 2026 IntelliWavve - All Rights Reserved'
-    ].join('\n')
+    { name: 'Barcode', href: '/wavecore-erp/inventory/barcode', icon: Scan, color: 'from-purple-500 to-violet-600', desc: 'Scan products' },
+  { name: 'Batches', href: '/wavecore-erp/inventory/batches', icon: Boxes, color: 'from-teal-500 to-cyan-600', desc: 'Batch tracking' },
+  { name: 'Serials', href: '/wavecore-erp/inventory/serials', icon: KeyRound, color: 'from-indigo-500 to-blue-600', desc: 'Serial numbers' },
+  { name: 'Adjustments', href: '/wavecore-erp/inventory/adjustments', icon: Sliders, color: 'from-amber-500 to-orange-600', desc: 'Stock adjustments' },  ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -47,7 +50,10 @@ export default function InventoryPage() {
     { name: 'Warehouses', href: '/wavecore-erp/inventory/warehouses', icon: Warehouse, color: 'from-blue-500 to-indigo-600', desc: 'Storage locations' },
     { name: 'Movements', href: '/wavecore-erp/inventory/movements', icon: ArrowRight, color: 'from-green-500 to-emerald-600', desc: 'Stock movements' },
     { name: 'Summary', href: '/wavecore-erp/inventory/summary', icon: BarChart3, color: 'from-violet-500 to-purple-600', desc: 'Inventory analytics' },
-  ]
+  { name: 'Barcode', href: '/wavecore-erp/inventory/barcode', icon: Scan, color: 'from-purple-500 to-violet-600', desc: 'Scan products' },
+  { name: 'Batches', href: '/wavecore-erp/inventory/batches', icon: Boxes, color: 'from-teal-500 to-cyan-600', desc: 'Batch tracking' },
+  { name: 'Serials', href: '/wavecore-erp/inventory/serials', icon: KeyRound, color: 'from-indigo-500 to-blue-600', desc: 'Serial numbers' },
+  { name: 'Adjustments', href: '/wavecore-erp/inventory/adjustments', icon: Sliders, color: 'from-amber-500 to-orange-600', desc: 'Stock adjustments' },  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
