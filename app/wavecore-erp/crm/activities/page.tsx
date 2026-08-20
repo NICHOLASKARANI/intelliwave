@@ -22,6 +22,15 @@ export default function ActivitiesPage() {
     fetchActivities()
   }, [])
 
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Activities', '='.repeat(50), 'Generated: ' + new Date().toLocaleString(), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'activities.pdf'; a.click()
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">

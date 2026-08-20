@@ -83,6 +83,15 @@ export default function CRMPage() {
     { label: 'Record Activity', href: '/wavecore-erp/crm/activities/create', icon: Activity, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950' },
   ]
 
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - CRM Dashboard', '='.repeat(50), 'Generated: ' + new Date().toLocaleString(), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'crm.pdf'; a.click()
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       {/* Header */}
@@ -131,7 +140,16 @@ export default function CRMPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
               {quickActions.map((action) => {
                 const Icon = action.icon
-                return (
+              
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - CRM Dashboard', '='.repeat(50), 'Generated: ' + new Date().toLocaleString(), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'crm.pdf'; a.click()
+  }
+
+  return (
                   <Link key={action.label} href={action.href}
                     className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-indigo-300 hover:shadow-lg transition-all text-center">
                     <div className={`w-12 h-12 rounded-xl ${action.bg} flex items-center justify-center`}>
@@ -228,6 +246,15 @@ export default function CRMPage() {
 }
 
 function KPICard({ label, value, icon: Icon, color, href }: { label: string; value: number | string; icon: any; color: string; href: string }) {
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - CRM Dashboard', '='.repeat(50), 'Generated: ' + new Date().toLocaleString(), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'crm.pdf'; a.click()
+  }
+
   return (
     <Link href={href} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all cursor-pointer">
       <Icon className={`w-5 h-5 ${color} mb-3`} />
