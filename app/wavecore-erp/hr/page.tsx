@@ -1,12 +1,12 @@
 'use client'
 
-import { Briefcase, GraduationCap, Heart, UserPlus, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Briefcase, GraduationCap, Heart, UserPlus, 
+import { 
   Users, Calendar, Wallet, Clock, Download, Loader2,
   TrendingUp, Briefcase, Heart, Award, Star, UserPlus,
-  Building2, CheckCircle, AlertCircle, BarChart3
+  Building2, CheckCircle, AlertCircle, BarChart3, GraduationCap
 } from 'lucide-react'
 
 export default function HRPage() {
@@ -36,12 +36,7 @@ export default function HRPage() {
       'Attendance Today: ' + (data.attendance || 0),
       '',
       '© 2026 IntelliWavve - All Rights Reserved'
-    { name: 'Recruitment', href: '/wavecore-erp/hr/recruitment', icon: Briefcase, color: 'from-blue-500 to-indigo-600', desc: 'Job postings' },
-  { name: 'Performance', href: '/wavecore-erp/hr/performance', icon: Star, color: 'from-amber-500 to-orange-600', desc: 'Reviews & goals' },
-  { name: 'Training', href: '/wavecore-erp/hr/training', icon: GraduationCap, color: 'from-purple-500 to-violet-600', desc: 'Development' },
-  { name: 'Departments', href: '/wavecore-erp/hr/departments', icon: Building2, color: 'from-indigo-500 to-blue-600', desc: 'Org structure' },
-  { name: 'Benefits', href: '/wavecore-erp/hr/benefits', icon: Heart, color: 'from-pink-500 to-rose-600', desc: 'Employee benefits' },
-  { name: 'Onboarding', href: '/wavecore-erp/hr/onboarding', icon: UserPlus, color: 'from-green-500 to-emerald-600', desc: 'New hire workflow' },  ].join('\n')
+    ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -53,12 +48,13 @@ export default function HRPage() {
     { name: 'Attendance', href: '/wavecore-erp/hr/attendance', icon: Clock, color: 'from-green-500 to-emerald-600', desc: 'Track time' },
     { name: 'Payroll', href: '/wavecore-erp/hr/payroll', icon: Wallet, color: 'from-purple-500 to-violet-600', desc: 'Salary processing' },
     { name: 'Leave', href: '/wavecore-erp/hr/leaves', icon: Calendar, color: 'from-amber-500 to-orange-600', desc: 'Leave management' },
-  { name: 'Recruitment', href: '/wavecore-erp/hr/recruitment', icon: Briefcase, color: 'from-blue-500 to-indigo-600', desc: 'Job postings' },
-  { name: 'Performance', href: '/wavecore-erp/hr/performance', icon: Star, color: 'from-amber-500 to-orange-600', desc: 'Reviews & goals' },
-  { name: 'Training', href: '/wavecore-erp/hr/training', icon: GraduationCap, color: 'from-purple-500 to-violet-600', desc: 'Development' },
-  { name: 'Departments', href: '/wavecore-erp/hr/departments', icon: Building2, color: 'from-indigo-500 to-blue-600', desc: 'Org structure' },
-  { name: 'Benefits', href: '/wavecore-erp/hr/benefits', icon: Heart, color: 'from-pink-500 to-rose-600', desc: 'Employee benefits' },
-  { name: 'Onboarding', href: '/wavecore-erp/hr/onboarding', icon: UserPlus, color: 'from-green-500 to-emerald-600', desc: 'New hire workflow' },  ]
+    { name: 'Recruitment', href: '/wavecore-erp/hr/recruitment', icon: Briefcase, color: 'from-cyan-500 to-blue-600', desc: 'Job postings' },
+    { name: 'Performance', href: '/wavecore-erp/hr/performance', icon: Star, color: 'from-yellow-500 to-amber-600', desc: 'Reviews & goals' },
+    { name: 'Training', href: '/wavecore-erp/hr/training', icon: GraduationCap, color: 'from-violet-500 to-purple-600', desc: 'Development' },
+    { name: 'Departments', href: '/wavecore-erp/hr/departments', icon: Building2, color: 'from-indigo-500 to-blue-600', desc: 'Org structure' },
+    { name: 'Benefits', href: '/wavecore-erp/hr/benefits', icon: Heart, color: 'from-pink-500 to-rose-600', desc: 'Employee benefits' },
+    { name: 'Onboarding', href: '/wavecore-erp/hr/onboarding', icon: UserPlus, color: 'from-emerald-500 to-green-600', desc: 'New hire workflow' },
+  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -79,7 +75,7 @@ export default function HRPage() {
               <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3">
                 <Users className="w-8 h-8" /> Human Resources
               </h1>
-              <p className="text-white/80 text-sm">Employees • Attendance • Payroll • Leave</p>
+              <p className="text-white/80 text-sm">10 Modules • Recruitment • Performance • Training</p>
             </div>
             <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">
               <Download className="w-4 h-4" /> PDF
@@ -95,7 +91,7 @@ export default function HRPage() {
               <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
                 <Users className="w-8 h-8 text-blue-500 mb-3" />
                 <p className="text-3xl font-extrabold">{data.employees || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Active Employees</p>
+                <p className="text-xs text-muted-foreground mt-1">Employees</p>
               </div>
               <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
                 <Building2 className="w-8 h-8 text-indigo-500 mb-3" />
@@ -105,7 +101,7 @@ export default function HRPage() {
               <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
                 <Wallet className="w-8 h-8 text-purple-500 mb-3" />
                 <p className="text-3xl font-extrabold">KSh {(data.payroll || 0).toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">Monthly Payroll</p>
+                <p className="text-xs text-muted-foreground mt-1">Payroll</p>
               </div>
               <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
                 <Calendar className="w-8 h-8 text-amber-500 mb-3" />
@@ -115,22 +111,22 @@ export default function HRPage() {
               <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
                 <Clock className="w-8 h-8 text-green-500 mb-3" />
                 <p className="text-3xl font-extrabold">{data.attendance || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Today's Attendance</p>
+                <p className="text-xs text-muted-foreground mt-1">Attendance</p>
               </div>
             </div>
 
-            <h2 className="text-xl font-bold mb-4">HR Modules</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <h2 className="text-xl font-bold mb-4">HR Modules (10)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {modules.map(module => {
                 const Icon = module.icon
                 return (
                   <Link key={module.name} href={module.href}
-                    className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-2xl transition-all group">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${module.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                      <Icon className="w-7 h-7 text-white" />
+                    className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-2xl transition-all group">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${module.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <p className="font-bold text-lg">{module.name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{module.desc}</p>
+                    <p className="font-bold text-sm">{module.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{module.desc}</p>
                   </Link>
                 )
               })}
