@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Briefcase, GraduationCap, Heart, UserPlus, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
+import { Briefcase, GraduationCap, Heart, UserPlus, 
   Users, Calendar, Wallet, Clock, Download, Loader2,
   TrendingUp, Briefcase, Heart, Award, Star, UserPlus,
   Building2, CheckCircle, AlertCircle, BarChart3
@@ -36,7 +36,12 @@ export default function HRPage() {
       'Attendance Today: ' + (data.attendance || 0),
       '',
       '© 2026 IntelliWavve - All Rights Reserved'
-    ].join('\n')
+    { name: 'Recruitment', href: '/wavecore-erp/hr/recruitment', icon: Briefcase, color: 'from-blue-500 to-indigo-600', desc: 'Job postings' },
+  { name: 'Performance', href: '/wavecore-erp/hr/performance', icon: Star, color: 'from-amber-500 to-orange-600', desc: 'Reviews & goals' },
+  { name: 'Training', href: '/wavecore-erp/hr/training', icon: GraduationCap, color: 'from-purple-500 to-violet-600', desc: 'Development' },
+  { name: 'Departments', href: '/wavecore-erp/hr/departments', icon: Building2, color: 'from-indigo-500 to-blue-600', desc: 'Org structure' },
+  { name: 'Benefits', href: '/wavecore-erp/hr/benefits', icon: Heart, color: 'from-pink-500 to-rose-600', desc: 'Employee benefits' },
+  { name: 'Onboarding', href: '/wavecore-erp/hr/onboarding', icon: UserPlus, color: 'from-green-500 to-emerald-600', desc: 'New hire workflow' },  ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -48,7 +53,12 @@ export default function HRPage() {
     { name: 'Attendance', href: '/wavecore-erp/hr/attendance', icon: Clock, color: 'from-green-500 to-emerald-600', desc: 'Track time' },
     { name: 'Payroll', href: '/wavecore-erp/hr/payroll', icon: Wallet, color: 'from-purple-500 to-violet-600', desc: 'Salary processing' },
     { name: 'Leave', href: '/wavecore-erp/hr/leaves', icon: Calendar, color: 'from-amber-500 to-orange-600', desc: 'Leave management' },
-  ]
+  { name: 'Recruitment', href: '/wavecore-erp/hr/recruitment', icon: Briefcase, color: 'from-blue-500 to-indigo-600', desc: 'Job postings' },
+  { name: 'Performance', href: '/wavecore-erp/hr/performance', icon: Star, color: 'from-amber-500 to-orange-600', desc: 'Reviews & goals' },
+  { name: 'Training', href: '/wavecore-erp/hr/training', icon: GraduationCap, color: 'from-purple-500 to-violet-600', desc: 'Development' },
+  { name: 'Departments', href: '/wavecore-erp/hr/departments', icon: Building2, color: 'from-indigo-500 to-blue-600', desc: 'Org structure' },
+  { name: 'Benefits', href: '/wavecore-erp/hr/benefits', icon: Heart, color: 'from-pink-500 to-rose-600', desc: 'Employee benefits' },
+  { name: 'Onboarding', href: '/wavecore-erp/hr/onboarding', icon: UserPlus, color: 'from-green-500 to-emerald-600', desc: 'New hire workflow' },  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
