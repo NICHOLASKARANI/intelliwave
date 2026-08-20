@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Building2, Truck, Receipt, Percent, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import {
+import { Building2, Truck, Receipt, Percent,
   LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
   Users, Package, Calculator, FileText, BarChart3, Bot, Workflow, Globe,
   Activity, Building2, Factory, Briefcase, FolderKanban, HeadphonesIcon,
