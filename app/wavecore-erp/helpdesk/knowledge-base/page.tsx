@@ -1,26 +1,51 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Globe, Search, Plus, BookOpen, Trash2, Star } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { BookOpen, Download, Plus, Trash2, Search } from 'lucide-react'
+
+interface Article {
+  id: string
+  title: string
+  category: string
+  views: number
+}
 
 export default function KnowledgeBasePage() {
-  const [articles, setArticles] = useState<any[]>([])
-  const [search, setSearch] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
+  const [articles, setArticles] = useState<Article[]>([])
   const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
   const [category, setCategory] = useState('General')
+  const [search, setSearch] = useState('')
 
-  const handleAdd = () => {
+  useEffect(() => {
+    const saved = localStorage.getItem('kb-articles')
+    if (saved) setArticles(JSON.parse(saved))
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('kb-articles', JSON.stringify(articles))
+  }, [articles])
+
+  const addArticle = () => {
     if (!title) return
-    setArticles([{ id: Date.now().toString(), title, content, category, views: 0, helpful: 0 }, ...articles])
-    setShowAdd(false); setTitle(''); setContent('')
+    setArticles(prev => [...prev, { id: Date.now().toString(), title, category, views: 0 }])
+    setTitle('')
   }
 
-  const filtered = articles.filter(a => a.title?.toLowerCase().includes(search.toLowerCase()))
+  const deleteArticle = (id: string) => {
+    setArticles(prev => prev.filter(a => a.id !== id))
+  }
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Knowledge Base', '='.repeat(50), `Articles: ${articles.length}`, '', ...articles.map((a, i) => `${i+1}. ${a.title} (${a.category})`), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'knowledge-base.pdf'; a.click()
+  }
+
+  const filtered = articles.filter(a => a.title.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -33,50 +58,24 @@ export default function KnowledgeBasePage() {
           <span className="text-sm">Knowledge Base</span>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><BookOpen className="w-6 h-6 text-blue-500" /> Knowledge Base</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-blue-600"><Plus className="w-4 h-4" /> Add Article</Button>
+      <main className="max-w-4xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><BookOpen className="w-6 h-6 text-purple-500" /> Knowledge Base</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
         </div>
-
-        {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Article title *" />
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-4 py-2.5 rounded-xl border">
-                <option>General</option><option>Billing</option><option>Technical</option><option>Account</option>
-              </select>
+        <div className="flex gap-2 mb-4">
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl border" placeholder="Article title" />
+          <button onClick={addArticle} className="px-4 py-2.5 rounded-xl bg-purple-600 text-white"><Plus className="w-4 h-4" /></button>
+        </div>
+        <div className="space-y-2">
+          {filtered.map(a => (
+            <div key={a.id} className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-neutral-900 border">
+              <div><p className="font-medium">{a.title}</p><p className="text-xs text-muted-foreground">{a.category} • {a.views} views</p></div>
+              <button onClick={() => deleteArticle(a.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button>
             </div>
-            <textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" rows={5} placeholder="Article content" />
-            <Button onClick={handleAdd} className="mt-4">Publish Article</Button>
-          </div>
-        )}
-
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-3 rounded-xl border text-sm w-full" placeholder="Search knowledge base..." />
+          ))}
+          {filtered.length === 0 && <p className="text-center py-8 text-muted-foreground">No articles</p>}
         </div>
-
-        {filtered.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-4">
-            {filtered.map(a => (
-              <div key={a.id} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg">
-                <p className="font-bold">{a.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">{a.category}</p>
-                <p className="text-sm text-muted-foreground mt-3 line-clamp-3">{a.content}</p>
-                <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {a.views} views</span>
-                  <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {a.helpful} helpful</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No articles yet</p>
-          </div>
-        )}
       </main>
     </div>
   )
