@@ -3,57 +3,73 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Users, Plus, Search, Trash2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Users, Plus, Search, Download, Loader2, Edit3, Trash2, UserPlus } from 'lucide-react'
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
-  const [formData, setFormData] = useState({
-    employeeId: '', firstName: '', lastName: '', email: '', phone: '', department: '', position: '', salary: '',
-  })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [editing, setEditing] = useState<any>(null)
+  const [showEdit, setShowEdit] = useState(false)
 
-  async function fetchEmployees() {
-    setLoading(true)
+  useEffect(() => {
+    fetchEmployees()
+  }, [])
+
+  const fetchEmployees = async () => {
     try {
       const res = await fetch('/api/wavecore/hr/employees')
-      if (res.ok) { const data = await res.json(); setEmployees(data.employees || []) }
+      if (res.ok) {
+        const data = await res.json()
+        setEmployees(data.employees || [])
+      }
     } catch {} finally { setLoading(false) }
-  }
-
-  useEffect(() => { fetchEmployees() }, [])
-
-  const update = (field: string, value: string) => setFormData({ ...formData, [field]: value })
-
-  const handleAdd = async () => {
-    setError(''); setSuccess('')
-    if (!formData.firstName || !formData.lastName || !formData.employeeId) {
-      setError('Employee ID, First Name, and Last Name required'); return
-    }
-    try {
-      const res = await fetch('/api/wavecore/hr/employees', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, salary: parseFloat(formData.salary) || 0 }),
-      })
-      const data = await res.json()
-      if (res.ok) { setSuccess('Employee added!'); setShowAdd(false); setFormData({ employeeId: '', firstName: '', lastName: '', email: '', phone: '', department: '', position: '', salary: '' }); fetchEmployees() }
-      else { setError(data.error || 'Failed') }
-    } catch { setError('Network error') }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this employee?')) return
-    try { await fetch(`/api/wavecore/hr/employees/${id}`, { method: 'DELETE' }); fetchEmployees() } catch {}
+    try {
+      await fetch(`/api/wavecore/hr/employees?id=${id}`, { method: 'DELETE' })
+      fetchEmployees()
+    } catch {}
   }
 
-  const filtered = employees.filter(e =>
-    e.firstName?.toLowerCase().includes(search.toLowerCase()) ||
-    e.lastName?.toLowerCase().includes(search.toLowerCase()) ||
-    e.email?.toLowerCase().includes(search.toLowerCase())
+  const handleSaveEdit = async () => {
+    if (!editing) return
+    try {
+      await fetch('/api/wavecore/hr/employees', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editing),
+      })
+      setShowEdit(false)
+      fetchEmployees()
+    } catch {}
+  }
+
+  const handleDownloadPDF = () => {
+    const content = [
+      'WaveCore ERP - Employees',
+      '='.repeat(50),
+      'Generated: ' + new Date().toLocaleString(),
+      'Total: ' + filtered.length,
+      '='.repeat(50),
+      '',
+      ...filtered.map((e: any, i) => 
+        `Employee #${i+1}\n  Name: ${e.firstName} ${e.lastName}\n  ID: ${e.employeeId || 'N/A'}\n  Email: ${e.email || 'N/A'}\n  Department: ${e.department || 'N/A'}\n` + '-'.repeat(30)
+      ),
+      '',
+      '© 2026 IntelliWavve'
+    ].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'employees.pdf'; a.click()
+  }
+
+  const filtered = employees.filter((e: any) =>
+    (e.firstName + ' ' + e.lastName).toLowerCase().includes(search.toLowerCase()) ||
+    e.employeeId?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -67,63 +83,60 @@ export default function EmployeesPage() {
           <span className="text-sm">Employees</span>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6 text-blue-500" /> Employees</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-blue-600"><Plus className="w-4 h-4" /> Add Employee</Button>
+      <main className="max-w-6xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6 text-blue-500" /> Employees ({filtered.length})</h1>
+          <div className="flex gap-2">
+            <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm"><UserPlus className="w-4 h-4" /> Add</button>
+          </div>
         </div>
-
-        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
-        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {success}</div>}
-
-        {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <h3 className="font-bold mb-4">Add Employee</h3>
-            <div className="grid md:grid-cols-4 gap-4">
-              <input type="text" value={formData.employeeId} onChange={(e) => update('employeeId', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Employee ID *" />
-              <input type="text" value={formData.firstName} onChange={(e) => update('firstName', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="First Name *" />
-              <input type="text" value={formData.lastName} onChange={(e) => update('lastName', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Last Name *" />
-              <input type="text" value={formData.department} onChange={(e) => update('department', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Department" />
-              <input type="email" value={formData.email} onChange={(e) => update('email', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Email" />
-              <input type="text" value={formData.phone} onChange={(e) => update('phone', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Phone" />
-              <input type="text" value={formData.position} onChange={(e) => update('position', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Position" />
-              <input type="number" value={formData.salary} onChange={(e) => update('salary', e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Salary" />
-            </div>
-            <Button onClick={handleAdd} className="mt-4">Add Employee</Button>
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search employees..." />
+        </div>
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b bg-neutral-50 dark:bg-neutral-800">
+                <th className="p-3 text-left">Employee</th><th className="p-3">ID</th><th className="p-3">Department</th><th className="p-3 text-center">Actions</th>
+              </tr></thead>
+              <tbody>
+                {filtered.map((e: any) => (
+                  <tr key={e.id} className="border-b hover:bg-neutral-50">
+                    <td className="p-3 font-medium">{e.firstName} {e.lastName}</td>
+                    <td className="p-3">{e.employeeId || '-'}</td>
+                    <td className="p-3">{e.department || '-'}</td>
+                    <td className="p-3"><div className="flex justify-center gap-2">
+                      <button onClick={() => { setEditing(e); setShowEdit(true) }} className="p-1.5 text-blue-500"><Edit3 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(e.id)} className="p-1.5 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                    </div></td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No employees</td></tr>}
+              </tbody>
+            </table>
           </div>
         )}
-
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl border text-sm w-full" placeholder="Search employees..." />
-        </div>
-
-        {loading ? <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></div> :
-          filtered.length > 0 ? (
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b bg-neutral-50 dark:bg-neutral-800">
-                  <th className="text-left p-4">ID</th><th className="text-left p-4">Name</th>
-                  <th className="text-left p-4">Email</th><th className="text-left p-4">Department</th>
-                  <th className="text-left p-4">Position</th><th className="text-right p-4">Salary</th>
-                  <th className="text-center p-4">Actions</th>
-                </tr></thead>
-                <tbody>{filtered.map(e => (
-                  <tr key={e.id} className="border-b hover:bg-neutral-50 dark:hover:bg-neutral-800">
-                    <td className="p-4 font-mono">{e.employeeId}</td>
-                    <td className="p-4 font-medium">{e.firstName} {e.lastName}</td>
-                    <td className="p-4">{e.email || '-'}</td>
-                    <td className="p-4">{e.department || '-'}</td>
-                    <td className="p-4">{e.position || '-'}</td>
-                    <td className="p-4 text-right">{e.salary?.toLocaleString()}</td>
-                    <td className="p-4 text-center"><button onClick={() => handleDelete(e.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500"><Trash2 className="w-4 h-4" /></button></td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-          ) : <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border"><Users className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>No employees yet</p></div>
-        }
       </main>
+
+      {showEdit && editing && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Edit Employee</h2>
+            <div className="space-y-3">
+              <input type="text" value={editing.firstName} onChange={(e) => setEditing({...editing, firstName: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" placeholder="First Name" />
+              <input type="text" value={editing.lastName} onChange={(e) => setEditing({...editing, lastName: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Last Name" />
+              <input type="text" value={editing.email} onChange={(e) => setEditing({...editing, email: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Email" />
+              <input type="text" value={editing.department} onChange={(e) => setEditing({...editing, department: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Department" />
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={handleSaveEdit} className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-medium">Save</button>
+              <button onClick={() => setShowEdit(false)} className="flex-1 py-2.5 rounded-xl border font-medium">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
