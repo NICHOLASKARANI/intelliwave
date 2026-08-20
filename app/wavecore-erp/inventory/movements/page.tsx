@@ -3,23 +3,26 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Truck, Download, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowRight, Download, Loader2 } from 'lucide-react'
 
 export default function MovementsPage() {
   const [movements, setMovements] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/wavecore/inventory/movements').then(r => r.json()).then(d => setMovements(d.movements || [])).catch(() => {}).finally(() => setLoading(false))
+    fetch('/api/wavecore/inventory/movements')
+      .then(r => r.json())
+      .then(d => setMovements(d.movements || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
-  const handleExport = () => {
-    const csv = 'Product,Type,Quantity,Date\n' + movements.map(m => `${m.product_name},${m.type},${m.quantity},${new Date(m.createdAt).toLocaleString()}`).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Stock Movements', '='.repeat(50), `Total: ${movements.length}`, '', ...movements.map((m, i) => `${i+1}. ${m.type || 'Movement'} - Qty: ${m.quantity || 0} - ${m.date || ''}`), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = 'movements.csv'; a.click()
+    a.href = url; a.download = 'movements.pdf'; a.click()
   }
 
   return (
@@ -30,31 +33,25 @@ export default function MovementsPage() {
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Stock Movements</span>
+          <span className="text-sm">Movements</span>
         </div>
       </header>
       <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold">Stock Movements</h1>
-          {movements.length > 0 && <Button variant="outline" onClick={handleExport}><Download className="w-4 h-4 mr-1" /> Export</Button>}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><ArrowRight className="w-6 h-6 text-green-500" /> Stock Movements ({movements.length})</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium"><Download className="w-4 h-4" /> PDF</button>
         </div>
-        {loading ? <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-500" /></div> :
-          movements.length > 0 ? (
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b bg-neutral-50 dark:bg-neutral-800"><th className="text-left p-4">Product</th><th className="text-left p-4">Type</th><th className="text-right p-4">Quantity</th><th className="text-left p-4">Date</th></tr></thead>
-                <tbody>{movements.map(m => (
-                  <tr key={m.id} className="border-b">
-                    <td className="p-4 font-medium">{m.product_name}</td>
-                    <td className="p-4"><span className={`px-2 py-1 text-xs rounded-full ${m.type === 'RECEIPT' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{m.type}</span></td>
-                    <td className={`p-4 text-right font-bold ${m.type === 'RECEIPT' ? 'text-green-600' : 'text-red-600'}`}>{m.type === 'RECEIPT' ? '+' : '-'}{m.quantity}</td>
-                    <td className="p-4 text-muted-foreground">{new Date(m.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-          ) : <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border"><Truck className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>No movements yet</p></div>
-        }
+        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+            {movements.map((m, i) => (
+              <div key={i} className="flex justify-between p-4 border-b">
+                <span className="font-medium">{m.type || 'Movement'}</span>
+                <span className={m.quantity > 0 ? 'text-green-600' : 'text-red-500'}>{m.quantity || 0}</span>
+              </div>
+            ))}
+            {movements.length === 0 && <p className="text-center py-8 text-muted-foreground">No movements</p>}
+          </div>
+        )}
       </main>
     </div>
   )
