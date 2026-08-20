@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Calculator, Calendar, Monitor, Gauge, AlertTriangle, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
+import { Calculator, Calendar, Monitor, Gauge, AlertTriangle, 
   Factory, ClipboardList, Boxes, KeyRound, Wrench, Route,
   CheckCircle, AlertTriangle, Download, Loader2, TrendingUp,
   BarChart3, Cog, Hammer, Layers, Settings
@@ -35,7 +35,11 @@ export default function ManufacturingPage() {
       'Efficiency: ' + (data.efficiency || '100%'),
       '',
       '© 2026 IntelliWavve - All Rights Reserved'
-    ].join('\n')
+    { name: 'MRP', href: '/wavecore-erp/manufacturing/mrp', icon: Calculator, color: 'from-indigo-500 to-blue-600', desc: 'Material planning' },
+  { name: 'Scheduling', href: '/wavecore-erp/manufacturing/scheduling', icon: Calendar, color: 'from-blue-500 to-cyan-600', desc: 'Production schedule' },
+  { name: 'Shop Floor', href: '/wavecore-erp/manufacturing/shop-floor', icon: Monitor, color: 'from-emerald-500 to-green-600', desc: 'Real-time control' },
+  { name: 'Capacity', href: '/wavecore-erp/manufacturing/capacity', icon: Gauge, color: 'from-purple-500 to-violet-600', desc: 'Capacity planning' },
+  { name: 'Scrap', href: '/wavecore-erp/manufacturing/scrap', icon: AlertTriangle, color: 'from-red-500 to-rose-600', desc: 'Scrap & rework' },  ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -49,7 +53,11 @@ export default function ManufacturingPage() {
     { name: 'Quality', href: '/wavecore-erp/manufacturing/quality', icon: CheckCircle, color: 'from-green-500 to-emerald-600', desc: 'Quality control' },
     { name: 'Maintenance', href: '/wavecore-erp/manufacturing/maintenance', icon: Wrench, color: 'from-red-500 to-rose-600', desc: 'Equipment maintenance' },
     { name: 'Routing', href: '/wavecore-erp/manufacturing/routing', icon: Route, color: 'from-teal-500 to-cyan-600', desc: 'Production routing' },
-  ]
+  { name: 'MRP', href: '/wavecore-erp/manufacturing/mrp', icon: Calculator, color: 'from-indigo-500 to-blue-600', desc: 'Material planning' },
+  { name: 'Scheduling', href: '/wavecore-erp/manufacturing/scheduling', icon: Calendar, color: 'from-blue-500 to-cyan-600', desc: 'Production schedule' },
+  { name: 'Shop Floor', href: '/wavecore-erp/manufacturing/shop-floor', icon: Monitor, color: 'from-emerald-500 to-green-600', desc: 'Real-time control' },
+  { name: 'Capacity', href: '/wavecore-erp/manufacturing/capacity', icon: Gauge, color: 'from-purple-500 to-violet-600', desc: 'Capacity planning' },
+  { name: 'Scrap', href: '/wavecore-erp/manufacturing/scrap', icon: AlertTriangle, color: 'from-red-500 to-rose-600', desc: 'Scrap & rework' },  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
