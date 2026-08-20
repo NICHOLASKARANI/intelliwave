@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Bot, Star, Users, FileText, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
+import { Bot, Star, Users, FileText, 
   HeadphonesIcon, Ticket, BookOpen, BarChart3, MessageSquare,
   Download, Loader2, Plus, CheckCircle, Clock, TrendingUp
 } from 'lucide-react'
@@ -28,7 +28,10 @@ export default function HelpdeskPage() {
       'Total Tickets: ' + (data.tickets?.length || 0),
       '',
       '© 2026 IntelliWavve'
-    ].join('\n')
+    { name: 'AI Classify', href: '/wavecore-erp/helpdesk/ai-classification', icon: Bot, color: 'from-violet-500 to-purple-600', desc: 'AI ticket sorting' },
+  { name: 'CSAT', href: '/wavecore-erp/helpdesk/csat', icon: Star, color: 'from-amber-500 to-yellow-600', desc: 'Satisfaction surveys' },
+  { name: 'Agents', href: '/wavecore-erp/helpdesk/agents', icon: Users, color: 'from-cyan-500 to-blue-600', desc: 'Performance' },
+  { name: 'Templates', href: '/wavecore-erp/helpdesk/templates', icon: FileText, color: 'from-teal-500 to-emerald-600', desc: 'Auto-responses' },  ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -41,7 +44,10 @@ export default function HelpdeskPage() {
     { name: 'SLA Reports', href: '/wavecore-erp/helpdesk/sla', icon: BarChart3, color: 'from-green-500 to-emerald-600', desc: 'Service levels' },
     { name: 'Live Chat', href: '/wavecore-erp/helpdesk/chat', icon: MessageSquare, color: 'from-amber-500 to-orange-600', desc: 'Real-time support' },
     { name: 'Reports', href: '/wavecore-erp/helpdesk/reports', icon: TrendingUp, color: 'from-pink-500 to-rose-600', desc: 'Analytics' },
-  ]
+  { name: 'AI Classify', href: '/wavecore-erp/helpdesk/ai-classification', icon: Bot, color: 'from-violet-500 to-purple-600', desc: 'AI ticket sorting' },
+  { name: 'CSAT', href: '/wavecore-erp/helpdesk/csat', icon: Star, color: 'from-amber-500 to-yellow-600', desc: 'Satisfaction surveys' },
+  { name: 'Agents', href: '/wavecore-erp/helpdesk/agents', icon: Users, color: 'from-cyan-500 to-blue-600', desc: 'Performance' },
+  { name: 'Templates', href: '/wavecore-erp/helpdesk/templates', icon: FileText, color: 'from-teal-500 to-emerald-600', desc: 'Auto-responses' },  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
