@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { DollarSign, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
+import { DollarSign, 
   FolderKanban, Download, Loader2, TrendingUp, CheckCircle,
   Clock, Users, BarChart3, Plus, Calendar, GanttChartSquare,
   Timer, GitBranch, Target, FileText
@@ -29,7 +29,7 @@ export default function ProjectsPage() {
       'Total Projects: ' + (data.projects?.length || 0),
       '',
       '© 2026 IntelliWavve'
-    ].join('\n')
+    { name: 'Budget', href: '/wavecore-erp/projects/budget', icon: DollarSign, color: 'from-emerald-500 to-green-600', desc: 'Budget tracking' },  ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -44,7 +44,7 @@ export default function ProjectsPage() {
     { name: 'Tasks', href: '/wavecore-erp/projects/tasks', icon: GitBranch, color: 'from-cyan-500 to-teal-600', desc: 'Tasks & dependencies' },
     { name: 'Milestones', href: '/wavecore-erp/projects/milestones', icon: Target, color: 'from-pink-500 to-rose-600', desc: 'Key milestones' },
     { name: 'Reports', href: '/wavecore-erp/projects/reports', icon: FileText, color: 'from-indigo-500 to-blue-600', desc: 'Project reports' },
-  ]
+  { name: 'Budget', href: '/wavecore-erp/projects/budget', icon: DollarSign, color: 'from-emerald-500 to-green-600', desc: 'Budget tracking' },  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">

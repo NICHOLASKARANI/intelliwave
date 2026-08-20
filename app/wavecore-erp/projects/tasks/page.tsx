@@ -1,26 +1,52 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ListTodo, Plus, Trash2, CheckCircle, Circle, ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { GitBranch, Download, Plus, Trash2, CheckCircle, Clock } from 'lucide-react'
+
+interface Task {
+  id: string
+  title: string
+  dependency: string
+  status: 'PENDING' | 'COMPLETED'
+}
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<any[]>([])
-  const [showAdd, setShowAdd] = useState(false)
-  const [name, setName] = useState('')
-  const [priority, setPriority] = useState('MEDIUM')
-  const [dependsOn, setDependsOn] = useState('')
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [title, setTitle] = useState('')
+  const [dependency, setDependency] = useState('')
 
-  const handleAdd = () => {
-    if (!name) return
-    setTasks([{ id: Date.now().toString(), name, priority, dependsOn: dependsOn || null, completed: false }, ...tasks])
-    setShowAdd(false); setName(''); setDependsOn('')
+  useEffect(() => {
+    const saved = localStorage.getItem('project-tasks')
+    if (saved) setTasks(JSON.parse(saved))
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('project-tasks', JSON.stringify(tasks))
+  }, [tasks])
+
+  const addTask = () => {
+    if (!title) return
+    setTasks(prev => [...prev, { id: Date.now().toString(), title, dependency: dependency || 'None', status: 'PENDING' }])
+    setTitle('')
+    setDependency('')
   }
 
-  const toggleComplete = (id: string) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t))
+  const toggleStatus = (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'PENDING' ? 'COMPLETED' : 'PENDING' } : t))
+  }
+
+  const deleteTask = (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id))
+  }
+
+  const handleDownloadPDF = () => {
+    const content = ['WaveCore ERP - Tasks & Dependencies', '='.repeat(50), `Tasks: ${tasks.length}`, '', ...tasks.map((t, i) => `${i+1}. ${t.title} (Depends on: ${t.dependency}) - ${t.status}`), '', '© 2026 IntelliWavve'].join('\n')
+    const blob = new Blob([content], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'tasks.pdf'; a.click()
   }
 
   return (
@@ -34,54 +60,35 @@ export default function TasksPage() {
           <span className="text-sm">Tasks</span>
         </div>
       </header>
-      <main className="max-w-4xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><ListTodo className="w-6 h-6 text-purple-500" /> Tasks & Dependencies</h1>
-          <Button onClick={() => setShowAdd(!showAdd)} className="gap-2 bg-purple-600"><Plus className="w-4 h-4" /> Add Task</Button>
+      <main className="max-w-5xl mx-auto p-4 lg:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><GitBranch className="w-6 h-6 text-cyan-500" /> Tasks & Dependencies</h1>
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
         </div>
 
-        {showAdd && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
-            <div className="grid grid-cols-2 gap-3">
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="px-4 py-2.5 rounded-xl border" placeholder="Task name *" />
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="px-4 py-2.5 rounded-xl border">
-                <option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option>
-              </select>
-            </div>
-            <div className="mt-3">
-              <label className="block text-sm font-medium mb-2">Depends On (Task ID)</label>
-              <input type="text" value={dependsOn} onChange={(e) => setDependsOn(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="e.g., Task #1" />
-            </div>
-            <Button onClick={handleAdd} className="mt-3">Add Task</Button>
-          </div>
-        )}
+        <div className="flex gap-2 mb-6">
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl border" placeholder="Task title" />
+          <input type="text" value={dependency} onChange={(e) => setDependency(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl border" placeholder="Depends on..." />
+          <button onClick={addTask} className="px-4 py-2.5 rounded-xl bg-cyan-600 text-white"><Plus className="w-4 h-4" /></button>
+        </div>
 
-        {tasks.length > 0 ? (
-          <div className="space-y-3">
-            {tasks.map(t => (
-              <div key={t.id} className="p-4 rounded-xl border bg-white dark:bg-neutral-900 flex items-center gap-3">
-                <button onClick={() => toggleComplete(t.id)}>
-                  {t.completed ? <CheckCircle className="w-5 h-5 text-green-500" /> : <Circle className="w-5 h-5 text-muted-foreground" />}
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+          {tasks.map(t => (
+            <div key={t.id} className="flex justify-between items-center p-4 border-b">
+              <div className="flex items-center gap-3">
+                <button onClick={() => toggleStatus(t.id)} className={t.status === 'COMPLETED' ? 'text-green-500' : 'text-neutral-400'}>
+                  {t.status === 'COMPLETED' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                 </button>
-                <div className="flex-1">
-                  <p className={`font-medium ${t.completed ? 'line-through text-muted-foreground' : ''}`}>{t.name}</p>
-                  {t.dependsOn && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <ArrowRight className="w-3 h-3" /> Depends on: {t.dependsOn}
-                    </p>
-                  )}
+                <div>
+                  <p className={`font-medium ${t.status === 'COMPLETED' ? 'line-through text-muted-foreground' : ''}`}>{t.title}</p>
+                  <p className="text-xs text-muted-foreground">Depends on: {t.dependency}</p>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${t.priority === 'HIGH' ? 'bg-red-50 text-red-600' : t.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-600'}`}>{t.priority}</span>
-                <button className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <ListTodo className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No tasks yet</p>
-          </div>
-        )}
+              <button onClick={() => deleteTask(t.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button>
+            </div>
+          ))}
+          {tasks.length === 0 && <p className="text-center py-8 text-muted-foreground">No tasks</p>}
+        </div>
       </main>
     </div>
   )
