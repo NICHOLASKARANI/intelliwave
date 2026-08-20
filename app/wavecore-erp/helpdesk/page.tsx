@@ -1,11 +1,12 @@
 'use client'
 
-import { Bot, Star, Users, FileText, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Bot, Star, Users, FileText, 
+import { 
   HeadphonesIcon, Ticket, BookOpen, BarChart3, MessageSquare,
-  Download, Loader2, Plus, CheckCircle, Clock, TrendingUp
+  Download, Loader2, Plus, CheckCircle, Clock, TrendingUp,
+  Bot, Star, Users, FileText
 } from 'lucide-react'
 
 export default function HelpdeskPage() {
@@ -28,10 +29,7 @@ export default function HelpdeskPage() {
       'Total Tickets: ' + (data.tickets?.length || 0),
       '',
       '© 2026 IntelliWavve'
-    { name: 'AI Classify', href: '/wavecore-erp/helpdesk/ai-classification', icon: Bot, color: 'from-violet-500 to-purple-600', desc: 'AI ticket sorting' },
-  { name: 'CSAT', href: '/wavecore-erp/helpdesk/csat', icon: Star, color: 'from-amber-500 to-yellow-600', desc: 'Satisfaction surveys' },
-  { name: 'Agents', href: '/wavecore-erp/helpdesk/agents', icon: Users, color: 'from-cyan-500 to-blue-600', desc: 'Performance' },
-  { name: 'Templates', href: '/wavecore-erp/helpdesk/templates', icon: FileText, color: 'from-teal-500 to-emerald-600', desc: 'Auto-responses' },  ].join('\n')
+    ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -44,10 +42,11 @@ export default function HelpdeskPage() {
     { name: 'SLA Reports', href: '/wavecore-erp/helpdesk/sla', icon: BarChart3, color: 'from-green-500 to-emerald-600', desc: 'Service levels' },
     { name: 'Live Chat', href: '/wavecore-erp/helpdesk/chat', icon: MessageSquare, color: 'from-amber-500 to-orange-600', desc: 'Real-time support' },
     { name: 'Reports', href: '/wavecore-erp/helpdesk/reports', icon: TrendingUp, color: 'from-pink-500 to-rose-600', desc: 'Analytics' },
-  { name: 'AI Classify', href: '/wavecore-erp/helpdesk/ai-classification', icon: Bot, color: 'from-violet-500 to-purple-600', desc: 'AI ticket sorting' },
-  { name: 'CSAT', href: '/wavecore-erp/helpdesk/csat', icon: Star, color: 'from-amber-500 to-yellow-600', desc: 'Satisfaction surveys' },
-  { name: 'Agents', href: '/wavecore-erp/helpdesk/agents', icon: Users, color: 'from-cyan-500 to-blue-600', desc: 'Performance' },
-  { name: 'Templates', href: '/wavecore-erp/helpdesk/templates', icon: FileText, color: 'from-teal-500 to-emerald-600', desc: 'Auto-responses' },  ]
+    { name: 'AI Classify', href: '/wavecore-erp/helpdesk/ai-classification', icon: Bot, color: 'from-violet-500 to-purple-600', desc: 'AI ticket sorting' },
+    { name: 'CSAT', href: '/wavecore-erp/helpdesk/csat', icon: Star, color: 'from-amber-500 to-yellow-600', desc: 'Satisfaction surveys' },
+    { name: 'Agents', href: '/wavecore-erp/helpdesk/agents', icon: Users, color: 'from-cyan-500 to-blue-600', desc: 'Performance' },
+    { name: 'Templates', href: '/wavecore-erp/helpdesk/templates', icon: FileText, color: 'from-teal-500 to-emerald-600', desc: 'Auto-responses' },
+  ]
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -68,7 +67,7 @@ export default function HelpdeskPage() {
               <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3">
                 <HeadphonesIcon className="w-8 h-8" /> Helpdesk & Support
               </h1>
-              <p className="text-white/80 text-sm">Tickets • Knowledge Base • SLA • Chat</p>
+              <p className="text-white/80 text-sm">9 Modules • AI • CSAT • Templates</p>
             </div>
             <div className="flex gap-2">
               <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
@@ -85,7 +84,7 @@ export default function HelpdeskPage() {
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <Ticket className="w-8 h-8 text-blue-500 mb-3" />
                 <p className="text-3xl font-extrabold">{data.tickets?.length || 0}</p>
-                <p className="text-xs text-muted-foreground">Total Tickets</p>
+                <p className="text-xs text-muted-foreground">Tickets</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <CheckCircle className="w-8 h-8 text-green-500 mb-3" />
@@ -98,13 +97,13 @@ export default function HelpdeskPage() {
                 <p className="text-xs text-muted-foreground">Pending</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
-                <TrendingUp className="w-8 h-8 text-emerald-500 mb-3" />
-                <p className="text-3xl font-extrabold">100%</p>
-                <p className="text-xs text-muted-foreground">SLA</p>
+                <Star className="w-8 h-8 text-yellow-500 mb-3" />
+                <p className="text-3xl font-extrabold">4.8</p>
+                <p className="text-xs text-muted-foreground">CSAT Score</p>
               </div>
             </div>
 
-            <h2 className="text-xl font-bold mb-4">Support Modules (5)</h2>
+            <h2 className="text-xl font-bold mb-4">Support Modules (9)</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {modules.map(module => {
                 const Icon = module.icon
