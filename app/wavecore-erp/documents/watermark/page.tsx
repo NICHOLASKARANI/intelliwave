@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Stamp, Download, Upload, FileText, Loader2, CheckCircle, Eye } from 'lucide-react'
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib'
 
 interface WatermarkResult {
   url: string
@@ -51,48 +51,41 @@ export default function WatermarkPage() {
     setError('')
 
     try {
-      // Load original PDF
       const pdfDoc = await PDFDocument.load(fileBuffer)
       const pageCount = pdfDoc.getPageCount()
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
-      // Apply watermark to each page
       for (let i = 0; i < pageCount; i++) {
         const page = pdfDoc.getPage(i)
         const { width, height } = page.getSize()
 
-        // Diagonal watermark across the page
+        // Main diagonal watermark (using degrees function)
         page.drawText(watermarkText, {
-          x: width / 2 - 100,
+          x: width / 2 - 120,
           y: height / 2,
-          size: 50,
+          size: 45,
           font,
           color: rgb(0.7, 0.7, 0.7),
-          opacity: 0.3,
-          rotate: Math.PI / 6,
+          opacity: 0.25,
+          rotate: degrees(30),
         })
 
-        // Also add smaller watermark at bottom
-        page.drawText(watermarkText, {
+        // Bottom watermark
+        page.drawText(watermarkText + ' - WaveCore ERP', {
           x: 30,
-          y: 30,
-          size: 12,
+          y: 25,
+          size: 10,
           font,
           color: rgb(0.5, 0.5, 0.5),
-          opacity: 0.5,
+          opacity: 0.4,
         })
       }
 
-      // Save watermarked PDF
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([pdfBytes], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
 
-      setResult({
-        url,
-        name: fileName.replace('.pdf', '') + '-watermarked.pdf',
-        size: blob.size,
-      })
+      setResult({ url, name: fileName.replace('.pdf', '') + '-watermarked.pdf', size: blob.size })
       setApplying(false)
     } catch (err) {
       setError('Watermark failed: ' + (err as Error).message)
@@ -144,7 +137,6 @@ export default function WatermarkPage() {
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Stamp className="w-7 h-7" /> Watermark PDF
           </h1>
-          <p className="text-white/80 text-sm">Add text watermark to every page</p>
         </div>
 
         {error && <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm mb-4 text-center">{error}</div>}
@@ -158,11 +150,9 @@ export default function WatermarkPage() {
                 <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
               </label>
 
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Watermark Text</label>
               <input type="text" value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border mb-3" placeholder="Enter watermark text" />
+                className="w-full px-4 py-3 rounded-xl border mb-3" placeholder="Watermark text" />
 
-              <p className="text-xs text-muted-foreground mb-2">Quick presets:</p>
               <div className="flex flex-wrap gap-2 mb-4">
                 {presetWatermarks.map(preset => (
                   <button key={preset} onClick={() => setWatermarkText(preset)}
@@ -184,8 +174,7 @@ export default function WatermarkPage() {
             <div className="bg-green-50 dark:bg-green-950 rounded-2xl border border-green-200 p-6 text-center">
               <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
               <p className="font-bold text-green-700">Watermark Applied!</p>
-              <p className="text-sm text-green-600">"{watermarkText}" added to all pages</p>
-              <p className="text-xs text-muted-foreground mt-1">Size: {formatSize(result.size)}</p>
+              <p className="text-sm">{watermarkText} added to all pages</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -200,7 +189,7 @@ export default function WatermarkPage() {
             </div>
 
             <button onClick={resetAll} className="w-full py-3 rounded-xl border font-medium">
-              Watermark Another PDF
+              Watermark Another
             </button>
           </div>
         )}
