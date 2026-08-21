@@ -5,8 +5,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { RefreshCw, Download, Upload, FileText, Loader2, CheckCircle } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
-import { Document, Packer, Paragraph, TextRun } from 'docx'
-import * as XLSX from 'xlsx'
 
 interface ConvertedResult {
   url: string
@@ -26,9 +24,7 @@ export default function ConvertPage() {
 
   const formats = [
     { name: 'PDF', ext: 'pdf', mime: 'application/pdf' },
-    { name: 'DOCX (Word)', ext: 'docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
-    { name: 'XLSX (Excel)', ext: 'xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    { name: 'TXT (Text)', ext: 'txt', mime: 'text/plain' },
+    { name: 'TXT', ext: 'txt', mime: 'text/plain' },
   ]
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,53 +77,7 @@ export default function ConvertPage() {
         resultName = fileName.replace(/\.[^.]+$/, '') + '-converted.pdf'
         resultSize = blob.size
         resultFormat = 'PDF'
-      } else if (targetFormat === 'DOCX (Word)') {
-        const doc = new Document({
-          sections: [{
-            properties: {},
-            children: [
-              new Paragraph({
-                children: [new TextRun({ text: 'WaveCore ERP - Document Conversion', bold: true, size: 32 })],
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: 'Original File: ' + fileName, size: 24 })],
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: 'Conversion Date: ' + new Date().toLocaleString(), size: 24 })],
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: '(c) 2026 IntelliWavve - All Rights Reserved', size: 20 })],
-              }),
-            ],
-          }],
-        })
-
-        const docxBlob = await Packer.toBlob(doc)
-        resultUrl = URL.createObjectURL(docxBlob)
-        resultName = fileName.replace(/\.[^.]+$/, '') + '-converted.docx'
-        resultSize = docxBlob.size
-        resultFormat = 'DOCX'
-      } else if (targetFormat === 'XLSX (Excel)') {
-        const wsData = [
-          ['WaveCore ERP - Document Conversion'],
-          [''],
-          ['Original File', fileName],
-          ['Conversion Date', new Date().toLocaleString()],
-          ['Target Format', 'XLSX'],
-          [''],
-          ['(c) 2026 IntelliWavve', 'All Rights Reserved'],
-        ]
-
-        const ws = XLSX.utils.aoa_to_sheet(wsData)
-        const wb = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(wb, ws, 'Conversion')
-        const xlsxArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-        const blob = new Blob([xlsxArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-        resultUrl = URL.createObjectURL(blob)
-        resultName = fileName.replace(/\.[^.]+$/, '') + '-converted.xlsx'
-        resultSize = blob.size
-        resultFormat = 'XLSX'
-      } else if (targetFormat === 'TXT (Text)') {
+      } else if (targetFormat === 'TXT') {
         const textContent = [
           'WaveCore ERP - Document Conversion',
           '================================================',
@@ -145,12 +95,7 @@ export default function ConvertPage() {
         resultFormat = 'TXT'
       }
 
-      setResult({
-        url: resultUrl,
-        name: resultName,
-        size: resultSize,
-        format: resultFormat,
-      })
+      setResult({ url: resultUrl, name: resultName, size: resultSize, format: resultFormat })
       setConverting(false)
     } catch (err) {
       setError('Conversion failed: ' + (err as Error).message)
@@ -199,7 +144,7 @@ export default function ConvertPage() {
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <RefreshCw className="w-7 h-7" /> Convert Document
           </h1>
-          <p className="text-white/80 text-sm">PDF • Word • Excel • Text</p>
+          <p className="text-white/80 text-sm">PDF • Text</p>
         </div>
 
         {error && (
@@ -218,9 +163,7 @@ export default function ConvertPage() {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Convert To</label>
               <select value={targetFormat} onChange={(e) => setTargetFormat(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border mb-4">
-                {formats.map(f => (
-                  <option key={f.name} value={f.name}>{f.name}</option>
-                ))}
+                {formats.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
               </select>
 
               <button onClick={handleConvert} disabled={converting || !fileBuffer}
