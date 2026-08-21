@@ -54,43 +54,41 @@ export default function ConvertPage() {
       let resultFormat = ''
 
       if (targetFormat === 'PDF') {
-        const pdfDoc = await PDFDocument.create()
-        const page = pdfDoc.addPage([612, 792])
+        // Load the ORIGINAL document and re-save as PDF (preserves content)
+        const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true })
         
-        const lines = [
-          'WaveCore ERP - Document Conversion',
-          '================================================',
-          'Original File: ' + fileName,
-          'Conversion Date: ' + new Date().toLocaleString(),
-          'Target Format: PDF',
-          '================================================',
-          '(c) 2026 IntelliWavve - All Rights Reserved',
-        ]
-        
-        lines.forEach((line, index) => {
-          page.drawText(line, { x: 50, y: 750 - (index * 25), size: 12 })
+        // Save with original content preserved
+        const pdfBytes = await pdfDoc.save({
+          useObjectStreams: true,
+          addDefaultPage: false,
         })
-
-        const pdfBytes = await pdfDoc.save()
+        
         const blob = new Blob([pdfBytes], { type: 'application/pdf' })
         resultUrl = URL.createObjectURL(blob)
-        resultName = fileName.replace(/\.[^.]+$/, '') + '-converted.pdf'
+        resultName = fileName.replace(/\.[^.]+$/, '') + '.pdf'
         resultSize = blob.size
         resultFormat = 'PDF'
       } else if (targetFormat === 'TXT') {
-        const textContent = [
-          'WaveCore ERP - Document Conversion',
-          '================================================',
-          'Original File: ' + fileName,
-          'Conversion Date: ' + new Date().toLocaleString(),
-          'Target Format: TXT',
-          '================================================',
-          '(c) 2026 IntelliWavve - All Rights Reserved',
-        ].join('\n')
+        // Load PDF and extract ACTUAL text from all pages
+        const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true })
+        const pageCount = pdfDoc.getPageCount()
+        
+        // Get text content from each page
+        const textParts: string[] = []
+        for (let i = 0; i < pageCount; i++) {
+          const page = pdfDoc.getPage(i)
+          const text = page.getText()
+          if (text) textParts.push(text)
+        }
 
-        const blob = new Blob([textContent], { type: 'text/plain' })
+        // If no text found (scanned PDF), note it
+        const fullText = textParts.length > 0 
+          ? textParts.join('\n\n--- Page Break ---\n\n')
+          : 'This PDF appears to be scanned (no extractable text). Use OCR Scanner for text extraction.'
+
+        const blob = new Blob([fullText], { type: 'text/plain' })
         resultUrl = URL.createObjectURL(blob)
-        resultName = fileName.replace(/\.[^.]+$/, '') + '-converted.txt'
+        resultName = fileName.replace(/\.[^.]+$/, '') + '.txt'
         resultSize = blob.size
         resultFormat = 'TXT'
       }
@@ -144,7 +142,7 @@ export default function ConvertPage() {
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <RefreshCw className="w-7 h-7" /> Convert Document
           </h1>
-          <p className="text-white/80 text-sm">PDF • Text</p>
+          <p className="text-white/80 text-sm">Convert between PDF and TXT - original content preserved</p>
         </div>
 
         {error && (
@@ -156,8 +154,8 @@ export default function ConvertPage() {
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
               <label className="block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer mb-4">
                 <Upload className="w-12 h-12 mx-auto mb-3 text-indigo-500" />
-                <p className="font-medium">{fileName || 'Upload file to convert'}</p>
-                <input ref={fileInputRef} type="file" onChange={handleFileUpload} className="hidden" />
+                <p className="font-medium">{fileName || 'Upload PDF to convert'}</p>
+                <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
               </label>
 
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Convert To</label>
