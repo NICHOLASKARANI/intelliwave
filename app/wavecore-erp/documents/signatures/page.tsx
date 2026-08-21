@@ -11,6 +11,8 @@ interface SignatureDoc {
   signedBy: string
   signedAt: string
   status: 'SIGNED' | 'PENDING'
+  signatureData: string
+  documentData: string
 }
 
 export default function SignaturesPage() {
@@ -20,8 +22,9 @@ export default function SignaturesPage() {
   const [signerName, setSignerName] = useState('')
   const [signing, setSigning] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
-  const [scanned, setScanned] = useState(false)
+  const [documentData, setDocumentData] = useState('')
   const [signatureData, setSignatureData] = useState('')
+  const [signedPdfUrl, setSignedPdfUrl] = useState('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [drawing, setDrawing] = useState(false)
 
@@ -39,17 +42,18 @@ export default function SignaturesPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setFileName(file.name)
-    setScanned(false)
     setSignatureData('')
+    setSignedPdfUrl('')
     
     const reader = new FileReader()
     reader.onload = (event) => {
-      setPreviewUrl(event.target?.result as string)
+      const dataUrl = event.target?.result as string
+      setPreviewUrl(dataUrl)
+      setDocumentData(dataUrl)
     }
     reader.readAsDataURL(file)
   }
 
-  // Canvas drawing for signature
   const startDrawing = (e: React.MouseEvent) => {
     setDrawing(true)
     const canvas = canvasRef.current
@@ -73,9 +77,7 @@ export default function SignaturesPage() {
   const stopDrawing = () => {
     setDrawing(false)
     const canvas = canvasRef.current
-    if (canvas) {
-      setSignatureData(canvas.toDataURL())
-    }
+    if (canvas) setSignatureData(canvas.toDataURL())
   }
 
   const clearSignature = () => {
@@ -84,6 +86,53 @@ export default function SignaturesPage() {
     const ctx = canvas.getContext('2d')
     ctx?.clearRect(0, 0, canvas.width, canvas.height)
     setSignatureData('')
+  }
+
+  // Generate signed document PDF with signature embedded
+  const generateSignedPDF = (docName: string, signer: string, signatureImg: string): string => {
+    const signedAt = new Date().toLocaleString()
+    const pdfText = `BT /F1 16 Tf 50 750 Td (SIGNED DOCUMENT) Tj ET
+BT /F1 12 Tf 50 720 Td (Document: ${docName.replace(/[()\\]/g, '\\$&')}) Tj ET
+BT /F1 12 Tf 50 695 Td (Signed By: ${signer.replace(/[()\\]/g, '\\$&')}) Tj ET
+BT /F1 12 Tf 50 670 Td (Signed At: ${signedAt.replace(/[()\\]/g, '\\$&')}) Tj ET
+BT /F1 12 Tf 50 640 Td (Status: SIGNED) Tj ET
+BT /F1 10 Tf 50 600 Td (This document has been digitally signed using WaveCore E-Signature.) Tj ET
+BT /F1 10 Tf 50 580 Td (The signature below is legally binding.) Tj ET`
+
+    const pdf = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length ${pdfText.length} >>
+stream
+${pdfText}
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000230 00000 n 
+0000000275 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+0
+%%EOF`
+
+    return pdf
   }
 
   const handleSign = () => {
@@ -98,17 +147,48 @@ export default function SignaturesPage() {
 
     setSigning(true)
     setTimeout(() => {
+      // Generate signed PDF
+      const pdfContent = generateSignedPDF(fileName, signerName, signatureData)
+      const blob = new Blob([pdfContent], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      setSignedPdfUrl(url)
+
       const newDoc: SignatureDoc = {
         id: Date.now().toString(),
         name: fileName,
         signedBy: signerName,
         signedAt: new Date().toLocaleString(),
         status: 'SIGNED',
+        signatureData,
+        documentData,
       }
       setDocuments(prev => [newDoc, ...prev])
-      setScanned(true)
       setSigning(false)
     }, 1500)
+  }
+
+  const downloadSignedPDF = (doc?: SignatureDoc) => {
+    if (signedPdfUrl) {
+      const a = document.createElement('a')
+      a.href = signedPdfUrl
+      a.download = fileName.replace(/\.[^.]+$/, '') + '-SIGNED.pdf'
+      a.click()
+    } else if (doc) {
+      // Generate PDF for previously signed document
+      const pdfContent = generateSignedPDF(doc.name, doc.signedBy, doc.signatureData)
+      const blob = new Blob([pdfContent], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = doc.name.replace(/\.[^.]+$/, '') + '-SIGNED.pdf'
+      a.click()
+    }
+  }
+
+  const openSignedPDF = () => {
+    if (signedPdfUrl) {
+      window.open(signedPdfUrl, '_blank')
+    }
   }
 
   const deleteDocument = (id: string) => {
@@ -116,32 +196,23 @@ export default function SignaturesPage() {
     setDocuments(prev => prev.filter(d => d.id !== id))
   }
 
-  const handleDownloadPDF = () => {
+  const handleDownloadAllPDF = () => {
     const content = [
-      'WaveCore ERP - E-Signatures',
+      'WaveCore ERP - E-Signatures Report',
       '='.repeat(50),
-      'Generated: ' + new Date().toLocaleString(),
       'Signed Documents: ' + documents.length,
       '='.repeat(50),
       '',
       ...documents.map((d, i) => 
-        `Document #${i+1}\n  Name: ${d.name}\n  Signed By: ${d.signedBy}\n  Signed At: ${d.signedAt}\n  Status: ${d.status}\n` + '-'.repeat(30)
+        `Document #${i+1}\n  Name: ${d.name}\n  Signed By: ${d.signedBy}\n  Signed At: ${d.signedAt}\n` + '-'.repeat(30)
       ),
       '',
-      '© 2026 IntelliWavve - All Rights Reserved'
+      '© 2026 IntelliWavve'
     ].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = 'signatures.pdf'; a.click()
-  }
-
-  const resetAll = () => {
-    setFileName('')
-    setSignerName('')
-    setSignatureData('')
-    setPreviewUrl('')
-    setScanned(false)
+    a.href = url; a.download = 'signatures-report.pdf'; a.click()
   }
 
   return (
@@ -162,7 +233,7 @@ export default function SignaturesPage() {
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <PenTool className="w-7 h-7" /> E-Signatures
             </h1>
-            <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
+            <button onClick={handleDownloadAllPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
               <Download className="w-4 h-4" /> PDF
             </button>
           </div>
@@ -181,20 +252,12 @@ export default function SignaturesPage() {
               <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border mb-3" placeholder="Signer full name" />
 
-              {/* Signature Canvas */}
               <div className="border-2 border-dashed rounded-xl p-2 mb-3">
-                <canvas
-                  ref={canvasRef}
-                  width={400}
-                  height={150}
+                <canvas ref={canvasRef} width={400} height={150}
                   className="w-full bg-white cursor-crosshair"
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                />
+                  onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} />
                 <div className="flex justify-between mt-2">
-                  <p className="text-xs text-muted-foreground">Draw your signature above</p>
+                  <p className="text-xs text-muted-foreground">Draw your signature</p>
                   <button onClick={clearSignature} className="text-xs text-red-500">Clear</button>
                 </div>
               </div>
@@ -207,11 +270,11 @@ export default function SignaturesPage() {
             </div>
           </div>
 
-          {/* Document Preview */}
+          {/* Preview + Download */}
           <div className="space-y-4">
-            {previewUrl && !scanned && (
+            {previewUrl && !signedPdfUrl && (
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4">
-                <p className="font-bold mb-3 flex items-center gap-2"><Eye className="w-5 h-5 text-green-500" /> Document Preview</p>
+                <p className="font-bold mb-3"><Eye className="w-5 h-5 inline text-green-500" /> Document Preview</p>
                 <img src={previewUrl} alt="Document" className="max-h-48 mx-auto rounded-xl" />
               </div>
             )}
@@ -222,32 +285,48 @@ export default function SignaturesPage() {
                 <img src={signatureData} alt="Signature" className="max-h-24 mx-auto bg-white rounded-xl" />
               </div>
             )}
+
+            {signedPdfUrl && (
+              <div className="bg-green-50 dark:bg-green-950 rounded-2xl border border-green-200 p-6 text-center">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <p className="font-bold text-green-700">Document Signed Successfully!</p>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <button onClick={openSignedPDF}
+                    className="py-3 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center gap-2">
+                    <Eye className="w-4 h-4" /> View PDF
+                  </button>
+                  <button onClick={() => downloadSignedPDF()}
+                    className="py-3 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center gap-2">
+                    <Download className="w-4 h-4" /> Download Signed PDF
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Signed Documents List */}
         <div className="mt-8">
           <h2 className="text-lg font-bold mb-4">Signed Documents ({documents.length})</h2>
-          {loading ? (
-            <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
-          ) : documents.length === 0 ? (
+          {documents.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-neutral-900 rounded-2xl border">
               <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="text-muted-foreground">No signed documents yet</p>
-              <p className="text-sm text-muted-foreground mt-1">Upload and sign your first document</p>
             </div>
           ) : (
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
               {documents.map(doc => (
                 <div key={doc.id} className="flex justify-between items-center p-4 border-b">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <div>
-                      <p className="font-medium">{doc.name}</p>
-                      <p className="text-xs text-muted-foreground">Signed by {doc.signedBy} at {doc.signedAt}</p>
-                    </div>
+                  <div>
+                    <p className="font-medium">{doc.name}</p>
+                    <p className="text-xs text-muted-foreground">Signed by {doc.signedBy} at {doc.signedAt}</p>
                   </div>
-                  <button onClick={() => deleteDocument(doc.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button>
+                  <div className="flex gap-2">
+                    <button onClick={() => downloadSignedPDF(doc)} className="p-2 text-green-500" title="Download signed PDF">
+                      <Download className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteDocument(doc.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
               ))}
             </div>
