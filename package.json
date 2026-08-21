@@ -32,6 +32,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
+    "docx": "^9.7.1",
     "framer-motion": "^10.18.0",
     "googleapis": "^173.0.0",
     "lucide-react": "^0.312.0",
@@ -47,6 +48,7 @@
     "recharts": "^2.10.4",
     "stripe": "^14.14.0",
     "tailwind-merge": "^2.2.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.22.4",
     "zustand": "^4.5.0"
   },
