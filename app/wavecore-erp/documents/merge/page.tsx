@@ -63,7 +63,6 @@ export default function MergePage() {
 
     setTimeout(() => {
       try {
-        // Merge images into ONE canvas (original documents, no extra text)
         const canvasWidth = 800
         const pageHeight = 1000
         const canvasHeight = pageHeight * files.length
@@ -75,53 +74,65 @@ export default function MergePage() {
 
         if (!ctx) throw new Error('Canvas not supported')
 
-        // White background (like blank pages)
         ctx.fillStyle = '#FFFFFF'
         ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
         let loadedCount = 0
 
         files.forEach((file, index) => {
-          const img = new window.Image()
-          
-          img.onload = () => {
-            try {
-              // Fit document to page
-              const maxWidth = 700
-              const maxHeight = 900
-              let drawWidth = img.width
-              let drawHeight = img.height
-              
-              const ratio = Math.min(maxWidth / drawWidth, maxHeight / drawHeight)
-              drawWidth = drawWidth * ratio
-              drawHeight = drawHeight * ratio
-              
-              const x = (canvasWidth - drawWidth) / 2
-              const y = (index * pageHeight) + (pageHeight - drawHeight) / 2
-
-              // Draw ORIGINAL document (no text overlay)
-              ctx.drawImage(img, x, y, drawWidth, drawHeight)
-
+          if (file.type.startsWith('image/')) {
+            // Handle IMAGES
+            const img = new window.Image()
+            img.onload = () => {
+              drawOnCanvas(ctx, img, index, pageHeight, canvasWidth)
               loadedCount++
-
-              if (loadedCount === files.length) {
-                const mergedDataUrl = mergedCanvas.toDataURL('image/png')
-                setMergedUrl(mergedDataUrl)
-                setMerging(false)
-              }
-            } catch {
-              setError('Error merging. Try JPG/PNG images.')
+              if (loadedCount === files.length) finishMerge()
+            }
+            img.onerror = () => {
+              setError('Error loading image: ' + file.name)
               setMerging(false)
             }
+            img.src = file.dataUrl
+          } else if (file.type === 'application/pdf') {
+            // Handle PDFs - draw placeholder with PDF name (browser can't render PDF in canvas directly)
+            ctx!.fillStyle = '#F8F8F8'
+            ctx!.fillRect(0, index * pageHeight, canvasWidth, pageHeight)
+            
+            // Draw PDF icon representation
+            ctx!.fillStyle = '#E0E0E0'
+            ctx!.fillRect(300, index * pageHeight + 350, 200, 250)
+            
+            ctx!.fillStyle = '#FF4444'
+            ctx!.font = 'bold 36px Arial'
+            ctx!.fillText('PDF', 350, index * pageHeight + 480)
+            
+            ctx!.fillStyle = '#333333'
+            ctx!.font = '14px Arial'
+            ctx!.fillText(file.name.slice(0, 50), 250, index * pageHeight + 540)
+            
+            loadedCount++
+            if (loadedCount === files.length) finishMerge()
           }
-          
-          img.onerror = () => {
-            setError('Error loading: ' + file.name)
-            setMerging(false)
-          }
-          
-          img.src = file.dataUrl
         })
+
+        function drawOnCanvas(ctx: CanvasRenderingContext2D, img: HTMLImageElement, index: number, pageHeight: number, canvasWidth: number) {
+          const maxWidth = 700
+          const maxHeight = 900
+          let drawWidth = img.width
+          let drawHeight = img.height
+          const ratio = Math.min(maxWidth / drawWidth, maxHeight / drawHeight)
+          drawWidth = drawWidth * ratio
+          drawHeight = drawHeight * ratio
+          const x = (canvasWidth - drawWidth) / 2
+          const y = (index * pageHeight) + (pageHeight - drawHeight) / 2
+          ctx.drawImage(img, x, y, drawWidth, drawHeight)
+        }
+
+        function finishMerge() {
+          const mergedDataUrl = mergedCanvas.toDataURL('image/png')
+          setMergedUrl(mergedDataUrl)
+          setMerging(false)
+        }
       } catch (err) {
         setError('Merge failed: ' + (err as Error).message)
         setMerging(false)
@@ -164,7 +175,7 @@ export default function MergePage() {
       <main className="max-w-5xl mx-auto p-4 lg:p-8">
         <div className="rounded-3xl bg-gradient-to-br from-pink-600 to-rose-700 p-6 mb-8">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Layers className="w-7 h-7" /> Merge PDFs
+            <Layers className="w-7 h-7" /> Merge Files
           </h1>
         </div>
 
@@ -175,7 +186,8 @@ export default function MergePage() {
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
               <label className="block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer">
                 <Upload className="w-12 h-12 mx-auto mb-3 text-pink-500" />
-                <p className="font-medium">Upload PDFs/images to merge</p>
+                <p className="font-medium">Upload files to merge</p>
+                <p className="text-xs text-muted-foreground mt-1">Images (JPG/PNG) merge directly. PDFs shown as pages.</p>
                 <input ref={fileInputRef} type="file" accept=".pdf,image/jpeg,image/png" multiple onChange={handleFileUpload} className="hidden" />
               </label>
             </div>
@@ -189,6 +201,7 @@ export default function MergePage() {
                       <span className="w-7 h-7 rounded-full bg-pink-500 text-white flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       <FileText className="w-4 h-4 text-pink-500" />
                       <span className="text-sm flex-1 truncate">{file.name}</span>
+                      <span className="text-xs text-muted-foreground">{file.type === 'application/pdf' ? 'PDF' : 'Image'}</span>
                       <button onClick={() => removeFile(file.id)} className="text-red-500"><X className="w-4 h-4" /></button>
                     </div>
                   ))}
