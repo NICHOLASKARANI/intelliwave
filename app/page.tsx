@@ -31,7 +31,7 @@ import Link from 'next/link'
 // ANIMATED COUNTER â€” Smooth, professional
 // ============================================================
 function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(end)
   const [hasStarted, setHasStarted] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '0px' })
