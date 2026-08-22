@@ -35,9 +35,20 @@ function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; d
   const [hasStarted, setHasStarted] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+
   useEffect(() => {
+    // Respect prefers-reduced-motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
     if (isInView && !hasStarted) {
       setHasStarted(true)
+
+      // If reduced motion, jump directly to final value
+      if (prefersReducedMotion) {
+        setCount(end)
+        return
+      }
+
       let startTime: number
       let animationId: number
       const easeOutExpo = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t))
@@ -51,8 +62,7 @@ function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; d
       animationId = requestAnimationFrame(animate)
       return () => cancelAnimationFrame(animationId)
     }
-  }, [isInView, end, duration, hasStarted])
-  return (<span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>)
+  }, [isInView, end, duration, hasStarted])return (<span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>)
 }
 
 // ============================================================
