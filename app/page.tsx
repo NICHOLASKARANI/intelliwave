@@ -31,6 +31,7 @@ import Link from 'next/link'
 // ANIMATED COUNTER â€” Smooth, professional
 // ============================================================
 function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
+  const [count, setCount] = useState(end) // Start at final value, animate from 0
   const [count, setCount] = useState(0)
   const [hasStarted, setHasStarted] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -374,7 +375,7 @@ export default function HomePage() {
               { end: 50, label: 'Countries Reached', suffix: '+' },
               { end: 10, label: 'Years Engineering', suffix: '+' },
             ].map((stat, index) => (
-              <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
+              <motion.div key={stat.label} initial={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}>
                 <p className="text-5xl md:text-6xl font-bold text-white">
                   <AnimatedCounter end={stat.end} suffix={stat.suffix} />
                 </p>
