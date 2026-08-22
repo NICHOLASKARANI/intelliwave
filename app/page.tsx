@@ -369,10 +369,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { end: 10, label: 'Industries Served', suffix: '+' },
-              { end: 100, label: 'Enterprise Projects', suffix: '+' },
-              { end: 25, label: 'Countries Reached', suffix: '+' },
-              { end: 5, label: 'Years Engineering', suffix: '+' },
+              { end: 100, label: 'Industries Served', suffix: '+' },
+              { end: 10000, label: 'Enterprise Projects', suffix: '+' },
+              { end: 50, label: 'Countries Reached', suffix: '+' },
+              { end: 10, label: 'Years Engineering', suffix: '+' },
             ].map((stat, index) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
                 <p className="text-5xl md:text-6xl font-bold text-white">
