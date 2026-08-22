@@ -30,37 +30,35 @@ import Link from 'next/link'
 // ============================================================
 // ANIMATED COUNTER â€” Smooth, professional
 // ============================================================
-function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
-  const [count, setCount] = useState(end)
-  const [hasStarted, setHasStarted] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: true, margin: '0px' })
-  useEffect(() => {
-    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReducedMotion && isInView && !hasStarted) {
-      setHasStarted(true)
-      setCount(end)
-      return
-    }
-    if (isInView && !hasStarted) {
-      setHasStarted(true)
-      let startTime: number
-      let animationId: number
-      const easeOutExpo = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t))
-      const animate = (timestamp: number) => {
-        if (!startTime) startTime = timestamp
-        const elapsed = timestamp - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        setCount(Math.floor(easeOutExpo(progress) * end))
-        if (progress < 1) animationId = requestAnimationFrame(animate)
-      }
-      animationId = requestAnimationFrame(animate)
-      return () => cancelAnimationFrame(animationId)
-    }
-  }, [isInView, end, duration, hasStarted])
-  return (<span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>)
-}
+function AnimatedCounter({ end, suffix = '' }: { end: number; suffix?: string }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  const isInView = useInView(ref, { once: true })
 
+  useEffect(() => {
+    if (isInView) {
+      const duration = 2000
+      const startTime = performance.now()
+      
+      const updateCount = (currentTime: number) => {
+        const elapsed = currentTime - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const eased = 1 - Math.pow(1 - progress, 3)
+        setCount(Math.floor(eased * end))
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCount)
+        } else {
+          setCount(end)
+        }
+      }
+      
+      requestAnimationFrame(updateCount)
+    }
+  }, [isInView, end])
+
+  return <span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>
+}
 // ============================================================
 // DATA
 // ============================================================
