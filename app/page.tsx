@@ -1,7 +1,5 @@
 'use client'
 
-import { DerivOnboarding } from '@/components/sections/deriv-onboarding'
-import { ITISShowcase } from '@/components/sections/itis-showcase'
 import { useEffect, useState, useRef } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
@@ -81,7 +79,7 @@ const engineeringImages = [
 ]
 
 const businessImages = [
-  { src: '/images/Traders.jpeg', alt: 'Financial trading and market analysis', label: 'Financial Intelligence' },
+  
   { src: '/images/Satelites.jpeg', alt: 'Satellite technology and space systems', label: 'Space Technology' },
   { src: '/images/great.jpeg', alt: 'Delivering exceptional enterprise results', label: 'Proven Results' },
   { src: '/images/ui.png', alt: 'Enterprise dashboard with premium UI/UX', label: 'Enterprise Design' },
@@ -216,10 +214,8 @@ export default function HomePage() {
       </section>
 
       {/* ========================================== DERIV TRADING ONBOARDING ========================================== */}
-      <DerivOnboarding />
 
       {/* ========================================== ITIS FLAGSHIP SHOWCASE ========================================== */}
-      <ITISShowcase />
 
       {/* ========================================== SOLUTIONS FOR EVERY INDUSTRY ========================================== */}
       <section className="py-28 bg-white dark:bg-neutral-950">
