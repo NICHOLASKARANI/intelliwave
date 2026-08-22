@@ -12,26 +12,26 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { message, provider } = body
 
-    // Get real ERP data for context
-    const [customers, products, employees, invoices] = await Promise.all([
+    // Get REAL ERP data
+    const [customers, products, employees, invoices, revenue] = await Promise.all([
       pool.query('SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [session.organizationId]),
       pool.query('SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [session.organizationId]),
       pool.query('SELECT COUNT(*) FROM "Employee" WHERE "organizationId" = $1', [session.organizationId]),
       pool.query('SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [session.organizationId]),
+      pool.query('SELECT COALESCE(SUM(subtotal + "taxAmount"), 0) as total FROM "CustomerInvoice" WHERE "organizationId" = $1', [session.organizationId]),
     ])
 
-    const erpContext = `
-    You are WaveCore AI Copilot for ${session.orgName}.
-    Real-time data:
-    - Customers: ${customers.rows[0].count}
-    - Products: ${products.rows[0].count}
-    - Employees: ${employees.rows[0].count}
-    - Invoices: ${invoices.rows[0].count}
-    
-    User question: ${message}
-    
-    Answer based on this real data. Be concise and helpful.`
+    const realData = {
+      customers: customers.rows[0].count,
+      products: products.rows[0].count,
+      employees: employees.rows[0].count,
+      invoices: invoices.rows[0].count,
+      revenue: revenue.rows[0].total,
+      orgName: session.orgName,
+    }
 
+    // Try AI API
+    let aiReply = ''
     let apiKey = ''
     let apiUrl = ''
     let model = ''
@@ -50,39 +50,43 @@ export async function POST(req: NextRequest) {
       model = 'gpt-4o-mini'
     }
 
-    if (!apiKey) {
-      return NextResponse.json({ reply: 'AI service not configured. Please add API keys in Vercel environment variables.' })
-    }
+    const prompt = `You are WaveCore AI Copilot for ${realData.orgName}. Real data: ${realData.customers} customers, ${realData.products} products, ${realData.employees} employees, ${realData.invoices} invoices, Revenue: KSh ${realData.revenue}. Answer: ${message}`
 
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(provider === 'CLAUDE' 
-            ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
-            : { 'Authorization': 'Bearer ' + apiKey }),
-        },
-        body: JSON.stringify(
-          provider === 'CLAUDE'
-            ? { model, max_tokens: 500, messages: [{ role: 'user', content: erpContext }] }
-            : { model, max_tokens: 500, messages: [{ role: 'user', content: erpContext }] }
-        ),
-      })
+    if (apiKey) {
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(provider === 'CLAUDE' 
+              ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
+              : { 'Authorization': 'Bearer ' + apiKey }),
+          },
+          body: JSON.stringify(
+            provider === 'CLAUDE'
+              ? { model, max_tokens: 500, messages: [{ role: 'user', content: prompt }] }
+              : { model, max_tokens: 500, messages: [{ role: 'user', content: prompt }] }
+          ),
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      let reply = ''
-      if (provider === 'CLAUDE') {
-        reply = data.content?.[0]?.text || 'No response from Claude.'
-      } else {
-        reply = data.choices?.[0]?.message?.content || 'No response from AI.'
+        if (provider === 'CLAUDE') {
+          aiReply = data.content?.[0]?.text || ''
+        } else {
+          aiReply = data.choices?.[0]?.message?.content || ''
+        }
+      } catch (aiError) {
+        aiReply = ''
       }
-
-      return NextResponse.json({ reply })
-    } catch (aiError) {
-      return NextResponse.json({ reply: 'AI service error. Your real ERP data: Customers: ' + customers.rows[0].count + ', Products: ' + products.rows[0].count + ', Employees: ' + employees.rows[0].count + ', Invoices: ' + invoices.rows[0].count })
     }
+
+    // FALLBACK: If AI fails, respond with REAL data
+    if (!aiReply) {
+      aiReply = `Here is your real-time ERP data for ${realData.orgName}:\n\n• Customers: ${realData.customers}\n• Products: ${realData.products}\n• Employees: ${realData.employees}\n• Invoices: ${realData.invoices}\n• Revenue: KSh ${realData.revenue.toLocaleString()}\n\n${provider} is not responding. Try another provider or check API keys.`
+    }
+
+    return NextResponse.json({ reply: aiReply })
   } catch (error) {
     return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
