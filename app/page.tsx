@@ -62,7 +62,10 @@ function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; d
       animationId = requestAnimationFrame(animate)
       return () => cancelAnimationFrame(animationId)
     }
-  }, [isInView, end, duration, hasStarted])return (<span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>)
+  }, [isInView, end, duration, hasStarted])
+  }
+
+  return (<span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>)
 }
 
 // ============================================================
