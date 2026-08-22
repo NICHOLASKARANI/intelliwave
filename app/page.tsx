@@ -34,7 +34,7 @@ function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; d
   const [count, setCount] = useState(0)
   const [hasStarted, setHasStarted] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const isInView = useInView(ref, { once: true, margin: '0px' })
   useEffect(() => {
     const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReducedMotion && isInView && !hasStarted) {
