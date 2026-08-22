@@ -155,7 +155,7 @@ export default function ExecutiveAnalyticsPage() {
               return (
                 <Link key={page.label} href={page.href}
                   className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/50 hover:shadow-2xl transition-all group">
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br  flex items-center justify-center mb-4`} group-hover:scale-110 transition-transform}>
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${page.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-7 h-7 text-white" />
                   </div>
                   <p className="font-bold text-white">{page.label}</p>
