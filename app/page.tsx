@@ -28,27 +28,22 @@ import {
 import Link from 'next/link'
 
 // ============================================================
-// ANIMATED COUNTER — Smooth, professional
+// ANIMATED COUNTER â€” Smooth, professional
 // ============================================================
 function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
   const [count, setCount] = useState(0)
   const [hasStarted, setHasStarted] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
-
   useEffect(() => {
-    // Respect prefers-reduced-motion
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion && isInView && !hasStarted) {
+      setHasStarted(true)
+      setCount(end)
+      return
+    }
     if (isInView && !hasStarted) {
       setHasStarted(true)
-
-      // If reduced motion, jump directly to final value
-      if (prefersReducedMotion) {
-        setCount(end)
-        return
-      }
-
       let startTime: number
       let animationId: number
       const easeOutExpo = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t))
@@ -63,8 +58,6 @@ function AnimatedCounter({ end, duration = 2500, suffix = '' }: { end: number; d
       return () => cancelAnimationFrame(animationId)
     }
   }, [isInView, end, duration, hasStarted])
-  }
-
   return (<span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>)
 }
 
@@ -99,7 +92,7 @@ const businessImages = [
 ]
 
 // ============================================================
-// HOMEPAGE — World-Class Enterprise Experience
+// HOMEPAGE â€” World-Class Enterprise Experience
 // ============================================================
 export default function HomePage() {
   const heroRef = useRef(null)
@@ -109,7 +102,7 @@ export default function HomePage() {
 
   return (
     <div className="overflow-hidden">
-      {/* ========================================== HERO — Cinematic with World Map Background ========================================== */}
+      {/* ========================================== HERO â€” Cinematic with World Map Background ========================================== */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 overflow-hidden">
         {/* Deep cosmos atmosphere */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/40 via-slate-950/80 to-slate-950" />
@@ -131,7 +124,7 @@ export default function HomePage() {
           className="absolute bottom-0 left-0 right-0 h-[600px] bg-gradient-to-t from-purple-500/10 via-cyan-500/5 to-transparent blur-3xl" 
         />
 
-        {/* Orbiting rings — Earth-like orbital system */}
+        {/* Orbiting rings â€” Earth-like orbital system */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px]">
           <div className="absolute inset-0 rounded-full border border-blue-500/5 animate-spin" style={{ animationDuration: '45s' }} />
           <div className="absolute inset-12 rounded-full border border-purple-500/5 animate-spin" style={{ animationDuration: '28s', animationDirection: 'reverse' }} />
