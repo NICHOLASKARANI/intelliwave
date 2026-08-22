@@ -358,6 +358,103 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ========================================== LIVE STATS BAR ========================================== */}
+      <section className="py-16 bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { end: 10, label: 'Industries Served', suffix: '+' },
+              { end: 100, label: 'Enterprise Projects', suffix: '+' },
+              { end: 25, label: 'Countries Reached', suffix: '+' },
+              { end: 5, label: 'Years Engineering', suffix: '+' },
+            ].map((stat, index) => (
+              <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
+                <p className="text-5xl md:text-6xl font-bold text-white">
+                  <AnimatedCounter end={stat.end} suffix={stat.suffix} />
+                </p>
+                <p className="text-blue-200 mt-2 text-lg">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================== TECHNOLOGY ECOSYSTEM ========================================== */}
+      <section className="py-28 bg-neutral-50 dark:bg-neutral-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              Technology Ecosystem
+            </h2>
+            <p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto mt-4">
+              One unified platform connecting AI, ERP, Commerce, and Enterprise Systems
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { title: 'WaveCore ERP', desc: 'AI-native enterprise resource planning', image: '/images/ui.png', href: '/wavecore-erp' },
+              { title: 'AI Engineering', desc: 'Custom AI models and intelligent automation', image: '/images/ai-engineering.jpg', href: '/ai-engineering' },
+              { title: 'Cloud & DevOps', desc: 'Scalable cloud infrastructure and deployment', image: '/images/cloud-devops.jpg', href: '/cloud-devops' },
+              { title: 'Cybersecurity', desc: 'Enterprise-grade security and compliance', image: '/images/cybersecurity.jpg', href: '/cybersecurity' },
+              { title: 'Software Development', desc: 'Custom enterprise software solutions', image: '/images/software-development.jpg', href: '/software-development' },
+              { title: 'Space Technology', desc: 'Satellite systems and advanced technology', image: '/images/Satelites.jpeg', href: '/services' },
+            ].map((tech, index) => (
+              <motion.div key={tech.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.05 }}
+                className="group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+                <Link href={tech.href}>
+                  <div className="relative h-72">
+                    <Image src={tech.image} alt={tech.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <h3 className="text-white font-bold text-2xl">{tech.title}</h3>
+                      <p className="text-white/70 text-sm mt-2">{tech.desc}</p>
+                      <span className="inline-flex items-center gap-2 text-blue-300 font-medium mt-3 group-hover:gap-3 transition-all">
+                        Explore <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================== GLOBAL IMPACT ========================================== */}
+      <section className="py-28 bg-white dark:bg-neutral-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              Global Impact
+            </h2>
+            <p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto mt-4">
+              Building technology that transforms organizations worldwide
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+            {[
+              { title: 'AI Automation', desc: 'Intelligent workflows that reduce manual work by 60%', icon: Zap },
+              { title: 'Data Intelligence', desc: 'Real-time analytics for faster decisions', icon: BarChart3 },
+              { title: 'Enterprise Security', desc: 'Multi-layer protection for critical systems', icon: Shield },
+              { title: 'Cloud Scale', desc: 'Infrastructure that grows with your business', icon: Cloud },
+              { title: 'Global Reach', desc: 'Technology deployed across continents', icon: Globe },
+              { title: 'Innovation', desc: 'Continuous R&D in AI and enterprise systems', icon: Sparkles },
+            ].map((item, index) => {
+              const Icon = item.icon
+              return (
+                <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.05 }}
+                  className="p-8 rounded-3xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-5">
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="font-bold text-xl text-neutral-900 dark:text-white">{item.title}</h3>
+                  <p className="text-neutral-500 dark:text-neutral-400 mt-2">{item.desc}</p>
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
       {/* ========================================== FINAL CTA ========================================== */}
       <section className="py-36 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
