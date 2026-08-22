@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button'
 export default function ExecutiveAnalyticsPage() {
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [timeRange, setTimeRange] = useState('MONTH')
   const [timeRange, setTimeRange] = useState('MONTH')
   const [showFilters, setShowFilters] = useState(false)
 
@@ -25,7 +27,13 @@ export default function ExecutiveAnalyticsPage() {
     } catch {} finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchStats() }, [])
+  useEffect(() => {
+    fetchStats()
+    if (autoRefresh) {
+      const interval = setInterval(fetchStats, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [autoRefresh])
 
   const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
@@ -117,7 +125,16 @@ export default function ExecutiveAnalyticsPage() {
           <div className="text-center py-16"><Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-500" /></div>
         ) : (
           <>
-            {/* KPI Cards */}
+                      {/* Time Range Filter */}
+          <div className="flex gap-2 mb-6">
+            {['DAY', 'WEEK', 'MONTH', 'YEAR'].map(range => (
+              <button key={range} onClick={() => setTimeRange(range)}
+                className={px-4 py-2 rounded-xl text-sm font-medium transition-all }>
+                {range}
+              </button>
+            ))}
+          </div>
+          {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {kpiCards.map(kpi => {
                 const Icon = kpi.icon
