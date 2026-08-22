@@ -45,6 +45,16 @@ export default function ExecutiveAnalyticsPage() {
     { label: 'Custom Reports', href: '/wavecore-erp/analytics/custom', icon: FileSpreadsheet, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950' },
   ]
 
+    const kpiHrefs: Record<string, string> = {
+    'Revenue (MTD)': '/wavecore-erp/analytics/revenue',
+    'Receivables': '/wavecore-erp/analytics/receivables',
+    'Payables': '/wavecore-erp/analytics/payables',
+    'Customers': '/wavecore-erp/analytics/customers',
+    'Products': '/wavecore-erp/analytics/products',
+    'Employees': '/wavecore-erp/analytics/employees',
+    'Invoices': '/wavecore-erp/analytics/invoices',
+    'Projects': '/wavecore-erp/analytics/projects',
+  }
   const kpiCards = [
     { label: 'Revenue (MTD)', value: formatKES(stats.revenueMTD), icon: DollarSign, color: 'text-emerald-500', trend: '+12%' },
     { label: 'Receivables', value: formatKES(stats.outstandingReceivables), icon: TrendingUp, color: 'text-orange-500', trend: '-3%' },
@@ -97,7 +107,7 @@ export default function ExecutiveAnalyticsPage() {
                 <BarChart3 className="w-8 h-8" /> Executive Analytics
               </h1>
               <p className="text-white/80 text-sm">Real-time business intelligence</p>
-            </div>
+            </Link>
             <div className="flex gap-2">
               <button onClick={fetchStats} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
                 <RefreshCw className="w-4 h-4" /> Refresh
@@ -105,7 +115,7 @@ export default function ExecutiveAnalyticsPage() {
               <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
                 <Download className="w-4 h-4" /> PDF
               </button>
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -132,17 +142,17 @@ export default function ExecutiveAnalyticsPage() {
           {kpiCards.map(kpi => {
             const Icon = kpi.icon
             return (
-              <div key={kpi.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all">
+              <Link key={kpi.label} href={`/wavecore-erp/analytics/${kpi.label.toLowerCase().split(" ")[0].replace("(", "").replace(")", "")}`} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all cursor-pointer block">
                 <div className="flex justify-between items-start mb-3">
                   <Icon className={`w-6 h-6 ${kpi.color}`} />
                   <span className={`text-xs font-bold flex items-center gap-0.5 ${kpi.trend.startsWith('+') ? 'text-green-500' : kpi.trend.startsWith('-') ? 'text-red-500' : 'text-neutral-400'}`}>
                     {kpi.trend.startsWith('+') ? <ArrowUpRight className="w-3 h-3" /> : kpi.trend.startsWith('-') ? <ArrowDownRight className="w-3 h-3" /> : null}
                     {kpi.trend}
                   </span>
-                </div>
+                </Link>
                 <p className="text-xl font-bold">{kpi.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
-              </div>
+              </Link>
             )
           })}
         </div>
@@ -157,7 +167,7 @@ export default function ExecutiveAnalyticsPage() {
                 className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all group">
                 <div className={`w-10 h-10 rounded-xl ${page.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                   <Icon className={`w-5 h-5 ${page.color}`} />
-                </div>
+                </Link>
                 <p className="font-bold text-sm">{page.label}</p>
               </Link>
             )
