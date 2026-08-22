@@ -228,18 +228,18 @@ export default function HomePage() {
               Custom-built software and AI solutions tailored to your specific needs.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {servicesData.map((service, index) => (
               <motion.div key={service.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.04 }}
                 whileHover={{ y: -6 }} className="group relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 cursor-pointer">
                 <Link href={service.href}>
-                  <div className="relative h-52 overflow-hidden">
-                    <Image src={service.image} alt={service.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
+                  <div className="relative h-64 overflow-hidden">
+                    <Image src={service.image} alt={service.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-blue-500/20 via-transparent to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-5">
-                      <h3 className="text-white font-bold text-lg tracking-tight">{service.title}</h3>
-                      <p className="text-white/60 text-xs mt-1.5 leading-relaxed">{service.desc}</p>
+                      <h3 className="text-white font-bold text-xl tracking-tight">{service.title}</h3>
+                      <p className="text-white/70 text-sm mt-2 leading-relaxed">{service.desc}</p>
                     </div>
                     <ArrowUpRight className="absolute top-4 right-4 w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-all duration-300" />
                   </div>
