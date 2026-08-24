@@ -24,7 +24,7 @@ const modules = [
   { icon: BarChart3, title: 'BI & Analytics', desc: 'Dashboards, KPIs, Forecasts', href: '/wavecore-erp/analytics', bg: 'from-violet-500 to-purple-600', color: 'text-violet-500' },
   { icon: Bot, title: 'AI Copilot', desc: 'AI Assistant, Smart Search', href: '/wavecore-erp/ai', bg: 'from-rose-500 to-red-600', color: 'text-rose-500' },
   { icon: Workflow, title: 'Automation', desc: 'Workflows, Approvals', href: '/wavecore-erp/automation', bg: 'from-amber-500 to-orange-600', color: 'text-amber-500' },
-  { icon: Globe, title: 'Website', desc: 'Builder, CMS, E-Commerce', href: '/wavecore-erp/website', bg: 'from-sky-500 to-blue-600', color: 'text-sky-500' },
+  { icon: Truck, title: 'Procurement', desc: 'Suppliers, RFQs, Purchase Orders', href: '/wavecore-erp/procurement', bg: 'from-sky-500 to-blue-600', color: 'text-sky-500' },
   { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', bg: 'from-gray-500 to-slate-600', color: 'text-gray-500' },
   { icon: Store, title: 'WavveMarket', desc: 'Buy & Sell Marketplace', href: '/marketplace', bg: 'from-pink-500 to-rose-600', color: 'text-pink-500' },
   { icon: Bike, title: 'WavveRide', desc: 'Rides & Delivery', href: '/ride', bg: 'from-green-500 to-emerald-600', color: 'text-green-500' },
