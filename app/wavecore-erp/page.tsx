@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
   Users, Package, Calculator, FileText, BarChart3, Bot, Workflow, Globe,
-  Activity, Factory, Briefcase, FolderKanban, HeadphonesIcon,
+  Activity, Factory, Briefcase, FolderKanban, HeadphonesIcon, Truck,
   LogOut, Search as SearchIcon, ArrowUpRight, Menu, X, BellRing,
   CheckCheck, Store, ShoppingCart, Bike, Loader2, CalendarDays, Wallet,
   Sparkles, ChevronRight, PieChart, LineChart, Download, Filter
