@@ -68,6 +68,21 @@ export default function SecurityAdminPage() {
     }
   }
 
+  const handleResetPassword = async (userId: string) => {
+    const newPassword = prompt('Enter new password:')
+    if (!newPassword) return
+    try {
+      await fetch('/api/wavecore/security/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, newPassword })
+      })
+      alert('Password reset successful')
+    } catch (error) {
+      alert('Failed to reset password')
+    }
+  }
+
   if (!authenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 flex items-center justify-center">
@@ -214,7 +229,10 @@ export default function SecurityAdminPage() {
                   <tr key={user.id} className="border-t border-white/5">
                     <td className="p-4 text-sm text-white">{user.name || 'N/A'}</td>
                     <td className="p-4 text-sm text-white/70">{user.email}</td>
-                    <td className="p-4">
+                    <td className="p-4 flex gap-2">
+                      <button onClick={() => handleResetPassword(user.id)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30">
+                        <Key className="w-4 h-4" />
+                      </button>
                       <button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30">
                         <Trash2 className="w-4 h-4" />
                       </button>
