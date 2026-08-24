@@ -1075,6 +1075,7 @@ model UserProfile {
 
 model OrganizationSetting {
   id             Int       @id @default(autoincrement())
+  organizationId String
   companyname    String    @default("WaveCore ERP")
   email          String?
   phone          String?
@@ -1087,41 +1088,56 @@ model OrganizationSetting {
   currencysymbol String?   @default("KSh")
   numberformat   String?   @default("1,234.56")
   updatedat      DateTime? @default(now()) @db.Timestamp(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
 }
 
 model TaxRate {
-  id        Int       @id @default(autoincrement())
-  name      String
-  rate      Decimal   @db.Decimal(5, 2)
-  type      String    @default("VAT")
-  active    Boolean?  @default(true)
-  createdat DateTime? @default(now()) @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  organizationId String
+  name           String
+  rate           Decimal   @db.Decimal(5, 2)
+  type           String    @default("VAT")
+  active         Boolean?  @default(true)
+  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
 }
 
 model DocumentNumbering {
-  id           Int       @id @default(autoincrement())
-  documenttype String    @unique
-  prefix       String
-  nextnumber   Int?      @default(1)
-  updatedat    DateTime? @default(now()) @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  organizationId String
+  documenttype   String
+  prefix         String
+  nextnumber     Int?      @default(1)
+  updatedat      DateTime? @default(now()) @db.Timestamp(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
+  @@unique([organizationId, documenttype])
 }
 
 model EmailTemplate {
-  id        Int       @id @default(autoincrement())
-  name      String
-  subject   String
-  body      String?
-  active    Boolean?  @default(true)
-  createdat DateTime? @default(now()) @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  organizationId String
+  name           String
+  subject        String
+  body           String?
+  active         Boolean?  @default(true)
+  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
 }
 
 model Integration {
-  id        Int       @id @default(autoincrement())
-  name      String
-  type      String
-  apikey    String?
-  status    String?   @default("Disconnected")
-  createdat DateTime? @default(now()) @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  organizationId String
+  name           String
+  type           String
+  apikey         String?
+  status         String?   @default("Disconnected")
+  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
 }
 
 model ApiKey {
@@ -1195,12 +1211,16 @@ model Budget {
 }
 
 model Currency {
-  id        Int       @id @default(autoincrement())
-  code      String    @unique
-  name      String
-  rate      Decimal   @db.Decimal(10, 4)
-  isdefault Boolean?  @default(false)
-  updatedat DateTime? @default(now()) @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  organizationId String
+  code           String
+  name           String
+  rate           Decimal   @db.Decimal(10, 4)
+  isdefault      Boolean?  @default(false)
+  updatedat      DateTime? @default(now()) @db.Timestamp(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
+  @@unique([organizationId, code])
 }
 
 model Notification {
@@ -1257,11 +1277,15 @@ model PurchaseOrderItem {
 }
 
 model Role {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  description String?
-  permissions String[]  @default([])
-  createdat   DateTime? @default(now()) @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  organizationId String
+  name           String
+  description    String?
+  permissions    String[]  @default([])
+  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
+  @@unique([organizationId, name])
 }
 
 model Webhook {
