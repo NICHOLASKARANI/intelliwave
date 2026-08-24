@@ -97,50 +97,57 @@ model Subscription {
 }
 
 model Organization {
-  id                  String               @id @default(cuid())
-  name                String
-  email               String?
-  phone               String?
-  address             String?
-  logo                String?
-  currency            String               @default("KES")
-  timezone            String               @default("Africa/Nairobi")
-  isActive            Boolean              @default(true)
-  trialEndsAt         DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  ownerId             String
-  activities          Activity[]
-  attendances         Attendance[]
-  batches             Batch[]
-  chartOfAccounts     ChartOfAccount[]
-  customers           Customer[]
-  customerInvoices    CustomerInvoice[]
-  customerPayments    CustomerPayment[]
-  employees           Employee[]
-  employeeDocuments   EmployeeDocument[]
-  fiscalYears         FiscalYear[]
-  journalEntries      JournalEntry[]
-  leads               Lead[]
-  leaveBalances       LeaveBalance[]
-  leaveRequests       LeaveRequest[]
-  leaveTypes          LeaveType[]
-  opportunities       Opportunity[]
-  owner               User                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
-  payrollItems        PayrollItem[]
-  payrollPeriods      PayrollPeriod[]
-  performanceReviews  PerformanceReview[]
-  products            Product[]
-  quotations          Quotation[]
-  routings            Routing[]
-  salesOrders         SalesOrder[]
-  serialNumbers       SerialNumber[]
-  stockMoves          StockMove[]
-  subscription        Subscription?
-  trainings           Training[]
-  trainingEnrollments TrainingEnrollment[]
-  warehouses          Warehouse[]
-  members             User[]               @relation("OrganizationMembers")
+  id                   String                @id @default(cuid())
+  name                 String
+  email                String?
+  phone                String?
+  address              String?
+  logo                 String?
+  currency             String                @default("KES")
+  timezone             String                @default("Africa/Nairobi")
+  isActive             Boolean               @default(true)
+  trialEndsAt          DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  ownerId              String
+  activities           Activity[]
+  attendances          Attendance[]
+  batches              Batch[]
+  chartOfAccounts      ChartOfAccount[]
+  customers            Customer[]
+  customerInvoices     CustomerInvoice[]
+  customerPayments     CustomerPayment[]
+  employees            Employee[]
+  employeeDocuments    EmployeeDocument[]
+  fiscalYears          FiscalYear[]
+  journalEntries       JournalEntry[]
+  leads                Lead[]
+  leaveBalances        LeaveBalance[]
+  leaveRequests        LeaveRequest[]
+  leaveTypes           LeaveType[]
+  opportunities        Opportunity[]
+  owner                User                  @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  payrollItems         PayrollItem[]
+  payrollPeriods       PayrollPeriod[]
+  performanceReviews   PerformanceReview[]
+  products             Product[]
+  quotations           Quotation[]
+  routings             Routing[]
+  salesOrders          SalesOrder[]
+  serialNumbers        SerialNumber[]
+  stockMoves           StockMove[]
+  subscription         Subscription?
+  trainings            Training[]
+  trainingEnrollments  TrainingEnrollment[]
+  warehouses           Warehouse[]
+  members              User[]                @relation("OrganizationMembers")
+  organizationSettings OrganizationSetting[]
+  taxRates             TaxRate[]
+  documentNumberings   DocumentNumbering[]
+  emailTemplates       EmailTemplate[]
+  integrations         Integration[]
+  currencies           Currency[]
+  roles                Role[]
 }
 
 model Project {
@@ -1074,69 +1081,74 @@ model UserProfile {
 }
 
 model OrganizationSetting {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   organizationId String
-  companyname    String    @default("WaveCore ERP")
+  companyname    String       @default("WaveCore ERP")
   email          String?
   phone          String?
   address        String?
   website        String?
-  timezone       String?   @default("Africa/Nairobi")
-  language       String?   @default("English")
-  currency       String?   @default("KES")
-  dateformat     String?   @default("DD/MM/YYYY")
-  currencysymbol String?   @default("KSh")
-  numberformat   String?   @default("1,234.56")
-  updatedat      DateTime? @default(now()) @db.Timestamp(6)
+  timezone       String?      @default("Africa/Nairobi")
+  language       String?      @default("English")
+  currency       String?      @default("KES")
+  dateformat     String?      @default("DD/MM/YYYY")
+  currencysymbol String?      @default("KSh")
+  numberformat   String?      @default("1,234.56")
+  updatedat      DateTime?    @default(now()) @db.Timestamp(6)
   organization   Organization @relation(fields: [organizationId], references: [id])
+
   @@index([organizationId])
 }
 
 model TaxRate {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   organizationId String
   name           String
-  rate           Decimal   @db.Decimal(5, 2)
-  type           String    @default("VAT")
-  active         Boolean?  @default(true)
-  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  rate           Decimal      @db.Decimal(5, 2)
+  type           String       @default("VAT")
+  active         Boolean?     @default(true)
+  createdat      DateTime?    @default(now()) @db.Timestamp(6)
   organization   Organization @relation(fields: [organizationId], references: [id])
+
   @@index([organizationId])
 }
 
 model DocumentNumbering {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   organizationId String
   documenttype   String
   prefix         String
-  nextnumber     Int?      @default(1)
-  updatedat      DateTime? @default(now()) @db.Timestamp(6)
+  nextnumber     Int?         @default(1)
+  updatedat      DateTime?    @default(now()) @db.Timestamp(6)
   organization   Organization @relation(fields: [organizationId], references: [id])
-  @@index([organizationId])
+
   @@unique([organizationId, documenttype])
+  @@index([organizationId])
 }
 
 model EmailTemplate {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   organizationId String
   name           String
   subject        String
   body           String?
-  active         Boolean?  @default(true)
-  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  active         Boolean?     @default(true)
+  createdat      DateTime?    @default(now()) @db.Timestamp(6)
   organization   Organization @relation(fields: [organizationId], references: [id])
+
   @@index([organizationId])
 }
 
 model Integration {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   organizationId String
   name           String
   type           String
   apikey         String?
-  status         String?   @default("Disconnected")
-  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  status         String?      @default("Disconnected")
+  createdat      DateTime?    @default(now()) @db.Timestamp(6)
   organization   Organization @relation(fields: [organizationId], references: [id])
+
   @@index([organizationId])
 }
 
@@ -1211,16 +1223,17 @@ model Budget {
 }
 
 model Currency {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   organizationId String
   code           String
   name           String
-  rate           Decimal   @db.Decimal(10, 4)
-  isdefault      Boolean?  @default(false)
-  updatedat      DateTime? @default(now()) @db.Timestamp(6)
+  rate           Decimal      @db.Decimal(10, 4)
+  isdefault      Boolean?     @default(false)
+  updatedat      DateTime?    @default(now()) @db.Timestamp(6)
   organization   Organization @relation(fields: [organizationId], references: [id])
-  @@index([organizationId])
+
   @@unique([organizationId, code])
+  @@index([organizationId])
 }
 
 model Notification {
@@ -1277,15 +1290,16 @@ model PurchaseOrderItem {
 }
 
 model Role {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   organizationId String
   name           String
   description    String?
-  permissions    String[]  @default([])
-  createdat      DateTime? @default(now()) @db.Timestamp(6)
+  permissions    String[]     @default([])
+  createdat      DateTime?    @default(now()) @db.Timestamp(6)
   organization   Organization @relation(fields: [organizationId], references: [id])
-  @@index([organizationId])
+
   @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 model Webhook {
