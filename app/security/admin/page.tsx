@@ -10,6 +10,8 @@ import {
   Filter, Clock, Server, Database, Zap
 } from 'lucide-react'
 
+const ADMIN_PASSWORD = 'Sultan12@#%(*nmdsafkjl&&*(GGVVDSKarani'
+
 export default function SecurityAdminPage() {
   const [authenticated, setAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
@@ -25,8 +27,6 @@ export default function SecurityAdminPage() {
     activeSessions: 0,
     suspiciousUsers: 0
   })
-
-  const ADMIN_PASSWORD = 'Sultan12@#%(*nmdsafkjl&&*(GGVVDSKarani'
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
@@ -173,7 +173,6 @@ export default function SecurityAdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-6 space-y-6">
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
             <Activity className="w-6 h-6 text-blue-400 mb-2" />
@@ -202,7 +201,6 @@ export default function SecurityAdminPage() {
           </div>
         </div>
 
-        {/* Live Events */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-400" /> Live Security Events
@@ -220,7 +218,7 @@ export default function SecurityAdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {events.slice(0, 50).map(event => (
+                {(events || []).slice(0, 50).map((event: any) => (
                   <tr key={event.id} className="border-t border-white/5">
                     <td className="p-4 text-sm text-white/70">{new Date(event.createdAt).toLocaleString()}</td>
                     <td className="p-4">
@@ -242,7 +240,6 @@ export default function SecurityAdminPage() {
           </div>
         </div>
 
-        {/* User Management */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-purple-400" /> User Management
@@ -258,7 +255,7 @@ export default function SecurityAdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => (
+                {(users || []).map((user: any) => (
                   <tr key={user.id} className="border-t border-white/5">
                     <td className="p-4 text-sm text-white">{user.name || 'N/A'}</td>
                     <td className="p-4 text-sm text-white/70">{user.email}</td>
