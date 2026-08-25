@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ activities: result.rows })
   } catch (error: any) {
-    console.error('Activities GET error:', error.message)
+    console.error('Activities GET error:', (error as Error).message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, id: result.rows[0].id }, { status: 201 })
   } catch (error: any) {
-    console.error('Activities POST error:', error.message)
+    console.error('Activities POST error:', (error as Error).message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -42,6 +42,6 @@ export async function GET(request: NextRequest) {
       unreconciled: transactions.rows.length,
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch reconciliation: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch reconciliation: ' + (error as Error).message }, { status: 500 })
   }
 }

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       totalSales: sales.rows.length,
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ product: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Create failed: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest) {
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ product: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Update failed: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Update failed: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -95,6 +95,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Delete failed: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
   }
 }

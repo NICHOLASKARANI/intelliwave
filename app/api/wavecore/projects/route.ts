@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ project: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('Project POST error:', error.message)
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+    console.error('Project POST error:', (error as Error).message)
+    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest) {
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ project: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -62,6 +62,6 @@ export async function DELETE(request: NextRequest) {
     await pool.query(`DELETE FROM "Project" WHERE id = $1`, [id])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

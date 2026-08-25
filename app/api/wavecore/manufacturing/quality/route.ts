@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(`SELECT * FROM "QualityCheck" ORDER BY "createdAt" DESC LIMIT 50`)
     return NextResponse.json({ checks: result.rows })
   } catch (error: any) {
-    console.error('Quality GET:', error.message)
+    console.error('Quality GET:', (error as Error).message)
     return NextResponse.json({ checks: [] })
   }
 }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, check: result.rows[0] }, { status: 201 })
   } catch (error: any) {
-    console.error('Quality POST:', error.message)
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+    console.error('Quality POST:', (error as Error).message)
+    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
 }

@@ -17,7 +17,7 @@ export async function DELETE(
     }
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('Project DELETE:', error.message)
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+    console.error('Project DELETE:', (error as Error).message)
+    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
 }

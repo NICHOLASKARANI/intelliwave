@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       recentActivity: activities.rows,
     })
   } catch (error: any) {
-    console.error('Dashboard error:', error.message)
+    console.error('Dashboard error:', (error as Error).message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

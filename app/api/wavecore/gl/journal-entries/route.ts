@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
     }
-    console.error('JournalEntry POST error:', error.message)
+    console.error('JournalEntry POST error:', (error as Error).message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   } finally {
     client.release()

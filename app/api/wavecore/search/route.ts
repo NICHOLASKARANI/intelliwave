@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ results: results.slice(0, limit) })
   } catch (error: any) {
-    logger.error('Search error', { error: error.message })
+    logger.error('Search error', { error: (error as Error).message })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

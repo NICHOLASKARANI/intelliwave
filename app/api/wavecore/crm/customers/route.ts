@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ customers: result.rows })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch customers: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch customers: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ customer: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Customer create error:', error)
-    return NextResponse.json({ error: 'Failed to create customer: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create customer: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ customer: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update customer: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update customer: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -127,6 +127,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete customer: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete customer: ' + (error as Error).message }, { status: 500 })
   }
 }

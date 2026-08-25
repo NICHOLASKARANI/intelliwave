@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('HR Summary:', error.message)
+    console.error('HR Summary:', (error as Error).message)
     return NextResponse.json({ summary: {} }, { status: 500 })
   }
 }

@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(`SELECT * FROM "MaintenanceRequest" ORDER BY "createdAt" DESC LIMIT 50`)
     return NextResponse.json({ requests: result.rows })
   } catch (error: any) {
-    console.error('Maintenance GET:', error.message)
+    console.error('Maintenance GET:', (error as Error).message)
     return NextResponse.json({ requests: [] })
   }
 }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, request: result.rows[0] }, { status: 201 })
   } catch (error: any) {
-    console.error('Maintenance POST:', error.message)
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+    console.error('Maintenance POST:', (error as Error).message)
+    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
 }

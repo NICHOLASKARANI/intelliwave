@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     )
     return NextResponse.json({ leads: result.rows })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     )
     return NextResponse.json({ lead: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest) {
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ lead: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -67,6 +67,6 @@ export async function DELETE(request: NextRequest) {
     await pool.query(`DELETE FROM "Lead" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

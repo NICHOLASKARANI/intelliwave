@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     )
     return NextResponse.json({ taxes: result.rows })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch taxes: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch taxes: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     )
     return NextResponse.json({ tax: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create tax: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create tax: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest) {
     )
     return NextResponse.json({ tax: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update tax: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update tax: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -49,6 +49,6 @@ export async function DELETE(request: NextRequest) {
     await pool.query(`DELETE FROM "TaxRate" WHERE id = $1`, [id])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete tax: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete tax: ' + (error as Error).message }, { status: 500 })
   }
 }

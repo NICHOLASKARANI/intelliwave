@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(`SELECT * FROM "WorkCenter" ORDER BY "createdAt" DESC LIMIT 50`)
     return NextResponse.json({ centers: result.rows })
   } catch (error: any) {
-    console.error('Centers GET:', error.message)
+    console.error('Centers GET:', (error as Error).message)
     return NextResponse.json({ centers: [] })
   }
 }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, center: result.rows[0] }, { status: 201 })
   } catch (error: any) {
-    console.error('Center POST:', error.message)
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+    console.error('Center POST:', (error as Error).message)
+    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
 }

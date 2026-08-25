@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     )
     return NextResponse.json({ invoices: result.rows })
   } catch (error: any) {
-    console.error('Invoices GET error:', error.message)
+    console.error('Invoices GET error:', (error as Error).message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       invoice: result.rows[0],
     }, { status: 201 })
   } catch (error: any) {
-    console.error('Invoices POST error:', error.message)
+    console.error('Invoices POST error:', (error as Error).message)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   } finally {
     client.release()

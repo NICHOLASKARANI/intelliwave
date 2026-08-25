@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(`SELECT * FROM "WorkOrder" ORDER BY "createdAt" DESC LIMIT 50`)
     return NextResponse.json({ workOrders: result.rows })
   } catch (error: any) {
-    console.error('WorkOrder GET:', error.message)
+    console.error('WorkOrder GET:', (error as Error).message)
     return NextResponse.json({ workOrders: [] })
   }
 }
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, workOrder: result.rows[0] }, { status: 201 })
   } catch (error: any) {
-    console.error('WorkOrder POST:', error.message)
-    return NextResponse.json({ error: 'Failed: ' + error.message }, { status: 500 })
+    console.error('WorkOrder POST:', (error as Error).message)
+    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
 }
