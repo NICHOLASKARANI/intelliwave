@@ -21,14 +21,14 @@ export async function GET(req: NextRequest) {
          FROM "MarketplaceListing" l
          JOIN "User" u ON l."sellerId" = u.id
          WHERE l.id = $1 AND l.status = 'ACTIVE'`,
-        [parseInt(id)]
+        [parseInt(id!)]
       )
       
       if (result.rows.length > 0) {
         // Increment views
         await pool.query(
           `UPDATE "MarketplaceListing" SET views = views + 1 WHERE id = $1`,
-          [parseInt(id)]
+          [parseInt(id!)]
         )
       }
       
@@ -108,14 +108,14 @@ export async function DELETE(req: NextRequest) {
     // Verify ownership
     const check = await pool.query(
       `SELECT "sellerId" FROM "MarketplaceListing" WHERE id = $1`,
-      [parseInt(id)]
+      [parseInt(id!)]
     )
 
     if (check.rows.length === 0 || check.rows[0].sellerId !== session.userId) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
-    await pool.query(`DELETE FROM "MarketplaceListing" WHERE id = $1`, [parseInt(id)])
+    await pool.query(`DELETE FROM "MarketplaceListing" WHERE id = $1`, [parseInt(id!)])
 
     return NextResponse.json({ success: true })
   } catch (error) {
