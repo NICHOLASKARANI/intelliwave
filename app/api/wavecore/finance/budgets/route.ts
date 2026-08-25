@@ -16,7 +16,7 @@ const budgetSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "Budget" (
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const body = await request.json()
     const validated = budgetSchema.parse(body)

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "RideRequest" WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT 10`,
-      [session.userId]
+      [session!.userId]
     )
     return NextResponse.json({ rides: result.rows })
   } catch (error) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       `INSERT INTO "RideRequest" ("userId", "pickupLat", "pickupLng", "dropoffLat", "dropoffLng", "pickupAddress", "dropoffAddress", "rideType", price)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [session.userId, body.pickupLat, body.pickupLng, body.dropoffLat, body.dropoffLng, body.pickupAddress, body.dropoffAddress, body.rideType, body.price]
+      [session!.userId, body.pickupLat, body.pickupLng, body.dropoffLat, body.dropoffLng, body.pickupAddress, body.dropoffAddress, body.rideType, body.price]
     )
 
     return NextResponse.json({ ride: result.rows[0] }, { status: 201 })

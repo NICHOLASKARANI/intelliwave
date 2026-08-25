@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "Workflow" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ workflows: result.rows })
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Workflow" (id, name, trigger, status, "organizationId", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, 'ACTIVE', $4, NOW(), NOW())
        RETURNING *`,
-      [workflowId, body.name, body.trigger || 'Schedule', session.organizationId]
+      [workflowId, body.name, body.trigger || 'Schedule', session!.organizationId]
     )
 
     return NextResponse.json({ workflow: result.rows[0] }, { status: 201 })
@@ -55,7 +55,7 @@ export async function PUT(request: NextRequest) {
       `UPDATE "Workflow" SET name = $1, trigger = $2, status = $3, "updatedAt" = NOW()
        WHERE id = $4 AND "organizationId" = $5
        RETURNING *`,
-      [body.name, body.trigger, body.status, body.id, session.organizationId]
+      [body.name, body.trigger, body.status, body.id, session!.organizationId]
     )
 
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "Workflow" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "Workflow" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {

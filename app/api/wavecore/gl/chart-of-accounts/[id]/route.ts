@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       `SELECT id, code, name, type, "parentId", description, "isReconcilable", "isActive"
@@ -36,7 +36,7 @@ export async function DELETE(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     // Check if account has journal items (don't delete if in use)
     const hasItems = await pool.query(

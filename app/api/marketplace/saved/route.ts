@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
        JOIN "MarketplaceListing" l ON s."listingId" = l.id
        WHERE s."userId" = $1
        ORDER BY s."createdAt" DESC`,
-      [session.userId]
+      [session!.userId]
     )
 
     return NextResponse.json({ saved: result.rows })
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
        VALUES ($1, $2, NOW())
        ON CONFLICT ("userId", "listingId") DO NOTHING
        RETURNING *`,
-      [session.userId, body.listingId]
+      [session!.userId, body.listingId]
     )
 
     return NextResponse.json({ saved: result.rows[0], success: true }, { status: 201 })
@@ -60,7 +60,7 @@ export async function DELETE(req: NextRequest) {
 
     await pool.query(
       `DELETE FROM "MarketplaceSaved" WHERE "userId" = $1 AND "listingId" = $2`,
-      [session.userId, listingId]
+      [session!.userId, listingId]
     )
 
     return NextResponse.json({ success: true })

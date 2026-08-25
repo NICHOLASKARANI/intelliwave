@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       `SELECT pf.id, pf.name, pf.url, pf.type, pf.size, pf."createdAt"
@@ -37,7 +37,7 @@ export async function DELETE(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       `DELETE FROM "ProjectFile" pf

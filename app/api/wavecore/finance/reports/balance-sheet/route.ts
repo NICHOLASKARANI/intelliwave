@@ -7,7 +7,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const assets = await pool.query(
       `SELECT COALESCE(SUM(ji.debit - ji.credit), 0) as total

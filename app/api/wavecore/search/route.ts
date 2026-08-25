@@ -8,7 +8,7 @@ import { logger } from '@/lib/wavecore/logger'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     })
 
     logger.info('Search executed', {
-      userId: session.userId,
+      userId: session!.userId,
       organizationId: orgId,
       metadata: { query, type, resultCount: results.length },
     })

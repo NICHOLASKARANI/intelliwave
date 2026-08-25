@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save file
-    const uploadResult = await saveUploadedFile(file, session.organizationId, category)
+    const uploadResult = await saveUploadedFile(file, session!.organizationId, category)
 
     if (!uploadResult.success) {
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (projectId) {
       const project = await pool.query(
         'SELECT id FROM "Project" WHERE id = $1 AND "organizationId" = $2',
-        [projectId, session.organizationId]
+        [projectId, session!.organizationId]
       )
       if (project.rows.length === 0) {
         return NextResponse.json({ error: 'Project not found' }, { status: 404 })

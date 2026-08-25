@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "DocumentNumbering" WHERE "organizationId" = $1 ORDER BY documenttype`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ numbering: result.rows })
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
        ON CONFLICT ("organizationId", documenttype) 
        DO UPDATE SET prefix = $2, nextnumber = $3, "updatedat" = NOW()
        RETURNING *`,
-      [body.documenttype, body.prefix, body.nextnumber || 1, session.organizationId]
+      [body.documenttype, body.prefix, body.nextnumber || 1, session!.organizationId]
     )
 
     return NextResponse.json({ numbering: result.rows[0], success: true })

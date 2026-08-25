@@ -8,10 +8,10 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const [customers, leads, products, invoices, employees, projects] = await Promise.all([
       pool.query('SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [orgId]),

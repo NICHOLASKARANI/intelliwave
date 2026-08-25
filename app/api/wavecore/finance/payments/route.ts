@@ -16,7 +16,7 @@ const paymentSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       `SELECT cp.id, cp.number, cp.date, cp.amount, cp.method, cp.reference,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const body = await request.json()
     const validated = paymentSchema.parse(body)

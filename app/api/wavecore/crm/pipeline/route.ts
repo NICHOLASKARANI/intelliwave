@@ -7,7 +7,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     // Get all pipeline stages
     const stages = await pool.query(

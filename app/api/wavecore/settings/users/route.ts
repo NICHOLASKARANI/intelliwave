@@ -5,7 +5,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
        WHERE o.id = $1
        AND (u.name ILIKE $2 OR u.email ILIKE $2)
        ORDER BY u."createdAt" DESC`,
-      [session.organizationId, `%${search}%`]
+      [session!.organizationId, `%${search}%`]
     )
 
     return NextResponse.json({ users: result.rows })

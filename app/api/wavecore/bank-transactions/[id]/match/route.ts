@@ -14,7 +14,7 @@ export async function POST(
     // Verify transaction belongs to tenant
     const txn = await pool.query(
       'SELECT id, "bankAccountId" FROM "BankTransaction" WHERE id = $1 AND "organizationId" = $2',
-      [params.id, session.organizationId]
+      [params.id, session!.organizationId]
     )
 
     if (txn.rows.length === 0) {

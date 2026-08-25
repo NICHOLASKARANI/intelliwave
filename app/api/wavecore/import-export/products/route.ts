@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
        FROM "Product"
        WHERE "organizationId" = $1
        ORDER BY "createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     if (result.rows.length === 0) {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="products-${session.organizationId}.csv"`,
+        'Content-Disposition': `attachment; filename="products-${session!.organizationId}.csv"`,
       },
     })
   } catch (error) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       // Check SKU uniqueness within org
       const existing = await client.query(
         'SELECT id FROM "Product" WHERE sku = $1 AND "organizationId" = $2',
-        [rowData.sku, session.organizationId]
+        [rowData.sku, session!.organizationId]
       )
       if (existing.rows.length > 0) {
         skipped++
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
           parseFloat(rowData.sellingPrice) || 0,
           parseFloat(rowData.minStock) || 0,
           parseFloat(rowData.maxStock) || 0,
-          session.organizationId,
+          session!.organizationId,
         ]
       )
       imported++

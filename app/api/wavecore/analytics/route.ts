@@ -7,10 +7,10 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const [
       revenue,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       ),
       pool.query(
         `SELECT COUNT(*) as count FROM "SupportTicket" WHERE "userId" = $1`,
-        [session.userId]
+        [session!.userId]
       ),
     ])
 

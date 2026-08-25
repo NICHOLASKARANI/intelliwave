@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "AuditLog" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ logs: result.rows })

@@ -21,12 +21,12 @@ export async function GET(request: NextRequest) {
        WHERE al."userId" = $1
        ORDER BY al."createdAt" DESC
        LIMIT $2 OFFSET $3`,
-      [session.userId, pageSize, offset]
+      [session!.userId, pageSize, offset]
     )
 
     const countResult = await pool.query(
       'SELECT COUNT(*) FROM "AuditLog" WHERE "userId" = $1',
-      [session.userId]
+      [session!.userId]
     )
 
     return NextResponse.json({

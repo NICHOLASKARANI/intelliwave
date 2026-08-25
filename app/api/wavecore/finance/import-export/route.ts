@@ -9,7 +9,7 @@ import { generateCSV, parseCSV } from '@/lib/wavecore/csv'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const { searchParams } = new URL(request.url)
     const entity = searchParams.get('entity') || 'accounts'
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const body = await request.json()
     const { csvText } = body

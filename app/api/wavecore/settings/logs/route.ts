@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     // Return system logs (or empty if not admin)
     const result = await pool.query(
       `SELECT * FROM "AuditLog" WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT 50`,
-      [session.userId]
+      [session!.userId]
     )
     
     return NextResponse.json({ logs: result.rows })

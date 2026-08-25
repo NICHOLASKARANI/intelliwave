@@ -20,7 +20,7 @@ const journalEntrySchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       `SELECT je.id, je.number, je.date, je.reference, je.description, je.status, je.amount, je."createdAt"
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const body = await request.json()
     const validated = journalEntrySchema.parse(body)

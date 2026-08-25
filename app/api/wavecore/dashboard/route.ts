@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
@@ -64,13 +64,13 @@ export async function GET(request: NextRequest) {
       pool.query(
         `SELECT action, "entityType", "createdAt" FROM "AuditLog" 
          WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT 10`,
-        [session.userId]
+        [session!.userId]
       ),
     ])
 
     return NextResponse.json({
       organization: { id: orgId, name: session.orgName },
-      user: { id: session.userId, name: session.name, email: session.email, role: session.role },
+      user: { id: session!.userId, name: session.name, email: session.email, role: session.role },
       kpis: {
         revenueMTD: revenue.rows[0].total,
         outstandingReceivables: receivables.rows[0].total,

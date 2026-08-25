@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       JOIN "Employee" e ON e.id = a."employeeId"
       WHERE a."organizationId" = $1
     `
-    const params: any[] = [session.organizationId]
+    const params: any[] = [session!.organizationId]
 
     if (date) {
       params.push(new Date(date))
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     // Verify employee belongs to tenant
     const emp = await pool.query(
       'SELECT id FROM "Employee" WHERE id = $1 AND "organizationId" = $2',
-      [validated.employeeId, session.organizationId]
+      [validated.employeeId, session!.organizationId]
     )
     if (emp.rows.length === 0) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         validated.status,
         validated.notes || null,
         validated.employeeId,
-        session.organizationId,
+        session!.organizationId,
       ]
     )
 

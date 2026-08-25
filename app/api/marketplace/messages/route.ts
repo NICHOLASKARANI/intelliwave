@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     // Verify user is part of conversation
     const convCheck = await pool.query(
       `SELECT * FROM "MarketplaceConversation" WHERE id = $1 AND ("buyerId" = $2 OR "sellerId" = $2)`,
-      [conversationId, session.userId]
+      [conversationId, session!.userId]
     )
 
     if (convCheck.rows.length === 0) {
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     // Mark messages as read
     await pool.query(
       `UPDATE "MarketplaceMessage" SET "isRead" = true WHERE "conversationId" = $1 AND "receiverId" = $2 AND "isRead" = false`,
-      [conversationId, session.userId]
+      [conversationId, session!.userId]
     )
 
     return NextResponse.json({ messages: result.rows })
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     // Verify user is part of conversation
     const convCheck = await pool.query(
       `SELECT * FROM "MarketplaceConversation" WHERE id = $1 AND ("buyerId" = $2 OR "sellerId" = $2)`,
-      [body.conversationId, session.userId]
+      [body.conversationId, session!.userId]
     )
 
     if (convCheck.rows.length === 0) {
@@ -69,14 +69,14 @@ export async function POST(req: NextRequest) {
     }
 
     const conversation = convCheck.rows[0]
-    const receiverId = conversation.buyerId === session.userId ? conversation.sellerId : conversation.buyerId
+    const receiverId = conversation.buyerId === session!.userId ? conversation.sellerId : conversation.buyerId
 
     // Insert message
     const result = await pool.query(
       `INSERT INTO "MarketplaceMessage" ("conversationId", "senderId", "receiverId", content, "isRead", "createdAt")
        VALUES ($1, $2, $3, $4, false, NOW())
        RETURNING *`,
-      [body.conversationId, session.userId, receiverId, body.content]
+      [body.conversationId, session!.userId, receiverId, body.content]
     )
 
     // Update conversation last message

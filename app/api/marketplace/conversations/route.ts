@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       JOIN "User" u ON (CASE WHEN c."buyerId" = $1 THEN c."sellerId" ELSE c."buyerId" END) = u.id
       WHERE c."buyerId" = $1 OR c."sellerId" = $1
       ORDER BY c."lastMessageAt" DESC`,
-      [session.userId]
+      [session!.userId]
     )
 
     return NextResponse.json({ conversations: result.rows })
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     // Check if conversation exists
     const existing = await pool.query(
       `SELECT * FROM "MarketplaceConversation" WHERE "listingId" = $1 AND "buyerId" = $2`,
-      [body.listingId, session.userId]
+      [body.listingId, session!.userId]
     )
 
     if (existing.rows.length > 0) {
@@ -68,14 +68,14 @@ export async function POST(req: NextRequest) {
       `INSERT INTO "MarketplaceConversation" ("listingId", "buyerId", "sellerId", "lastMessage", "lastMessageAt", "createdAt")
        VALUES ($1, $2, $3, $4, NOW(), NOW())
        RETURNING *`,
-      [body.listingId, session.userId, sellerId, body.message || 'Hello, is this available?']
+      [body.listingId, session!.userId, sellerId, body.message || 'Hello, is this available?']
     )
 
     // Add first message
     await pool.query(
       `INSERT INTO "MarketplaceMessage" ("conversationId", "senderId", "receiverId", content, "isRead", "createdAt")
        VALUES ($1, $2, $3, $4, false, NOW())`,
-      [result.rows[0].id, session.userId, sellerId, body.message || 'Hello, is this available?']
+      [result.rows[0].id, session!.userId, sellerId, body.message || 'Hello, is this available?']
     )
 
     return NextResponse.json({ conversation: result.rows[0], exists: false }, { status: 201 })

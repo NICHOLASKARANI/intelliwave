@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
        JOIN "Organization" o ON o.id = om."A"
        WHERE om."B" = $1
        ORDER BY is_current DESC, o.name ASC`,
-      [session.userId, session.organizationId]
+      [session!.userId, session!.organizationId]
     )
 
     return NextResponse.json({ organizations: result.rows })

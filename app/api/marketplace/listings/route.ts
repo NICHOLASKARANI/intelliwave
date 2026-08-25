@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       `INSERT INTO "MarketplaceListing" ("sellerId", title, description, price, category, condition, location, images, status, "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE', NOW(), NOW())
        RETURNING *`,
-      [session.userId, body.title, body.description || '', body.price, body.category, body.condition || 'Used', body.location || '', body.images || []]
+      [session!.userId, body.title, body.description || '', body.price, body.category, body.condition || 'Used', body.location || '', body.images || []]
     )
 
     // Update category count
@@ -111,7 +111,7 @@ export async function DELETE(req: NextRequest) {
       [parseInt(id!)]
     )
 
-    if (check.rows.length === 0 || check.rows[0].sellerId !== session.userId) {
+    if (check.rows.length === 0 || check.rows[0].sellerId !== session!.userId) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 

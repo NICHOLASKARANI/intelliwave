@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
        FROM "Customer"
        WHERE "organizationId" = $1
        ORDER BY "createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     if (result.rows.length === 0) {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="customers-${session.organizationId}.csv"`,
+        'Content-Disposition': `attachment; filename="customers-${session!.organizationId}.csv"`,
       },
     })
   } catch (error) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       if (rowData.email) {
         const existing = await client.query(
           'SELECT id FROM "Customer" WHERE email = $1 AND "organizationId" = $2',
-          [rowData.email, session.organizationId]
+          [rowData.email, session!.organizationId]
         )
         if (existing.rows.length > 0) {
           skipped++
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           rowData.country || null,
           rowData.type || 'INDIVIDUAL',
           rowData.status || 'ACTIVE',
-          session.organizationId,
+          session!.organizationId,
         ]
       )
       imported++

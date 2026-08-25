@@ -7,7 +7,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       'SELECT * FROM "Activity" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 50',
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const body = await request.json()
     const { type, subject, description, customerId } = body

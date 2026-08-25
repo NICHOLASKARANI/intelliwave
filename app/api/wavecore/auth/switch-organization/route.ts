@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
        FROM "_OrganizationMembers" om
        JOIN "Organization" o ON o.id = om."A"
        WHERE om."B" = $1 AND o.id = $2`,
-      [session.userId, validated.organizationId]
+      [session!.userId, validated.organizationId]
     )
 
     if (membership.rows.length === 0) {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     await client.query(
       `INSERT INTO "Session" (id, "sessionToken", "userId", expires)
        VALUES (gen_random_uuid()::text, $1, $2, $3)`,
-      [newToken, session.userId, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)]
+      [newToken, session!.userId, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)]
     )
 
     // Delete old session

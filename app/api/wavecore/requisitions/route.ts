@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "PurchaseRequisition" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ requisitions: result.rows })
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "PurchaseRequisition" (id, description, status, "organizationId", "createdAt")
        VALUES ($1, $2, $3, $4, NOW())
        RETURNING *`,
-      [id, body.description, body.status || 'PENDING', session.organizationId]
+      [id, body.description, body.status || 'PENDING', session!.organizationId]
     )
 
     return NextResponse.json({ requisition: result.rows[0] }, { status: 201 })
@@ -52,7 +52,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "PurchaseRequisition" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "PurchaseRequisition" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {

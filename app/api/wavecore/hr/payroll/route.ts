@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
        WHERE pp."organizationId" = $1
        ORDER BY pp."createdAt" DESC
        LIMIT 20`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ payrollPeriods: result.rows })
@@ -49,13 +49,13 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "PayrollPeriod" (id, name, "startDate", "endDate", "paymentDate", status, "organizationId", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'DRAFT', $5, NOW(), NOW())
        RETURNING id`,
-      [validated.name, new Date(validated.startDate), new Date(validated.endDate), new Date(validated.paymentDate), session.organizationId]
+      [validated.name, new Date(validated.startDate), new Date(validated.endDate), new Date(validated.paymentDate), session!.organizationId]
     )
 
     // Get all active employees
     const employees = await client.query(
       'SELECT id, salary FROM "Employee" WHERE "organizationId" = $1 AND status = $2',
-      [session.organizationId, 'ACTIVE']
+      [session!.organizationId, 'ACTIVE']
     )
 
     // Create payroll items for each employee
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       await client.query(
         `INSERT INTO "PayrollItem" (id, "basicSalary", allowances, deductions, "netSalary", "employeeId", "payrollPeriodId", "organizationId", "createdAt", "updatedAt")
          VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-        [basicSalary, allowances, deductions, netSalary, emp.id, period.rows[0].id, session.organizationId]
+        [basicSalary, allowances, deductions, netSalary, emp.id, period.rows[0].id, session!.organizationId]
       )
     }
 

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "EmailTemplate" WHERE "organizationId" = $1 ORDER BY "createdat" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ templates: result.rows })
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "EmailTemplate" (name, subject, body, active, "organizationId", "createdat")
        VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
-      [body.name, body.subject, body.body || '', body.active !== false, session.organizationId]
+      [body.name, body.subject, body.body || '', body.active !== false, session!.organizationId]
     )
 
     return NextResponse.json({ template: result.rows[0] }, { status: 201 })
@@ -53,7 +53,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "EmailTemplate" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "EmailTemplate" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {

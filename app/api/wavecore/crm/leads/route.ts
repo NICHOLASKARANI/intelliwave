@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "Lead" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100`,
-      [session.organizationId]
+      [session!.organizationId]
     )
     return NextResponse.json({ leads: result.rows })
   } catch (error) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Lead" (id, name, email, phone, status, "organizationId", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, 'NEW', $4, NOW(), NOW())
        RETURNING *`,
-      [body.name, body.email || null, body.phone || null, session.organizationId]
+      [body.name, body.email || null, body.phone || null, session!.organizationId]
     )
     return NextResponse.json({ lead: result.rows[0] }, { status: 201 })
   } catch (error) {
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
       `UPDATE "Lead" SET name = $1, email = $2, phone = $3, status = $4, "updatedAt" = NOW()
        WHERE id = $5 AND "organizationId" = $6
        RETURNING *`,
-      [body.name, body.email, body.phone, body.status || 'NEW', body.id, session.organizationId]
+      [body.name, body.email, body.phone, body.status || 'NEW', body.id, session!.organizationId]
     )
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ lead: result.rows[0] })
@@ -64,7 +64,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    await pool.query(`DELETE FROM "Lead" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "Lead" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })

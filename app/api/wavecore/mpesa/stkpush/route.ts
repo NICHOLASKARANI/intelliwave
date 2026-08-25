@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       await pool.query(
         `INSERT INTO "Subscription" ("organizationId", "userId", plan, status, amount, currency, "mpesaReceipt", "createdAt", "updatedAt")
          VALUES ($1, $2, 'MONTHLY', 'PENDING', 500, 'KES', $3, NOW(), NOW())`,
-        [session.organizationId, session.userId, stkData.CheckoutRequestID]
+        [session!.organizationId, session!.userId, stkData.CheckoutRequestID]
       )
 
       return NextResponse.json({

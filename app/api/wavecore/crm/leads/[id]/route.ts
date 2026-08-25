@@ -12,7 +12,7 @@ export async function GET(
     const session = await requireTenant(request)
     const result = await pool.query(
       'SELECT * FROM "Lead" WHERE id = $1 AND "organizationId" = $2',
-      [params.id, session.organizationId]
+      [params.id, session!.organizationId]
     )
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
@@ -34,7 +34,7 @@ export async function PUT(
     const result = await pool.query(
       `UPDATE "Lead" SET name = $1, email = $2, phone = $3, company = $4, status = $5, "updatedAt" = NOW()
        WHERE id = $6 AND "organizationId" = $7 RETURNING id`,
-      [body.name, body.email || null, body.phone || null, body.company || null, body.status || 'NEW', params.id, session.organizationId]
+      [body.name, body.email || null, body.phone || null, body.company || null, body.status || 'NEW', params.id, session!.organizationId]
     )
 
     if (result.rows.length === 0) {
@@ -54,7 +54,7 @@ export async function DELETE(
     const session = await requireTenant(request)
     const result = await pool.query(
       'DELETE FROM "Lead" WHERE id = $1 AND "organizationId" = $2',
-      [params.id, session.organizationId]
+      [params.id, session!.organizationId]
     )
     if (result.rowCount === 0) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })

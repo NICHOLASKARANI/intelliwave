@@ -14,11 +14,11 @@ export async function POST(req: NextRequest) {
 
     // Get REAL ERP data
     const [customers, products, employees, invoices, revenue] = await Promise.all([
-      pool.query('SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [session.organizationId]),
-      pool.query('SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [session.organizationId]),
-      pool.query('SELECT COUNT(*) FROM "Employee" WHERE "organizationId" = $1', [session.organizationId]),
-      pool.query('SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [session.organizationId]),
-      pool.query('SELECT COALESCE(SUM(subtotal + "taxAmount"), 0) as total FROM "CustomerInvoice" WHERE "organizationId" = $1', [session.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [session!.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [session!.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "Employee" WHERE "organizationId" = $1', [session!.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [session!.organizationId]),
+      pool.query('SELECT COALESCE(SUM(subtotal + "taxAmount"), 0) as total FROM "CustomerInvoice" WHERE "organizationId" = $1', [session!.organizationId]),
     ])
 
     const realData = {

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "Currency" WHERE "organizationId" = $1 ORDER BY "isdefault" DESC, code`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ currencies: result.rows })
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
        ON CONFLICT ("organizationId", code) 
        DO UPDATE SET name = $2, rate = $3, isdefault = $4, "updatedat" = NOW()
        RETURNING *`,
-      [body.code, body.name, body.rate, body.isdefault || false, session.organizationId]
+      [body.code, body.name, body.rate, body.isdefault || false, session!.organizationId]
     )
 
     return NextResponse.json({ currency: result.rows[0], success: true })
@@ -55,7 +55,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "Currency" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "Currency" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {

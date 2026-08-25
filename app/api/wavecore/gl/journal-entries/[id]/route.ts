@@ -10,7 +10,7 @@ export async function DELETE(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     await pool.query('DELETE FROM "JournalItem" WHERE "journalEntryId" = $1', [params.id])
     const result = await pool.query(

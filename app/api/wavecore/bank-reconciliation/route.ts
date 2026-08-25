@@ -16,14 +16,14 @@ export async function GET(request: NextRequest) {
     if (!bankAccountId) {
       const accounts = await pool.query(
         `SELECT id, name, "currentBalance" FROM "BankAccount" WHERE "organizationId" = $1`,
-        [session.organizationId]
+        [session!.organizationId]
       )
       return NextResponse.json({ accounts: accounts.rows, message: 'Select a bank account' })
     }
 
     const account = await pool.query(
       `SELECT id, name FROM "BankAccount" WHERE id = $1 AND "organizationId" = $2`,
-      [bankAccountId, session.organizationId]
+      [bankAccountId, session!.organizationId]
     )
 
     if (account.rows.length === 0) {

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "Product" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100`,
-      [session.organizationId]
+      [session!.organizationId]
     )
     return NextResponse.json({ products: result.rows })
   } catch (error) {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Product" (id, name, sku, "sellingPrice", "organizationId", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, NOW(), NOW())
        RETURNING *`,
-      [body.name, body.sku, body.sellingPrice || 0, session.organizationId]
+      [body.name, body.sku, body.sellingPrice || 0, session!.organizationId]
     )
     return NextResponse.json({ product: result.rows[0] }, { status: 201 })
   } catch (error) {
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
       `UPDATE "Product" SET name = $1, sku = $2, "sellingPrice" = $3, "updatedAt" = NOW()
        WHERE id = $4 AND "organizationId" = $5
        RETURNING *`,
-      [body.name, body.sku, body.sellingPrice, body.id, session.organizationId]
+      [body.name, body.sku, body.sellingPrice, body.id, session!.organizationId]
     )
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ product: result.rows[0] })
@@ -63,7 +63,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    await pool.query(`DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })

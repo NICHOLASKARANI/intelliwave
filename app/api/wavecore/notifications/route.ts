@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
        WHERE "userId" = $1 OR "organizationId" = $2
        ORDER BY "createdAt" DESC
        LIMIT 50`,
-      [session.userId, session.organizationId]
+      [session!.userId, session!.organizationId]
     )
 
     const unreadCount = result.rows.filter(n => !n.isRead).length
@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
 
     await pool.query(
       'UPDATE "Notification" SET "isRead" = true WHERE ("userId" = $1 OR "organizationId" = $2) AND "isRead" = false',
-      [session.userId, session.organizationId]
+      [session!.userId, session!.organizationId]
     )
 
     return NextResponse.json({ success: true })

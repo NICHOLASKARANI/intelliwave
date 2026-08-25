@@ -20,7 +20,7 @@ const customerSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
        AND (name ILIKE $2 OR email ILIKE $2 OR phone ILIKE $2)
        ORDER BY "createdAt" DESC
        LIMIT $3`,
-      [session.organizationId, `%${search}%`, limit]
+      [session!.organizationId, `%${search}%`, limit]
     )
 
     return NextResponse.json({ customers: result.rows })
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         validated.country || null,
         validated.type,
         validated.status,
-        session.organizationId,
+        session!.organizationId,
       ]
     )
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest) {
        SET name = $1, email = $2, phone = $3, company = $4, address = $5, city = $6, country = $7, "updatedAt" = NOW()
        WHERE id = $8 AND "organizationId" = $9
        RETURNING *`,
-      [body.name, body.email, body.phone, body.company, body.address, body.city, body.country, body.id, session.organizationId]
+      [body.name, body.email, body.phone, body.company, body.address, body.city, body.country, body.id, session!.organizationId]
     )
 
     if (result.rows.length === 0) {
@@ -113,7 +113,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -122,7 +122,7 @@ export async function DELETE(request: NextRequest) {
 
     const result = await pool.query(
       `DELETE FROM "Customer" WHERE id = $1 AND "organizationId" = $2`,
-      [id, session.organizationId]
+      [id, session!.organizationId]
     )
 
     return NextResponse.json({ success: true })

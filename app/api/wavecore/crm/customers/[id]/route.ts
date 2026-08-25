@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       'SELECT * FROM "Customer" WHERE id = $1 AND "organizationId" = $2',
@@ -33,7 +33,7 @@ export async function PUT(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const body = await request.json()
 
@@ -60,7 +60,7 @@ export async function DELETE(
 ) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const result = await pool.query(
       'DELETE FROM "Customer" WHERE id = $1 AND "organizationId" = $2',

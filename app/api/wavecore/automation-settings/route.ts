@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "AutomationSetting" WHERE "organizationId" = $1 LIMIT 1`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ settings: result.rows[0] || null })
@@ -33,20 +33,20 @@ export async function POST(request: NextRequest) {
     // Check if settings exist
     const existing = await pool.query(
       `SELECT id FROM "AutomationSetting" WHERE "organizationId" = $1`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     if (existing.rows.length > 0) {
       await pool.query(
         `UPDATE "AutomationSetting" SET notifications = $1, "autoRetry" = $2, "maxRetries" = $3, "webhookTimeout" = $4, "updatedAt" = NOW()
          WHERE "organizationId" = $5`,
-        [body.notifications, body.autoRetry, body.maxRetries, body.webhookTimeout, session.organizationId]
+        [body.notifications, body.autoRetry, body.maxRetries, body.webhookTimeout, session!.organizationId]
       )
     } else {
       await pool.query(
         `INSERT INTO "AutomationSetting" (id, "organizationId", notifications, "autoRetry", "maxRetries", "webhookTimeout", "updatedAt")
          VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [crypto.randomUUID(), session.organizationId, body.notifications, body.autoRetry, body.maxRetries, body.webhookTimeout]
+        [crypto.randomUUID(), session!.organizationId, body.notifications, body.autoRetry, body.maxRetries, body.webhookTimeout]
       )
     }
 

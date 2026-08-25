@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
        WHERE o."organizationId" = $1
        ORDER BY o."createdAt" DESC
        LIMIT 100`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ opportunities: result.rows })
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (validated.customerId) {
       const customer = await pool.query(
         'SELECT id FROM "Customer" WHERE id = $1 AND "organizationId" = $2',
-        [validated.customerId, session.organizationId]
+        [validated.customerId, session!.organizationId]
       )
       if (customer.rows.length === 0) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Opportunity" (id, name, amount, stage, probability, "customerId", "expectedCloseDate", notes, "organizationId", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
        RETURNING id, name, amount, stage`,
-      [validated.name, validated.amount, validated.stage, validated.probability, validated.customerId || null, validated.expectedCloseDate ? new Date(validated.expectedCloseDate) : null, validated.notes || null, session.organizationId]
+      [validated.name, validated.amount, validated.stage, validated.probability, validated.customerId || null, validated.expectedCloseDate ? new Date(validated.expectedCloseDate) : null, validated.notes || null, session!.organizationId]
     )
 
     return NextResponse.json({ success: true, opportunity: result.rows[0] }, { status: 201 })

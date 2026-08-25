@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
        WHERE sm."organizationId" = $1
        ORDER BY sm."createdAt" DESC
        LIMIT 100`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ movements: result.rows })
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Verify product belongs to tenant
     const product = await client.query(
       'SELECT id FROM "Product" WHERE id = $1 AND "organizationId" = $2',
-      [validated.productId, session.organizationId]
+      [validated.productId, session!.organizationId]
     )
     if (product.rows.length === 0) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "StockMove" (id, type, reference, status, notes, "productId", quantity, "fromLocationId", "toLocationId", "organizationId", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, 'COMPLETED', $3, $4, $5, $6, $7, $8, NOW(), NOW())
        RETURNING id`,
-      [validated.type, validated.reference || null, validated.notes || null, validated.productId, validated.quantity, validated.fromLocationId || null, validated.toLocationId || null, session.organizationId]
+      [validated.type, validated.reference || null, validated.notes || null, validated.productId, validated.quantity, validated.fromLocationId || null, validated.toLocationId || null, session!.organizationId]
     )
 
     // Update stock quantity

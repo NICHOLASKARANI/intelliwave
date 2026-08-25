@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "OrganizationSetting" WHERE "organizationId" = $1 LIMIT 1`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     // If no settings exist, return defaults
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     // Check if settings exist
     const existing = await pool.query(
       `SELECT id FROM "OrganizationSetting" WHERE "organizationId" = $1`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     let result
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           body.dateformat || 'DD/MM/YYYY',
           body.currencysymbol || 'KSh',
           body.numberformat || '1,234.56',
-          session.organizationId
+          session!.organizationId
         ]
       )
     } else {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
           body.dateformat || 'DD/MM/YYYY',
           body.currencysymbol || 'KSh',
           body.numberformat || '1,234.56',
-          session.organizationId
+          session!.organizationId
         ]
       )
     }

@@ -13,7 +13,7 @@ export async function DELETE(
 
     const result = await pool.query(
       'DELETE FROM "Webhook" WHERE id = $1 AND "organizationId" = $2',
-      [params.id, session.organizationId]
+      [params.id, session!.organizationId]
     )
 
     if (result.rowCount === 0) {

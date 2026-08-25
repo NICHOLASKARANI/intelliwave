@@ -19,7 +19,7 @@ const invoiceSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
     const result = await pool.query(
       'SELECT * FROM "CustomerInvoice" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 50',
       [orgId]
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
     const session = await requireTenant(request)
-    const orgId = session.organizationId
+    const orgId = session!.organizationId
 
     const body = await request.json()
     const validated = invoiceSchema.parse(body)
@@ -83,7 +83,7 @@ export async function PUT(req: NextRequest) {
       `UPDATE "CustomerInvoice" SET status = $1, "updatedAt" = NOW()
        WHERE id = $2 AND "organizationId" = $3
        RETURNING *`,
-      [body.status, body.id, session.organizationId]
+      [body.status, body.id, session!.organizationId]
     )
     return NextResponse.json({ invoice: result.rows[0] })
   } catch (error) {
@@ -98,7 +98,7 @@ export async function DELETE(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
-    await pool.query(`DELETE FROM "CustomerInvoice" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "CustomerInvoice" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete invoice' }, { status: 500 })

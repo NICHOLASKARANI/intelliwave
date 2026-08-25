@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     try {
       result = await pool.query(
         `SELECT * FROM "CustomReport" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
-        [session.organizationId]
+        [session!.organizationId]
       )
     } catch {
       // Table doesn't exist yet
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         `INSERT INTO "CustomReport" (id, name, type, "organizationId", "createdAt")
          VALUES ($1, $2, $3, $4, NOW())
          RETURNING *`,
-        [id, body.name, body.type || 'Financial', session.organizationId]
+        [id, body.name, body.type || 'Financial', session!.organizationId]
       )
     } catch (err) {
       // Table doesn't exist - create it first
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         `INSERT INTO "CustomReport" (id, name, type, "organizationId", "createdAt")
          VALUES ($1, $2, $3, $4, NOW())
          RETURNING *`,
-        [id, body.name, body.type || 'Financial', session.organizationId]
+        [id, body.name, body.type || 'Financial', session!.organizationId]
       )
     }
 
@@ -84,7 +84,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
 
     try {
-      await pool.query(`DELETE FROM "CustomReport" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+      await pool.query(`DELETE FROM "CustomReport" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
     } catch (err) {
       return NextResponse.json({ error: 'Table not found' }, { status: 500 })
     }

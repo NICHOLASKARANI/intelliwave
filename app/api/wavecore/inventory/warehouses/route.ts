@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
        FROM "Warehouse" w
        WHERE w."organizationId" = $1 AND w."isActive" = true
        ORDER BY w."createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ warehouses: result.rows })
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Warehouse" (id, name, code, address, city, country, "isActive", "organizationId", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, true, $6, NOW(), NOW())
        RETURNING id, name, code`,
-      [validated.name, validated.code, validated.address || null, validated.city || null, validated.country || null, session.organizationId]
+      [validated.name, validated.code, validated.address || null, validated.city || null, validated.country || null, session!.organizationId]
     )
 
     return NextResponse.json({ success: true, warehouse: result.rows[0] }, { status: 201 })

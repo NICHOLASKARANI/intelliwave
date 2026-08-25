@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
        FROM "Subscription" s
        JOIN "Organization" o ON o.id = s."organizationId"
        WHERE s."organizationId" = $1`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     if (result.rows.length === 0) {

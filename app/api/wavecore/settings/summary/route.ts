@@ -18,15 +18,15 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       pool.query(
         `SELECT COUNT(*) FROM "_OrganizationMembers" om WHERE om."A" = $1`,
-        [session.organizationId]
+        [session!.organizationId]
       ),
-      pool.query('SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [session.organizationId]),
-      pool.query('SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [session.organizationId]),
-      pool.query('SELECT COUNT(*) FROM "Employee" WHERE "organizationId" = $1', [session.organizationId]),
-      pool.query('SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [session.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "Customer" WHERE "organizationId" = $1', [session!.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [session!.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "Employee" WHERE "organizationId" = $1', [session!.organizationId]),
+      pool.query('SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [session!.organizationId]),
       pool.query(
         'SELECT plan, status, "trialEndsAt", amount FROM "Subscription" WHERE "organizationId" = $1',
-        [session.organizationId]
+        [session!.organizationId]
       ),
     ])
 
