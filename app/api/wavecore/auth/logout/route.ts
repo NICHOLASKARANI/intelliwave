@@ -1,26 +1,37 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { // destroySession, getSession } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
+    const sessionToken = request.cookies.get('wavecore_session')?.value
 
-    if (session) {
-      await pool.query(
-        `INSERT INTO "AuditLog" (id, action, "entityType", "entityId", "userId", "createdAt")
-         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, NOW())`,
-        ['LOGOUT', 'User', session.userId, session.userId]
-      )
+    if (sessionToken) {
+      await pool.query(`DELETE FROM "Session" WHERE "sessionToken" = $1`, [sessionToken])
     }
 
-    await // destroySession()
-
-    return NextResponse.json({ success: true, message: 'Logged out successfully' })
+    const response = NextResponse.json({ success: true })
+    response.cookies.delete('wavecore_session')
+    return response
   } catch (error) {
     console.error('Logout error:', error)
-    return NextResponse.json({ error: 'Unable to log out' }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const sessionToken = request.cookies.get('wavecore_session')?.value
+
+    if (sessionToken) {
+      await pool.query(`DELETE FROM "Session" WHERE "sessionToken" = $1`, [sessionToken])
+    }
+
+    const response = NextResponse.redirect(new URL('/wavecore-erp/auth/login', request.url))
+    response.cookies.delete('wavecore_session')
+    return response
+  } catch (error) {
+    return NextResponse.redirect(new URL('/wavecore-erp/auth/login', request.url))
   }
 }
