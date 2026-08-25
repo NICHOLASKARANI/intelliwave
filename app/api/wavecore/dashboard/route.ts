@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { getSessionFromRequest } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {

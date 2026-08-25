@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { getSessionFromRequest } from '@/lib/wavecore/auth'
 import { getSession } from '@/lib/wavecore/auth'
 
 const SUBSCRIPTION_AMOUNT = 500

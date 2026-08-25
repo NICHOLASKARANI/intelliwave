@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { pool } from '@/lib/wavecore/db'
+import { getSessionFromRequest } from '@/lib/wavecore/auth'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 const invoiceSchema = z.object({
