@@ -21,6 +21,7 @@ export async function PUT(req: NextRequest) {
       const updated = await prisma.organizationSetting.update({
         where: { id: existing.id },
         data: {
+          organizationId: session.organizationId,
           companyname: body.companyname,
           email: body.email,
           phone: body.phone,
@@ -38,6 +39,7 @@ export async function PUT(req: NextRequest) {
     } else {
       const created = await prisma.organizationSetting.create({
         data: {
+          organizationId: session.organizationId,
           companyname: body.companyname || 'WaveCore ERP',
           email: body.email,
           phone: body.phone,
