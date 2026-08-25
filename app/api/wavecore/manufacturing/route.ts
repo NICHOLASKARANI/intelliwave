@@ -2,36 +2,21 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
-import { requireTenant } from '@/lib/wavecore/auth' from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const [wo, bom, qc, wc, mr] = await Promise.all([
-      pool.query(`SELECT COUNT(*) FROM "WorkOrder"`),
-      pool.query(`SELECT COUNT(*) FROM "BillOfMaterial"`),
-      pool.query(`SELECT COUNT(*) FROM "QualityCheck"`),
-      pool.query(`SELECT COUNT(*) FROM "WorkCenter"`),
-      pool.query(`SELECT COUNT(*) FROM "MaintenanceRequest"`),
-    ])
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const totalQC = parseInt(qc.rows[0].count)
-    const passedQC = await pool.query(`SELECT COUNT(*) FROM "QualityCheck" WHERE "result" = 'PASSED'`)
+    const result = await pool.query(
+      `SELECT * FROM "WorkOrder" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 50`,
+      [session.organizationId]
+    )
 
-    return NextResponse.json({
-      stats: {
-        activeWorkOrders: parseInt(wo.rows[0].count),
-        productionOutput: 0,
-        qualityPassRate: totalQC > 0 ? Math.round((parseInt(passedQC.rows[0].count) / totalQC) * 100) : 0,
-        efficiencyRate: 0,
-        boms: parseInt(bom.rows[0].count),
-        workCenters: parseInt(wc.rows[0].count),
-        maintenanceRequests: parseInt(mr.rows[0].count),
-        qualityChecks: totalQC,
-        totalRoutes: 0,
-      },
-    })
-  } catch (error: any) {
-    console.error('Dashboard:', error.message)
-    return NextResponse.json({ stats: {} }, { status: 500 })
+    return NextResponse.json({ workOrders: result.rows })
+  } catch (error) {
+    console.error('Manufacturing GET error:', error)
+    return NextResponse.json({ workOrders: [] })
   }
 }
