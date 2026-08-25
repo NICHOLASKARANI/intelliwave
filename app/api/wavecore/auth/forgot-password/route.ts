@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
-
-// Rate limiting
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const bucket = rateLimitMap.get(ip)
-  if (!bucket || bucket.resetAt < now) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 900000 })
-    return true
-  }
-  if (bucket.count >= 3) return false
-  bucket.count++
-  return true
-}
+import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
+import { sendOTP } from '@/lib/wavecore/security/otp-service'
 
 // Generate 6-digit OTP
 function generateOTP(): string {
@@ -25,15 +12,17 @@ export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     
-    if (!checkRateLimit(ip)) {
+    // Redis rate limiting - 3 attempts per 15 min per IP
+    const rateLimit = await checkRedisRateLimit(`forgot-password:${ip}`, 3, 900)
+    if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: 'Too many attempts. Try again in 15 minutes.' },
-        { status: 429 }
+        { error: 'Too many attempts. Try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
       )
     }
 
     const body = await req.json()
-    const { identifier } = body // Can be email OR phone
+    const { identifier } = body
 
     if (!identifier) {
       return NextResponse.json({ error: 'Email or phone number required' }, { status: 400 })
@@ -41,8 +30,8 @@ export async function POST(req: NextRequest) {
 
     // Find user by email OR phone
     const userResult = await pool.query(
-      `SELECT id, email, phone, name FROM "User" WHERE email = $1 OR phone = $2 AND "isActive" = true`,
-      [identifier, identifier]
+      `SELECT id, email, phone, name FROM "User" WHERE (email = $1 OR phone = $1) AND "isActive" = true`,
+      [identifier]
     )
 
     if (userResult.rows.length === 0) {
@@ -59,14 +48,15 @@ export async function POST(req: NextRequest) {
       [otp, resetToken, user.id]
     )
 
-    // In production: Send OTP via email (sendgrid) or SMS (twilio/africastalking)
-    // For now, return OTP in response for testing
+    // Send OTP via email or SMS
+    const otpResult = await sendOTP(identifier, otp)
+
+    // In production, don't return OTP. Only for testing when services not configured
     return NextResponse.json({
       success: true,
-      message: `OTP sent to ${identifier}`,
-      otp: otp, // REMOVE IN PRODUCTION - only for testing
-      resetToken: resetToken,
-      userId: user.id
+      message: otpResult.message,
+      otp: otpResult.debugOtp || undefined,
+      resetToken: resetToken
     })
   } catch (error) {
     console.error('Forgot password error:', error)
