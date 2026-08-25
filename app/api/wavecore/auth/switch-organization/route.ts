@@ -15,7 +15,7 @@ const switchSchema = z.object({
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
-    const session = await getSessionFromRequest(req)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }

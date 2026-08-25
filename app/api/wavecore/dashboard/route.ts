@@ -7,7 +7,7 @@ import { getSessionFromRequest } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSessionFromRequest(req)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
