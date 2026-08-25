@@ -25,15 +25,29 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
     }
 
-    // Delete user's related data first
-    await pool.query(`DELETE FROM "Account" WHERE "userId" = $1`, [id])
-    await pool.query(`DELETE FROM "Session" WHERE "userId" = $1`, [id])
-    await pool.query(`DELETE FROM "SecuritySession" WHERE "userId" = $1`, [id])
-    await pool.query(`DELETE FROM "MarketplaceListing" WHERE "sellerId" = $1`, [id])
-    await pool.query(`DELETE FROM "MarketplaceConversation" WHERE "buyerId" = $1 OR "sellerId" = $1`, [id])
-    await pool.query(`DELETE FROM "MarketplaceMessage" WHERE "senderId" = $1 OR "receiverId" = $1`, [id])
-    await pool.query(`DELETE FROM "MarketplaceSaved" WHERE "userId" = $1`, [id])
-    await pool.query(`DELETE FROM "AuditLog" WHERE "userId" = $1`, [id])
+    // Delete related data - use safe approach with try/catch for each
+    const tables = [
+      { table: 'Account', column: 'userId' },
+      { table: 'Session', column: 'userId' },
+      { table: 'SecuritySession', column: 'userId' },
+      { table: 'MarketplaceListing', column: 'sellerId' },
+      { table: 'MarketplaceConversation', column: 'buyerId' },
+      { table: 'MarketplaceConversation', column: 'sellerId' },
+      { table: 'MarketplaceMessage', column: 'senderId' },
+      { table: 'MarketplaceSaved', column: 'userId' },
+      { table: 'AuditLog', column: 'userId' },
+      { table: 'Subscription', column: 'userId' },
+      { table: 'UserProfile', column: 'userId' },
+    ]
+
+    for (const item of tables) {
+      try {
+        await pool.query(`DELETE FROM "${item.table}" WHERE "${item.column}" = $1`, [id])
+      } catch (err) {
+        // Skip if table or column doesn't exist
+        console.log(`Skipping ${item.table}.${item.column}: ${(err as Error).message}`)
+      }
+    }
     
     // Finally delete the user
     const result = await pool.query(`DELETE FROM "User" WHERE id = $1 RETURNING id, email`, [id])
