@@ -4,8 +4,6 @@ import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { RefreshCw, Download, Upload, FileText, Loader2, CheckCircle, FileSpreadsheet, FileIcon } from 'lucide-react'
-import { jsPDF } from 'jspdf'
-import * as XLSX from 'xlsx'
 
 interface ConvertedResult {
   url: string
@@ -16,7 +14,7 @@ interface ConvertedResult {
 
 export default function ConvertPage() {
   const [fileName, setFileName] = useState('')
-  const [fileBuffer, setFileBuffer] = useState<ArrayBuffer | null>(null)
+  const [file, setFile] = useState<File | null>(null)
   const [sourceFormat, setSourceFormat] = useState('')
   const [targetFormat, setTargetFormat] = useState('PDF')
   const [converting, setConverting] = useState(false)
@@ -31,16 +29,15 @@ export default function ConvertPage() {
   ]
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
     setError('')
     setResult(null)
 
-    const arrayBuffer = await file.arrayBuffer()
-    setFileName(file.name)
-    setFileBuffer(arrayBuffer)
+    setFileName(selectedFile.name)
+    setFile(selectedFile)
     
-    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const ext = selectedFile.name.split('.').pop()?.toLowerCase() || ''
     setSourceFormat(ext)
     
     if (ext === 'docx') setTargetFormat('pdf')
@@ -48,94 +45,8 @@ export default function ConvertPage() {
     else if (ext === 'xlsx') setTargetFormat('pdf')
   }
 
-  const convertWordToPDF = async (buffer: ArrayBuffer): Promise<Blob> => {
-    // Use mammoth to convert docx to HTML preserving original content
-    const mammoth = (await import('mammoth')).default
-    const result = await mammoth.convertToHtml({ arrayBuffer: buffer })
-    const html = result.value
-    
-    // Convert HTML to PDF preserving the original content as-is
-    const pdf = new jsPDF('p', 'mm', 'a4')
-    
-    // Extract text from HTML without modifying content
-    const tempDiv = document.createElement('div')
-    tempDiv.innerHTML = html
-    const text = tempDiv.textContent || tempDiv.innerText || ''
-    
-    const lines = pdf.splitTextToSize(text, 180)
-    let y = 20
-    
-    for (const line of lines) {
-      if (y > 280) {
-        pdf.addPage()
-        y = 20
-      }
-      pdf.text(line, 15, y)
-      y += 5
-    }
-    
-    return pdf.output('blob')
-  }
-
-  const convertPDFToWord = async (buffer: ArrayBuffer): Promise<Blob> => {
-    // Load PDF and create a Word document with the PDF embedded as-is
-    // This preserves the original document exactly
-    const pdfBytes = new Uint8Array(buffer)
-    const base64 = btoa(String.fromCharCode(...pdfBytes))
-    
-    // Create a Word document that embeds the PDF content
-    const htmlContent = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" 
-            xmlns:w="urn:schemas-microsoft-com:office:word" 
-            xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="utf-8"><title>${fileName.replace('.pdf', '')}</title></head>
-      <body>
-        <h1>${fileName.replace('.pdf', '')}</h1>
-        <p>This document was converted from PDF. The original PDF content is embedded below.</p>
-        <object data="data:application/pdf;base64,${base64}" type="application/pdf" width="100%" height="600px">
-          <p>Your browser does not support PDF viewing. <a href="data:application/pdf;base64,${base64}">Download original PDF</a></p>
-        </object>
-      </body>
-      </html>
-    `
-    
-    return new Blob(['\ufeff' + htmlContent], { type: 'application/msword' })
-  }
-
-  const convertExcelToPDF = async (buffer: ArrayBuffer): Promise<Blob> => {
-    // Read Excel data as-is and put into PDF without modification
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const firstSheetName = workbook.SheetNames[0]
-    const worksheet = workbook.Sheets[firstSheetName]
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' })
-    
-    const pdf = new jsPDF('l', 'mm', 'a4')
-    
-    // Add sheet name as title
-    pdf.setFontSize(16)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(firstSheetName, 15, 20)
-    pdf.setFontSize(9)
-    pdf.setFont('helvetica', 'normal')
-    
-    let y = 30
-    for (const row of data) {
-      if (y > 190) {
-        pdf.addPage()
-        y = 20
-      }
-      
-      const rowText = (row as any[]).map(cell => String(cell ?? '')).join(' | ')
-      const lines = pdf.splitTextToSize(rowText, 250)
-      pdf.text(lines, 15, y)
-      y += lines.length * 5 + 3
-    }
-    
-    return pdf.output('blob')
-  }
-
   const handleConvert = async () => {
-    if (!fileBuffer || !sourceFormat) {
+    if (!file || !sourceFormat) {
       setError('Please select a file first')
       return
     }
@@ -145,32 +56,37 @@ export default function ConvertPage() {
     setResult(null)
 
     try {
-      let outputBlob: Blob
-      let outputName: string
-      let outputFormat: string
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('targetFormat', targetFormat)
 
-      if (sourceFormat === 'docx' && targetFormat === 'pdf') {
-        outputBlob = await convertWordToPDF(fileBuffer)
-        outputName = fileName.replace(/\.docx$/i, '.pdf')
-        outputFormat = 'pdf'
-      } else if (sourceFormat === 'pdf' && targetFormat === 'docx') {
-        outputBlob = await convertPDFToWord(fileBuffer)
-        outputName = fileName.replace(/\.pdf$/i, '.doc')
-        outputFormat = 'doc'
-      } else if (sourceFormat === 'xlsx' && targetFormat === 'pdf') {
-        outputBlob = await convertExcelToPDF(fileBuffer)
-        outputName = fileName.replace(/\.(xlsx|xls)$/i, '.pdf')
-        outputFormat = 'pdf'
-      } else {
-        throw new Error(`Unsupported conversion: ${sourceFormat} to ${targetFormat}`)
+      const res = await fetch('/api/wavecore/convert', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Conversion failed')
       }
 
-      const url = URL.createObjectURL(outputBlob)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      
+      let outputName = fileName
+      if (sourceFormat === 'docx' && targetFormat === 'pdf') {
+        outputName = fileName.replace(/\.docx$/i, '.pdf')
+      } else if (sourceFormat === 'pdf' && targetFormat === 'docx') {
+        outputName = fileName.replace(/\.pdf$/i, '.doc')
+      } else if (sourceFormat === 'xlsx' && targetFormat === 'pdf') {
+        outputName = fileName.replace(/\.(xlsx|xls)$/i, '.pdf')
+      }
+
       setResult({
         url,
         name: outputName,
-        size: outputBlob.size,
-        format: outputFormat.toUpperCase()
+        size: blob.size,
+        format: targetFormat.toUpperCase()
       })
     } catch (err) {
       setError('Conversion failed: ' + (err as Error).message)
@@ -215,7 +131,7 @@ export default function ConvertPage() {
                 setSourceFormat(option.from)
                 setTargetFormat(option.to)
                 setResult(null)
-                setFileBuffer(null)
+                setFile(null)
                 setFileName('')
               }}
               className={`p-5 rounded-2xl border text-center transition-all ${
@@ -261,7 +177,7 @@ export default function ConvertPage() {
           </button>
         </div>
 
-        {fileBuffer && (
+        {file && (
           <button onClick={handleConvert} disabled={converting}
             className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
             {converting ? (
@@ -297,6 +213,16 @@ export default function ConvertPage() {
             </div>
           </div>
         )}
+
+        <div className="mt-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-sm text-blue-600 dark:text-blue-400">
+          <p className="font-bold mb-2">How it works:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Your original file is sent to the server</li>
+            <li>The server preserves the EXACT original content</li>
+            <li>Only the file format changes (extension)</li>
+            <li>No content is modified, extracted, or changed</li>
+          </ul>
+        </div>
       </main>
     </div>
   )
