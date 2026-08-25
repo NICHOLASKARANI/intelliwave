@@ -4,18 +4,14 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-const createPrismaClient = () => {
-  const client = new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
     datasources: {
       db: {
-        url: process.env.DATABASE_URL || "postgresql://wavecore:wavecore123@localhost:5432/intelliwave?schema=public",
+        url: process.env.DATABASE_URL,
       },
     },
   })
-  return client
-}
-
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

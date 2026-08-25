@@ -52,7 +52,7 @@ function isStrongPassword(password: string): boolean {
 
 // Generate JWT token
 function generateToken(userId: string, organizationId: string): string {
-  const secret = process.env.JWT_SECRET || 'wavecore-secret-key'
+  const secret = process.env.JWT_SECRET || 'process.env.JWT_SECRET || '''
   return sign(
     { userId, organizationId, type: 'access' },
     secret,
