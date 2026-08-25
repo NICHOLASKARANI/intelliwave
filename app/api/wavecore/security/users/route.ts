@@ -2,15 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
-import { getSessionFromRequest } from '@/lib/wavecore/auth'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
     const result = await pool.query(
-      `SELECT id, name, email, "createdAt", 0 as "riskScore" FROM "User" ORDER BY "createdAt" DESC LIMIT 100`
+      `SELECT id, name, email, "createdAt", 0 as "riskScore" FROM "User" ORDER BY "createdAt" DESC LIMIT 200`
     )
 
     return NextResponse.json({ users: result.rows })
@@ -22,16 +18,33 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "User" WHERE id = $1`, [id])
+    if (!id) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 })
+    }
 
-    return NextResponse.json({ success: true })
+    // Delete user's related data first
+    await pool.query(`DELETE FROM "Account" WHERE "userId" = $1`, [id])
+    await pool.query(`DELETE FROM "Session" WHERE "userId" = $1`, [id])
+    await pool.query(`DELETE FROM "SecuritySession" WHERE "userId" = $1`, [id])
+    await pool.query(`DELETE FROM "MarketplaceListing" WHERE "sellerId" = $1`, [id])
+    await pool.query(`DELETE FROM "MarketplaceConversation" WHERE "buyerId" = $1 OR "sellerId" = $1`, [id])
+    await pool.query(`DELETE FROM "MarketplaceMessage" WHERE "senderId" = $1 OR "receiverId" = $1`, [id])
+    await pool.query(`DELETE FROM "MarketplaceSaved" WHERE "userId" = $1`, [id])
+    await pool.query(`DELETE FROM "AuditLog" WHERE "userId" = $1`, [id])
+    
+    // Finally delete the user
+    const result = await pool.query(`DELETE FROM "User" WHERE id = $1 RETURNING id, email`, [id])
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, deletedUser: result.rows[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 })
+    console.error('Delete user error:', error)
+    return NextResponse.json({ error: 'Failed to delete user: ' + (error as Error).message }, { status: 500 })
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Shield, Activity, AlertTriangle, Users, Trash2, Key, RefreshCw, Lock, LogOut, Server, Globe, Zap } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Shield, Activity, AlertTriangle, Users, Trash2, Key, RefreshCw, Lock, LogOut, Server, Loader2, CheckCircle, XCircle } from 'lucide-react'
 
 export default function SecurityAdminPage() {
   const [authenticated, setAuthenticated] = useState(false)
@@ -10,6 +10,15 @@ export default function SecurityAdminPage() {
   const [error, setError] = useState('')
   const [events, setEvents] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [actionMessage, setActionMessage] = useState('')
+  const [deletingId, setDeletingId] = useState('')
+  const [resettingId, setResettingId] = useState('')
+
+  useEffect(() => {
+    if (authenticated) {
+      fetchSecurityData()
+    }
+  }, [authenticated])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,9 +32,8 @@ export default function SecurityAdminPage() {
       })
       if (res.ok) {
         setAuthenticated(true)
-        fetchSecurityData()
       } else {
-        setError('Access denied')
+        setError('Access denied. Invalid credentials.')
       }
     } catch {
       setError('Failed to verify')
@@ -45,32 +53,62 @@ export default function SecurityAdminPage() {
       setEvents(eventsData.events || [])
       setUsers(usersData.users || [])
     } catch (error) {
-      console.error('Failed to fetch')
+      console.error('Failed to fetch data:', error)
     }
   }
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Delete this user?')) return
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Delete user "${userName || userId}"? This will remove ALL their data permanently.`)) return
+    
+    setDeletingId(userId)
+    setActionMessage('')
+    
     try {
-      await fetch('/api/wavecore/security/users?id=' + userId, { method: 'DELETE' })
-      fetchSecurityData()
+      const res = await fetch('/api/wavecore/security/users?id=' + userId, { method: 'DELETE' })
+      const data = await res.json()
+      
+      if (data.success) {
+        setActionMessage(`✅ User "${data.deletedUser?.email || userId}" deleted successfully`)
+        fetchSecurityData()
+      } else {
+        setActionMessage(`❌ ${data.error || 'Failed to delete user'}`)
+      }
     } catch (error) {
-      console.error('Failed to delete')
+      setActionMessage('❌ Network error - failed to delete user')
+    } finally {
+      setDeletingId('')
     }
   }
 
-  const handleResetPassword = async (userId: string) => {
-    const newPassword = prompt('Enter new password:')
+  const handleResetPassword = async (userId: string, userName: string) => {
+    const newPassword = prompt(`Enter new password for "${userName || 'user'}":`)
     if (!newPassword) return
+    
+    if (newPassword.length < 8) {
+      alert('Password must be at least 8 characters')
+      return
+    }
+    
+    setResettingId(userId)
+    setActionMessage('')
+    
     try {
-      await fetch('/api/wavecore/security/users/reset-password', {
+      const res = await fetch('/api/wavecore/security/users/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, newPassword })
       })
-      alert('Password reset successful')
+      const data = await res.json()
+      
+      if (data.success) {
+        setActionMessage(`✅ Password reset for "${data.user?.email || userId}"`)
+      } else {
+        setActionMessage(`❌ ${data.error || 'Failed to reset password'}`)
+      }
     } catch (error) {
-      alert('Failed to reset password')
+      setActionMessage('❌ Network error - failed to reset password')
+    } finally {
+      setResettingId('')
     }
   }
 
@@ -97,12 +135,13 @@ export default function SecurityAdminPage() {
               />
             </div>
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
-                {error}
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center gap-2">
+                <XCircle className="w-4 h-4" /> {error}
               </div>
             )}
             <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold hover:shadow-lg hover:shadow-red-500/20 transition-all disabled:opacity-50">
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold hover:shadow-lg hover:shadow-red-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Shield className="w-5 h-5" />}
               {loading ? 'Verifying...' : 'Access Security Center'}
             </button>
           </form>
@@ -136,39 +175,106 @@ export default function SecurityAdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
+        {/* Action Message */}
+        {actionMessage && (
+          <div className={`p-4 rounded-xl ${actionMessage.startsWith('✅') ? 'bg-green-500/10 border border-green-500/30 text-green-300' : 'bg-red-500/10 border border-red-500/30 text-red-300'}`}>
+            {actionMessage}
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
+          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50">
             <Activity className="w-6 h-6 text-blue-400 mb-3" />
             <p className="text-3xl font-bold text-white">{events.length}</p>
             <p className="text-xs text-slate-400 mt-1">Total Events</p>
           </div>
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
+          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50">
             <AlertTriangle className="w-6 h-6 text-red-500 mb-3" />
             <p className="text-3xl font-bold text-red-400">{events.filter((e: any) => e.severity === 'CRITICAL').length}</p>
             <p className="text-xs text-slate-400 mt-1">Critical Alerts</p>
           </div>
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
+          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50">
             <Server className="w-6 h-6 text-green-400 mb-3" />
             <p className="text-3xl font-bold text-green-400">0</p>
             <p className="text-xs text-slate-400 mt-1">Active Sessions</p>
           </div>
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
+          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50">
             <Users className="w-6 h-6 text-purple-400 mb-3" />
             <p className="text-3xl font-bold text-purple-400">{users.length}</p>
             <p className="text-xs text-slate-400 mt-1">Users</p>
           </div>
         </div>
 
-        {/* Security Events */}
-        <div className="rounded-2xl bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm overflow-hidden">
+        {/* User Management - PRIMARY FOCUS */}
+        <div className="rounded-2xl bg-slate-900/50 border border-slate-700/50 overflow-hidden">
           <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
             <h2 className="font-bold text-white flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-400" /> Live Security Events
+              <Users className="w-5 h-5 text-purple-400" /> User Management ({users.length})
             </h2>
             <button onClick={fetchSecurityData} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
               <RefreshCw className="w-3 h-3" /> Refresh
             </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-800/50">
+                  <th className="text-left p-4 text-xs text-slate-400 font-medium">User</th>
+                  <th className="text-left p-4 text-xs text-slate-400 font-medium">Email</th>
+                  <th className="text-left p-4 text-xs text-slate-400 font-medium">Created</th>
+                  <th className="text-left p-4 text-xs text-slate-400 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-slate-500">
+                      No users found
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((user: any) => (
+                    <tr key={user.id} className="border-t border-slate-700/30 hover:bg-slate-800/30 transition-colors">
+                      <td className="p-4 text-sm text-white font-medium">{user.name || 'N/A'}</td>
+                      <td className="p-4 text-sm text-slate-300">{user.email}</td>
+                      <td className="p-4 text-sm text-slate-400">{new Date(user.createdAt).toLocaleDateString()}</td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleResetPassword(user.id, user.name)}
+                            disabled={resettingId === user.id}
+                            className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors flex items-center gap-1 text-xs disabled:opacity-50"
+                            title="Reset Password"
+                          >
+                            {resettingId === user.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Key className="w-3 h-3" />}
+                            Reset Password
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                            disabled={deletingId === user.id}
+                            className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors flex items-center gap-1 text-xs disabled:opacity-50"
+                            title="Delete User"
+                          >
+                            {deletingId === user.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Security Events */}
+        <div className="rounded-2xl bg-slate-900/50 border border-slate-700/50 overflow-hidden">
+          <div className="p-4 border-b border-slate-700/50">
+            <h2 className="font-bold text-white flex items-center gap-2">
+              <Activity className="w-5 h-5 text-blue-400" /> Live Security Events
+            </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -203,50 +309,6 @@ export default function SecurityAdminPage() {
                       <td className="p-4 text-sm text-slate-300">{event.category}</td>
                       <td className="p-4 text-sm text-slate-400">{event.ip || 'N/A'}</td>
                       <td className="p-4 text-sm text-slate-400">{event.riskScore || 0}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* User Management */}
-        <div className="rounded-2xl bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-700/50">
-            <h2 className="font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-purple-400" /> User Management
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-800/50">
-                  <th className="text-left p-4 text-xs text-slate-400 font-medium">User</th>
-                  <th className="text-left p-4 text-xs text-slate-400 font-medium">Email</th>
-                  <th className="text-left p-4 text-xs text-slate-400 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="p-8 text-center text-slate-500">
-                      No users found
-                    </td>
-                  </tr>
-                ) : (
-                  users.map((user: any) => (
-                    <tr key={user.id} className="border-t border-slate-700/30 hover:bg-slate-800/30 transition-colors">
-                      <td className="p-4 text-sm text-white">{user.name || 'N/A'}</td>
-                      <td className="p-4 text-sm text-slate-300">{user.email}</td>
-                      <td className="p-4 flex gap-2">
-                        <button onClick={() => handleResetPassword(user.id)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors" title="Reset Password">
-                          <Key className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors" title="Delete User">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
                     </tr>
                   ))
                 )}
