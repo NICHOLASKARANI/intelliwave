@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth' from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
   try {
