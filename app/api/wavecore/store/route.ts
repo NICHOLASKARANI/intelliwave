@@ -7,7 +7,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    if (!session || !session.organizationId) {
+    if (!session || !session!.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
        LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
        WHERE p."organizationId" = $1
        ORDER BY p."createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     const sales = await pool.query(
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
        LEFT JOIN "Customer" c ON c.id = ci."customerId"
        WHERE ci."organizationId" = $1
        ORDER BY ci."createdAt" DESC LIMIT 50`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Product" (id, name, sku, description, category, "sellingPrice", "costPrice", "minStock", "maxStock", "isActive", "organizationId", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, NOW(), NOW())
        RETURNING *`,
-      [productId, body.name, body.sku, body.description || '', body.category || 'General', body.sellingPrice || 0, body.costPrice || 0, body.minStock || 0, body.maxStock || 0, session.organizationId]
+      [productId, body.name, body.sku, body.description || '', body.category || 'General', body.sellingPrice || 0, body.costPrice || 0, body.minStock || 0, body.maxStock || 0, session!.organizationId]
     )
 
     return NextResponse.json({ product: result.rows[0] }, { status: 201 })
@@ -73,7 +73,7 @@ export async function PUT(request: NextRequest) {
        SET name = $1, sku = $2, description = $3, category = $4, "sellingPrice" = $5, "costPrice" = $6, "minStock" = $7, "maxStock" = $8, "updatedAt" = NOW()
        WHERE id = $9 AND "organizationId" = $10
        RETURNING *`,
-      [body.name, body.sku, body.description, body.category, body.sellingPrice, body.costPrice, body.minStock, body.maxStock, body.id, session.organizationId]
+      [body.name, body.sku, body.description, body.category, body.sellingPrice, body.costPrice, body.minStock, body.maxStock, body.id, session!.organizationId]
     )
 
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -91,7 +91,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {

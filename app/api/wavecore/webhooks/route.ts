@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "Webhook" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ webhooks: result.rows })
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Webhook" (id, name, url, active, "organizationId", "createdAt")
        VALUES ($1, $2, $3, true, $4, NOW())
        RETURNING *`,
-      [id, body.name, body.url, session.organizationId]
+      [id, body.name, body.url, session!.organizationId]
     )
 
     return NextResponse.json({ webhook: result.rows[0] }, { status: 201 })
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const result = await pool.query(
       `UPDATE "Webhook" SET name = $1, url = $2, active = $3 WHERE id = $4 AND "organizationId" = $5 RETURNING *`,
-      [body.name, body.url, body.active, body.id, session.organizationId]
+      [body.name, body.url, body.active, body.id, session!.organizationId]
     )
 
     return NextResponse.json({ webhook: result.rows[0] })
@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "Webhook" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "Webhook" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
        FROM "ApiKey"
        WHERE "organizationId" = $1 AND "isActive" = true
        ORDER BY "createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ apiKeys: result.rows })
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     await pool.query(
       `INSERT INTO "ApiKey" (id, "organizationId", name, key, prefix, "isActive", "createdAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, true, NOW())`,
-      [session.organizationId, name, apiKey, prefix]
+      [session!.organizationId, name, apiKey, prefix]
     )
 
     // Return full key only once

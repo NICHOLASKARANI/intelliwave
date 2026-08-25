@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "ExecutionLog" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     return NextResponse.json({ logs: result.rows })
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "ExecutionLog" (id, "workflowId", "workflowName", status, duration, "organizationId", "createdAt")
        VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING *`,
-      [id, body.workflowId, body.workflowName, body.status || 'SUCCESS', body.duration || '0s', session.organizationId]
+      [id, body.workflowId, body.workflowName, body.status || 'SUCCESS', body.duration || '0s', session!.organizationId]
     )
 
     return NextResponse.json({ log: result.rows[0] }, { status: 201 })
@@ -50,7 +50,7 @@ export async function DELETE(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    await pool.query(`DELETE FROM "ExecutionLog" WHERE "organizationId" = $1`, [session.organizationId])
+    await pool.query(`DELETE FROM "ExecutionLog" WHERE "organizationId" = $1`, [session!.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       JOIN "BankAccount" ba ON ba.id = bt."bankAccountId"
       WHERE bt."organizationId" = $1
     `
-    const params: any[] = [session.organizationId]
+    const params: any[] = [session!.organizationId]
 
     if (bankAccountId) {
       params.push(bankAccountId)
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // Verify bank account belongs to tenant
     const account = await pool.query(
       'SELECT id FROM "BankAccount" WHERE id = $1 AND "organizationId" = $2',
-      [validated.bankAccountId, session.organizationId]
+      [validated.bankAccountId, session!.organizationId]
     )
 
     if (account.rows.length === 0) {
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "BankTransaction" (id, "bankAccountId", date, description, reference, amount, type, "organizationId", "createdAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING id`,
-      [validated.bankAccountId, new Date(validated.date), validated.description, validated.reference || null, validated.amount, validated.type, session.organizationId]
+      [validated.bankAccountId, new Date(validated.date), validated.description, validated.reference || null, validated.amount, validated.type, session!.organizationId]
     )
 
     return NextResponse.json({ success: true, transactionId: result.rows[0].id }, { status: 201 })

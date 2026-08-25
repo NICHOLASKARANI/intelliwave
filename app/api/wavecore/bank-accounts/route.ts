@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(
       `SELECT * FROM "BankAccount" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
-      [session.organizationId]
+      [session!.organizationId]
     )
     return NextResponse.json({ bankAccounts: result.rows })
   } catch (error) {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "BankAccount" (id, name, "accountNumber", "bankName", currency, "openingBalance", "currentBalance", "organizationId", "isActive", "createdAt", "updatedAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $5, $6, true, NOW(), NOW())
        RETURNING id, name, "accountNumber", "bankName"`,
-      [validated.name, validated.accountNumber, validated.bankName, validated.currency, validated.openingBalance, session.organizationId]
+      [validated.name, validated.accountNumber, validated.bankName, validated.currency, validated.openingBalance, session!.organizationId]
     )
     return NextResponse.json({ bankAccount: result.rows[0] }, { status: 201 })
   } catch (error) {
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
       `UPDATE "BankAccount" SET name = $1, "bankName" = $2, "updatedAt" = NOW()
        WHERE id = $3 AND "organizationId" = $4
        RETURNING id, name, "accountNumber", "bankName"`,
-      [body.name, body.bankName, body.id, session.organizationId]
+      [body.name, body.bankName, body.id, session!.organizationId]
     )
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ bankAccount: result.rows[0] })
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    await pool.query(`UPDATE "BankAccount" SET "isActive" = false WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`UPDATE "BankAccount" SET "isActive" = false WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

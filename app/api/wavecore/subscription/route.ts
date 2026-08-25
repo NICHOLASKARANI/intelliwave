@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       `SELECT * FROM "Subscription"
        WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW()
        ORDER BY "createdAt" DESC LIMIT 1`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     if (result.rows.length === 0) {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     // Deactivate existing subscriptions
     await pool.query(
       `UPDATE "Subscription" SET status = 'EXPIRED' WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
-      [session.organizationId]
+      [session!.organizationId]
     )
 
     // Create subscription
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
        ("organizationId", "userId", plan, status, amount, currency, "startDate", "endDate", "nextBillingAt", "mpesaReceipt", "createdAt", "updatedAt")
        VALUES ($1, $2, 'MONTHLY', 'ACTIVE', $3, $4, NOW(), $5, $6, $7, NOW(), NOW())
        RETURNING *`,
-      [session.organizationId, session.userId, SUBSCRIPTION_AMOUNT, SUBSCRIPTION_CURRENCY, endDate, nextBillingAt, mpesaReceipt]
+      [session!.organizationId, session!.userId, SUBSCRIPTION_AMOUNT, SUBSCRIPTION_CURRENCY, endDate, nextBillingAt, mpesaReceipt]
     )
 
     return NextResponse.json({
