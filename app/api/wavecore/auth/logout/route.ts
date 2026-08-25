@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { destroySession, getSession } from '@/lib/wavecore/auth'
+import { // destroySession, getSession } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
 export async function POST(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    await destroySession()
+    await // destroySession()
 
     return NextResponse.json({ success: true, message: 'Logged out successfully' })
   } catch (error) {
