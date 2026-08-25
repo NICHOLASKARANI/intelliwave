@@ -6,7 +6,7 @@ import { pool } from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionFromRequest(req)
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

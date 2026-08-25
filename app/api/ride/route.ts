@@ -4,7 +4,7 @@ import { getSession } from '@/lib/wavecore/auth'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionFromRequest(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionFromRequest(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
