@@ -10,14 +10,14 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT * FROM "PurchaseOrder" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
+      `SELECT * FROM "GoodsReceipt" WHERE "organizationId" = $1 ORDER BY "receivedAt" DESC`,
       [session.organizationId]
     )
 
-    return NextResponse.json({ orders: result.rows })
+    return NextResponse.json({ receipts: result.rows })
   } catch (error) {
-    console.error('PO GET error:', error)
-    return NextResponse.json({ orders: [] })
+    console.error('GoodsReceipts GET error:', error)
+    return NextResponse.json({ receipts: [] })
   }
 }
 
@@ -31,16 +31,16 @@ export async function POST(request: NextRequest) {
     const id = crypto.randomUUID()
 
     const result = await pool.query(
-      `INSERT INTO "PurchaseOrder" (id, "supplierName", amount, status, "organizationId", "createdAt")
-       VALUES ($1, $2, $3, $4, $5, NOW())
+      `INSERT INTO "GoodsReceipt" (id, "purchaseOrderId", quantity, "receivedAt", "organizationId")
+       VALUES ($1, $2, $3, NOW(), $4)
        RETURNING *`,
-      [id, body.supplierName, body.amount, body.status || 'PENDING', session.organizationId]
+      [id, body.purchaseOrderId, body.quantity || 0, session.organizationId]
     )
 
-    return NextResponse.json({ order: result.rows[0] }, { status: 201 })
+    return NextResponse.json({ receipt: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('PO POST error:', error)
-    return NextResponse.json({ error: 'Failed to create PO: ' + (error as Error).message }, { status: 500 })
+    console.error('GoodsReceipts POST error:', error)
+    return NextResponse.json({ error: 'Failed to create receipt: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -52,10 +52,10 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "PurchaseOrder" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "GoodsReceipt" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete PO' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete receipt' }, { status: 500 })
   }
 }
