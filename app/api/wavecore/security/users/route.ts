@@ -32,9 +32,7 @@ export async function DELETE(req: NextRequest) {
     )
 
     if (orgCheck.rows.length > 0) {
-      // User owns organizations - need to delete those organizations first
       for (const org of orgCheck.rows) {
-        // Delete all data related to this organization
         await pool.query(`DELETE FROM "OrganizationSetting" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
         await pool.query(`DELETE FROM "TaxRate" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
         await pool.query(`DELETE FROM "DocumentNumbering" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
@@ -63,15 +61,20 @@ export async function DELETE(req: NextRequest) {
         await pool.query(`DELETE FROM "Budget" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
         await pool.query(`DELETE FROM "Notification" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
         await pool.query(`DELETE FROM "PurchaseOrder" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
-        await pool.query(`DELETE FROM "Project" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
         await pool.query(`DELETE FROM "AuditLog" WHERE "organizationId" = $1`, [org.id]).catch(() => {})
       }
       
-      // Delete the organizations
       await pool.query(`DELETE FROM "Organization" WHERE "ownerId" = $1`, [id])
     }
 
-    // Step 2: Delete user's related data
+    // Step 2: Delete Project references
+    await pool.query(`DELETE FROM "Project" WHERE "clientId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "Project" WHERE "ownerId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "Project" WHERE "userId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "Milestone" WHERE "projectId" IN (SELECT id FROM "Project" WHERE "clientId" = $1 OR "ownerId" = $1)`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "ProjectFile" WHERE "projectId" IN (SELECT id FROM "Project" WHERE "clientId" = $1 OR "ownerId" = $1)`, [id]).catch(() => {})
+
+    // Step 3: Delete user's related data
     await pool.query(`DELETE FROM "Account" WHERE "userId" = $1`, [id]).catch(() => {})
     await pool.query(`DELETE FROM "Session" WHERE "userId" = $1`, [id]).catch(() => {})
     await pool.query(`DELETE FROM "SecuritySession" WHERE "userId" = $1`, [id]).catch(() => {})
@@ -94,8 +97,12 @@ export async function DELETE(req: NextRequest) {
     await pool.query(`DELETE FROM "TrainingEnrollment" WHERE "employeeId" = $1`, [id]).catch(() => {})
     await pool.query(`DELETE FROM "PerformanceReview" WHERE "reviewerId" = $1`, [id]).catch(() => {})
     await pool.query(`DELETE FROM "LeaveBalance" WHERE "employeeId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "Invoice" WHERE "clientId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "Invoice" WHERE "userId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "Job" WHERE "userId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "JobApplication" WHERE "userId" = $1`, [id]).catch(() => {})
     
-    // Step 3: Finally delete the user
+    // Step 4: Finally delete the user
     const result = await pool.query(`DELETE FROM "User" WHERE id = $1 RETURNING id, email`, [id])
 
     if (result.rows.length === 0) {
