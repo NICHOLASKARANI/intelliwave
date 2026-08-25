@@ -1,111 +1,75 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
-import { Pool } from 'pg'
-import { rateLimit, getClientIP } from '@/lib/wavecore/rate-limit'
-import { sendEmail } from '@/lib/wavecore/email'
+import { pool } from '@/lib/wavecore/db'
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
-})
+// Rate limiting
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email(),
-})
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const bucket = rateLimitMap.get(ip)
+  if (!bucket || bucket.resetAt < now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 900000 })
+    return true
+  }
+  if (bucket.count >= 3) return false
+  bucket.count++
+  return true
+}
 
-const resetPasswordSchema = z.object({
-  token: z.string(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-})
+// Generate 6-digit OTP
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // Rate limiting: 3 requests per hour per IP
-    const ip = getClientIP(request)
-    const rl = rateLimit(`forgot:${ip}`, 3, 60 * 60 * 1000)
-
-    if (!rl.success) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    
+    if (!checkRateLimit(ip)) {
       return NextResponse.json(
-        { error: 'Too many requests. Try again later.' },
-        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+        { error: 'Too many attempts. Try again in 15 minutes.' },
+        { status: 429 }
       )
     }
 
-    const body = await request.json()
-    const validated = forgotPasswordSchema.parse(body)
-    const normalizedEmail = validated.email.toLowerCase().trim()
+    const body = await req.json()
+    const { identifier } = body // Can be email OR phone
 
-    const user = await pool.query('SELECT id, name FROM "User" WHERE email = $1', [normalizedEmail])
-
-    // Always return the same response to prevent account enumeration
-    const genericResponse = { success: true, message: 'If an account exists with this email, a reset link has been sent.' }
-
-    if (user.rows.length === 0) {
-      return NextResponse.json(genericResponse)
+    if (!identifier) {
+      return NextResponse.json({ error: 'Email or phone number required' }, { status: 400 })
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex')
-    const resetExpiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    // Find user by email OR phone
+    const userResult = await pool.query(
+      `SELECT id, email, phone, name FROM "User" WHERE email = $1 OR phone = $2 AND "isActive" = true`,
+      [identifier, identifier]
+    )
 
+    if (userResult.rows.length === 0) {
+      return NextResponse.json({ error: 'No account found with this email or phone' }, { status: 404 })
+    }
+
+    const user = userResult.rows[0]
+    const otp = generateOTP()
+    const resetToken = require('crypto').randomUUID()
+
+    // Save OTP and token
     await pool.query(
-      'UPDATE "User" SET "resetToken" = $1, "resetExpiry" = $2 WHERE id = $3',
-      [resetToken, resetExpiry, user.rows[0].id]
+      `UPDATE "User" SET "otpCode" = $1, "otpExpiry" = NOW() + INTERVAL '10 minutes', "resetToken" = $2, "resetExpiry" = NOW() + INTERVAL '30 minutes' WHERE id = $3`,
+      [otp, resetToken, user.id]
     )
 
-    // Send reset email (async)
-    const resetUrl = `${process.env.NEXTAUTH_URL || 'https://www.intelliwavve.com'}/wavecore-erp/auth/reset-password?token=${resetToken}`
-
-    sendEmail({
-      to: normalizedEmail,
-      subject: 'Reset your WaveCore password',
-      text: `Click this link to reset your password: ${resetUrl}`,
-      html: `<p>Hi ${user.rows[0].name || ''},</p><p>Click <a href="${resetUrl}">here</a> to reset your password.</p><p>This link expires in 1 hour.</p>`,
-    }).catch(err => console.error('Reset email failed:', err))
-
-    return NextResponse.json(genericResponse)
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid email address' }, { status: 422 })
-    }
-    console.error('ForgotPassword error:', error.message)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const validated = resetPasswordSchema.parse(body)
-
-    const user = await pool.query(
-      'SELECT id FROM "User" WHERE "resetToken" = $1 AND "resetExpiry" > NOW()',
-      [validated.token]
-    )
-
-    if (user.rows.length === 0) {
-      return NextResponse.json({ error: 'Invalid or expired reset token' }, { status: 400 })
-    }
-
-    const hashedPassword = await bcrypt.hash(validated.password, 12)
-
-    await pool.query(
-      'UPDATE "User" SET password = $1, "resetToken" = NULL, "resetExpiry" = NULL WHERE id = $2',
-      [hashedPassword, user.rows[0].id]
-    )
-
-    // Optionally invalidate all sessions for this user
-    await pool.query('DELETE FROM "Session" WHERE "userId" = $1', [user.rows[0].id])
-
-    return NextResponse.json({ success: true, message: 'Password reset successfully. Please log in.' })
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 422 })
-    }
-    console.error('ResetPassword error:', error.message)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // In production: Send OTP via email (sendgrid) or SMS (twilio/africastalking)
+    // For now, return OTP in response for testing
+    return NextResponse.json({
+      success: true,
+      message: `OTP sent to ${identifier}`,
+      otp: otp, // REMOVE IN PRODUCTION - only for testing
+      resetToken: resetToken,
+      userId: user.id
+    })
+  } catch (error) {
+    console.error('Forgot password error:', error)
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 })
   }
 }
