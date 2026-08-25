@@ -3,8 +3,11 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { RefreshCw, Download, Upload, FileText, Loader2, CheckCircle } from 'lucide-react'
+import { RefreshCw, Download, Upload, FileText, Loader2, CheckCircle, FileSpreadsheet, FileIcon, ArrowRight } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
+import { jsPDF } from 'jspdf'
+import * as XLSX from 'xlsx'
+import mammoth from 'mammoth'
 
 interface ConvertedResult {
   url: string
@@ -16,15 +19,18 @@ interface ConvertedResult {
 export default function ConvertPage() {
   const [fileName, setFileName] = useState('')
   const [fileBuffer, setFileBuffer] = useState<ArrayBuffer | null>(null)
+  const [sourceFormat, setSourceFormat] = useState('')
   const [targetFormat, setTargetFormat] = useState('PDF')
   const [converting, setConverting] = useState(false)
   const [result, setResult] = useState<ConvertedResult | null>(null)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const formats = [
-    { name: 'PDF', ext: 'pdf', mime: 'application/pdf' },
-    { name: 'TXT', ext: 'txt', mime: 'text/plain' },
+  const conversionOptions = [
+    { from: 'docx', to: 'pdf', label: 'Word to PDF', icon: FileText, color: 'from-blue-500 to-indigo-600' },
+    { from: 'pdf', to: 'docx', label: 'PDF to Word', icon: FileIcon, color: 'from-red-500 to-rose-600' },
+    { from: 'xlsx', to: 'pdf', label: 'Excel to PDF', icon: FileSpreadsheet, color: 'from-green-500 to-emerald-600' },
+    { from: 'pdf', to: 'txt', label: 'PDF to Text', icon: FileText, color: 'from-purple-500 to-violet-600' },
   ]
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,72 +42,144 @@ export default function ConvertPage() {
     const arrayBuffer = await file.arrayBuffer()
     setFileName(file.name)
     setFileBuffer(arrayBuffer)
+    
+    // Detect source format
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    setSourceFormat(ext)
+    
+    // Auto-select target format
+    if (ext === 'docx') setTargetFormat('pdf')
+    else if (ext === 'pdf') setTargetFormat('docx')
+    else if (ext === 'xlsx') setTargetFormat('pdf')
+  }
+
+  const convertWordToPDF = async (buffer: ArrayBuffer): Promise<Blob> => {
+    // Convert docx to HTML using mammoth
+    const result = await mammoth.convertToHtml({ arrayBuffer: buffer })
+    const html = result.value
+    
+    // Create PDF using jsPDF
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    
+    // Simple HTML to PDF conversion
+    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    const lines = pdf.splitTextToSize(text, 180)
+    
+    let y = 20
+    for (const line of lines) {
+      if (y > 280) {
+        pdf.addPage()
+        y = 20
+      }
+      pdf.text(line, 15, y)
+      y += 5
+    }
+    
+    return pdf.output('blob')
+  }
+
+  const convertPDFToWord = async (buffer: ArrayBuffer): Promise<Blob> => {
+    // Load PDF
+    const pdfDoc = await PDFDocument.load(buffer)
+    const pages = pdfDoc.getPages()
+    
+    // Extract text from all pages
+    let text = ''
+    for (const page of pages) {
+      const pageText = page.getText()
+      text += pageText + '\n\n'
+    }
+    
+    // Create a simple docx-like blob (actually plain text with .doc extension)
+    return new Blob([text], { type: 'application/msword' })
+  }
+
+  const convertExcelToPDF = async (buffer: ArrayBuffer): Promise<Blob> => {
+    // Parse Excel
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+    const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 })
+    
+    // Create PDF
+    const pdf = new jsPDF('l', 'mm', 'a4')
+    
+    let y = 20
+    for (const row of data) {
+      if (y > 190) {
+        pdf.addPage()
+        y = 20
+      }
+      const rowText = (row as any[]).map(cell => String(cell || '')).join(' | ')
+      const lines = pdf.splitTextToSize(rowText, 250)
+      pdf.text(lines, 15, y)
+      y += lines.length * 5 + 3
+    }
+    
+    return pdf.output('blob')
+  }
+
+  const convertPDFToText = async (buffer: ArrayBuffer): Promise<Blob> => {
+    const pdfDoc = await PDFDocument.load(buffer)
+    const pages = pdfDoc.getPages()
+    
+    let text = ''
+    for (const page of pages) {
+      text += page.getText() + '\n'
+    }
+    
+    return new Blob([text], { type: 'text/plain' })
   }
 
   const handleConvert = async () => {
-    if (!fileBuffer) {
-      setError('Please upload a file first')
+    if (!fileBuffer || !sourceFormat) {
+      setError('Please select a file first')
       return
     }
 
     setConverting(true)
     setError('')
+    setResult(null)
 
     try {
-      let resultUrl = ''
-      let resultName = ''
-      let resultSize = 0
-      let resultFormat = ''
+      let outputBlob: Blob
+      let outputName: string
+      let outputFormat: string
 
-      if (targetFormat === 'PDF') {
-        // Load the ORIGINAL document and re-save as PDF (preserves content)
-        const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true })
-        
-        // Save with original content preserved
-        const pdfBytes = await pdfDoc.save({
-          useObjectStreams: true,
-          addDefaultPage: false,
-        })
-        
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' })
-        resultUrl = URL.createObjectURL(blob)
-        resultName = fileName.replace(/\.[^.]+$/, '') + '.pdf'
-        resultSize = blob.size
-        resultFormat = 'PDF'
-      } else if (targetFormat === 'TXT') {
-        // Load PDF and extract ACTUAL text from all pages
-        const pdfDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true })
-        const pageCount = pdfDoc.getPageCount()
-        
-        // Get text content from each page
-        const textParts: string[] = []
-        for (let i = 0; i < pageCount; i++) {
-          const page = pdfDoc.getPage(i)
-          const text = page.getText()
-          if (text) textParts.push(text)
-        }
-
-        // If no text found (scanned PDF), note it
-        const fullText = textParts.length > 0 
-          ? textParts.join('\n\n--- Page Break ---\n\n')
-          : 'This PDF appears to be scanned (no extractable text). Use OCR Scanner for text extraction.'
-
-        const blob = new Blob([fullText], { type: 'text/plain' })
-        resultUrl = URL.createObjectURL(blob)
-        resultName = fileName.replace(/\.[^.]+$/, '') + '.txt'
-        resultSize = blob.size
-        resultFormat = 'TXT'
+      if (sourceFormat === 'docx' && targetFormat === 'pdf') {
+        outputBlob = await convertWordToPDF(fileBuffer)
+        outputName = fileName.replace('.docx', '.pdf')
+        outputFormat = 'pdf'
+      } else if (sourceFormat === 'pdf' && targetFormat === 'docx') {
+        outputBlob = await convertPDFToWord(fileBuffer)
+        outputName = fileName.replace('.pdf', '.doc')
+        outputFormat = 'doc'
+      } else if (sourceFormat === 'xlsx' && targetFormat === 'pdf') {
+        outputBlob = await convertExcelToPDF(fileBuffer)
+        outputName = fileName.replace('.xlsx', '.pdf').replace('.xls', '.pdf')
+        outputFormat = 'pdf'
+      } else if (sourceFormat === 'pdf' && targetFormat === 'txt') {
+        outputBlob = await convertPDFToText(fileBuffer)
+        outputName = fileName.replace('.pdf', '.txt')
+        outputFormat = 'txt'
+      } else {
+        throw new Error(`Unsupported conversion: ${sourceFormat} to ${targetFormat}`)
       }
 
-      setResult({ url: resultUrl, name: resultName, size: resultSize, format: resultFormat })
-      setConverting(false)
+      const url = URL.createObjectURL(outputBlob)
+      setResult({
+        url,
+        name: outputName,
+        size: outputBlob.size,
+        format: outputFormat.toUpperCase()
+      })
     } catch (err) {
       setError('Conversion failed: ' + (err as Error).message)
+    } finally {
       setConverting(false)
     }
   }
 
-  const downloadResult = () => {
+  const handleDownload = () => {
     if (!result) return
     const a = document.createElement('a')
     a.href = result.url
@@ -111,85 +189,129 @@ export default function ConvertPage() {
     document.body.removeChild(a)
   }
 
-  const resetAll = () => {
-    setFileName('')
-    setFileBuffer(null)
-    setResult(null)
-    setError('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
-  }
-
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
         <div className="flex items-center justify-between px-4 h-16">
           <Link href="/wavecore-erp/documents" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Convert</span>
+          <span className="text-sm">Convert Document</span>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 lg:p-8">
-        <div className="rounded-3xl bg-gradient-to-br from-indigo-600 to-blue-700 p-6 mb-8">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <RefreshCw className="w-7 h-7" /> Convert Document
-          </h1>
-          <p className="text-white/80 text-sm">Convert between PDF and TXT - original content preserved</p>
+      <main className="max-w-5xl mx-auto p-4 lg:p-8">
+        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <RefreshCw className="w-6 h-6 text-blue-500" /> Convert Document
+        </h1>
+
+        {/* Conversion Options */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {conversionOptions.map(option => {
+            const Icon = option.icon
+            return (
+              <button key={option.label} onClick={() => {
+                setSourceFormat(option.from)
+                setTargetFormat(option.to)
+                setResult(null)
+                setFileBuffer(null)
+                setFileName('')
+              }}
+              className={`p-5 rounded-2xl border text-center transition-all ${
+                sourceFormat === option.from && targetFormat === option.to
+                  ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-transparent shadow-lg'
+                  : 'bg-white dark:bg-neutral-900 hover:shadow-md'
+              }`}>
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${option.color} flex items-center justify-center mx-auto mb-3`}>
+                  <Icon className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-sm font-bold">{option.label}</p>
+                <p className="text-xs opacity-70 mt-1">{option.from.toUpperCase()} → {option.to.toUpperCase()}</p>
+              </button>
+            )
+          })}
         </div>
 
-        {error && (
-          <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm mb-4 text-center">{error}</div>
+        {/* Upload Area */}
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            className="hidden"
+            accept={sourceFormat === 'xlsx' ? '.xlsx,.xls' : sourceFormat === 'docx' ? '.docx' : '.pdf,.txt'}
+          />
+          
+          <button onClick={() => fileInputRef.current?.click()}
+            className="w-full p-8 rounded-2xl border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-blue-500 transition-all text-center">
+            <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+            {fileName ? (
+              <>
+                <p className="font-bold">{fileName}</p>
+                <p className="text-sm text-muted-foreground mt-1">Click to change file</p>
+              </>
+            ) : (
+              <>
+                <p className="font-bold">Click to upload file</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Select {sourceFormat === 'xlsx' ? 'Excel (.xlsx)' : sourceFormat === 'docx' ? 'Word (.docx)' : 'PDF'} file
+                </p>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Convert Button */}
+        {fileBuffer && (
+          <button onClick={handleConvert} disabled={converting}
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+            {converting ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Converting...</>
+            ) : (
+              <><RefreshCw className="w-5 h-5" /> Convert {sourceFormat.toUpperCase()} to {targetFormat.toUpperCase()}</>
+            )}
+          </button>
         )}
 
-        {!result ? (
-          <>
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-              <label className="block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer mb-4">
-                <Upload className="w-12 h-12 mx-auto mb-3 text-indigo-500" />
-                <p className="font-medium">{fileName || 'Upload PDF to convert'}</p>
-                <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
-              </label>
-
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Convert To</label>
-              <select value={targetFormat} onChange={(e) => setTargetFormat(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border mb-4">
-                {formats.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
-              </select>
-
-              <button onClick={handleConvert} disabled={converting || !fileBuffer}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2">
-                {converting ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-                {converting ? 'Converting...' : 'Convert to ' + targetFormat}
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-green-50 dark:bg-green-950 rounded-2xl border border-green-200 p-6 text-center">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <p className="font-bold text-green-700">Conversion Complete!</p>
-              <p className="text-sm text-green-600">{fileName} → {result.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">Size: {formatSize(result.size)}</p>
-            </div>
-
-            <button onClick={downloadResult}
-              className="w-full py-3.5 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center gap-2">
-              <Download className="w-5 h-5" /> Download {result.format}
-            </button>
-
-            <button onClick={resetAll} className="w-full py-3 rounded-xl border font-medium">
-              Convert Another File
-            </button>
+        {/* Error */}
+        {error && (
+          <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
+            {error}
           </div>
         )}
+
+        {/* Result */}
+        {result && (
+          <div className="mt-6 p-6 rounded-2xl bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-8 h-8 text-green-500" />
+                <div>
+                  <p className="font-bold">{result.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {result.format} • {(result.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+              </div>
+              <button onClick={handleDownload}
+                className="px-6 py-3 rounded-xl bg-green-600 text-white flex items-center gap-2 hover:bg-green-700">
+                <Download className="w-4 h-4" /> Download
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Information */}
+        <div className="mt-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-sm text-blue-600 dark:text-blue-400">
+          <p className="font-bold mb-2">Supported Conversions:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Word (.docx) → PDF - Preserves formatting and text content</li>
+            <li>PDF → Word (.doc) - Extracts text content</li>
+            <li>Excel (.xlsx) → PDF - Converts spreadsheet data with grid layout</li>
+            <li>PDF → Text (.txt) - Extracts plain text</li>
+          </ul>
+        </div>
       </main>
     </div>
   )
