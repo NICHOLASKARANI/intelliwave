@@ -19,7 +19,7 @@ export default function AdminPage() {
   const [showImages, setShowImages] = useState<Record<number, boolean>>({})
 
   // CEO Password - change this to your own!
-  const CEO_PASSWORD = 'process.env.ADMIN_PASSWORD || ''!'
+  const CEO_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || ''
 
   const handleLogin = () => {
     if (password === CEO_PASSWORD) {

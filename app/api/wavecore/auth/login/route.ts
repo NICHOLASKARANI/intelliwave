@@ -1,12 +1,13 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { compare } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
 import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
-// Generate JWT token
 function generateToken(userId: string, organizationId: string): string {
-  const secret = process.env.JWT_SECRET || 'process.env.JWT_SECRET || '''
+  const secret = process.env.JWT_SECRET || ''
   return sign(
     { userId, organizationId, type: 'access' },
     secret,
@@ -26,8 +27,7 @@ export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     
-    // Redis rate limiting - 5 attempts per 15 min per IP
-    const rateLimit = await checkRedisRateLimit(`login:${ip}`, 5, 900)
+    const rateLimit = await checkRedisRateLimit('login:' + ip, 5, 900)
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many login attempts. Try again later.' },
