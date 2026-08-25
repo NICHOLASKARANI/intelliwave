@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.11.6",
     "@types/pg": "^8.21.0",
     "@types/react": "^18.2.48",
