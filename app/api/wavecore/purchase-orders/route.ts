@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "PurchaseOrder" (id, "supplierName", amount, status, "organizationId", "createdAt")
        VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
-      [id, body.supplierName, body.amount, body.status || 'PENDING', session.organizationId]
+      [id, body.supplierName || 'Unknown', parseFloat(body.amount) || 0, body.status || 'PENDING', session.organizationId]
     )
 
     return NextResponse.json({ order: result.rows[0] }, { status: 201 })

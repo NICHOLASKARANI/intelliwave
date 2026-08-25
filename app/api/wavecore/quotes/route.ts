@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
     const id = crypto.randomUUID()
 
     const result = await pool.query(
-      `INSERT INTO "SupplierQuote" (id, "supplierId", "rfqId", amount, status, "organizationId", "createdAt")
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `INSERT INTO "SupplierQuote" (id, "supplierName", amount, status, "organizationId", "createdAt")
+       VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
-      [id, body.supplierId || null, body.rfqId || null, body.amount, body.status || 'RECEIVED', session.organizationId]
+      [id, body.supplierName || 'Unknown Supplier', parseFloat(body.amount) || 0, body.status || 'RECEIVED', session.organizationId]
     )
 
     return NextResponse.json({ quote: result.rows[0] }, { status: 201 })
