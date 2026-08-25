@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
 export async function GET(req: NextRequest) {
+  try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rateLimit = await checkRedisRateLimit('session:' + ip, 100, 60)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
   try {
     const sessionToken = req.cookies.get('wavecore_session')?.value
 

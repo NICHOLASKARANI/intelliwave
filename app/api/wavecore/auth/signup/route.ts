@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { hash } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
+import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
 function generateToken(userId: string, organizationId: string): string {
   const secret = process.env.JWT_SECRET || ''
@@ -23,6 +24,12 @@ const securityHeaders = {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rateLimit = await checkRedisRateLimit('signup:' + ip, 5, 3600)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many signup attempts. Try again later.' }, { status: 429 })
+    }
   try {
     const body = await req.json()
     const { name, email, phone, password } = body

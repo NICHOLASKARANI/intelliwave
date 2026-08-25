@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { hash } from 'bcryptjs'
+import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
 export async function POST(req: NextRequest) {
+  try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rateLimit = await checkRedisRateLimit('reset-password:' + ip, 3, 900)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
+    }
   try {
     const body = await req.json()
     const { token, newPassword } = body
