@@ -3,11 +3,14 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { RefreshCw, Download, Upload, FileText, Loader2, CheckCircle, FileSpreadsheet, FileIcon, ArrowRight } from 'lucide-react'
+import { RefreshCw, Download, Upload, FileText, Loader2, CheckCircle, FileSpreadsheet, FileIcon } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { jsPDF } from 'jspdf'
 import * as XLSX from 'xlsx'
-import mammoth from 'mammoth'
+import * as pdfjsLib from 'pdfjs-dist'
+
+// Set worker source
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
 
 interface ConvertedResult {
   url: string
@@ -43,72 +46,125 @@ export default function ConvertPage() {
     setFileName(file.name)
     setFileBuffer(arrayBuffer)
     
-    // Detect source format
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     setSourceFormat(ext)
     
-    // Auto-select target format
     if (ext === 'docx') setTargetFormat('pdf')
     else if (ext === 'pdf') setTargetFormat('docx')
     else if (ext === 'xlsx') setTargetFormat('pdf')
   }
 
+  const extractTextFromPDF = async (buffer: ArrayBuffer): Promise<string> => {
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+      let fullText = ''
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const textContent = await page.getTextContent()
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ')
+        
+        fullText += pageText + '\n\n'
+      }
+      
+      return fullText.trim()
+    } catch (err) {
+      console.error('PDF extraction error:', err)
+      throw new Error('Failed to extract text from PDF')
+    }
+  }
+
   const convertWordToPDF = async (buffer: ArrayBuffer): Promise<Blob> => {
-    // Convert docx to HTML using mammoth
+    // Use mammoth to extract text from docx
+    const mammoth = (await import('mammoth')).default
     const result = await mammoth.convertToHtml({ arrayBuffer: buffer })
     const html = result.value
     
-    // Create PDF using jsPDF
+    // Extract text from HTML, preserving paragraphs
+    const paragraphs = html
+      .replace(/<p[^>]*>/gi, '\n')
+      .replace(/<br[^>]*>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+    
+    // Create PDF
     const pdf = new jsPDF('p', 'mm', 'a4')
     
-    // Simple HTML to PDF conversion
-    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-    const lines = pdf.splitTextToSize(text, 180)
-    
     let y = 20
-    for (const line of lines) {
-      if (y > 280) {
-        pdf.addPage()
-        y = 20
+    for (const paragraph of paragraphs) {
+      const lines = pdf.splitTextToSize(paragraph, 180)
+      for (const line of lines) {
+        if (y > 280) {
+          pdf.addPage()
+          y = 20
+        }
+        pdf.text(line, 15, y)
+        y += 5
       }
-      pdf.text(line, 15, y)
-      y += 5
+      y += 3 // Space between paragraphs
     }
     
     return pdf.output('blob')
   }
 
   const convertPDFToWord = async (buffer: ArrayBuffer): Promise<Blob> => {
-    // Load PDF
-    const pdfDoc = await PDFDocument.load(buffer)
-    const pages = pdfDoc.getPages()
+    // Extract text from PDF using pdfjs-dist
+    const text = await extractTextFromPDF(buffer)
     
-    // Extract text from all pages
-    let text = ''
-    for (const page of pages) {
-      const pageText = page.getText()
-      text += pageText + '\n\n'
+    if (!text) {
+      throw new Error('No text found in PDF. If this is a scanned document, try OCR.')
     }
     
-    // Create a simple docx-like blob (actually plain text with .doc extension)
-    return new Blob([text], { type: 'application/msword' })
+    // Create Word-compatible HTML document that preserves formatting
+    const htmlContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+            xmlns:w="urn:schemas-microsoft-com:office:word" 
+            xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8">
+        <title>${fileName.replace('.pdf', '')}</title>
+        <style>
+          body { font-family: Calibri, Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
+          p { margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        ${text.split('\n\n').map(paragraph => 
+          paragraph.trim() ? `<p>${paragraph.replace(/\n/g, '<br>')}</p>` : ''
+        ).join('\n')}
+      </body>
+      </html>
+    `
+    
+    return new Blob(['\ufeff' + htmlContent], { type: 'application/msword' })
   }
 
   const convertExcelToPDF = async (buffer: ArrayBuffer): Promise<Blob> => {
-    // Parse Excel
     const workbook = XLSX.read(buffer, { type: 'array' })
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-    const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 })
+    const firstSheetName = workbook.SheetNames[0]
+    const worksheet = workbook.Sheets[firstSheetName]
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' })
     
-    // Create PDF
     const pdf = new jsPDF('l', 'mm', 'a4')
     
-    let y = 20
+    // Add title
+    pdf.setFontSize(16)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(firstSheetName, 15, 20)
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    
+    let y = 30
     for (const row of data) {
       if (y > 190) {
         pdf.addPage()
         y = 20
       }
+      
       const rowText = (row as any[]).map(cell => String(cell || '')).join(' | ')
       const lines = pdf.splitTextToSize(rowText, 250)
       pdf.text(lines, 15, y)
@@ -119,15 +175,8 @@ export default function ConvertPage() {
   }
 
   const convertPDFToText = async (buffer: ArrayBuffer): Promise<Blob> => {
-    const pdfDoc = await PDFDocument.load(buffer)
-    const pages = pdfDoc.getPages()
-    
-    let text = ''
-    for (const page of pages) {
-      text += page.getText() + '\n'
-    }
-    
-    return new Blob([text], { type: 'text/plain' })
+    const text = await extractTextFromPDF(buffer)
+    return new Blob([text], { type: 'text/plain;charset=utf-8' })
   }
 
   const handleConvert = async () => {
@@ -147,19 +196,19 @@ export default function ConvertPage() {
 
       if (sourceFormat === 'docx' && targetFormat === 'pdf') {
         outputBlob = await convertWordToPDF(fileBuffer)
-        outputName = fileName.replace('.docx', '.pdf')
+        outputName = fileName.replace(/\.docx$/i, '.pdf')
         outputFormat = 'pdf'
       } else if (sourceFormat === 'pdf' && targetFormat === 'docx') {
         outputBlob = await convertPDFToWord(fileBuffer)
-        outputName = fileName.replace('.pdf', '.doc')
+        outputName = fileName.replace(/\.pdf$/i, '.doc')
         outputFormat = 'doc'
       } else if (sourceFormat === 'xlsx' && targetFormat === 'pdf') {
         outputBlob = await convertExcelToPDF(fileBuffer)
-        outputName = fileName.replace('.xlsx', '.pdf').replace('.xls', '.pdf')
+        outputName = fileName.replace(/\.(xlsx|xls)$/i, '.pdf')
         outputFormat = 'pdf'
       } else if (sourceFormat === 'pdf' && targetFormat === 'txt') {
         outputBlob = await convertPDFToText(fileBuffer)
-        outputName = fileName.replace('.pdf', '.txt')
+        outputName = fileName.replace(/\.pdf$/i, '.txt')
         outputFormat = 'txt'
       } else {
         throw new Error(`Unsupported conversion: ${sourceFormat} to ${targetFormat}`)
@@ -187,6 +236,7 @@ export default function ConvertPage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    URL.revokeObjectURL(result.url)
   }
 
   return (
@@ -240,7 +290,7 @@ export default function ConvertPage() {
             ref={fileInputRef}
             onChange={handleFileUpload}
             className="hidden"
-            accept={sourceFormat === 'xlsx' ? '.xlsx,.xls' : sourceFormat === 'docx' ? '.docx' : '.pdf,.txt'}
+            accept={sourceFormat === 'xlsx' ? '.xlsx,.xls' : sourceFormat === 'docx' ? '.docx' : '.pdf'}
           />
           
           <button onClick={() => fileInputRef.current?.click()}
@@ -274,14 +324,12 @@ export default function ConvertPage() {
           </button>
         )}
 
-        {/* Error */}
         {error && (
           <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
             {error}
           </div>
         )}
 
-        {/* Result */}
         {result && (
           <div className="mt-6 p-6 rounded-2xl bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
             <div className="flex items-center justify-between">
@@ -306,9 +354,9 @@ export default function ConvertPage() {
         <div className="mt-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-sm text-blue-600 dark:text-blue-400">
           <p className="font-bold mb-2">Supported Conversions:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Word (.docx) → PDF - Preserves formatting and text content</li>
-            <li>PDF → Word (.doc) - Extracts text content</li>
-            <li>Excel (.xlsx) → PDF - Converts spreadsheet data with grid layout</li>
+            <li>Word (.docx) → PDF - Preserves text content and paragraphs</li>
+            <li>PDF → Word (.doc) - Extracts all text content preserving paragraphs</li>
+            <li>Excel (.xlsx) → PDF - Converts spreadsheet data with row layout</li>
             <li>PDF → Text (.txt) - Extracts plain text</li>
           </ul>
         </div>
