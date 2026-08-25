@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: 'Too many signup attempts. Try again later.' }, { status: 429 })
     }
-  try {
+
     const body = await req.json()
     const { name, email, phone, password } = body
 

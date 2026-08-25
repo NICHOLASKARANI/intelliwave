@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
@@ -9,53 +11,33 @@ export async function GET(req: NextRequest) {
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }
-  try {
+
     const sessionToken = req.cookies.get('wavecore_session')?.value
 
     if (!sessionToken) {
-      return NextResponse.json({ authenticated: false }, { status: 401 })
+      return NextResponse.json({ session: null })
     }
 
     const result = await pool.query(
-      `SELECT s."userId", s.expires,
-              u.name, u.email, u.role, u."isActive",
-              o.id as org_id, o.name as org_name, o."isActive" as org_active
+      `SELECT s.*, u.id as "userId", u.name, u.email, u.role, u."isActive"
        FROM "Session" s
-       JOIN "User" u ON u.id = s."userId"
-       LEFT JOIN "Organization" o ON o."ownerId" = u.id
-       WHERE s."sessionToken" = $1 AND s.expires > NOW()
-       LIMIT 1`,
+       JOIN "User" u ON s."userId" = u.id
+       WHERE s."sessionToken" = $1 AND s.expires > NOW() AND u."isActive" = true`,
       [sessionToken]
     )
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ authenticated: false }, { status: 401 })
+      return NextResponse.json({ session: null })
     }
 
-    const row = result.rows[0]
-
-    // Check subscription
-    const subResult = await pool.query(
-      `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
-      [row.org_id]
-    )
-
     return NextResponse.json({
-      authenticated: true,
-      user: {
-        id: row.userId,
-        name: row.name,
-        email: row.email,
-        role: row.role,
-      },
-      organization: {
-        id: row.org_id,
-        name: row.org_name,
-      },
-      subscribed: subResult.rows.length > 0,
+      session: {
+        user: result.rows[0],
+        expires: result.rows[0].expires
+      }
     })
   } catch (error) {
     console.error('Session error:', error)
-    return NextResponse.json({ authenticated: false, error: error.message }, { status: 500 })
+    return NextResponse.json({ session: null })
   }
 }
