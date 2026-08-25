@@ -37,6 +37,28 @@ export default function ExecutiveDashboard() {
   const [subscription, setSubscription] = useState<any>(null)
 
   useEffect(() => {
+    // Check session on mount
+    fetch('/api/wavecore/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.session) {
+          window.location.href = '/wavecore-erp/auth/login'
+        }
+      })
+      .catch(() => {
+        window.location.href = '/wavecore-erp/auth/login'
+      })
+    // Check session on mount
+    fetch('/api/wavecore/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.session) {
+          window.location.href = '/wavecore-erp/auth/login'
+        }
+      })
+      .catch(() => {
+        window.location.href = '/wavecore-erp/auth/login'
+      })
     fetchAllData()
   }, [])
 
