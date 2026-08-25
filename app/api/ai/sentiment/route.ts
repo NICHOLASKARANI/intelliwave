@@ -35,7 +35,7 @@ function analyzeSentiment(text: string): {
   return {
     sentiment,
     score: Math.round(score),
-    keywords: [...new Set(keywords)],
+    keywords: Array.from(new Set(keywords)),
     summary: sentiment === 'positive' 
       ? 'This testimonial reflects high client satisfaction'
       : sentiment === 'negative'
