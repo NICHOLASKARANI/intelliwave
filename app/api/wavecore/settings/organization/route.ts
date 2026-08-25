@@ -21,7 +21,7 @@ export async function PUT(req: NextRequest) {
       const updated = await prisma.organizationSetting.update({
         where: { id: existing.id },
         data: {
-          companyName: body.companyName,
+          companyname: body.companyname,
           email: body.email,
           phone: body.phone,
           address: body.address,
@@ -29,16 +29,16 @@ export async function PUT(req: NextRequest) {
           timezone: body.timezone,
           language: body.language,
           currency: body.currency,
-          dateFormat: body.dateFormat,
-          currencySymbol: body.currencySymbol,
-          numberFormat: body.numberFormat,
+          dateformat: body.dateformat,
+          currencysymbol: body.currencysymbol,
+          numberformat: body.numberformat,
         },
       })
       return NextResponse.json({ settings: updated })
     } else {
       const created = await prisma.organizationSetting.create({
         data: {
-          companyName: body.companyName || 'WaveCore ERP',
+          companyname: body.companyname || 'WaveCore ERP',
           email: body.email,
           phone: body.phone,
           address: body.address,
@@ -46,9 +46,9 @@ export async function PUT(req: NextRequest) {
           timezone: body.timezone || 'Africa/Nairobi',
           language: body.language || 'English',
           currency: body.currency || 'KES',
-          dateFormat: body.dateFormat || 'DD/MM/YYYY',
-          currencySymbol: body.currencySymbol || 'KSh',
-          numberFormat: body.numberFormat || '1,234.56',
+          dateformat: body.dateformat || 'DD/MM/YYYY',
+          currencysymbol: body.currencysymbol || 'KSh',
+          numberformat: body.numberformat || '1,234.56',
         },
       })
       return NextResponse.json({ settings: created }, { status: 201 })
