@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
-  Mail, Lock, Phone, Eye, EyeOff, Loader2, Sparkles,
-  Shield, Globe, Zap, ArrowRight, User, CheckCircle
+import {
+  Mail, Lock, Phone, Eye, EyeOff, Loader2,
+  Shield, Globe, Zap, ArrowRight, User, CheckCircle,
+  Building2, Sparkles, Server, Clock, BadgeCheck
 } from 'lucide-react'
 
 export default function SignupPage() {
@@ -17,18 +18,30 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState(0)
 
-  const handleGoogleSignup = () => {
-    window.location.href = '/api/auth/google'
+  const checkPasswordStrength = (pass: string) => {
+    let strength = 0
+    if (pass.length >= 8) strength++
+    if (/[A-Z]/.test(pass)) strength++
+    if (/[a-z]/.test(pass)) strength++
+    if (/[0-9]/.test(pass)) strength++
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(pass)) strength++
+    return strength
   }
 
-  const handleFacebookSignup = () => {
-    window.location.href = '/api/auth/facebook'
+  const handlePasswordChange = (value: string) => {
+    setPassword(value)
+    setPasswordStrength(checkPasswordStrength(value))
   }
 
   const handleSignup = async () => {
     if (!name || !email || !phone || !password) {
       setError('All fields are required')
+      return
+    }
+    if (passwordStrength < 4) {
+      setError('Password must include uppercase, lowercase, number, and special character')
       return
     }
     setLoading(true)
@@ -47,122 +60,161 @@ export default function SignupPage() {
           window.location.href = '/wavecore-erp/subscription'
         }, 2000)
       } else {
-        setError(data.error || 'Signup failed')
+        setError(data.error || 'Signup failed. Please try again.')
       }
-    } catch {
-      setError('Network error. Please try again.')
+    } catch (err) {
+      setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
   }
 
+  const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent']
+  const strengthColors = ['', 'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 'bg-emerald-500']
+
   return (
-    <div className="min-h-screen bg-neutral-950 relative flex items-center justify-center p-4 overflow-hidden">
-      {/* Glassmorphism background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-purple-950 to-neutral-950" />
-      <div className="absolute top-20 left-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-indigo-500/10 rounded-full animate-spin" style={{ animationDuration: '60s' }} />
-
-      {/* Card */}
-      <div className="relative w-full max-w-md">
-        <div className="bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/10 p-8 shadow-2xl">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={64} height={64} className="rounded-2xl mx-auto mb-4" />
-            <h1 className="text-3xl font-extrabold text-white">Create Account</h1>
-            <p className="text-neutral-400 mt-1">Join IntelliWavve ERP</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/20 rounded-full filter blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-emerald-600/10 rounded-full filter blur-3xl" />
+      
+      <div className="relative z-10 w-full max-w-md">
+        {success ? (
+          <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl text-center">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">Account Created!</h1>
+            <p className="text-slate-400 mb-6">Redirecting to subscription setup...</p>
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" />
           </div>
-
-          {success ? (
-            <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-white mb-2">Account Created!</h2>
-              <p className="text-neutral-400 mb-4">Redirecting to subscription...</p>
-              <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        ) : (
+          <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl">
+            {/* Logo */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={48} height={48} className="rounded-xl object-cover shadow-lg" />
+              <div>
+                <h1 className="text-2xl font-bold text-white">WaveCore ERP</h1>
+                <p className="text-xs text-slate-400">Enterprise Resource Planning</p>
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Social Login */}
-              <div className="space-y-3 mb-6">
-                {/* Google Button - Real Logo */}
-                <button onClick={handleGoogleSignup}
-                  className="w-full py-3 rounded-xl bg-white text-neutral-800 font-medium hover:shadow-lg transition-all flex items-center justify-center gap-3">
-                  <svg viewBox="0 0 48 48" className="w-5 h-5">
-                    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
-                    <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
-                    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
-                    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
-                  </svg>
-                  Continue with Google
-                </button>
 
-                {/* Facebook Button - Real Logo */}
-                <button onClick={handleFacebookSignup}
-                  className="w-full py-3 rounded-xl bg-[#1877F2] text-white font-medium hover:shadow-lg transition-all flex items-center justify-center gap-3">
-                  <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  Continue with Facebook
-                </button>
+            {/* Trust badges */}
+            <div className="flex justify-center gap-4 mb-6 text-xs text-slate-400">
+              <span className="flex items-center gap-1"><Shield className="w-3 h-3 text-green-500" /> Secure</span>
+              <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-blue-500" /> Global</span>
+              <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-500" /> Fast</span>
+            </div>
+
+            {/* Form */}
+            <div className="space-y-4">
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full Name"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/50 border border-slate-600/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
               </div>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-xs text-neutral-500">OR</span>
-                <div className="flex-1 h-px bg-white/10" />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email Address"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/50 border border-slate-600/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+              </div>
+
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone Number"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/50 border border-slate-600/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+              </div>
+
+              <div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    placeholder="Password"
+                    className="w-full pl-10 pr-12 py-3 rounded-xl bg-slate-800/50 border border-slate-600/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                
+                {/* Password strength indicator */}
+                {password && (
+                  <div className="mt-2">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(level => (
+                        <div key={level} className={`h-1 flex-1 rounded-full ${level <= passwordStrength ? strengthColors[passwordStrength] : 'bg-slate-700'}`} />
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">{strengthLabels[passwordStrength]}</p>
+                  </div>
+                )}
               </div>
 
               {error && (
-                <div className="p-3 rounded-xl bg-red-500/10 text-red-400 text-sm mb-4 text-center">
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
                   {error}
                 </div>
               )}
 
-              {/* Form */}
-              <div className="space-y-4">
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 transition-all"
-                    placeholder="Full Name" />
-                </div>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 transition-all"
-                    placeholder="Email Address" />
-                </div>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 transition-all"
-                    placeholder="Phone Number" />
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 transition-all"
-                    placeholder="Password" />
-                  <button onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2">
-                    {showPassword ? <EyeOff className="w-4 h-4 text-neutral-500" /> : <Eye className="w-4 h-4 text-neutral-500" />}
-                  </button>
-                </div>
+              <button
+                onClick={handleSignup}
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg hover:shadow-lg hover:shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Creating Account...</>
+                ) : (
+                  <>Create Account <ArrowRight className="w-5 h-5" /></>
+                )}
+              </button>
+            </div>
 
-                <button onClick={handleSignup} disabled={loading}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg hover:shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                  {loading ? 'Creating...' : 'Create Account'}
-                </button>
+            {/* Security info */}
+            <div className="mt-6 p-4 rounded-xl bg-slate-800/30 border border-slate-700/30">
+              <p className="text-xs text-slate-400 flex items-center gap-2 mb-2">
+                <BadgeCheck className="w-4 h-4 text-green-500" /> Enterprise Security
+              </p>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• 256-bit encryption</li>
+                <li>• JWT authentication</li>
+                <li>• Rate limiting</li>
+                <li>• Password hashing (bcrypt)</li>
+              </ul>
+            </div>
 
-                <p className="text-center text-sm text-neutral-400">
-                  Already have an account?{' '}
-                  <Link href="/wavecore-erp/auth/login" className="text-indigo-400 font-medium">Sign In</Link>
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+            {/* Login link */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-400">
+                Already have an account?{' '}
+                <Link href="/wavecore-erp/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
