@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, createContext, useContext } from 'react'
+import { useEffect, useState } from 'react'
+import { SessionContext } from '@/lib/wavecore/context/session-context'
 
 interface Session {
   authenticated: boolean
@@ -16,10 +17,6 @@ interface Session {
   }
   subscribed?: boolean
 }
-
-const SessionContext = createContext<Session>({ authenticated: false })
-
-export const useSession = () => useContext(SessionContext)
 
 export default function WaveCoreLayout({
   children,
@@ -49,7 +46,6 @@ export default function WaveCoreLayout({
     checkSession()
   }, [])
 
-  // Don't show loading spinner on every navigation - only first load
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
