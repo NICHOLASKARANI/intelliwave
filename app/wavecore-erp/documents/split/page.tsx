@@ -64,7 +64,7 @@ export default function SplitPage() {
         const [copiedPage] = await newPdf.copyPages(sourcePdf, [i])
         newPdf.addPage(copiedPage)
         const pdfBytes = await newPdf.save()
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+        const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
         const url = URL.createObjectURL(blob)
         
         results.push({
@@ -124,7 +124,7 @@ export default function SplitPage() {
       const copiedPages = await newPdf.copyPages(sourcePdf, pagesToExtract)
       copiedPages.forEach(page => newPdf.addPage(page))
       const pdfBytes = await newPdf.save()
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
 
       setSplitResults([{
