@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Code2, Users, GitBranch, Terminal, Cpu, Globe } from 'lucide-react'
+import { Code2, Users, GitBranch, Terminal, Cpu, Globe } , Github } from 'lucide-react'
 
 const teamImages = [
   {
