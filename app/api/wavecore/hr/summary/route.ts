@@ -8,28 +8,20 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  try {
-    const [empCount, activeCount, deptCount, payrollSum, leaveCount, attendCount] = await Promise.all([
-      pool.query('SELECT COUNT(*) FROM "Employee"'),
-      pool.query(`SELECT COUNT(*) FROM "Employee" WHERE "status" = 'ACTIVE'`),
-      pool.query(`SELECT COUNT(DISTINCT department) FROM "Employee" WHERE department IS NOT NULL`),
-      pool.query(`SELECT COALESCE(SUM(salary), 0) FROM "Employee" WHERE "status" = 'ACTIVE'`),
-      pool.query(`SELECT COUNT(*) FROM "LeaveRequest" WHERE "status" = 'PENDING'`),
-      pool.query(`SELECT COUNT(*) FROM "Attendance" WHERE date = CURRENT_DATE`),
+
+    const [empResult, attResult] = await Promise.all([
+      pool.query(`SELECT COUNT(*) as count FROM "Employee" WHERE "organizationId" = $1`, [session.organizationId]),
+      pool.query(`SELECT COUNT(*) as count FROM "Attendance" WHERE "organizationId" = $1`, [session.organizationId])
     ])
 
     return NextResponse.json({
       summary: {
-        totalEmployees: parseInt(empCount.rows[0].count),
-        activeEmployees: parseInt(activeCount.rows[0].count),
-        departments: parseInt(deptCount.rows[0].count),
-        monthlyPayroll: parseInt(payrollSum.rows[0].sum || '0'),
-        pendingLeaves: parseInt(leaveCount.rows[0].count),
-        todayAttendance: parseInt(attendCount.rows[0].count),
-      },
+        totalEmployees: parseInt(empResult.rows[0]?.count || '0'),
+        totalAttendance: parseInt(attResult.rows[0]?.count || '0')
+      }
     })
-  } catch (error: any) {
-    console.error('HR Summary:', (error as Error).message)
-    return NextResponse.json({ summary: {} }, { status: 500 })
+  } catch (error) {
+    console.error('HR Summary error:', error)
+    return NextResponse.json({ summary: {} })
   }
 }
