@@ -35,7 +35,7 @@ export default function APPage() {
     const blob = new Blob([content], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.Download = 'ap.pdf'; a.click()
+    a.href = url; a.download = 'ap.pdf'; a.click()
   }
 
   return (
