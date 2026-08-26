@@ -6,7 +6,7 @@ import {
   Activity, Thermometer, Gauge, Droplets, Zap, 
   AlertTriangle, CheckCircle, Clock, Factory,
   Wifi, Battery, Server
-, Wifi } from 'lucide-react'
+ } from 'lucide-react'
 
 interface SensorData {
   id: string
