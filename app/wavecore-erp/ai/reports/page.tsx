@@ -15,7 +15,7 @@ export default function AIReportsPage() {
     { name: 'Financial Summary', icon: FileText, desc: 'Revenue, expenses, profit' },
     { name: 'Sales Analysis', icon: BarChart3, desc: 'Top products, customers' },
     { name: 'Inventory Report', icon: FileText, desc: 'Stock levels, value' },
-    { name: 'Customer Report', icon: FileText, desc: 'Customer demographics' },
+    { name: 'Customer Report', icon: FileText, desc: 'Customer graphics' },
   ]
 
   const handleGenerate = () => {
