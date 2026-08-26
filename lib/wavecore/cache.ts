@@ -20,7 +20,7 @@ export function clearCache(prefix?: string): void {
     cacheMap.clear()
     return
   }
-  for (const key of cacheMap.keys()) {
+  for (const key of Array.from(cacheMap.keys())) {
     if (key.startsWith(prefix)) {
       cacheMap.delete(key)
     }
