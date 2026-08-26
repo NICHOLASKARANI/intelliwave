@@ -7,7 +7,7 @@ import { useAnimatedCounter } from '@/hooks/use-animated-counter'
 import { 
   Brain, Cloud, Shield, Code2, Zap, Globe, 
   Cpu, Database, Rocket, Users, ArrowRight 
-, Rocket } from 'lucide-react'
+ } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
