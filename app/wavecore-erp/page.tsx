@@ -103,7 +103,7 @@ export default function ExecutiveDashboard() {
     <div className="min-h-screen bg-slate-950 text-white">
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800">
-        <div className="flex items-center justify-between px-4 h-16">
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
           <Link prefetch={true} href="/wavecore-erp" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <div>
