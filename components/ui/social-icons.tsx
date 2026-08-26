@@ -4,9 +4,10 @@ import Link from 'next/link'
 
 interface SocialIconsProps {
   className?: string
+  variant?: string
 }
 
-export function SocialIcons({ className = "flex gap-2" }: SocialIconsProps) {
+export function SocialIcons({ className = "flex gap-2", variant }: SocialIconsProps) {
   const socials = [
     {
       name: 'WhatsApp',
