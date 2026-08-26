@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const result = await pool.query(
-      `SELECT * FROM "Project" WHERE id = $1 AND "clientId" = $2`,
+      SELECT * FROM "Project" WHERE id = $1 AND "clientId" = $2,
       [params.id, session.userId]
     )
     return NextResponse.json({ project: result.rows[0] || null })
