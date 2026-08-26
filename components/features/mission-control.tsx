@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { 
   Activity, Server, Cpu, Database, Globe, 
   Zap, Users, GitBranch, Cloud, Shield,
-  TrendingUp, Clock, Wifi, HardDrive
+  TrendingUp, Clock, Wifi, HardDrive, Rocket
  } from 'lucide-react'
 
 export function MissionControl() {
