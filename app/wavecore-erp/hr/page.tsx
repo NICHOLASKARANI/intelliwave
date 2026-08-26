@@ -59,7 +59,7 @@ export default function HRPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
           <Link href="/wavecore-erp" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
@@ -68,7 +68,7 @@ export default function HRPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 lg:p-8">
+      <main className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-8">
         <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-6 lg:p-8 mb-8">
           <div className="flex justify-between items-center">
             <div>
@@ -116,7 +116,7 @@ export default function HRPage() {
             </div>
 
             <h2 className="text-xl font-bold mb-4">HR Modules (10)</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {modules.map(module => {
                 const Icon = module.icon
                 return (
