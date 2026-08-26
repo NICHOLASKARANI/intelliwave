@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// ML-based estimation model (simplified for demo - can connect to real ML model)
+// ML-based estimation model (simplified for  - can connect to real ML model)
 function calculateEstimate(projectType: string, features: string[], complexity: string) {
   const basePrice: Record<string, number> = {
     website: 150000,
