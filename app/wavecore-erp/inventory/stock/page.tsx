@@ -35,7 +35,7 @@ export default function StockPage() {
   }
 
   const filtered = items.filter(item => 
-    (item.productName || item.name || '').toLowerCase().includes(search.toLowerCase())
+    (item.productName || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const lowStock = items.filter(item => (item.quantity || 0) < 10)
@@ -90,7 +90,7 @@ export default function StockPage() {
               <tbody>
                 {filtered.map(item => (
                   <tr key={item.id} className="border-t">
-                    <td className="p-4 font-medium">{item.productName || item.name || 'N/A'}</td>
+                    <td className="p-4 font-medium">{item.productName || 'N/A'}</td>
                     <td className="p-4">{item.quantity || 0}</td>
                     <td className="p-4">
                       {(item.quantity || 0) < 10 ? (
