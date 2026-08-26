@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Bot, X, Send, Code2, Bug, FileText, GitBranch, 
   Lightbulb, Loader2, Sparkles, User, Copy, Check 
-} from 'lucide-react'
+, GitBranch } from 'lucide-react'
 
 interface Message {
   id: string

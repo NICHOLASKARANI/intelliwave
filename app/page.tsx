@@ -24,7 +24,7 @@ import {
   Scissors, Wrench, Code2, Monitor, Store, Download,
   Briefcase, GraduationCap, Heart, Truck, Factory,
   Zap, Star, Activity, BarChart3, Brain
-} from 'lucide-react'
+, Wifi } from 'lucide-react'
 import Link from 'next/link'
 
 // ============================================================

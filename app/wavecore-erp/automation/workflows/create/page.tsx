@@ -10,7 +10,7 @@ import {
   Calculator, Users, Package, Factory, Globe,
   Webhook, Layers, Clock, Plus, Trash2, MoveUp,
   MoveDown, Settings, AlertCircle
-} from 'lucide-react'
+, GitBranch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface WorkflowStep {

@@ -7,7 +7,7 @@ import {
   FolderKanban, Download, Loader2, TrendingUp, CheckCircle,
   Clock, Users, BarChart3, Plus, Calendar, GanttChartSquare,
   Timer, GitBranch, Target, FileText, DollarSign
-} from 'lucide-react'
+, GitBranch } from 'lucide-react'
 
 export default function ProjectsPage() {
   const [data, setData] = useState<any>({})

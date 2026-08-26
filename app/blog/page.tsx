@@ -8,7 +8,7 @@ import {
   ArrowRight, Search, Calendar, Clock, User, Tag, TrendingUp,
   Sparkles, Globe, Shield, Zap, BarChart3, Rocket, Star,
   ChevronRight, BookOpen, Award, Target, Eye, Heart, Users
-} from 'lucide-react'
+, Rocket } from 'lucide-react'
 
 // Animated Counter Component
 function AnimatedCounter({ end, duration = 2500, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {

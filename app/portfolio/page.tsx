@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   ArrowRight, Search, TrendingUp, Sparkles, Globe,
   Shield, Rocket, Award, Star, X
-} from 'lucide-react'
+, Rocket } from 'lucide-react'
 
 function AnimatedCounter({ end, duration = 2500, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
   const [count, setCount] = useState(0)
