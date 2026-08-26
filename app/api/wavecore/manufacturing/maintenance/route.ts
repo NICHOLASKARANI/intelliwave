@@ -8,29 +8,26 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  try {
-    const result = await pool.query(`SELECT * FROM "MaintenanceRequest" ORDER BY "createdAt" DESC LIMIT 50`)
+    const result = await pool.query(`SELECT * FROM "MaintenanceRequest" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`, [session.organizationId])
     return NextResponse.json({ requests: result.rows })
-  } catch (error: any) {
-    console.error('Maintenance GET:', (error as Error).message)
+  } catch (error) {
     return NextResponse.json({ requests: [] })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const body = await request.json()
-
+    const crypto = require('crypto')
+    const id = crypto.randomUUID()
     const result = await pool.query(
-      `INSERT INTO "MaintenanceRequest" ("id", "number", "type", "status", "description", "assetName", "assetCode", "priority", "requestedDate", "organizationId", "createdAt", "updatedAt") 
-       VALUES (gen_random_uuid()::text, $1, 'CORRECTIVE', 'REQUESTED', $2, $3, null, $4, NOW(), 'org-1', NOW(), NOW()) 
-       RETURNING *`,
-      ['MR-' + Date.now().toString().slice(-6), body.description || null, body.assetName, body.priority || 'MEDIUM']
+      `INSERT INTO "MaintenanceRequest" (id, title, "organizationId", "createdAt") VALUES ($1, $2, $3, NOW()) RETURNING *`,
+      [id, body.title, session.organizationId]
     )
-
-    return NextResponse.json({ success: true, request: result.rows[0] }, { status: 201 })
-  } catch (error: any) {
-    console.error('Maintenance POST:', (error as Error).message)
-    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
+    return NextResponse.json({ request: result.rows[0] }, { status: 201 })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create request' }, { status: 500 })
   }
 }

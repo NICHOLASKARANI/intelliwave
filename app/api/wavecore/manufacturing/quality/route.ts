@@ -8,29 +8,26 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  try {
-    const result = await pool.query(`SELECT * FROM "QualityCheck" ORDER BY "createdAt" DESC LIMIT 50`)
+    const result = await pool.query(`SELECT * FROM "QualityCheck" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`, [session.organizationId])
     return NextResponse.json({ checks: result.rows })
-  } catch (error: any) {
-    console.error('Quality GET:', (error as Error).message)
+  } catch (error) {
     return NextResponse.json({ checks: [] })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const body = await request.json()
-
+    const crypto = require('crypto')
+    const id = crypto.randomUUID()
     const result = await pool.query(
-      `INSERT INTO "QualityCheck" ("id", "type", "result", "inspectedQty", "passedQty", "rejectedQty", "workOrderId", "organizationId", "createdAt", "updatedAt") 
-       VALUES (gen_random_uuid()::text, 'FINAL', $1, 0, 0, 0, 'wo-1', 'org-1', NOW(), NOW()) 
-       RETURNING *`,
-      [body.result || 'PASSED']
+      `INSERT INTO "QualityCheck" (id, name, "organizationId", "createdAt") VALUES ($1, $2, $3, NOW()) RETURNING *`,
+      [id, body.name, session.organizationId]
     )
-
-    return NextResponse.json({ success: true, check: result.rows[0] }, { status: 201 })
-  } catch (error: any) {
-    console.error('Quality POST:', (error as Error).message)
-    return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
+    return NextResponse.json({ check: result.rows[0] }, { status: 201 })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create check' }, { status: 500 })
   }
 }
