@@ -7,7 +7,7 @@ import {
   FileText, Download, Loader2, Scan, GitBranch, PenTool,
   Layers, Scissors, Minimize2, RefreshCw, Stamp, Archive,
   Upload, FolderOpen, Search, Star, Trash2, Clock
-, GitBranch } from 'lucide-react'
+ } from 'lucide-react'
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<any[]>([])
