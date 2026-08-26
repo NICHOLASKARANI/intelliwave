@@ -159,7 +159,7 @@ export default function MarketplacePage() {
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-500" /> Browse Categories
           </h2>
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {categories.slice(0, 18).map(cat => (
               <button key={cat.name} onClick={() => setActiveCategory(cat.name)}
                 className={`p-4 rounded-2xl border text-center transition-all ${
@@ -191,7 +191,7 @@ export default function MarketplacePage() {
               <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
             </div>
           ) : listings.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {listings.map(listing => (
                 <Link key={listing.id} href={`/marketplace/listing/${listing.id}`}
                   className="rounded-2xl border bg-white dark:bg-neutral-900 overflow-hidden hover:shadow-xl transition-all group">
