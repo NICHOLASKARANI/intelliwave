@@ -1,0 +1,30 @@
+﻿   Γû▓ Next.js 14.1.0
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully
+   Linting and checking validity of types ...
+node.exe :  ΓÜá No ESLint configuration detected. Run next lint to begin setup
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( ΓÜá No ESLint ... to begin setup:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Failed to compile.
+
+./components/features/mission-control.tsx:75:21
+Type error: Cannot find name 'Rocket'.
+
+[0m [90m 73 |[39m           {[[0m
+[0m [90m 74 |[39m             { icon[33m:[39m [33mGitBranch[39m[33m,[39m label[33m:[39m [32m'Active Projects'[39m[33m,[39m value[33m:[39m 
+metrics[33m.[39mactiveProjects[33m.[39mtoLocaleString()[33m,[39m color[33m:[39m [32m'text-blue-400'[39m }[33m,[39m[0m
+[0m[31m[1m>[22m[39m[90m 75 |[39m             { icon[33m:[39m [33mRocket[39m[33m,[39m label[33m:[39m [32m'Deployments'[39m[33m,[39m value[33m:[39m 
+metrics[33m.[39mdeployments[33m.[39mtoLocaleString()[33m,[39m color[33m:[39m [32m'text-purple-400'[39m }[33m,[39m[0m
+[0m [90m    |[39m                     [31m[1m^[22m[39m[0m
+[0m [90m 76 |[39m             { icon[33m:[39m [33mActivity[39m[33m,[39m label[33m:[39m [32m'API Calls'[39m[33m,[39m value[33m:[39m 
+metrics[33m.[39mapiCalls[33m.[39mtoLocaleString()[33m,[39m color[33m:[39m [32m'text-green-400'[39m }[33m,[39m[0m
+[0m [90m 77 |[39m             { icon[33m:[39m [33mWifi[39m[33m,[39m label[33m:[39m [32m'Uptime'[39m[33m,[39m value[33m:[39m [32m`${metrics.uptime}%`[39m[33m,[39m 
+color[33m:[39m [32m'text-yellow-400'[39m }[33m,[39m[0m
+[0m [90m 78 |[39m             { icon[33m:[39m [33mUsers[39m[33m,[39m label[33m:[39m [32m'Users'[39m[33m,[39m value[33m:[39m (metrics[33m.[39musers [33m/[39m 
+[35m1000[39m)[33m.[39mtoFixed([35m0[39m) [33m+[39m [32m'K'[39m[33m,[39m color[33m:[39m [32m'text-cyan-400'[39m }[33m,[39m[0m
