@@ -2,8 +2,12 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth' from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const result = await pool.query(`SELECT * FROM "WorkCenter" ORDER BY "createdAt" DESC LIMIT 50`)
     return NextResponse.json({ centers: result.rows })
