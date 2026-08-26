@@ -6,7 +6,7 @@ import {
   Activity, Server, Cpu, Database, Globe, 
   Zap, Users, GitBranch, Cloud, Shield,
   TrendingUp, Clock, Wifi, HardDrive
-, Rocket , Wifi , GitBranch } from 'lucide-react'
+ } from 'lucide-react'
 
 export function MissionControl() {
   const [time, setTime] = useState(new Date())
