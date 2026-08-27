@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart, Activity, Loader2, CheckCircle, AlertTriangle, History, Gauge, Activity, HeartActivity } from 'lucide-react'
+import { Heart, Activity, Loader2, CheckCircle, AlertTriangle, History, Gauge, HeartPulse } from 'lucide-react'
 
 interface ECGResult {
   id: string
