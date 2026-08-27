@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart, Activity, Loader2, CheckCircle, AlertTriangle, History, Gauge, Pulse, HeartPulse } from 'lucide-react'
+import { Heart, Activity, Loader2, CheckCircle, AlertTriangle, History, Gauge, Activity, HeartActivity } from 'lucide-react'
 
 interface ECGResult {
   id: string
@@ -103,14 +103,14 @@ export default function ECGPage() {
 
       <main className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <HeartPulse className="w-6 h-6 text-red-500" /> ECG Arrhythmia Detection
+          <HeartActivity className="w-6 h-6 text-red-500" /> ECG Arrhythmia Detection
         </h1>
 
         {/* Live Monitor */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold flex items-center gap-2">
-              <Pulse className="w-5 h-5 text-red-500" /> Live ECG
+              <Activity className="w-5 h-5 text-red-500" /> Live ECG
             </h2>
             <span className="text-2xl font-bold text-red-600">{heartRate} BPM</span>
           </div>
