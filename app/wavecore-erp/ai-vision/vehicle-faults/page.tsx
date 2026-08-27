@@ -3,13 +3,13 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Car, Camera, Upload, Loader2, AlertTriangle, CheckCircle, Gauge, Battery, Thermometer, Oil, Wrench, History } from 'lucide-react'
+import { Car, Camera, Upload, Loader2, AlertTriangle, CheckCircle, Gauge, Battery, Thermometer, Droplet, Wrench, History } from 'lucide-react'
 
 interface FaultDetection {
   id: string
   engineHealth: number
   batteryVoltage: number
-  oilPressure: number
+  DropletPressure: number
   coolantTemp: number
   faultCodes: string[]
   severity: string
@@ -127,7 +127,7 @@ export default function VehicleFaultPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <MetricCard icon={Gauge} label="Engine Health" value={`${(latest.engineHealth * 100).toFixed(0)}%`} status={latest.engineHealth > 0.7 ? 'good' : 'bad'} />
               <MetricCard icon={Battery} label="Battery" value={`${latest.batteryVoltage.toFixed(1)}V`} status={latest.batteryVoltage > 11.5 ? 'good' : 'bad'} />
-              <MetricCard icon={Oil} label="Oil Pressure" value={`${latest.oilPressure.toFixed(0)} PSI`} status={latest.oilPressure > 20 ? 'good' : 'bad'} />
+              <MetricCard icon={Droplet} label="Droplet Pressure" value={`${latest.DropletPressure.toFixed(0)} PSI`} status={latest.DropletPressure > 20 ? 'good' : 'bad'} />
               <MetricCard icon={Thermometer} label="Coolant" value={`${latest.coolantTemp.toFixed(0)}°C`} status={latest.coolantTemp < 110 ? 'good' : 'bad'} />
             </div>
 
