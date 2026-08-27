@@ -103,7 +103,7 @@ export default function ECGPage() {
 
       <main className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-8">
         <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <HeartActivity className="w-6 h-6 text-red-500" /> ECG Arrhythmia Detection
+          <HeartPulse className="w-6 h-6 text-red-500" /> ECG Arrhythmia Detection
         </h1>
 
         {/* Live Monitor */}
