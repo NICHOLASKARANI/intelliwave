@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
   Users, Package, Calculator, FileText, BarChart3, Bot, Workflow, Globe,
-  Activity, Factory, Briefcase, FolderKanban, HeadphonesIcon, Truck,
+  Activity, Factory, Scan, Camera, HeartPulse, Brain, Shield, Leaf, Barcode, Languages, GraduationCap, Home, Facebook, Instagram, MessageCircle, Music2, Twitter, Eye, Fence, Moon, PawPrint, HardHat, Crosshair, Flag, Briefcase, FolderKanban, HeadphonesIcon, Truck,
   LogOut, Search as SearchIcon, ArrowUpRight, Menu, X, BellRing,
   CheckCheck, Store, ShoppingCart, Bike, Loader2, CalendarDays, Wallet,
   Sparkles, ChevronRight, PieChart, LineChart, Download, Filter
@@ -28,6 +28,14 @@ const modules = [
   { icon: Settings, title: 'Settings', desc: 'Users, Roles, Permissions', href: '/wavecore-erp/settings', bg: 'from-gray-500 to-slate-600', color: 'text-gray-500' },
   { icon: Store, title: 'WavveMarket', desc: 'Buy & Sell Marketplace', href: '/marketplace', bg: 'from-pink-500 to-rose-600', color: 'text-pink-500' },
   { icon: Bike, title: 'WavveRide', desc: 'Rides & Delivery', href: '/ride', bg: 'from-green-500 to-emerald-600', color: 'text-green-500' },
+  { icon: Scan, title: 'AI Vision Suite', desc: 'License, PPE, Fall, Drowsiness, Vehicle', href: '/wavecore-erp/ai-vision/license-plates', bg: 'from-blue-500 to-indigo-600', color: 'text-blue-500' },
+  { icon: HeartPulse, title: 'AI Health Suite', desc: 'ECG, Vitals, Cardiac, Pulse', href: '/wavecore-erp/ai-health/ecg-arrhythmia', bg: 'from-red-500 to-rose-600', color: 'text-red-500' },
+  { icon: Shield, title: 'AI Security Suite', desc: 'Lie, Anger, Red Flag, Night', href: '/wavecore-erp/ai-security/lie-detection', bg: 'from-purple-500 to-violet-600', color: 'text-purple-500' },
+  { icon: Leaf, title: 'AI Agriculture', desc: 'Greenhouse, Cattle, Ranch', href: '/wavecore-erp/ai-vision/greenhouse', bg: 'from-green-500 to-emerald-600', color: 'text-green-500' },
+  { icon: DollarSign, title: 'AI Finance', desc: 'Forex Signals', href: '/wavecore-erp/ai-finance/forex-signals', bg: 'from-amber-500 to-yellow-600', color: 'text-amber-500' },
+  { icon: GraduationCap, title: 'AI Education', desc: 'Student Performance', href: '/wavecore-erp/ai-education/student-performance', bg: 'from-cyan-500 to-sky-600', color: 'text-cyan-500' },
+  { icon: Languages, title: 'AI Language', desc: 'Arabic Detection', href: '/wavecore-erp/ai-language/arabic-detection', bg: 'from-teal-500 to-emerald-600', color: 'text-teal-500' },
+  { icon: Facebook, title: 'Social Media AI', desc: 'FB, IG, WA, TikTok, X', href: '/wavecore-erp/social-media', bg: 'from-blue-600 to-pink-600', color: 'text-pink-500' },
 ]
 
 export default function ExecutiveDashboard() {
