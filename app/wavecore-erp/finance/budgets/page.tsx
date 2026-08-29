@@ -3,201 +3,113 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, TrendingUp, AlertCircle, Save , Download, Trash2, Printer } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Plus, FileText, Download, Printer, Trash2, Loader2, Search } from 'lucide-react'
 
 interface Budget {
   id: string
   name: string
   fiscalYear: number
   period: string
-  total_budget: number
+  amount: number
   createdAt: string
 }
 
-function downloadBudgetPdf(id: string) {
-    window.open('/api/wavecore/finance/budgets/' + id + '/pdf', '_blank')
-  }
-
-  export default function BudgetsPage() {
+export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [loading, setLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
-  const [name, setName] = useState('')
-  const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear())
-  const [period, setPeriod] = useState('ANNUAL')
-  const [amount, setAmount] = useState('')
-  const [creating, setCreating] = useState(false)
+  const [search, setSearch] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
     fetchBudgets()
   }, [])
 
-  async function fetchBudgets() {
+  const fetchBudgets = async () => {
+    setLoading(true)
     try {
       const res = await fetch('/api/wavecore/finance/budgets')
-      if (res.ok) {
-        const data = await res.json()
-        setBudgets(data.budgets || [])
-      }
-    } catch {} finally {
+      const data = await res.json()
+      setBudgets(data.budgets || [])
+    } catch (err) {
+      setError('Failed to load budgets')
+    } finally {
       setLoading(false)
     }
   }
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setCreating(true)
-    setError('')
-
+  const deleteBudget = async (id: string) => {
+    if (!confirm('Delete this budget?')) return
     try {
-      const res = await fetch('/api/wavecore/finance/budgets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          fiscalYear: Number(fiscalYear),
-          period,
-          lines: [{ accountId: 'placeholder', amount: Number(amount) }],
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to create budget')
-        return
+      const res = await fetch(`/api/wavecore/finance/budgets?id=${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchBudgets()
       }
-      setShowCreate(false)
-      setName('')
-      setAmount('')
-      fetchBudgets()
-    } catch {
-      setError('Network error')
-    } finally {
-      setCreating(false)
+    } catch (err) {
+      setError('Delete failed')
     }
   }
 
-  const formatKES = (amount: number) => `KSh ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}`
-
-
-  const handleDownloadPDF = () => {
-    const content = [
-      'WaveCore ERP - Budgets',
-      '='.repeat(50),
-      'Generated: ' + new Date().toLocaleString(),
-      'IntelliWavve - Enterprise ERP',
-      '='.repeat(50),
-      '',
-      ...budgets.map((b: any, i: number) => 
-        'Budget #' + (i + 1) + '\n' +
-        '  Name: ' + (b.name || 'N/A') + '\n' +
-        '  Amount: ' + (b.amount || '0') + '\n' +
-        '  Spent: ' + (b.spent || '0') + '\n' +
-        '-'.repeat(40)
-      ),
-      '',
-      '© 2026 IntelliWavve - All Rights Reserved'
-    ].join('\n')
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'budgets.pdf'
-    a.click()
-    URL.revokeObjectURL(url)
+  const downloadPdf = (id: string) => {
+    window.open(`/api/wavecore/finance/budgets/${id}/pdf`, '_blank')
   }
+
+  const filtered = budgets.filter(b => 
+    (b.name || '').toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
-          <div className="flex items-center gap-4">
-            <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
-              <span className="font-bold">WaveCore</span>
-            </Link>
-            <span className="text-sm">Budgets</span>
-          </div>
-          <Button onClick={() => setShowCreate(!showCreate)} className="gap-2">
-            <Plus className="w-4 h-4" /> New Budget
-          </Button>
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
+          <Link href="/wavecore-erp/finance" className="flex items-center gap-3">
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+            <span className="font-bold">WaveCore</span>
+          </Link>
+          <span className="text-sm">Budgets</span>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <h1 className="text-2xl font-bold mb-6">Budgets</h1>
-          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"><Download className="w-4 h-4" /> Download PDF</button>
+      <main className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-8">
+        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <FileText className="w-6 h-6 text-emerald-500" /> Budgets ({budgets.length})
+        </h1>
 
-        {/* Create Budget Form */}
-        {showCreate && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-8">
-            <h3 className="font-bold mb-4">Create Budget</h3>
-            {error && (
-              <div className="p-3 mb-4 rounded-lg bg-red-50 text-red-600 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> {error}
-              </div>
-            )}
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Budget Name</label>
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-background" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Fiscal Year</label>
-                  <input type="number" value={fiscalYear} onChange={(e) => setFiscalYear(parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-background" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Period</label>
-                  <select value={period} onChange={(e) => setPeriod(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-background">
-                    <option value="ANNUAL">Annual</option>
-                    <option value="MONTHLY">Monthly</option>
-                    <option value="QUARTERLY">Quarterly</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Total Budget Amount (KSh)</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-                  className="w-full md:w-64 px-4 py-2.5 rounded-xl border bg-background" required min="0" />
-              </div>
-              <Button type="submit" disabled={creating} className="gap-2">
-                <Save className="w-4 h-4" /> {creating ? 'Creating...' : 'Create Budget'}
-              </Button>
-            </form>
-          </div>
-        )}
+        {error && <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600">{error}</div>}
 
-        {/* Budget List */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search budgets..." />
+        </div>
+
         {loading ? (
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          </div>
-        ) : budgets.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-4">
-            {budgets.map((b) => (
-              <div key={b.id} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold">{b.name}</h3>
-                  <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full">{b.period}</span>
-                </div>
-                <p className="text-2xl font-bold">{formatKES(b.total_budget || 0)}</p>
-                <p className="text-xs text-muted-foreground mt-2">Fiscal Year: {b.fiscalYear}</p>
-              </div>
-            ))}
+          <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
+            <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-muted-foreground">No budgets yet</p>
           </div>
         ) : (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No budgets yet</p>
-            <p className="text-sm text-muted-foreground mt-1 mb-4">Create your first budget</p>
-            <Button onClick={() => setShowCreate(true)} className="gap-2">
-              <Plus className="w-4 h-4" /> Create Budget
-            </Button>
+          <div className="space-y-3">
+            {filtered.map(budget => (
+              <div key={budget.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
+                <div>
+                  <p className="font-bold">{budget.name}</p>
+                  <p className="text-sm text-muted-foreground">FY {budget.fiscalYear} | {budget.period}</p>
+                  <p className="text-lg font-bold text-emerald-600">KSh {Number(budget.amount || 0).toLocaleString()}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => downloadPdf(budget.id)} title="Download PDF"
+                    className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
+                    <Printer className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => deleteBudget(budget.id)} title="Delete"
+                    className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </main>
