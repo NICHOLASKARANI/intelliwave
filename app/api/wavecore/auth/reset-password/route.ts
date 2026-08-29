@@ -3,44 +3,43 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { hash } from 'bcryptjs'
-import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const rateLimit = await checkRedisRateLimit('reset-password:' + ip, 3, 900)
-    if (!rateLimit.allowed) {
-      return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
-    }
+    const body = await request.json()
+    const { token, otp, newPassword } = body
 
-    const body = await req.json()
-    const { token, newPassword } = body
-
-    if (!token || !newPassword) {
-      return NextResponse.json({ error: 'Token and new password required' }, { status: 400 })
+    if (!token || !otp || !newPassword) {
+      return NextResponse.json({ error: 'Token, OTP, and new password required' }, { status: 400 })
     }
 
     if (newPassword.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
+    // Verify user with reset token AND OTP
     const userResult = await pool.query(
-      `SELECT id FROM "User" WHERE "resetToken" = $1 AND "resetExpiry" > NOW()`,
-      [token]
+      `SELECT id FROM "User" WHERE "resetToken" = $1 AND "otpCode" = $2 AND "otpExpiry" > NOW() AND "resetExpiry" > NOW()`,
+      [token, otp]
     )
 
     if (userResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Invalid or expired reset token' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid or expired OTP' }, { status: 400 })
     }
 
+    // Hash new password
     const hashedPassword = await hash(newPassword, 12)
 
+    // Update password, clear OTP and reset token
     await pool.query(
-      `UPDATE "User" SET password = $1, "resetToken" = NULL, "resetExpiry" = NULL, "updatedAt" = NOW() WHERE id = $2`,
+      `UPDATE "User" SET password = $1, "otpCode" = NULL, "otpExpiry" = NULL, "resetToken" = NULL, "resetExpiry" = NULL, "updatedAt" = NOW() WHERE id = $2`,
       [hashedPassword, userResult.rows[0].id]
     )
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true,
+      message: 'Password reset successfully. Please sign in.'
+    })
   } catch (error) {
     console.error('Reset password error:', error)
     return NextResponse.json({ error: 'Failed to reset password' }, { status: 500 })

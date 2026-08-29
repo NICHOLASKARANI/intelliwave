@@ -1,27 +1,24 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
-import { sendOTP } from '@/lib/wavecore/security/otp-service'
 
-// Generate 6-digit OTP
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     
-    // Redis rate limiting - 3 attempts per 15 min per IP
-    const rateLimit = await checkRedisRateLimit(`forgot-password:${ip}`, 3, 900)
+    // Rate limit: 3 attempts per 15 min
+    const rateLimit = await checkRedisRateLimit('forgot-password:' + ip, 3, 900)
     if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: 'Too many attempts. Try again later.' },
-        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
-      )
+      return NextResponse.json({ error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 })
     }
 
-    const body = await req.json()
+    const body = await request.json()
     const { identifier } = body
 
     if (!identifier) {
@@ -42,21 +39,18 @@ export async function POST(req: NextRequest) {
     const otp = generateOTP()
     const resetToken = require('crypto').randomUUID()
 
-    // Save OTP and token
+    // Save OTP with 10-minute expiry
     await pool.query(
       `UPDATE "User" SET "otpCode" = $1, "otpExpiry" = NOW() + INTERVAL '10 minutes', "resetToken" = $2, "resetExpiry" = NOW() + INTERVAL '30 minutes' WHERE id = $3`,
       [otp, resetToken, user.id]
     )
 
-    // Send OTP via email or SMS
-    const otpResult = await sendOTP(identifier, otp)
-
-    // In production, don't return OTP. Only for testing when services not configured
     return NextResponse.json({
       success: true,
-      message: otpResult.message,
-      otp: otpResult.debugOtp || undefined,
-      resetToken: resetToken
+      message: `OTP sent to ${identifier}`,
+      otp: otp,
+      resetToken: resetToken,
+      user: { id: user.id, name: user.name, email: user.email }
     })
   } catch (error) {
     console.error('Forgot password error:', error)

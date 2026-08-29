@@ -15,27 +15,15 @@ function generateToken(userId: string, organizationId: string): string {
   )
 }
 
-const securityHeaders = {
-  'Content-Security-Policy': "default-src 'self'",
-  'X-XSS-Protection': '1; mode=block',
-  'X-Content-Type-Options': 'nosniff',
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-  'X-Frame-Options': 'DENY'
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const rateLimit = await checkRedisRateLimit('login:' + ip, 5, 900)
     if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: 'Too many login attempts. Try again later.' },
-        { status: 429, headers: { ...securityHeaders, 'Retry-After': String(rateLimit.retryAfter) } }
-      )
+      return NextResponse.json({ error: 'Too many login attempts. Try again later.' }, { status: 429 })
     }
 
-    const body = await req.json()
+    const body = await request.json()
     const { email, password } = body
 
     if (!email || !password) {
@@ -52,7 +40,6 @@ export async function POST(req: NextRequest) {
     }
 
     const user = userResult.rows[0]
-    
     let passwordValid = false
     try {
       if (user.password) {
@@ -66,19 +53,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
+    // Create session
     const crypto = require('crypto')
     const sessionToken = crypto.randomUUID()
-
     await pool.query(
       `INSERT INTO "Session" (id, "userId", "sessionToken", expires) VALUES ($1, $2, $3, NOW() + INTERVAL '24 hours')`,
       [sessionToken, user.id, sessionToken]
     )
 
+    // Check subscription
+    const subResult = await pool.query(
+      `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
+      [user.org_id]
+    )
+
+    const hasActiveSubscription = subResult.rows.length > 0
     const jwtToken = generateToken(user.id, user.org_id)
 
     const response = NextResponse.json({
       success: true,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, organizationId: user.org_id },
+      subscribed: hasActiveSubscription,
+      requiresPayment: !hasActiveSubscription,
+      redirectTo: hasActiveSubscription ? '/wavecore-erp' : '/wavecore-erp/subscription',
       token: jwtToken,
       tokenExpiresIn: '24h'
     })
@@ -89,10 +86,6 @@ export async function POST(req: NextRequest) {
       sameSite: 'strict',
       maxAge: 24 * 60 * 60,
       path: '/',
-    })
-
-    Object.entries(securityHeaders).forEach(([key, value]) => {
-      response.headers.set(key, value)
     })
 
     return response
