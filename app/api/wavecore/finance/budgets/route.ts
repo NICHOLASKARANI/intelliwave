@@ -1,76 +1,61 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
-
-const budgetSchema = z.object({
-  name: z.string().min(1),
-  fiscalYear: z.number().int(),
-  period: z.string().default('ANNUAL'),
-  amount: z.number().min(0).optional(),
-  lines: z.array(z.object({ accountId: z.string(), amount: z.number() })).optional(),
-})
+import { pool } from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS "Budget" (
-        "id" TEXT NOT NULL, "name" TEXT NOT NULL, "fiscalYear" INTEGER NOT NULL,
-        "period" TEXT NOT NULL DEFAULT 'ANNUAL', "amount" DOUBLE PRECISION DEFAULT 0,
-        "organizationId" TEXT NOT NULL, "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "Budget_pkey" PRIMARY KEY ("id")
-      )
-    `)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      'SELECT * FROM "Budget" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC',
-      [orgId]
+      `SELECT * FROM "Budget" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100`,
+      [session.organizationId]
     )
 
-    return NextResponse.json({ budgets: result.rows })
+    const budgets = result.rows
+    const totalBudget = budgets.reduce((sum, b) => sum + Number(b.amount || 0), 0)
+
+    return NextResponse.json({ budgets, totalBudget, count: budgets.length })
   } catch (error) {
-    console.error('Budgets GET error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Budget GET error:', error)
+    return NextResponse.json({ budgets: [], totalBudget: 0, count: 0 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const validated = budgetSchema.parse(body)
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS "Budget" (
-        "id" TEXT NOT NULL, "name" TEXT NOT NULL, "fiscalYear" INTEGER NOT NULL,
-        "period" TEXT NOT NULL DEFAULT 'ANNUAL', "amount" DOUBLE PRECISION DEFAULT 0,
-        "organizationId" TEXT NOT NULL, "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "Budget_pkey" PRIMARY KEY ("id")
-      )
-    `)
+    const crypto = require('crypto')
+    const id = crypto.randomUUID()
 
     const result = await pool.query(
-      `INSERT INTO "Budget" (id, name, "fiscalYear", period, amount, "organizationId", "createdAt", "updatedAt")
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW(), NOW())
-       RETURNING id`,
-      [validated.name, validated.fiscalYear, validated.period, validated.amount || 0, orgId]
+      `INSERT INTO "Budget" (id, name, amount, "startDate", "endDate", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *`,
+      [id, body.name, body.amount, body.startDate || null, body.endDate || null, session.organizationId]
     )
 
-    return NextResponse.json({ success: true, budgetId: result.rows[0].id }, { status: 201 })
+    return NextResponse.json({ budget: result.rows[0] }, { status: 201 })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed' }, { status: 422 })
-    }
-    console.error('Budgets POST error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Budget create error:', error)
+    return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "Budget" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
 }
