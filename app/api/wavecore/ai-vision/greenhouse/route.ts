@@ -3,101 +3,90 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 
-// Advanced Greenhouse Monitoring with IoT integration
-// Supports: DHT22, Soil Moisture Sensor, Light Sensor (BH1750), CO2 Sensor (MH-Z19)
-// Integration ready for: Arduino, Raspberry Pi, ESP32, LoRaWAN
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || ''
+const THINGSPEAK_API_KEY = process.env.THINGSPEAK_API_KEY || ''
 
-interface GreenhouseData {
-  temperature: number
-  humidity: number
-  soilMoisture: number
-  lightLevel: number
-  co2Level: number
-  airflow: number
-  waterLevel: number
-  phLevel: number
-  electricalConductivity: number
-  plantHealth: number
-  irrigationNeeded: boolean
-  ventilationNeeded: boolean
-  climateZone: string
-  cropType: string
-  growthStage: string
-  estimatedYield: number
-  energyUsage: number
-  waterUsage: number
-}
-
-const CROP_TYPES = ['Tomatoes', 'Lettuce', 'Cucumbers', 'Peppers', 'Strawberries', 'Herbs', 'Spinach', 'Kale']
-const CLIMATE_ZONES = ['Tropical', 'Temperate', 'Arid', 'Mediterranean', 'Continental', 'Highland']
-
-function generateRealisticData(): GreenhouseData {
-  const hour = new Date().getHours()
-  
-  // Temperature varies by time of day (cooler at night, warmer midday)
-  const baseTemp = 22 + Math.sin((hour - 6) / 24 * 2 * Math.PI) * 8
-  const temperature = Number((baseTemp + (Math.random() - 0.5) * 3).toFixed(1))
-  
-  // Humidity inversely related to temperature
-  const humidity = Number((65 - (temperature - 22) * 2 + (Math.random() - 0.5) * 8).toFixed(1))
-  
-  // Soil moisture
-  const soilMoisture = Number((35 + Math.random() * 50).toFixed(1))
-  
-  // Light level based on time of day
-  const lightLevel = hour > 6 && hour < 18 
-    ? Number((500 + Math.sin((hour - 6) / 12 * Math.PI) * 500 + Math.random() * 100).toFixed(0))
-    : Number((Math.random() * 50).toFixed(0))
-  
-  // CO2 levels (higher when plants photosynthesizing)
-  const co2Level = Number((400 + Math.random() * 600).toFixed(0))
-  
-  // Airflow
-  const airflow = Number((Math.random() * 10).toFixed(1))
-  
-  // Water level in irrigation tank
-  const waterLevel = Number((30 + Math.random() * 60).toFixed(1))
-  
-  // pH level (optimal 5.5-6.5 for most crops)
-  const phLevel = Number((5.5 + Math.random() * 1.5).toFixed(1))
-  
-  // Electrical conductivity (nutrient level)
-  const electricalConductivity = Number((1.5 + Math.random() * 2.5).toFixed(1))
-  
-  const irrigationNeeded = soilMoisture < 30
-  const ventilationNeeded = temperature > 30 || humidity > 80
-  
-  return {
-    temperature,
-    humidity,
-    soilMoisture,
-    lightLevel,
-    co2Level,
-    airflow,
-    waterLevel,
-    phLevel,
-    electricalConductivity,
-    plantHealth: Math.round(60 + Math.random() * 40),
-    irrigationNeeded,
-    ventilationNeeded,
-    climateZone: CLIMATE_ZONES[Math.floor(Math.random() * CLIMATE_ZONES.length)],
-    cropType: CROP_TYPES[Math.floor(Math.random() * CROP_TYPES.length)],
-    growthStage: ['Seedling', 'Vegetative', 'Flowering', 'Fruiting', 'Harvest Ready'][Math.floor(Math.random() * 5)],
-    estimatedYield: Math.round(500 + Math.random() * 5000),
-    energyUsage: Number((Math.random() * 50).toFixed(1)),
-    waterUsage: Number((Math.random() * 200).toFixed(1)),
+// Real weather data from OpenWeatherMap
+async function fetchRealWeather(lat: number, lon: number) {
+  if (!OPENWEATHER_API_KEY) return null
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
+    const res = await fetch(url)
+    const data = await res.json()
+    return {
+      temperature: data.main?.temp,
+      humidity: data.main?.humidity,
+      windSpeed: data.wind?.speed,
+      lightLevel: data.clouds?.all ? (100 - data.clouds.all) * 10 : 500,
+      weather: data.weather?.[0]?.description
+    }
+  } catch {
+    return null
   }
 }
 
-export async function GET(request: NextRequest) {
+// Real soil data from SoilGrids API
+async function fetchSoilData(lat: number, lon: number) {
   try {
-    const session = await requireTenant(request)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&property=phh2o&property=soc&depth=0-5cm&value=mean`
+    const res = await fetch(url)
+    const data = await res.json()
+    
+    if (data.properties?.layers) {
+      const phLayer = data.properties.layers.find((l: any) => l.name === 'phh2o')
+      const socLayer = data.properties.layers.find((l: any) => l.name === 'soc')
+      
+      return {
+        soilPH: phLayer?.depths?.[0]?.values?.mean ? phLayer.depths[0].values.mean / 10 : 6.5,
+        soilOrganicCarbon: socLayer?.depths?.[0]?.values?.mean || 15,
+        source: 'SoilGrids'
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
 
-    const data = generateRealisticData()
-    return NextResponse.json({ success: true, data })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
+// NASA POWER satellite data for agriculture
+async function fetchNASAPower(lat: number, lon: number) {
+  try {
+    const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOTCORR,ALLSKY_SFC_SW_DWN&community=AG&longitude=${lon}&latitude=${lat}&format=JSON`
+    const res = await fetch(url)
+    const data = await res.json()
+    
+    if (data.properties?.parameter) {
+      const params = data.properties.parameter
+      return {
+        satelliteTemp: params.T2M ? Object.values(params.T2M)[0] : null,
+        satelliteHumidity: params.RH2M ? Object.values(params.RH2M)[0] : null,
+        satelliteRainfall: params.PRECTOTCORR ? Object.values(params.PRECTOTCORR)[0] : null,
+        satelliteSolarRadiation: params.ALLSKY_SFC_SW_DWN ? Object.values(params.ALLSKY_SFC_SW_DWN)[0] : null,
+        source: 'NASA POWER'
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// Fetch from ThingSpeak (IoT sensor data)
+async function fetchThingSpeak(channelId: string) {
+  if (!THINGSPEAK_API_KEY) return null
+  try {
+    const url = `https://api.thingspeak.com/channels/${channelId}/feeds/last.json?api_key=${THINGSPEAK_API_KEY}`
+    const res = await fetch(url)
+    const data = await res.json()
+    return {
+      field1: data.field1, // Temperature
+      field2: data.field2, // Humidity
+      field3: data.field3, // Soil Moisture
+      field4: data.field4, // Light
+      source: 'ThingSpeak IoT'
+    }
+  } catch {
+    return null
   }
 }
 
@@ -107,23 +96,39 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    
-    // If IoT device is sending data
-    if (body.deviceId && body.sensorData) {
-      const sensorData = body.sensorData
-      return NextResponse.json({ 
-        success: true, 
-        data: {
-          ...generateRealisticData(),
-          ...sensorData,
-          source: 'IoT_DEVICE'
-        }
-      })
+    const lat = body.lat || -1.2921 // Default Nairobi
+    const lon = body.lon || 36.8219
+    const thingSpeakChannel = body.thingSpeakChannel || ''
+
+    // Fetch all real data sources in parallel
+    const [weatherData, soilData, nasaData, iotData] = await Promise.all([
+      fetchRealWeather(lat, lon),
+      fetchSoilData(lat, lon),
+      fetchNASAPower(lat, lon),
+      thingSpeakChannel ? fetchThingSpeak(thingSpeakChannel) : Promise.resolve(null)
+    ])
+
+    const greenhouseData = {
+      // Real-time weather from OpenWeatherMap
+      weather: weatherData,
+      // Real soil from SoilGrids
+      soil: soilData,
+      // Satellite from NASA POWER
+      satellite: nasaData,
+      // IoT sensors from ThingSpeak
+      iot: iotData,
+      location: { lat, lon },
+      timestamp: new Date().toISOString(),
+      dataSources: {
+        weather: !!weatherData,
+        soil: !!soilData,
+        satellite: !!nasaData,
+        iot: !!iotData
+      }
     }
 
-    const data = generateRealisticData()
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json({ success: true, data: greenhouseData })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to process' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch greenhouse data' }, { status: 500 })
   }
 }

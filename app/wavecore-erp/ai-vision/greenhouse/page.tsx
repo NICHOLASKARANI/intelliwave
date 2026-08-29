@@ -3,51 +3,35 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Leaf, Thermometer, Droplets, Sun, Wind, AlertTriangle, CheckCircle, History, Gauge, Sprout, CloudRain, Zap, Radio, RefreshCw, Loader2, Activity, Globe, TrendingUp, TrendingDown, Trash2 } from 'lucide-react'
-
-interface GreenhouseData {
-  temperature: number
-  humidity: number
-  soilMoisture: number
-  lightLevel: number
-  co2Level: number
-  airflow: number
-  waterLevel: number
-  phLevel: number
-  electricalConductivity: number
-  plantHealth: number
-  irrigationNeeded: boolean
-  ventilationNeeded: boolean
-  climateZone: string
-  cropType: string
-  growthStage: string
-  estimatedYield: number
-  energyUsage: number
-  waterUsage: number
-}
+import { Leaf, Thermometer, Droplets, Sun, Wind, AlertTriangle, CheckCircle, History, Gauge, Sprout, CloudRain, Zap, Radio, RefreshCw, Loader2, Activity, Globe, Satellite, Wifi, MapPin, Trash2 } from 'lucide-react'
 
 export default function GreenhousePage() {
   const [monitoring, setMonitoring] = useState(false)
-  const [data, setData] = useState<GreenhouseData | null>(null)
-  const [history, setHistory] = useState<GreenhouseData[]>([])
+  const [data, setData] = useState<any>(null)
+  const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [alertActive, setAlertActive] = useState(false)
   const [lastUpdated, setLastUpdated] = useState('')
+  const [location, setLocation] = useState({ lat: -1.2921, lon: 36.8219 })
+  const [thingSpeakChannel, setThingSpeakChannel] = useState('')
   const intervalRef = useRef<any>(null)
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/ai-vision/greenhouse')
+      const res = await fetch('/api/wavecore/ai-vision/greenhouse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          lat: location.lat, 
+          lon: location.lon,
+          thingSpeakChannel 
+        })
+      })
       const d = await res.json()
       if (d.success) {
         setData(d.data)
         setLastUpdated(new Date().toLocaleTimeString())
         setHistory(prev => [d.data, ...prev].slice(0, 20))
-        if (d.data.irrigationNeeded || d.data.ventilationNeeded) {
-          setAlertActive(true)
-          setTimeout(() => setAlertActive(false), 8000)
-        }
       }
     } catch {} finally {
       setLoading(false)
@@ -60,10 +44,10 @@ export default function GreenhousePage() {
 
   useEffect(() => {
     if (monitoring) {
-      intervalRef.current = setInterval(fetchData, 3000)
+      intervalRef.current = setInterval(fetchData, 10000)
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [monitoring])
+  }, [monitoring, location, thingSpeakChannel])
 
   const deleteHistory = (index: number) => {
     setHistory(prev => prev.filter((_, i) => i !== index))
@@ -86,7 +70,7 @@ export default function GreenhousePage() {
       <main className="max-w-6xl mx-auto p-3 sm:p-4 lg:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Leaf className="w-6 h-6 text-green-500" /> Greenhouse Monitoring
+            <Leaf className="w-6 h-6 text-green-500" /> Real-time Greenhouse Monitoring
           </h1>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -104,63 +88,93 @@ export default function GreenhousePage() {
           </div>
         </div>
 
-        {/* Alerts */}
-        {alertActive && (
-          <div className="mb-6 p-4 rounded-2xl bg-yellow-500 text-white text-center animate-pulse">
-            <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
-            <p className="font-bold">
-              ⚠️ {data?.irrigationNeeded ? 'Irrigation needed' : ''} {data?.ventilationNeeded ? 'Ventilation needed' : ''}
-            </p>
+        {/* Location + IoT Config */}
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Latitude</label>
+              <input type="number" step="0.0001" value={location.lat} onChange={(e) => setLocation({...location, lat: Number(e.target.value)})} className="w-full px-3 py-2 rounded-lg border text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Longitude</label>
+              <input type="number" step="0.0001" value={location.lon} onChange={(e) => setLocation({...location, lon: Number(e.target.value)})} className="w-full px-3 py-2 rounded-lg border text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">ThingSpeak Channel ID</label>
+              <input type="text" value={thingSpeakChannel} onChange={(e) => setThingSpeakChannel(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 rounded-lg border text-sm" />
+            </div>
+            <div className="flex items-end">
+              <button onClick={fetchData} className="w-full px-3 py-2 rounded-lg bg-green-600 text-white font-bold text-sm flex items-center justify-center gap-1">
+                <Globe className="w-4 h-4" /> Fetch Data
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Data Source Status */}
+        {data?.dataSources && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            <SourceBadge icon={Wifi} label="OpenWeatherMap" active={data.dataSources.weather} />
+            <SourceBadge icon={Globe} label="SoilGrids" active={data.dataSources.soil} />
+            <SourceBadge icon={Satellite} label="NASA POWER" active={data.dataSources.satellite} />
+            <SourceBadge icon={Activity} label="ThingSpeak IoT" active={data.dataSources.iot} />
           </div>
         )}
 
-        {/* Crop Info */}
-        {data && (
+        {/* Weather Data */}
+        {data?.weather && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="flex flex-wrap gap-4 justify-between items-center">
-              <div className="flex items-center gap-3">
-                <Sprout className="w-8 h-8 text-green-500" />
-                <div>
-                  <p className="font-bold text-lg">{data.cropType}</p>
-                  <p className="text-sm text-muted-foreground">{data.growthStage} | {data.climateZone}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-green-600">{data.estimatedYield} kg</p>
-                <p className="text-xs text-muted-foreground">Estimated Yield</p>
-              </div>
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <CloudRain className="w-5 h-5 text-blue-500" /> Real Weather (OpenWeatherMap)
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SensorCard icon={Thermometer} label="Temperature" value={`${data.weather.temperature?.toFixed(1)}°C`} />
+              <SensorCard icon={Droplets} label="Humidity" value={`${data.weather.humidity}%`} />
+              <SensorCard icon={Wind} label="Wind" value={`${data.weather.windSpeed} m/s`} />
+              <SensorCard icon={Sun} label="Condition" value={data.weather.weather || 'N/A'} />
             </div>
           </div>
         )}
 
-        {/* Sensor Grid */}
-        {data && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-            <SensorCard icon={Thermometer} label="Temperature" value={`${data.temperature}°C`} status={data.temperature > 35 ? 'bad' : 'good'} />
-            <SensorCard icon={Droplets} label="Humidity" value={`${data.humidity}%`} status={data.humidity < 40 || data.humidity > 80 ? 'bad' : 'good'} />
-            <SensorCard icon={CloudRain} label="Soil Moisture" value={`${data.soilMoisture}%`} status={data.soilMoisture < 30 ? 'bad' : 'good'} />
-            <SensorCard icon={Sun} label="Light" value={`${data.lightLevel} lux`} status={data.lightLevel < 100 ? 'bad' : 'good'} />
-            <SensorCard icon={Wind} label="CO2" value={`${data.co2Level} ppm`} status={data.co2Level > 1500 ? 'bad' : 'good'} />
-            <SensorCard icon={Wind} label="Airflow" value={`${data.airflow} m/s`} status="good" />
-            <SensorCard icon={Droplets} label="Water Level" value={`${data.waterLevel}%`} status={data.waterLevel < 20 ? 'bad' : 'good'} />
-            <SensorCard icon={Activity} label="pH Level" value={`${data.phLevel}`} status={data.phLevel < 5 || data.phLevel > 7.5 ? 'bad' : 'good'} />
-            <SensorCard icon={Zap} label="EC (Nutrients)" value={`${data.electricalConductivity}`} status="good" />
-            <SensorCard icon={Leaf} label="Plant Health" value={`${data.plantHealth}%`} status={data.plantHealth < 50 ? 'bad' : 'good'} />
+        {/* Soil Data */}
+        {data?.soil && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Globe className="w-5 h-5 text-amber-600" /> Real Soil Data (SoilGrids)
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <SensorCard icon={Activity} label="Soil pH" value={`${data.soil.soilPH}`} />
+              <SensorCard icon={Leaf} label="Organic Carbon" value={`${data.soil.soilOrganicCarbon} g/kg`} />
+            </div>
           </div>
         )}
 
-        {/* Usage Stats */}
-        {data && (
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-center">
-              <Zap className="w-5 h-5 mx-auto mb-2 text-yellow-500" />
-              <p className="text-xl font-bold">{data.energyUsage} kWh</p>
-              <p className="text-xs text-muted-foreground">Energy Usage</p>
+        {/* Satellite Data */}
+        {data?.satellite && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Satellite className="w-5 h-5 text-purple-500" /> Satellite Data (NASA POWER)
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SensorCard icon={Thermometer} label="Satellite Temp" value={`${data.satellite.satelliteTemp?.toFixed(1)}°C`} />
+              <SensorCard icon={Droplets} label="Satellite Humidity" value={`${data.satellite.satelliteHumidity?.toFixed(1)}%`} />
+              <SensorCard icon={CloudRain} label="Rainfall" value={`${data.satellite.satelliteRainfall} mm`} />
+              <SensorCard icon={Sun} label="Solar Radiation" value={`${data.satellite.satelliteSolarRadiation} W/m²`} />
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-center">
-              <Droplets className="w-5 h-5 mx-auto mb-2 text-blue-500" />
-              <p className="text-xl font-bold">{data.waterUsage} L</p>
-              <p className="text-xs text-muted-foreground">Water Usage</p>
+          </div>
+        )}
+
+        {/* IoT Data */}
+        {data?.iot && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Wifi className="w-5 h-5 text-green-500" /> IoT Sensors (ThingSpeak)
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SensorCard icon={Thermometer} label="Field 1" value={data.iot.field1 || 'N/A'} />
+              <SensorCard icon={Droplets} label="Field 2" value={data.iot.field2 || 'N/A'} />
+              <SensorCard icon={CloudRain} label="Field 3" value={data.iot.field3 || 'N/A'} />
+              <SensorCard icon={Sun} label="Field 4" value={data.iot.field4 || 'N/A'} />
             </div>
           </div>
         )}
@@ -170,7 +184,7 @@ export default function GreenhousePage() {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-bold text-lg flex items-center gap-2">
-                <History className="w-5 h-5 text-purple-500" /> Monitoring History ({history.length})
+                <History className="w-5 h-5 text-purple-500" /> History ({history.length})
               </h2>
               <button onClick={clearHistory} className="text-sm text-red-600 flex items-center gap-1">
                 <Trash2 className="w-4 h-4" /> Clear All
@@ -179,9 +193,9 @@ export default function GreenhousePage() {
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {history.map((h, i) => (
                 <div key={i} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex justify-between items-center">
-                  <span>{h.temperature}°C | {h.humidity}% | {h.soilMoisture}% | {h.co2Level}ppm</span>
+                  <span>Weather: {h.weather?.temperature?.toFixed(1)}°C | Soil pH: {h.soil?.soilPH}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{new Date().toLocaleTimeString()}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(h.timestamp).toLocaleTimeString()}</span>
                     <button onClick={() => deleteHistory(i)} className="text-red-500"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
@@ -194,12 +208,20 @@ export default function GreenhousePage() {
   )
 }
 
-function SensorCard({ icon: Icon, label, value, status }: { icon: any; label: string; value: string; status: string }) {
+function SourceBadge({ icon: Icon, label, active }: { icon: any; label: string; active: boolean }) {
   return (
-    <div className={`p-4 rounded-2xl border text-center ${status === 'good' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-      <Icon className={`w-5 h-5 mx-auto mb-2 ${status === 'good' ? 'text-green-600' : 'text-red-600'}`} />
+    <span className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+      <Icon className="w-3 h-3" /> {label} {active ? '✓' : '✗'}
+    </span>
+  )
+}
+
+function SensorCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="p-4 rounded-xl border bg-neutral-50 dark:bg-neutral-800 text-center">
+      <Icon className="w-5 h-5 mx-auto mb-2 text-green-600" />
       <p className="text-sm font-bold">{label}</p>
-      <p className={`text-lg font-bold ${status === 'good' ? 'text-green-600' : 'text-red-600'}`}>{value}</p>
+      <p className="text-lg font-bold text-green-600">{value}</p>
     </div>
   )
 }
