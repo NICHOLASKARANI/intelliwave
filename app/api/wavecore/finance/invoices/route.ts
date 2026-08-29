@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT * FROM "Invoice" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100`,
+      `SELECT ci.*, c.name as "customerName"
+       FROM "CustomerInvoice" ci
+       LEFT JOIN "Customer" c ON ci."customerId" = c.id
+       WHERE ci."organizationId" = $1 
+       ORDER BY ci."createdAt" DESC LIMIT 100`,
       [session.organizationId]
     )
 
@@ -19,7 +23,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ invoices: result.rows, totalInvoiced, totalPaid })
   } catch (error) {
-    return NextResponse.json({ invoices: [] })
+    console.error('Invoices GET error:', error)
+    return NextResponse.json({ invoices: [], totalInvoiced: 0, totalPaid: 0 })
   }
 }
 
@@ -33,15 +38,37 @@ export async function POST(request: NextRequest) {
     const id = crypto.randomUUID()
     const invoiceNumber = 'INV-' + Date.now().toString().slice(-8)
 
+    // Check if customer exists, create if not
+    let customerId = body.customerId
+    if (!customerId && body.customerName) {
+      const customerResult = await pool.query(
+        `INSERT INTO "Customer" (id, name, "organizationId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id`,
+        [crypto.randomUUID(), body.customerName, session.organizationId]
+      )
+      customerId = customerResult.rows[0].id
+    }
+
     const result = await pool.query(
-      `INSERT INTO "Invoice" (id, "invoiceNumber", "customerName", total, status, "dueDate", "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *`,
-      [id, invoiceNumber, body.customerName, body.total, body.status || 'PENDING', body.dueDate, session.organizationId]
+      `INSERT INTO "CustomerInvoice" (id, number, "dueDate", status, subtotal, "taxAmount", total, "customerId", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) RETURNING *`,
+      [
+        id,
+        invoiceNumber,
+        body.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        body.status || 'DRAFT',
+        body.subtotal || body.total || 0,
+        body.taxAmount || 0,
+        body.total || 0,
+        customerId || null,
+        session.organizationId
+      ]
     )
 
     return NextResponse.json({ invoice: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Create failed' }, { status: 500 })
+    console.error('Invoice create error:', error)
+    return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })
   }
 }
 
@@ -52,7 +79,7 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
     const result = await pool.query(
-      `UPDATE "Invoice" SET status = $1, "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3 RETURNING *`,
+      `UPDATE "CustomerInvoice" SET status = $1, "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3 RETURNING *`,
       [body.status, body.id, session.organizationId]
     )
     return NextResponse.json({ invoice: result.rows[0] })
@@ -68,7 +95,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    await pool.query(`DELETE FROM "Invoice" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    await pool.query(`DELETE FROM "CustomerInvoice" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
