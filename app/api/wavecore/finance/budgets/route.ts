@@ -34,9 +34,16 @@ export async function POST(request: NextRequest) {
     const id = crypto.randomUUID()
 
     const result = await pool.query(
-      `INSERT INTO "Budget" (id, name, amount, "startDate", "endDate", "organizationId", "createdAt", "updatedAt")
+      `INSERT INTO "Budget" (id, name, "fiscalYear", period, amount, "organizationId", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *`,
-      [id, body.name, body.amount, body.startDate || null, body.endDate || null, session.organizationId]
+      [
+        id, 
+        body.name, 
+        body.fiscalYear || new Date().getFullYear(), 
+        body.period || 'ANNUAL', 
+        body.amount || 0, 
+        session.organizationId
+      ]
     )
 
     return NextResponse.json({ budget: result.rows[0] }, { status: 201 })
@@ -56,6 +63,6 @@ export async function DELETE(request: NextRequest) {
     await pool.query(`DELETE FROM "Budget" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
   }
 }

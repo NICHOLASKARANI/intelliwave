@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, TrendingUp, AlertCircle, Save , Download } from 'lucide-react'
+import { Plus, TrendingUp, AlertCircle, Save , Download, Trash2, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Budget {
@@ -15,7 +15,11 @@ interface Budget {
   createdAt: string
 }
 
-export default function BudgetsPage() {
+function downloadBudgetPdf(id: string) {
+    window.open('/api/wavecore/finance/budgets/' + id + '/pdf', '_blank')
+  }
+
+  export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
