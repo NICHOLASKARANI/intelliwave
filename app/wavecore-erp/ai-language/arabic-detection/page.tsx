@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Languages, Loader2, CheckCircle, History, FileText, Globe, Search, Sparkles, Mic, Send, X, Copy } from 'lucide-react'
+import { Languages, Loader2, CheckCircle, History, Send, X, Copy, Trash2 } from 'lucide-react'
 
 interface ArabicDetection {
   id: string
@@ -23,20 +23,6 @@ export default function ArabicDetectionPage() {
   const [latest, setLatest] = useState<ArabicDetection | null>(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
-  const [history, setHistory] = useState<ArabicDetection[]>([])
-
-  // Load history on mount
-  useEffect(() => {
-    fetchHistory()
-  }, [])
-
-  const fetchHistory = async () => {
-    try {
-      const res = await fetch('/api/wavecore/ai-language/arabic-detection')
-      const data = await res.json()
-      setHistory(data.detections || [])
-    } catch {}
-  }
 
   const analyzeText = async () => {
     if (!inputText.trim()) {
@@ -55,9 +41,13 @@ export default function ArabicDetectionPage() {
       const data = await res.json()
       
       if (data.success) {
-        setLatest(data.result)
-        setResults(prev => [data.result, ...prev].slice(0, 10))
-        fetchHistory()
+        const newResult = {
+          ...data.result,
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString()
+        }
+        setLatest(newResult)
+        setResults(prev => [newResult, ...prev].slice(0, 10))
         setInputText('')
       } else {
         setError(data.error || 'Detection failed')
@@ -67,6 +57,16 @@ export default function ArabicDetectionPage() {
     } finally {
       setAnalyzing(false)
     }
+  }
+
+  const deleteResult = (id: string) => {
+    setResults(prev => prev.filter(r => r.id !== id))
+    if (latest?.id === id) setLatest(null)
+  }
+
+  const deleteAll = () => {
+    setResults([])
+    setLatest(null)
   }
 
   const copyTranslation = () => {
@@ -82,10 +82,7 @@ export default function ArabicDetectionPage() {
     'كيف حالك اليوم؟',
     'أنا أتعلم اللغة العربية',
     'هذا نظام ذكاء اصطناعي',
-    'شكرا جزيلا لكم',
-    'السوق التجاري',
-    'التكنولوجيا الحديثة',
-    'الذكاء الاصطناعي'
+    'شكرا جزيلا لكم'
   ]
 
   return (
@@ -107,21 +104,19 @@ export default function ArabicDetectionPage() {
 
         {/* Input Area */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-          <div className="flex gap-3">
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Type or paste Arabic text here..."
-              className="flex-1 px-4 py-3 rounded-xl border min-h-[120px]"
-              dir="rtl"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  analyzeText()
-                }
-              }}
-            />
-          </div>
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="Type or paste Arabic text here..."
+            className="w-full px-4 py-3 rounded-xl border min-h-[120px]"
+            dir="rtl"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                analyzeText()
+              }
+            }}
+          />
           
           <div className="flex gap-3 mt-4">
             <button onClick={analyzeText} disabled={analyzing || !inputText.trim()}
@@ -130,14 +125,12 @@ export default function ArabicDetectionPage() {
               {analyzing ? 'Analyzing...' : 'Detect & Translate'}
             </button>
             {inputText && (
-              <button onClick={() => setInputText('')}
-                className="px-4 py-3 rounded-xl bg-neutral-100 dark:bg-neutral-800">
+              <button onClick={() => setInputText('')} className="px-4 py-3 rounded-xl bg-neutral-100 dark:bg-neutral-800">
                 <X className="w-5 h-5" />
               </button>
             )}
           </div>
 
-          {/* Sample Texts */}
           <div className="mt-4">
             <p className="text-sm text-muted-foreground mb-2">Quick samples:</p>
             <div className="flex flex-wrap gap-2">
@@ -151,10 +144,7 @@ export default function ArabicDetectionPage() {
           </div>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600">{error}</div>
-        )}
+        {error && <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600">{error}</div>}
 
         {/* Latest Result */}
         {latest && (
@@ -164,9 +154,11 @@ export default function ArabicDetectionPage() {
                 <CheckCircle className="w-5 h-5 text-green-500" /> Detection Result
               </h2>
               <div className="flex gap-2">
-                <button onClick={copyTranslation}
-                  className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200">
+                <button onClick={copyTranslation} className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
                   {copied ? '✓ Copied' : <Copy className="w-4 h-4" />}
+                </button>
+                <button onClick={() => setLatest(null)} className="p-2 rounded-lg bg-red-50 text-red-600">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -192,44 +184,36 @@ export default function ArabicDetectionPage() {
               <span className="px-3 py-1 rounded-full bg-purple-50 text-purple-600 text-sm">
                 Confidence: {(latest.confidence * 100).toFixed(1)}%
               </span>
-              {latest.translationSuccess ? (
-                <span className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-sm">
-                  ✓ Real Translation
-                </span>
-              ) : (
-                <span className="px-3 py-1 rounded-full bg-yellow-50 text-yellow-600 text-sm">
-                  ⚠ Translation unavailable
-                </span>
-              )}
             </div>
           </div>
         )}
 
         {/* History */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-          <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-            <History className="w-5 h-5 text-purple-500" /> Recent Detections ({history.length})
-          </h2>
-          {history.length === 0 ? (
-            <p className="text-muted-foreground">No detections yet</p>
-          ) : (
+        {results.length > 0 && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-lg flex items-center gap-2">
+                <History className="w-5 h-5 text-purple-500" /> Recent Detections ({results.length})
+              </h2>
+              <button onClick={deleteAll} className="text-sm text-red-600 flex items-center gap-1">
+                <Trash2 className="w-4 h-4" /> Clear All
+              </button>
+            </div>
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {history.map((det, i) => (
-                <div key={i} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <p className="text-sm font-bold" dir="rtl">{det.detectedText}</p>
-                      <p className="text-sm text-muted-foreground">{det.translatedText}</p>
-                    </div>
-                    <span className={`text-xs ml-2 ${det.isArabic ? 'text-green-600' : 'text-red-600'}`}>
-                      {det.isArabic ? '✓ AR' : '✗'}
-                    </span>
+              {results.map((det) => (
+                <div key={det.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="text-sm font-bold" dir="rtl">{det.detectedText}</p>
+                    <p className="text-sm text-muted-foreground">{det.translatedText}</p>
                   </div>
+                  <button onClick={() => deleteResult(det.id)} className="text-red-500 ml-2">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   )
