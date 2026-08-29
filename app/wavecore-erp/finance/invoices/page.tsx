@@ -91,7 +91,7 @@ export default function InvoicesPage() {
 
   const totalOutstanding = invoices
     .filter(i => i.status !== 'PAID')
-    .reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0)
+    .reduce((sum, i) => sum + (Number(i.total) || 0), 0)
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -157,7 +157,7 @@ export default function InvoicesPage() {
                       <p className="font-medium">{invoice.customerName || 'N/A'}</p>
                       <p className="text-xs text-muted-foreground">{invoice.customerEmail || ''}</p>
                     </td>
-                    <td className="p-4 font-bold">KSh {parseFloat(invoice.total || 0).toLocaleString()}</td>
+                    <td className="p-4 font-bold">KSh {Number(invoice.total || 0).toLocaleString()}</td>
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                         invoice.status === 'PAID' ? 'bg-green-100 text-green-700' :
@@ -245,15 +245,15 @@ export default function InvoicesPage() {
                     <tbody>
                       <tr>
                         <td className="p-2">Invoice services</td>
-                        <td className="p-2 text-right">KSh {parseFloat(selectedInvoice.subtotal || 0).toLocaleString()}</td>
+                        <td className="p-2 text-right">KSh {Number(selectedInvoice.subtotal || 0).toLocaleString()}</td>
                       </tr>
                     </tbody>
                   </table>
 
                   <div className="text-right space-y-1">
-                    <p>Subtotal: KSh {parseFloat(selectedInvoice.subtotal || 0).toLocaleString()}</p>
-                    <p>Tax: KSh {parseFloat(selectedInvoice.taxAmount || 0).toLocaleString()}</p>
-                    <p className="text-xl font-bold text-blue-600">Total: KSh {parseFloat(selectedInvoice.total || 0).toLocaleString()}</p>
+                    <p>Subtotal: KSh {Number(selectedInvoice.subtotal || 0).toLocaleString()}</p>
+                    <p>Tax: KSh {Number(selectedInvoice.taxAmount || 0).toLocaleString()}</p>
+                    <p className="text-xl font-bold text-blue-600">Total: KSh {Number(selectedInvoice.total || 0).toLocaleString()}</p>
                   </div>
                 </div>
 
