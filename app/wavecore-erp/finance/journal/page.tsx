@@ -17,7 +17,11 @@ interface JournalEntry {
   createdAt: string
 }
 
-export default function JournalEntriesPage() {
+function downloadJournalPdf(id: string) {
+    window.open('/api/wavecore/gl/journal-entries/' + id + '/pdf', '_blank')
+  }
+
+  export default function JournalEntriesPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [loading, setLoading] = useState(true)
 
