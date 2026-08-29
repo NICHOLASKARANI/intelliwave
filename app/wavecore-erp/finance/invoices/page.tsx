@@ -204,7 +204,7 @@ export default function InvoicesPage() {
             <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold">Invoice {selectedInvoice.number}</h2>
+                  <h2 className="text-xl font-bold">{selectedInvoice.status === 'PAID' ? 'Receipt' : 'Invoice'} {selectedInvoice.number}</h2>
                   <button onClick={() => setShowPdf(false)} className="p-2 rounded-lg bg-neutral-100">
                     <XCircle className="w-5 h-5" />
                   </button>
@@ -215,10 +215,13 @@ export default function InvoicesPage() {
                   <div className="flex justify-between mb-4">
                     <div>
                       <p className="text-2xl font-bold text-blue-600">IntelliWavve</p>
+                      {selectedInvoice.status === 'PAID' && (
+                        <p className="text-xs text-green-600 font-bold">PAID - RECEIPT</p>
+                      )}
                       <p className="text-sm text-muted-foreground">World-Class ERP Solutions</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">INVOICE</p>
+                      <p className="font-bold">{selectedInvoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}</p>
                       <p className="text-sm">{selectedInvoice.number}</p>
                     </div>
                   </div>
