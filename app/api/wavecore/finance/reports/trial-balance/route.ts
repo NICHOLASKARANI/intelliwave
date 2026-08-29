@@ -1,37 +1,39 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { pool } from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT coa.id, coa.code, coa.name, coa.type,
-              COALESCE(SUM(ji.debit), 0) as total_debit,
-              COALESCE(SUM(ji.credit), 0) as total_credit,
-              COALESCE(SUM(ji.debit) - SUM(ji.credit), 0) as net_balance
-       FROM "ChartOfAccount" coa
-       LEFT JOIN "JournalItem" ji ON ji."accountId" = coa.id
-       LEFT JOIN "JournalEntry" je ON je.id = ji."journalEntryId" AND je.status = 'POSTED'
-       WHERE coa."organizationId" = $1
-       GROUP BY coa.id, coa.code, coa.name, coa.type
-       ORDER BY coa.code ASC`,
-      [orgId]
+      `SELECT id, code, name, type, balance,
+        CASE WHEN type IN ('Asset', 'Expense') THEN balance ELSE 0 END as debit,
+        CASE WHEN type IN ('Liability', 'Equity', 'Revenue') THEN balance ELSE 0 END as credit
+       FROM "ChartOfAccount" 
+       WHERE "organizationId" = $1 
+       ORDER BY code ASC`,
+      [session.organizationId]
     )
 
-    const totalDebit = result.rows.reduce((sum, row) => sum + parseFloat(row.total_debit), 0)
-    const totalCredit = result.rows.reduce((sum, row) => sum + parseFloat(row.total_credit), 0)
+    const accounts = result.rows
+    const totalDebit = accounts.reduce((sum, a) => sum + Number(a.debit || 0), 0)
+    const totalCredit = accounts.reduce((sum, a) => sum + Number(a.credit || 0), 0)
 
     return NextResponse.json({
-      accounts: result.rows,
-      totals: { totalDebit, totalCredit, balanced: Math.abs(totalDebit - totalCredit) < 0.01 },
+      success: true,
+      trialBalance: {
+        accounts,
+        totalDebit,
+        totalCredit,
+        balanced: Math.abs(totalDebit - totalCredit) < 0.01,
+        generatedAt: new Date().toISOString()
+      }
     })
   } catch (error) {
-    console.error('Trial Balance error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ trialBalance: { accounts: [], totalDebit: 0, totalCredit: 0, balanced: true } })
   }
 }
