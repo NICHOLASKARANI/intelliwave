@@ -149,7 +149,10 @@ function downloadJournalPdf(id: string) {
                         <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700" title="View">
                           <Eye className="w-4 h-4 text-blue-500" />
                         </button>
-                        <button onClick={() => handleDelete(entry.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950" title="Delete">
+                        <button onClick={() => downloadJournalPdf(entry.id)} className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950" title="Download PDF">
+                            <Printer className="w-4 h-4 text-blue-500" />
+                          </button>
+                          <button onClick={() => handleDelete(entry.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950" title="Delete">
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </button>
                       </div>
