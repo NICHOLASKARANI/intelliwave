@@ -35,7 +35,7 @@ const modules = [
   { icon: DollarSign, title: 'AI Finance', desc: 'Forex Signals', href: '/wavecore-erp/ai-finance/forex-signals', bg: 'from-amber-500 to-yellow-600', color: 'text-amber-500' },
   { icon: GraduationCap, title: 'AI Education', desc: 'Student Performance', href: '/wavecore-erp/ai-education/student-performance', bg: 'from-cyan-500 to-sky-600', color: 'text-cyan-500' },
   { icon: Languages, title: 'AI Language', desc: 'Arabic Detection', href: '/wavecore-erp/ai-language/arabic-detection', bg: 'from-teal-500 to-emerald-600', color: 'text-teal-500' },
-  { icon: Facebook, title: 'Social Media AI', desc: 'FB, IG, WA, TikTok, X', href: '/wavecore-erp/social-media', bg: 'from-blue-600 to-pink-600', color: 'text-pink-500' },
+  { icon: Clock, title: 'Social Media AI', desc: 'Coming Soon', href: '#', bg: 'from-gray-400 to-gray-500', color: 'text-gray-500' },
 ]
 
 export default function ExecutiveDashboard() {
