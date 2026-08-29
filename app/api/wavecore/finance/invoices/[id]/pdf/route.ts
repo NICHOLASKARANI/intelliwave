@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
-// GET: Download invoice as PDF
+// GET: Download ${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'} as PDF
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,35 +13,35 @@ export async function GET(
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Get invoice with customer info
+    // Get ${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'} with customer info
     const result = await pool.query(
       `SELECT ci.*, c.name as "customerName", c.email as "customerEmail", c.phone as "customerPhone", c.address as "customerAddress"
-       FROM "CustomerInvoice" ci
+       FROM "Customer${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}" ci
        LEFT JOIN "Customer" c ON ci."customerId" = c.id
        WHERE ci.id = $1 AND ci."organizationId" = $2`,
       [params.id, session.organizationId]
     )
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+      return NextResponse.json({ error: '${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'} not found' }, { status: 404 })
     }
 
-    const invoice = result.rows[0]
+    const ${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'} = result.rows[0]
 
     // Generate PDF using HTML (browser will print to PDF)
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Invoice ${invoice.number}</title>
+        <title>${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'} ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.number}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
           .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
           .company { font-size: 24px; font-weight: bold; color: #2563eb; }
-          .invoice-title { font-size: 20px; font-weight: bold; color: #333; }
+          .${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}-title { font-size: 20px; font-weight: bold; color: #333; }
           .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
           .bill-to { font-size: 14px; }
-          .invoice-details { font-size: 14px; text-align: right; }
+          .${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}-details { font-size: 14px; text-align: right; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
           th { background: #2563eb; color: white; padding: 12px; text-align: left; }
           td { padding: 10px; border-bottom: 1px solid #ddd; }
@@ -53,22 +53,22 @@ export async function GET(
       <body>
         <div class="header">
           <div class="company">IntelliWavve</div>
-          <div class="invoice-title">INVOICE</div>
+          <div class="${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}-title">${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}</div>
         </div>
         
         <div class="info-section">
           <div class="bill-to">
             <strong>Bill To:</strong><br>
-            ${invoice.customerName || 'Customer'}<br>
-            ${invoice.customerEmail || ''}<br>
-            ${invoice.customerPhone || ''}<br>
-            ${invoice.customerAddress || ''}
+            ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.customerName || 'Customer'}<br>
+            ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.customerEmail || ''}<br>
+            ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.customerPhone || ''}<br>
+            ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.customerAddress || ''}
           </div>
-          <div class="invoice-details">
-            <strong>Invoice Number:</strong> ${invoice.number}<br>
-            <strong>Date:</strong> ${new Date(invoice.date || invoice.createdAt).toLocaleDateString()}<br>
-            <strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}<br>
-            <strong>Status:</strong> ${invoice.status}
+          <div class="${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}-details">
+            <strong>${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'} Number:</strong> ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.number}<br>
+            <strong>Date:</strong> ${new Date(${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.date || ${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.createdAt).toLocaleDateString()}<br>
+            <strong>Due Date:</strong> ${new Date(${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.dueDate).toLocaleDateString()}<br>
+            <strong>Status:</strong> ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.status}
           </div>
         </div>
         
@@ -83,18 +83,18 @@ export async function GET(
           </thead>
           <tbody>
             <tr>
-              <td>Invoice services</td>
+              <td>${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'} services</td>
               <td>1</td>
-              <td>KSh ${invoice.subtotal?.toLocaleString() || '0'}</td>
-              <td>KSh ${invoice.subtotal?.toLocaleString() || '0'}</td>
+              <td>KSh ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.subtotal?.toLocaleString() || '0'}</td>
+              <td>KSh ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.subtotal?.toLocaleString() || '0'}</td>
             </tr>
           </tbody>
         </table>
         
         <div class="totals">
-          <p>Subtotal: KSh ${invoice.subtotal?.toLocaleString() || '0'}</p>
-          <p>Tax (16%): KSh ${invoice.taxAmount?.toLocaleString() || '0'}</p>
-          <p class="total-row">Total: KSh ${invoice.total?.toLocaleString() || '0'}</p>
+          <p>Subtotal: KSh ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.subtotal?.toLocaleString() || '0'}</p>
+          <p>Tax (16%): KSh ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.taxAmount?.toLocaleString() || '0'}</p>
+          <p class="total-row">Total: KSh ${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.total?.toLocaleString() || '0'}</p>
         </div>
         
         <div class="footer">
@@ -110,7 +110,7 @@ export async function GET(
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html',
-        'Content-Disposition': `inline; filename="invoice-${invoice.number}.html"`
+        'Content-Disposition': `inline; filename="${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}-${${invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'}.number}.html"`
       }
     })
   } catch (error) {
