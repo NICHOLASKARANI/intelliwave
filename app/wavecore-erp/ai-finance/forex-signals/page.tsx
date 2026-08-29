@@ -29,6 +29,8 @@ export default function ForexSignalsPage() {
   const [loading, setLoading] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastUpdated, setLastUpdated] = useState('')
+  const [dataSource, setDataSource] = useState('')
+  const [livePairs, setLivePairs] = useState<string[]>([])
   const [history, setHistory] = useState<ForexSignal[]>([])
   const intervalRef = useRef<any>(null)
 
@@ -43,6 +45,8 @@ export default function ForexSignalsPage() {
         setSignals(data.signals)
         setFilteredSignals(data.signals)
         setLastUpdated(new Date().toLocaleTimeString())
+        setDataSource(data.dataSource || '')
+        setLivePairs(data.livePairs || [])
         if (data.signals.length > 0) {
           setSelectedSignal(data.signals[0])
           setHistory(prev => [data.signals[0], ...prev].slice(0, 10))
@@ -105,6 +109,12 @@ export default function ForexSignalsPage() {
             <button onClick={() => setAutoRefresh(!autoRefresh)}
               className={`px-3 py-1.5 rounded-lg text-sm font-bold ${autoRefresh ? 'bg-green-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800'}`}>
               {autoRefresh ? 'Live ON' : 'Live OFF'}
+            </button>
+            {dataSource && (
+              <span className={	ext-xs px-2 py-1 rounded-lg }>
+                {dataSource}
+              </span>
+            )}
             </button>
             <button onClick={fetchSignals} disabled={loading}
               className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
