@@ -207,7 +207,11 @@ export default function SignupPage() {
             {/* Login link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-slate-400">
-                Already have an account?{' '}
+                <Link href="/wavecore-erp/auth/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
+                Forgot Password?
+              </Link>
+              <p className="text-sm text-slate-400 mt-2">
+                Already have an account??{' '}
                 <Link href="/wavecore-erp/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
                   Sign in
                 </Link>
