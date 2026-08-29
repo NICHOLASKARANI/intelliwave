@@ -1,102 +1,76 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
-
-const journalEntrySchema = z.object({
-  date: z.string(),
-  reference: z.string().optional().nullable(),
-  description: z.string().min(1),
-  items: z.array(z.object({
-    accountId: z.string(),
-    description: z.string().optional().nullable(),
-    debit: z.number().min(0),
-    credit: z.number().min(0),
-  })).min(2),
-})
+import { pool } from '@/lib/wavecore/db'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT je.id, je.number, je.date, je.reference, je.description, je.status, je.amount, je."createdAt"
-       FROM "JournalEntry" je
-       WHERE je."organizationId" = $1
-       ORDER BY je."createdAt" DESC
-       LIMIT 50`,
-      [orgId]
+      `SELECT je.*, 
+        (SELECT json_agg(json_build_object('accountId', ji."accountId", 'debit', ji.debit, 'credit', ji.credit))
+         FROM "JournalItem" ji WHERE ji."journalEntryId" = je.id) as items
+       FROM "JournalEntry" je 
+       WHERE je."organizationId" = $1 
+       ORDER BY je."createdAt" DESC LIMIT 100`,
+      [session.organizationId]
     )
 
     return NextResponse.json({ entries: result.rows })
   } catch (error) {
-    console.error('JournalEntry GET error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ entries: [] })
   }
 }
 
 export async function POST(request: NextRequest) {
-  const client = await pool.connect()
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const validated = journalEntrySchema.parse(body)
-
-    const totalDebit = validated.items.reduce((sum, i) => sum + i.debit, 0)
-    const totalCredit = validated.items.reduce((sum, i) => sum + i.credit, 0)
-
-    if (Math.abs(totalDebit - totalCredit) > 0.001) {
-      return NextResponse.json({ error: 'Debits must equal credits' }, { status: 422 })
-    }
-
-    await client.query('BEGIN')
-
-    // Verify all accounts belong to tenant
-    for (const item of validated.items) {
-      const account = await client.query(
-        'SELECT id FROM "ChartOfAccount" WHERE id = $1 AND "organizationId" = $2',
-        [item.accountId, orgId]
-      )
-      if (account.rows.length === 0) {
-        await client.query('ROLLBACK')
-        return NextResponse.json({ error: 'Account not found' }, { status: 404 })
-      }
-    }
-
+    const crypto = require('crypto')
+    const entryId = crypto.randomUUID()
     const entryNumber = 'JE-' + Date.now().toString().slice(-8)
-    const entryResult = await client.query(
-      `INSERT INTO "JournalEntry" (id, number, date, reference, description, status, amount, "organizationId", "createdAt", "updatedAt")
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'POSTED', $5, $6, NOW(), NOW())
-       RETURNING id`,
-      [entryNumber, new Date(validated.date), validated.reference || null, validated.description, totalDebit, orgId]
+
+    // Create journal entry
+    const entryResult = await pool.query(
+      `INSERT INTO "JournalEntry" (id, "entryNumber", description, date, "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *`,
+      [entryId, entryNumber, body.description, body.date || new Date().toISOString().split('T')[0], session.organizationId]
     )
 
-    const entryId = entryResult.rows[0].id
-
-    for (const item of validated.items) {
-      await client.query(
-        `INSERT INTO "JournalItem" (id, description, debit, credit, "accountId", "journalEntryId", "createdAt")
-         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW())`,
-        [item.description || null, item.debit, item.credit, item.accountId, entryId]
+    // Create journal items (debits and credits)
+    const items = body.items || []
+    for (const item of items) {
+      await pool.query(
+        `INSERT INTO "JournalItem" (id, "journalEntryId", "accountId", debit, credit, "organizationId")
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [crypto.randomUUID(), entryId, item.accountId, item.debit || 0, item.credit || 0, session.organizationId]
       )
     }
 
-    await client.query('COMMIT')
-
-    return NextResponse.json({ success: true, id: entryId, number: entryNumber }, { status: 201 })
+    return NextResponse.json({ entry: entryResult.rows[0] }, { status: 201 })
   } catch (error) {
-    await client.query('ROLLBACK')
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 422 })
-    }
-    console.error('JournalEntry POST error:', (error as Error).message)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  } finally {
-    client.release()
+    return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    
+    await pool.query(`DELETE FROM "JournalItem" WHERE "journalEntryId" = $1`, [id])
+    await pool.query(`DELETE FROM "JournalEntry" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
 }
