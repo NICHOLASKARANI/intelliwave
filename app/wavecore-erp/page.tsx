@@ -8,7 +8,7 @@ import { LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
   Activity, Factory, Scan, Camera, HeartPulse, Brain, Shield, Leaf, Barcode, Languages, GraduationCap, Home, Facebook, Instagram, MessageCircle, Music2, Twitter, Eye, Fence, Moon, PawPrint, HardHat, Crosshair, Flag, Briefcase, FolderKanban, HeadphonesIcon, Truck,
   LogOut, Search as SearchIcon, ArrowUpRight, Menu, X, BellRing,
   CheckCheck, Store, ShoppingCart, Bike, Loader2, CalendarDays, Wallet,
-  Sparkles, ChevronRight, PieChart, LineChart, Download, Filter
+  Sparkles, ChevronRight, Clock, PieChart, LineChart, Download, Filter
 } from 'lucide-react'
 
 const modules = [
