@@ -18,6 +18,7 @@ interface ForexSignal {
   support: number
   resistance: number
   riskReward: string
+  source: string
   timestamp: string
 }
 
@@ -30,7 +31,6 @@ export default function ForexSignalsPage() {
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastUpdated, setLastUpdated] = useState('')
   const [dataSource, setDataSource] = useState('')
-  const [livePairs, setLivePairs] = useState<string[]>([])
   const [history, setHistory] = useState<ForexSignal[]>([])
   const intervalRef = useRef<any>(null)
 
@@ -46,7 +46,6 @@ export default function ForexSignalsPage() {
         setFilteredSignals(data.signals)
         setLastUpdated(new Date().toLocaleTimeString())
         setDataSource(data.dataSource || '')
-        setLivePairs(data.livePairs || [])
         if (data.signals.length > 0) {
           setSelectedSignal(data.signals[0])
           setHistory(prev => [data.signals[0], ...prev].slice(0, 10))
@@ -101,20 +100,19 @@ export default function ForexSignalsPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <DollarSign className="w-6 h-6 text-green-500" /> Forex Signal Detection
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm text-muted-foreground flex items-center gap-1">
               <Radio className={`w-3 h-3 ${autoRefresh ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
               {lastUpdated || 'Not updated'}
             </span>
-            <button onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-bold ${autoRefresh ? 'bg-green-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800'}`}>
-              {autoRefresh ? 'Live ON' : 'Live OFF'}
-            </button>
             {dataSource && (
-              <span className={	ext-xs px-2 py-1 rounded-lg }>
+              <span className={`text-xs px-2 py-1 rounded-lg ${dataSource.includes('MIXED') ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>
                 {dataSource}
               </span>
             )}
+            <button onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-bold ${autoRefresh ? 'bg-green-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800'}`}>
+              {autoRefresh ? 'Live ON' : 'Live OFF'}
             </button>
             <button onClick={fetchSignals} disabled={loading}
               className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
@@ -123,7 +121,6 @@ export default function ForexSignalsPage() {
           </div>
         </div>
 
-        {/* Pair Filter */}
         <div className="flex gap-2 overflow-x-auto pb-3 mb-6">
           {pairs.map(pair => (
             <button key={pair} onClick={() => setSelectedPair(pair)}
@@ -133,7 +130,6 @@ export default function ForexSignalsPage() {
           ))}
         </div>
 
-        {/* Selected Signal Detail */}
         {selectedSignal && (
           <div className={`rounded-2xl border p-6 mb-6 ${selectedSignal.signal === 'BUY' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
             <div className="flex items-center justify-between">
@@ -141,7 +137,7 @@ export default function ForexSignalsPage() {
                 <Globe className="w-8 h-8 text-blue-500" />
                 <div>
                   <p className="text-2xl font-bold">{selectedSignal.pair}</p>
-                  <p className="text-sm text-muted-foreground">{selectedSignal.trend} | RSI: {selectedSignal.rsi}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSignal.trend} | RSI: {selectedSignal.rsi} | {selectedSignal.source}</p>
                 </div>
               </div>
               <div className={`px-6 py-3 rounded-xl text-white font-bold text-2xl ${selectedSignal.signal === 'BUY' ? 'bg-green-600' : 'bg-red-600'}`}>
@@ -189,7 +185,6 @@ export default function ForexSignalsPage() {
           </div>
         )}
 
-        {/* All Signals Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
           {filteredSignals.slice(0, 12).map((sig, i) => (
             <button key={i} onClick={() => setSelectedSignal(sig)}
@@ -208,7 +203,6 @@ export default function ForexSignalsPage() {
           ))}
         </div>
 
-        {/* History */}
         {history.length > 0 && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
             <div className="flex justify-between items-center mb-4">
