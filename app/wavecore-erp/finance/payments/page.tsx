@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, DollarSign, CreditCard, Download, Printer, Trash2, Loader2, Search } from 'lucide-react'
+import { Plus, DollarSign, Download, Printer, Trash2, Loader2, Search } from 'lucide-react'
 
 interface Payment {
   id: string
@@ -42,9 +42,7 @@ export default function PaymentsPage() {
     if (!confirm('Delete this payment?')) return
     try {
       const res = await fetch(`/api/wavecore/finance/payments?id=${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        fetchPayments()
-      }
+      if (res.ok) fetchPayments()
     } catch (err) {
       setError('Delete failed')
     }
@@ -72,9 +70,15 @@ export default function PaymentsPage() {
       </header>
 
       <main className="max-w-6xl mx-auto p-3 sm:p-4 lg:p-8">
-        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <DollarSign className="w-6 h-6 text-green-500" /> Payments ({payments.length})
-        </h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <DollarSign className="w-6 h-6 text-green-500" /> Payments ({payments.length})
+          </h1>
+          <Link href="/wavecore-erp/finance/payments/record"
+            className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 hover:bg-green-700">
+            <Plus className="w-4 h-4" /> Record Payment
+          </Link>
+        </div>
 
         {error && <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600">{error}</div>}
 
@@ -90,6 +94,7 @@ export default function PaymentsPage() {
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
             <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-muted-foreground">No payments yet</p>
+            <Link href="/wavecore-erp/finance/payments/record" className="text-blue-600 mt-2 inline-block">Record your first payment</Link>
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
