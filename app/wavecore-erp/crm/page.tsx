@@ -129,10 +129,10 @@ export default function CRMPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
               <KPICard label="Customers" value={stats.customers} icon={Users} color="text-blue-500" href="/wavecore-erp/crm/customers" />
               <KPICard label="Leads" value={stats.leads} icon={Target} color="text-green-500" href="/wavecore-erp/crm/leads" />
-              <KPICard label="Opportunities" value={stats.opportunities} icon={TrendingUp} color="text-orange-500" href="/wavecore-erp/crm/opportunities" />
+              <KPICard label="Opportunities" value={stats.opportunities} icon={TrendingUp} color="text-orange-500" href="/wavecore-erp/crm/pipeline" />
               <KPICard label="Quotations" value={stats.quotations} icon={FileText} color="text-purple-500" href="/wavecore-erp/crm/quotations" />
               <KPICard label="Sales Orders" value={stats.orders} icon={ShoppingCart} color="text-teal-500" href="/wavecore-erp/crm/orders" />
-              <KPICard label="Win Rate" value={stats.winRate + '%'} icon={Star} color="text-amber-500" href="/wavecore-erp/crm/opportunities" />
+              <KPICard label="Win Rate" value={stats.winRate + '%'} icon={Star} color="text-amber-500" href="/wavecore-erp/crm/pipeline" />
             </div>
 
             {/* Quick Actions */}
