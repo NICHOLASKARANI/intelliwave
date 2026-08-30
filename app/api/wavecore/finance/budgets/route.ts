@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT * FROM "Budget" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100`,
+      `SELECT * FROM "Budget" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
       [session.organizationId]
     )
 
@@ -37,11 +37,11 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "Budget" (id, name, "fiscalYear", period, amount, "organizationId", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *`,
       [
-        id, 
-        body.name, 
-        body.fiscalYear || new Date().getFullYear(), 
-        body.period || 'ANNUAL', 
-        body.amount || 0, 
+        id,
+        body.name,
+        parseInt(body.fiscalYear) || new Date().getFullYear(),
+        body.period || 'ANNUAL',
+        parseFloat(body.amount) || 0,
         session.organizationId
       ]
     )
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ budget: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Budget create error:', error)
-    return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -63,6 +63,6 @@ export async function DELETE(request: NextRequest) {
     await pool.query(`DELETE FROM "Budget" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
 }
