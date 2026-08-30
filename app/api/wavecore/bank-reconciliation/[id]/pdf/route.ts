@@ -13,7 +13,7 @@ export async function GET(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT br.*, ba."accountName", ba."accountNumber", ba."bankName"
+      `SELECT br.*, ba."name", ba."accountNumber", ba."bankName"
        FROM "BankReconciliation" br
        LEFT JOIN "BankAccount" ba ON br."bankAccountId" = ba.id
        WHERE br.id = $1 AND br."organizationId" = $2`,
@@ -65,7 +65,7 @@ export async function GET(
         </div>
 
         <div class="info-section">
-          <strong>Bank Account:</strong> ${recon.bankName || 'N/A'} - ${recon.accountName || 'N/A'}<br>
+          <strong>Bank Account:</strong> ${recon.bankName || 'N/A'} - ${recon.name || 'N/A'}<br>
           <strong>Account Number:</strong> ${recon.accountNumber || 'N/A'}<br>
           <strong>Date:</strong> ${new Date(recon.createdAt).toLocaleDateString('en-KE', { day: '2-digit', month: 'long', year: 'numeric' })}
         </div>

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT br.*, ba."accountNumber", ba."bankName", ba."accountName"
+      `SELECT br.*, ba."accountNumber", ba."bankName", ba.name
        FROM "BankReconciliation" br
        LEFT JOIN "BankAccount" ba ON br."bankAccountId" = ba.id
        WHERE br."organizationId" = $1
