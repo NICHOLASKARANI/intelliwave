@@ -84,12 +84,12 @@ export async function GET(
             </tr>
             <tr>
               <td>Book Balance (ERP)</td>
-              <td style="text-align: right;">${Number(recon.closingBalance || 0).toLocaleString()}</td>
+              <td style="text-align: right;">${Number(recon.bookBalance || 0).toLocaleString()}</td>
             </tr>
             <tr>
               <td><strong>Difference</strong></td>
               <td style="text-align: right;" class="${isMatched ? 'matched' : 'unmatched'}">
-                <strong>KSh ${Number((recon.statementBalance - recon.closingBalance) || 0).toLocaleString()}</strong>
+                <strong>KSh ${Number((recon.statementBalance - recon.bookBalance) || 0).toLocaleString()}</strong>
               </td>
             </tr>
           </tbody>
