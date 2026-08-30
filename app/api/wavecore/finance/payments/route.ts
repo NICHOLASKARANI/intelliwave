@@ -37,12 +37,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-    const receiptNumber = 'PAY-' + Date.now().toString().slice(-8)
+    const number = 'PAY-' + Date.now().toString().slice(-8)
 
     const result = await pool.query(
-      `INSERT INTO "CustomerPayment" (id, "receiptNumber", amount, method, "invoiceId", "organizationId", "createdAt")
+      `INSERT INTO "CustomerPayment" (id, "number", amount, method, "invoiceId", "organizationId", "createdAt")
        VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *`,
-      [id, receiptNumber, body.amount, body.method || 'MPESA', body.invoiceId || null, session.organizationId]
+      [id, number, body.amount, body.method || 'MPESA', body.invoiceId || null, session.organizationId]
     )
 
     return NextResponse.json({ payment: result.rows[0] }, { status: 201 })

@@ -31,7 +31,7 @@ export async function GET(
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Payment Receipt ${payment.receiptNumber || payment.id.substring(0, 8)}</title>
+        <title>Payment Receipt ${payment.number || payment.id.substring(0, 8)}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
           .header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 3px solid #059669; padding-bottom: 20px; }
@@ -54,7 +54,7 @@ export async function GET(
           </div>
           <div style="text-align: right;">
             <div class="doc-title">PAYMENT RECEIPT</div>
-            <div style="font-size: 14px; color: #6b7280;">${payment.receiptNumber || payment.id.substring(0, 8)}</div>
+            <div style="font-size: 14px; color: #6b7280;">${payment.number || payment.id.substring(0, 8)}</div>
           </div>
         </div>
 
@@ -104,7 +104,7 @@ export async function GET(
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html',
-        'Content-Disposition': `inline; filename="payment-${payment.receiptNumber || payment.id.substring(0, 8)}.html"`
+        'Content-Disposition': `inline; filename="payment-${payment.number || payment.id.substring(0, 8)}.html"`
       }
     })
   } catch (error) {
