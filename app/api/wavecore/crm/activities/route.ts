@@ -45,3 +45,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    await pool.query(`DELETE FROM "Activity" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
+  }
+}
