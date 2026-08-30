@@ -47,10 +47,10 @@ export async function GET(
         </div>
         <div class="card">
           <h2 style="text-align: center; color: #ea580c;">${product.name || 'N/A'}</h2>
-          <div class="price">KSh ${Number(product.price || 0).toLocaleString()}</div>
+          <div class="price">KSh ${Number(product."sellingPrice" || 0).toLocaleString()}</div>
           <div class="field"><span class="label">SKU</span><span class="value">${product.sku || 'N/A'}</span></div>
           <div class="field"><span class="label">Category</span><span class="value">${product.category || 'N/A'}</span></div>
-          <div class="field"><span class="label">Stock</span><span class="value">${product.quantity || product.stock || 0}</span></div>
+          <div class="field"><span class="label">Stock</span><span class="value">${product.stock_level || 0}</span></div>
         </div>
         <div class="footer">Generated: ${new Date().toLocaleString('en-KE')}</div>
         <script>window.print();</script>
