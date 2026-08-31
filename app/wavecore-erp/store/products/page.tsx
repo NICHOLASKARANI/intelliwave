@@ -10,8 +10,10 @@ interface Product {
   name: string
   sku: string
   price: number
+  sellingPrice: number
   quantity: number
   stock: number
+  stock_level: number
   category: string
   createdAt: string
 }
