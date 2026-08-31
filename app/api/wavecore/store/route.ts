@@ -40,26 +40,30 @@ export async function POST(request: NextRequest) {
     const crypto = require('crypto')
     const productId = crypto.randomUUID()
 
+    // Insert product with ALL fields
     const result = await pool.query(
-      `INSERT INTO "Product" (id, name, sku, description, category, "costPrice", "sellingPrice", "minStock", "maxStock", "isActive", "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, NOW(), NOW()) RETURNING *`,
+      `INSERT INTO "Product" (id, name, sku, barcode, description, category, unit, "costPrice", "sellingPrice", "minStock", "maxStock", "isActive", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, NOW(), NOW()) RETURNING *`,
       [
         productId,
         body.name,
         body.sku || null,
+        body.barcode || null,
         body.description || null,
         body.category || 'General',
-        body.costPrice || 0,
-        body.sellingPrice || body.price || 0,
-        body.minStock || 0,
-        body.maxStock || 100,
+        body.unit || null,
+        Number(body.costPrice) || 0,
+        Number(body.sellingPrice) || 0,
+        Number(body.minStock) || 0,
+        Number(body.maxStock) || 100,
         session.organizationId
       ]
     )
 
     // Auto-create stock
-    const initialStock = Number(body.initialStock || body.quantity || 0)
+    const initialStock = Number(body.initialStock) || 0
     if (initialStock > 0) {
+      // Get or create StockLocation
       const locationResult = await pool.query(`SELECT id FROM "StockLocation" LIMIT 1`)
       
       let locationId = null
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ product: result.rows[0] }, { status: 201 })
+    return NextResponse.json({ product: result.rows[0], initialStock }, { status: 201 })
   } catch (error) {
     console.error('Product create error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
