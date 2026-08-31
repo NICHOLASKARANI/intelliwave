@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const products = await pool.query(
       `SELECT p.*, 
-        COALESCE(sq.quantity, 0) as stock_level,
+        COALESCE(sq."availableQty", sq.quantity, 0) as stock_level,
         p."sellingPrice" as price
        FROM "Product" p
        LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
