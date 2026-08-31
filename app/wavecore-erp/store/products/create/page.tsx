@@ -3,34 +3,39 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Plus, Loader2, CheckCircle, ArrowLeft, Package } from 'lucide-react'
 
-export default function AddProductPage() {
-  const [formData, setFormData] = useState({ initialStock: 0,
-    name: '', sku: '', barcode: '', description: '', category: '',
-    unit: 'Unit', costPrice: '', sellingPrice: '', minStock: '0', maxStock: '100',
+export default function CreateProductPage() {
+  const [formData, setFormData] = useState({
+    name: '',
+    sku: '',
+    barcode: '',
+    description: '',
+    category: '',
+    unit: 'Unit',
+    costPrice: '',
+    sellingPrice: '',
+    minStock: '0',
+    maxStock: '100',
+    initialStock: '0',
   })
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
-
-  const update = (field: string, value: string) => setFormData({ ...formData, [field]: value })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    if (!formData.name || !formData.sku) {
-      setError('Name and SKU are required')
+    if (!formData.name.trim()) {
+      setError('Product name is required')
       setLoading(false)
       return
     }
 
     try {
-      const res = await fetch('/api/wavecore/inventory/products', {
+      const res = await fetch('/api/wavecore/store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -38,79 +43,148 @@ export default function AddProductPage() {
           sku: formData.sku,
           barcode: formData.barcode || null,
           description: formData.description || null,
-          category: formData.category || null,
+          category: formData.category || 'General',
           unit: formData.unit,
           costPrice: parseFloat(formData.costPrice) || 0,
           sellingPrice: parseFloat(formData.sellingPrice) || 0,
           minStock: parseFloat(formData.minStock) || 0,
           maxStock: parseFloat(formData.maxStock) || 100,
-          initialStock: Number(formData.initialStock) || 0,
+          initialStock: parseFloat(formData.initialStock) || 0,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Failed to add product'); return }
-      router.push('/wavecore-erp/store/products')
-    } catch { setError('Network error') } finally { setLoading(false) }
+
+      if (res.ok) {
+        setSuccess(true)
+        setTimeout(() => {
+          window.location.href = '/wavecore-erp/store/products'
+        }, 1500)
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Failed to create product')
+      }
+    } catch (err) {
+      setError('Network error')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const inputClass = "w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp/store" className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
+          <Link href="/wavecore-erp/store/products" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <Link href="/wavecore-erp/store/products" className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </Link>
+          <span className="text-sm">New Product</span>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto p-4 lg:p-8">
-        <h1 className="text-2xl font-bold mb-6">Add Product</h1>
-        {error && <div className="p-4 mb-6 rounded-xl bg-red-50 text-red-600 text-sm">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4 bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium mb-2">Name *</label>
-              <input type="text" value={formData.name} onChange={(e) => update('name', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" required />
-            </div>
-            <div><label className="block text-sm font-medium mb-2">SKU *</label>
-              <input type="text" value={formData.sku} onChange={(e) => update('sku', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" required />
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Barcode</label>
-              <input type="text" value={formData.barcode} onChange={(e) => update('barcode', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" />
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Category</label>
-              <input type="text" value={formData.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" />
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Unit</label>
-              <select value={formData.unit} onChange={(e) => update('unit', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">
-                <option value="Unit">Unit</option><option value="Kg">Kg</option><option value="Litre">Litre</option>
-                <option value="Piece">Piece</option><option value="Box">Box</option><option value="Pack">Pack</option>
-              </select>
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Cost Price (KSh)</label>
-              <input type="number" value={formData.costPrice} onChange={(e) => update('costPrice', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" min="0" step="0.01" />
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Selling Price (KSh)</label>
-              <input type="number" value={formData.sellingPrice} onChange={(e) => update('sellingPrice', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" min="0" step="0.01" />
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Min Stock Level</label>
-              <input type="number" value={formData.minStock} onChange={(e) => update('minStock', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" min="0" />
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Max Stock Level</label>
-              <input type="number" value={formData.maxStock} onChange={(e) => update('maxStock', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" min="0" />
-            </div>
+      <main className="max-w-2xl mx-auto p-3 sm:p-4 lg:p-8">
+        <Link href="/wavecore-erp/store/products" className="flex items-center gap-1 text-sm text-blue-600 mb-6">
+          <ArrowLeft className="w-4 h-4" /> Back to Products
+        </Link>
+
+        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Package className="w-6 h-6 text-orange-500" /> Add New Product
+        </h1>
+
+        {success ? (
+          <div className="bg-green-50 rounded-2xl border border-green-200 p-8 text-center">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-green-700">Product Created!</h2>
+            <p className="text-muted-foreground">Redirecting...</p>
           </div>
-          <div><label className="block text-sm font-medium mb-2">Description</label>
-            <textarea value={formData.description} onChange={(e) => update('description', e.target.value)} rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border resize-none" />
-          </div>
-          <Button type="submit" disabled={loading} className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700">
-            <Save className="w-4 h-4" /> {loading ? 'Adding...' : 'Add Product'}
-          </Button>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Name *</label>
+              <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="Product name" className={inputClass} required />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">SKU *</label>
+                <input type="text" value={formData.sku} onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                  placeholder="SKU-001" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Barcode</label>
+                <input type="text" value={formData.barcode} onChange={(e) => setFormData({...formData, barcode: e.target.value})}
+                  placeholder="Barcode" className={inputClass} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Category</label>
+                <input type="text" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  placeholder="e.g. Electronics" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Unit</label>
+                <select value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                  className={inputClass}>
+                  <option>Unit</option>
+                  <option>Piece</option>
+                  <option>Box</option>
+                  <option>Kg</option>
+                  <option>Liter</option>
+                  <option>Meter</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Cost Price (KSh)</label>
+                <input type="number" value={formData.costPrice} onChange={(e) => setFormData({...formData, costPrice: e.target.value})}
+                  placeholder="0" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Selling Price (KSh) *</label>
+                <input type="number" value={formData.sellingPrice} onChange={(e) => setFormData({...formData, sellingPrice: e.target.value})}
+                  placeholder="0" className={inputClass} required />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Min Stock</label>
+                <input type="number" value={formData.minStock} onChange={(e) => setFormData({...formData, minStock: e.target.value})}
+                  placeholder="0" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Max Stock</label>
+                <input type="number" value={formData.maxStock} onChange={(e) => setFormData({...formData, maxStock: e.target.value})}
+                  placeholder="100" className={inputClass} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Initial Stock *</label>
+                <input type="number" value={formData.initialStock} onChange={(e) => setFormData({...formData, initialStock: e.target.value})}
+                  placeholder="0" className={inputClass} />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Description</label>
+              <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Product description..." className={inputClass} rows={3} />
+            </div>
+
+            {error && <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm">{error}</div>}
+
+            <button type="submit" disabled={loading}
+              className="w-full py-3 rounded-xl bg-orange-600 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+              {loading ? 'Creating...' : 'Create Product'}
+            </button>
+          </form>
+        )}
       </main>
     </div>
   )
