@@ -86,3 +86,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ sales: [] })
   }
 }
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    
+    await pool.query(`DELETE FROM "SalesOrderItem" WHERE "salesOrderId" = $1`, [id]).catch(() => {})
+    await pool.query(`DELETE FROM "SalesOrder" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
+  }
+}
