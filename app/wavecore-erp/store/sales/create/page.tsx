@@ -3,47 +3,67 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ShoppingCart, Download, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Plus, Minus, Trash2, Loader2, CheckCircle, ArrowLeft, ShoppingCart, Search, DollarSign, User } from 'lucide-react'
 
 interface CartItem {
-  productId: string
+  id: string
   name: string
-  quantity: number
   price: number
+  sellingPrice: number
+  quantity: number
 }
 
-export default function SalesCreatePage() {
+export default function CreateSalePage() {
   const [products, setProducts] = useState<any[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    fetch('/api/wavecore/store')
-      .then(r => r.json())
-      .then(d => setProducts(d.products || []))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    fetchProducts()
   }, [])
 
-  const addToCart = (product: any) => {
-    const existing = cart.find(item => item.productId === product.id)
-    if (existing) {
-      setCart(cart.map(item => item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item))
-    } else {
-      setCart([...cart, { productId: product.id, name: product.name, quantity: 1, price: product.sellingPrice || 0 }])
+  const fetchProducts = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/store')
+      const data = await res.json()
+      setProducts(data.products || [])
+    } catch (err) {
+      setError('Failed to load products')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.productId !== productId))
+  const addToCart = (product: any) => {
+    const existing = cart.find(item => item.id === product.id)
+    if (existing) {
+      setCart(cart.map(item => 
+        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+      ))
+    } else {
+      setCart([...cart, {
+        id: product.id,
+        name: product.name,
+        price: product.sellingPrice || product.price || 0,
+        sellingPrice: product.sellingPrice || product.price || 0,
+        quantity: 1
+      }])
+    }
   }
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const removeFromCart = (id: string) => {
+    setCart(cart.filter(item => item.id !== id))
+  }
+
+  const updateQuantity = (id: string, delta: number) => {
     setCart(cart.map(item => {
-      if (item.productId === productId) {
+      if (item.id === id) {
         const newQty = item.quantity + delta
         return newQty > 0 ? { ...item, quantity: newQty } : item
       }
@@ -51,85 +71,102 @@ export default function SalesCreatePage() {
     }))
   }
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const cartTotal = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
 
-  const handleSave = async () => {
-    if (cart.length === 0) return
-    setSaving(true)
+  const filteredProducts = products.filter(p => 
+    (p.name || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handleSubmit = async () => {
+    if (cart.length === 0) {
+      setError('Cart is empty. Add products first.')
+      return
+    }
+    setSubmitting(true)
+    setError('')
+
     try {
-      const res = await fetch('/api/wavecore/store', {
+      const res = await fetch('/api/wavecore/store/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cart, total, customerName }),
+        body: JSON.stringify({ items: cart, total: cartTotal, customerName })
       })
+
       if (res.ok) {
         setSuccess(true)
-        setTimeout(() => window.location.href = '/wavecore-erp/store', 2000)
+        setTimeout(() => {
+          window.location.href = '/wavecore-erp/store/sales'
+        }, 1500)
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Failed to create sale')
       }
-    } catch {} finally { setSaving(false) }
+    } catch (err) {
+      setError('Network error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleDownloadPDF = () => {
-    const content = [
-      'WaveCore ERP - Sales Receipt',
-      '='.repeat(40),
-      'Date: ' + new Date().toLocaleString(),
-      'Customer: ' + (customerName || 'Walk-in'),
-      '='.repeat(40),
-      '',
-      ...cart.map((item, i) => `${i+1}. ${item.name} x${item.quantity} = KSh ${(item.price * item.quantity).toLocaleString()}`),
-      '',
-      '='.repeat(40),
-      'TOTAL: KSh ' + total.toLocaleString(),
-      '='.repeat(40),
-      '',
-      'Thank you for shopping!',
-      '© 2026 IntelliWavve'
-    ].join('\n')
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'sales-receipt.pdf'; a.click()
-  }
+  const inputClass = "w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp/store" className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
+          <Link href="/wavecore-erp/store/sales" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Create Sale</span>
+          <span className="text-sm">New Sale</span>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 lg:p-8">
+      <main className="max-w-6xl mx-auto p-3 sm:p-4 lg:p-8">
+        <Link href="/wavecore-erp/store/sales" className="flex items-center gap-1 text-sm text-blue-600 mb-6">
+          <ArrowLeft className="w-4 h-4" /> Back to Sales
+        </Link>
+
+        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <ShoppingCart className="w-6 h-6 text-blue-500" /> Create Sale
+        </h1>
+
         {success ? (
-          <div className="text-center py-20">
-            <ShoppingCart className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Sale Completed!</h1>
-            <p className="text-muted-foreground">Redirecting to dashboard...</p>
+          <div className="bg-green-50 rounded-2xl border border-green-200 p-8 text-center">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-green-700">Sale Completed!</h2>
+            <p className="text-muted-foreground">Redirecting...</p>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Products */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Product Selection */}
             <div>
-              <h2 className="text-lg font-bold mb-4">Products</h2>
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 max-h-[500px] overflow-y-auto">
-                {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
-                  <div className="space-y-2">
-                    {products.map(p => (
-                      <button key={p.id} onClick={() => addToCart(p)}
-                        className="w-full flex justify-between items-center p-3 rounded-xl border hover:bg-neutral-50 dark:hover:bg-neutral-800">
-                        <div className="text-left">
-                          <p className="font-medium">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">Stock: {p.stock_level || 0}</p>
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+                <h2 className="font-bold text-lg mb-4">Select Products</h2>
+                
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search products..." className="pl-9 pr-4 py-2.5 rounded-xl border w-full" />
+                </div>
+
+                {loading ? (
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto" />
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {filteredProducts.map(product => (
+                      <button key={product.id} onClick={() => addToCart(product)}
+                        className="w-full p-3 rounded-xl border text-left hover:border-blue-500">
+                        <div className="flex justify-between">
+                          <span className="font-bold">{product.name}</span>
+                          <span className="text-green-600 font-bold">KSh {Number(product.sellingPrice || product.price || 0).toLocaleString()}</span>
                         </div>
-                        <p className="font-bold text-green-600">KSh {p.sellingPrice || 0}</p>
+                        <span className="text-xs text-muted-foreground">Stock: {product.stock_level || 0} | Click to add</span>
                       </button>
                     ))}
-                    {products.length === 0 && <p className="text-center py-8 text-muted-foreground">No products available</p>}
+                    {filteredProducts.length === 0 && (
+                      <p className="text-center text-muted-foreground py-4">No products found</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -137,44 +174,51 @@ export default function SalesCreatePage() {
 
             {/* Cart */}
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold">Cart ({cart.length})</h2>
-                <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-medium">
-                  <Download className="w-3.5 h-3.5" /> PDF
-                </button>
-              </div>
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+                <h2 className="font-bold text-lg mb-4">Cart ({cart.length} items)</h2>
 
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4">
-                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border mb-4" placeholder="Customer name (optional)" />
+                {cart.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Cart is empty</p>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
+                    {cart.map(item => (
+                      <div key={item.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex justify-between items-center">
+                        <div>
+                          <p className="font-bold">{item.name}</p>
+                          <p className="text-sm text-green-600">KSh {Number(item.price).toLocaleString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => updateQuantity(item.id, -1)} className="p-1 rounded-lg bg-neutral-200"><Minus className="w-3 h-3" /></button>
+                          <span className="font-bold w-8 text-center">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)} className="p-1 rounded-lg bg-neutral-200"><Plus className="w-3 h-3" /></button>
+                          <button onClick={() => removeFromCart(item.id)} className="text-red-500 ml-2"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                <div className="space-y-2 max-h-[300px] overflow-y-auto mb-4">
-                  {cart.map(item => (
-                    <div key={item.productId} className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800">
-                      <div>
-                        <p className="font-medium text-sm">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">KSh {item.price} x {item.quantity}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => updateQuantity(item.productId, -1)} className="w-7 h-7 rounded-lg bg-neutral-200 dark:bg-neutral-700">-</button>
-                        <span className="font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.productId, 1)} className="w-7 h-7 rounded-lg bg-neutral-200 dark:bg-neutral-700">+</button>
-                        <button onClick={() => removeFromCart(item.productId)} className="p-1 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                  ))}
-                  {cart.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm">Cart is empty</p>}
+                {/* Customer */}
+                <div className="mb-4">
+                  <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
+                  <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Walk-in customer" className={inputClass} />
                 </div>
 
-                <div className="flex justify-between items-center p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950 mb-4">
-                  <span className="font-bold">TOTAL</span>
-                  <span className="text-2xl font-extrabold text-indigo-600">KSh {total.toLocaleString()}</span>
+                {/* Total */}
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 mb-4">
+                  <div className="flex justify-between">
+                    <span className="font-bold">TOTAL</span>
+                    <span className="text-2xl font-bold text-blue-600">KSh {cartTotal.toLocaleString()}</span>
+                  </div>
                 </div>
 
-                <button onClick={handleSave} disabled={saving || cart.length === 0}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
-                  {saving ? 'Saving...' : 'Complete Sale'}
+                {error && <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm">{error}</div>}
+
+                <button onClick={handleSubmit} disabled={submitting || cart.length === 0}
+                  className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                  {submitting ? 'Processing...' : 'Complete Sale'}
                 </button>
               </div>
             </div>
