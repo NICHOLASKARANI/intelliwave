@@ -44,6 +44,7 @@ export default function AddProductPage() {
           sellingPrice: parseFloat(formData.sellingPrice) || 0,
           minStock: parseFloat(formData.minStock) || 0,
           maxStock: parseFloat(formData.maxStock) || 100,
+          initialStock: parseFloat(formData.initialStock) || 0,
         }),
       })
       const data = await res.json()
