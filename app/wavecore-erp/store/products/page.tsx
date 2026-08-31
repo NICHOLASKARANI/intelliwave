@@ -3,16 +3,14 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Search, Trash2, Loader2, Printer, Package, DollarSign, Tag, Box } from 'lucide-react'
+import { Plus, Search, Trash2, Loader2, Printer, Package, DollarSign } from 'lucide-react'
 
 interface Product {
   id: string
   name: string
   sku: string
-  price: number
   sellingPrice: number
-  quantity: number
-  stock: number
+  price: number
   stock_level: number
   category: string
   createdAt: string
@@ -64,8 +62,12 @@ export default function ProductsPage() {
     (p.sku || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const totalInventoryValue = products.reduce((sum, p) => sum + Number(p.price || 0) * Number(p.quantity || p.stock || 0), 0)
-  const lowStock = products.filter(p => Number(p.quantity || p.stock || 0) < 10)
+  const getPrice = (p: Product) => Number(p.sellingPrice || p.price || 0)
+  const getStock = (p: Product) => Number(p.stock_level || 0)
+  const getValue = (p: Product) => getPrice(p) * getStock(p)
+
+  const totalInventoryValue = products.reduce((sum, p) => sum + getValue(p), 0)
+  const lowStock = products.filter(p => getStock(p) < 10)
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -100,7 +102,7 @@ export default function ProductsPage() {
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search products by name or SKU..." />
+            className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search products..." />
         </div>
 
         {loading ? (
@@ -138,15 +140,15 @@ export default function ProductsPage() {
                       </span>
                     </td>
                     <td className="p-4 text-right font-bold text-orange-600">
-                      KSh {Number(product.price || 0).toLocaleString()}
+                      KSh {getPrice(product).toLocaleString()}
                     </td>
                     <td className="p-4 text-right">
-                      <span className={`font-bold ${Number(product.stock_level || product.quantity || 0) < 10 ? 'text-red-600' : 'text-green-600'}`}>
-                        {product.stock_level || product.quantity || 0}
+                      <span className={`font-bold ${getStock(product) < 10 ? 'text-red-600' : 'text-green-600'}`}>
+                        {getStock(product)}
                       </span>
                     </td>
-                    <td className="p-4 text-right text-sm text-muted-foreground">
-                      KSh {(Number(product.price || 0) * Number(product.stock_level || product.quantity || 0)).toLocaleString()}
+                    <td className="p-4 text-right font-bold text-emerald-600">
+                      KSh {getValue(product).toLocaleString()}
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
