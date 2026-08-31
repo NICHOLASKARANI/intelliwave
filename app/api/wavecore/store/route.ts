@@ -10,9 +10,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const products = await pool.query(
-      `SELECT p.*, 
-        COALESCE(sq."availableQty", sq.quantity, 0) as stock_level,
-        p."sellingPrice" as price
+      `SELECT p.*, COALESCE(sq."availableQty", sq.quantity, 0) as stock_level
        FROM "Product" p
        LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
        WHERE p."organizationId" = $1
@@ -20,10 +18,12 @@ export async function GET(request: NextRequest) {
       [session.organizationId]
     )
 
+    const totalValue = products.rows.reduce((sum, p) => sum + Number(p.sellingPrice || 0) * Number(p.stock_level || 0), 0)
+
     return NextResponse.json({
       products: products.rows,
       totalProducts: products.rows.length,
-      totalInventoryValue: products.rows.reduce((sum, p) => sum + Number(p.sellingPrice || 0) * Number(p.stock_level || 0), 0)
+      totalInventoryValue: totalValue
     })
   } catch (error) {
     console.error('Store GET error:', error)
@@ -38,13 +38,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const crypto = require('crypto')
-    const id = crypto.randomUUID()
+    const productId = crypto.randomUUID()
 
     const result = await pool.query(
       `INSERT INTO "Product" (id, name, sku, description, category, "costPrice", "sellingPrice", "minStock", "maxStock", "isActive", "organizationId", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, NOW(), NOW()) RETURNING *`,
       [
-        id,
+        productId,
         body.name,
         body.sku || null,
         body.description || null,
@@ -52,71 +52,39 @@ export async function POST(request: NextRequest) {
         body.costPrice || 0,
         body.sellingPrice || body.price || 0,
         body.minStock || 0,
-        body.maxStock || 100
+        body.maxStock || 100,
+        session.organizationId
       ]
     )
 
-    // Auto-create StockLocation if none exists
-    const locationResult = await pool.query(
-      `SELECT id FROM "StockLocation" LIMIT 1`,
-      []
-    )
-    
-    let locationId = null
-    if (locationResult.rows.length > 0) {
-      locationId = locationResult.rows[0].id
-    } else {
-      // Create a default StockLocation
-      const warehouseResult = await pool.query(`SELECT id FROM "Warehouse" LIMIT 1`, [])
-      if (warehouseResult.rows.length > 0) {
-        const newLocation = await pool.query(
-          `INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, $4, true, NOW(), NOW()) RETURNING id`,
-          [crypto.randomUUID(), 'Default Location', 'SL-DEFAULT', warehouseResult.rows[0].id]
+    // Auto-create stock
+    const initialStock = Number(body.initialStock || body.quantity || 0)
+    if (initialStock > 0) {
+      const locationResult = await pool.query(`SELECT id FROM "StockLocation" LIMIT 1`)
+      
+      let locationId = null
+      if (locationResult.rows.length > 0) {
+        locationId = locationResult.rows[0].id
+      } else {
+        const warehouseResult = await pool.query(`SELECT id FROM "Warehouse" LIMIT 1`)
+        if (warehouseResult.rows.length > 0) {
+          const newLocation = await pool.query(
+            `INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
+             VALUES ($1, 'Default Location', 'SL-DEFAULT', $2, true, NOW(), NOW()) RETURNING id`,
+            [crypto.randomUUID(), warehouseResult.rows[0].id]
+          )
+          locationId = newLocation.rows[0].id
+        }
+      }
+
+      if (locationId) {
+        await pool.query(
+          `INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+           VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())`,
+          [crypto.randomUUID(), initialStock, productId, locationId]
         )
-        locationId = newLocation.rows[0].id
       }
     }
-
-    // Auto-create StockQuantity for this product
-    if (locationId) {
-      const initialStock = body.initialStock || body.quantity || 0
-      await pool.query(
-        `INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
-         VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())`,
-        [crypto.randomUUID(), initialStock, id, locationId]
-      )
-    }
-
-    return NextResponse.json({ product: result.rows[0] }, { status: 201 })
-  } catch (error) {
-    console.error('Product create error:', error)
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
-  }
-}
-  try {
-    const session = await requireTenant(request)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const body = await request.json()
-    const crypto = require('crypto')
-    const id = crypto.randomUUID()
-
-    const result = await pool.query(
-      `INSERT INTO "Product" (id, name, sku, description, category, "costPrice", "sellingPrice", "minStock", "maxStock", "isActive", "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, NOW(), NOW()) RETURNING *`,
-      [
-        id,
-        body.name,
-        body.sku || null,
-        body.description || null,
-        body.category || 'General',
-        body.costPrice || 0,
-        body.sellingPrice || body.price || 0,
-        body.minStock || 0,
-        body.maxStock || 100
-      ]
-    )
 
     return NextResponse.json({ product: result.rows[0] }, { status: 201 })
   } catch (error) {
@@ -149,10 +117,9 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    // Delete related stock first
     await pool.query(`DELETE FROM "StockQuantity" WHERE "productId" = $1`, [id]).catch(() => {})
-
     await pool.query(`DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
