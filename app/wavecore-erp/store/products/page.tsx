@@ -139,12 +139,12 @@ export default function ProductsPage() {
                       KSh {Number(product.price || 0).toLocaleString()}
                     </td>
                     <td className="p-4 text-right">
-                      <span className={`font-bold ${Number(product.quantity || product.stock || 0) < 10 ? 'text-red-600' : 'text-green-600'}`}>
-                        {product.quantity || product.stock || 0}
+                      <span className={`font-bold ${Number(product.stock_level || product.quantity || 0) < 10 ? 'text-red-600' : 'text-green-600'}`}>
+                        {product.stock_level || product.quantity || 0}
                       </span>
                     </td>
                     <td className="p-4 text-right text-sm text-muted-foreground">
-                      KSh {(Number(product.price || 0) * Number(product.quantity || product.stock || 0)).toLocaleString()}
+                      KSh {(Number(product.price || 0) * Number(product.stock_level || product.quantity || 0)).toLocaleString()}
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
