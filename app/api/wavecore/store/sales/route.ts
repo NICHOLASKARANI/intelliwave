@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // Create sale record with correct columns
     const saleResult = await pool.query(
       `INSERT INTO "SalesOrder" (id, number, date, status, subtotal, "taxAmount", total, "customerId", "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, NOW(), 'COMPLETED', $3, 0, $4, $5, $6, NOW(), NOW()) RETURNING *`,
+       VALUES ($1, $2, NOW(), 'DELIVERED', $3, 0, $4, $5, $6, NOW(), NOW()) RETURNING *`,
       [saleId, saleNumber, total, total, customerId, session.organizationId]
     )
 
