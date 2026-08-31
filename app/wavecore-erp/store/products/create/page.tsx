@@ -8,7 +8,7 @@ import { ArrowLeft, Save, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function AddProductPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({ initialStock: 0,
     name: '', sku: '', barcode: '', description: '', category: '',
     unit: 'Unit', costPrice: '', sellingPrice: '', minStock: '0', maxStock: '100',
   })

@@ -56,6 +56,68 @@ export async function POST(request: NextRequest) {
       ]
     )
 
+    // Auto-create StockLocation if none exists
+    const locationResult = await pool.query(
+      `SELECT id FROM "StockLocation" LIMIT 1`,
+      []
+    )
+    
+    let locationId = null
+    if (locationResult.rows.length > 0) {
+      locationId = locationResult.rows[0].id
+    } else {
+      // Create a default StockLocation
+      const warehouseResult = await pool.query(`SELECT id FROM "Warehouse" LIMIT 1`, [])
+      if (warehouseResult.rows.length > 0) {
+        const newLocation = await pool.query(
+          `INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, true, NOW(), NOW()) RETURNING id`,
+          [crypto.randomUUID(), 'Default Location', 'SL-DEFAULT', warehouseResult.rows[0].id]
+        )
+        locationId = newLocation.rows[0].id
+      }
+    }
+
+    // Auto-create StockQuantity for this product
+    if (locationId) {
+      const initialStock = body.initialStock || body.quantity || 0
+      await pool.query(
+        `INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+         VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())`,
+        [crypto.randomUUID(), initialStock, id, locationId]
+      )
+    }
+
+    return NextResponse.json({ product: result.rows[0] }, { status: 201 })
+  } catch (error) {
+    console.error('Product create error:', error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+  }
+}
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await request.json()
+    const crypto = require('crypto')
+    const id = crypto.randomUUID()
+
+    const result = await pool.query(
+      `INSERT INTO "Product" (id, name, sku, description, category, "costPrice", "sellingPrice", "minStock", "maxStock", "isActive", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, NOW(), NOW()) RETURNING *`,
+      [
+        id,
+        body.name,
+        body.sku || null,
+        body.description || null,
+        body.category || 'General',
+        body.costPrice || 0,
+        body.sellingPrice || body.price || 0,
+        body.minStock || 0,
+        body.maxStock || 100
+      ]
+    )
+
     return NextResponse.json({ product: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Product create error:', error)
