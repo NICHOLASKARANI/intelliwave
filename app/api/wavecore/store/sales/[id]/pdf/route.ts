@@ -26,52 +26,26 @@ export async function GET(
 
     const sale = result.rows[0]
 
-    // Get sale items
+    // Get items using CORRECT columns (description, not productId)
     const itemsResult = await pool.query(
-      `SELECT si.*, p.name as "productName"
-       FROM "SalesOrderItem" si
-       LEFT JOIN "Product" p ON si."productId" = p.id
-       WHERE si."salesOrderId" = $1`,
+      `SELECT * FROM "SalesOrderItem" WHERE "salesOrderId" = $1`,
       [params.id]
     )
 
     const items = itemsResult.rows
 
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-<title>Sale ${sale.number}</title>
-<style>
-body{font-family:Arial;padding:40px;max-width:700px;margin:0 auto}
-.header{text-align:center;border-bottom:3px solid #2563eb;padding-bottom:20px;margin-bottom:30px}
-.company{font-size:24px;font-weight:bold;color:#2563eb}
-.doc-title{font-size:18px;font-weight:bold}
-.amount{text-align:center;font-size:32px;font-weight:bold;color:#16a34a;margin:20px 0}
-table{width:100%;border-collapse:collapse;margin-bottom:30px}
-th{background:#2563eb;color:white;padding:12px;text-align:left}
-td{padding:10px;border-bottom:1px solid #e5e7eb}
-.total-row{font-weight:bold;font-size:20px;color:#2563eb}
-.footer{margin-top:40px;text-align:center;font-size:12px;color:#6b7280}
-</style>
-</head>
-<body>
-<div class="header"><div class="company">IntelliWavve</div><div class="doc-title">SALES RECEIPT</div></div>
+    const html = `<!DOCTYPE html><html><head><title>Sale ${sale.number}</title>
+<style>body{font-family:Arial;padding:40px;max-width:700px;margin:0 auto}.header{text-align:center;border-bottom:3px solid #2563eb;padding-bottom:20px}.company{font-size:24px;font-weight:bold;color:#2563eb}.amount{text-align:center;font-size:32px;font-weight:bold;color:#16a34a;margin:20px 0}table{width:100%;border-collapse:collapse;margin-bottom:30px}th{background:#2563eb;color:white;padding:12px;text-align:left}td{padding:10px;border-bottom:1px solid #e5e7eb}.footer{margin-top:40px;text-align:center;font-size:12px;color:#6b7280}</style></head>
+<body><div class="header"><div class="company">IntelliWavve</div><div>SALES RECEIPT</div></div>
 <div class="amount">KSh ${Number(sale.total || 0).toLocaleString()}</div>
 <p><strong>Sale #:</strong> ${sale.number}</p>
 <p><strong>Customer:</strong> ${sale.customerName || 'Walk-in Customer'}</p>
 <p><strong>Date:</strong> ${new Date(sale.createdAt).toLocaleString('en-KE')}</p>
-<p><strong>Status:</strong> ${sale.status || 'DELIVERED'}</p>
-<table>
-<thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
-<tbody>
-${items.map(item => `<tr><td>${item.productName || 'N/A'}</td><td>${item.quantity}</td><td>KSh ${Number(item.unitPrice || 0).toLocaleString()}</td><td>KSh ${Number(item.total || 0).toLocaleString()}</td></tr>`).join('')}
-</tbody>
-</table>
-<p class="total-row">TOTAL: KSh ${Number(sale.total || 0).toLocaleString()}</p>
-<div class="footer">Generated: ${new Date().toLocaleString('en-KE')}<br>IntelliWavve ERP</div>
-<script>window.print();</script>
-</body>
-</html>`
+<table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+<tbody>${items.map(item => `<tr><td>${item.description || 'Item'}</td><td>${item.quantity}</td><td>KSh ${Number(item.unitPrice || 0).toLocaleString()}</td><td>KSh ${Number(item.total || 0).toLocaleString()}</td></tr>`).join('')}</tbody></table>
+<p style="font-weight:bold;font-size:20px;color:#2563eb">TOTAL: KSh ${Number(sale.total || 0).toLocaleString()}</p>
+<div class="footer">Generated: ${new Date().toLocaleString('en-KE')}</div>
+<script>window.print();</script></body></html>`
 
     return new NextResponse(html, {
       headers: {
@@ -81,6 +55,6 @@ ${items.map(item => `<tr><td>${item.productName || 'N/A'}</td><td>${item.quantit
     })
   } catch (error) {
     console.error('Sales PDF error:', error)
-    return NextResponse.json({ error: 'PDF failed' }, { status: 500 })
+    return NextResponse.json({ error: 'PDF failed: ' + (error as Error).message }, { status: 500 })
   }
 }
