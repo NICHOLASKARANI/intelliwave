@@ -110,22 +110,22 @@ export default function SalesPage() {
 
         {/* Stats Dashboard */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-center">
+          <button onClick={() => setSelectedMonth("ALL"); setSelectedYear("ALL")} className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-center w-full text-left">
             <DollarSign className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">KSh {totalSales.toLocaleString()}</p>
             <p className="text-xs opacity-80">Total Sales {selectedMonth !== 'ALL' ? `(${selectedMonth})` : ''}</p>
           </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white text-center">
+          <button onClick={() => { const today = new Date(); setSelectedMonth(months[today.getMonth() + 1]); setSelectedYear(String(today.getFullYear())); }} className="p-5 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white text-center w-full text-left">
             <TrendingUp className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">KSh {todaySales.toLocaleString()}</p>
             <p className="text-xs opacity-80">Today's Sales</p>
           </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 text-white text-center">
+          <button onClick={() => { const today = new Date(); setSelectedMonth(months[today.getMonth() + 1]); setSelectedYear(String(today.getFullYear())); }} className="p-5 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 text-white text-center w-full text-left">
             <Package className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{todayCount}</p>
             <p className="text-xs opacity-80">Today's Transactions</p>
           </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 text-white text-center">
+          <button onClick={() => setSelectedMonth("ALL"); setSelectedYear("ALL")} className="p-5 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 text-white text-center w-full text-left">
             <BarChart3 className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{filtered.length}</p>
             <p className="text-xs opacity-80">Filtered Sales</p>
