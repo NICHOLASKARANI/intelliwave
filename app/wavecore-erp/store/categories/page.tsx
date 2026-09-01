@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Loader2, Trash2, Tag, X, Search, Package, BarChart3, Layers, Tags, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { Plus, Loader2, Trash2, Tag, X, Search, Package, Printer, CheckCircle2, AlertTriangle, BarChart3, Layers, Tags } from 'lucide-react'
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([])
@@ -37,6 +37,7 @@ export default function CategoriesPage() {
   const createCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     if (!newCategory.trim()) {
       setError('Please enter a category name')
       return
@@ -47,6 +48,7 @@ export default function CategoriesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCategory.trim() })
       })
+      const data = await res.json()
       if (res.ok) {
         setNewCategory('')
         setShowForm(false)
@@ -54,7 +56,6 @@ export default function CategoriesPage() {
         setTimeout(() => setSuccess(''), 3000)
         fetchCategories()
       } else {
-        const data = await res.json()
         setError(data.error || 'Failed to create category')
       }
     } catch (err) {
@@ -62,20 +63,21 @@ export default function CategoriesPage() {
     }
   }
 
-  const deleteCategory = async (name: string) => {
-    if (!confirm(`Delete category "${name}"? This will remove it from all products.`)) return
-    setDeleting(name)
+  const deleteCategory = async (id: string, name: string) => {
+    if (!confirm(`Delete category "${name}"?`)) return
+    setDeleting(id)
     setError('')
+    setSuccess('')
     try {
-      const res = await fetch(`/api/wavecore/store/categories?name=${encodeURIComponent(name)}`, { 
+      const res = await fetch(`/api/wavecore/store/categories?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`, { 
         method: 'DELETE' 
       })
+      const data = await res.json()
       if (res.ok) {
-        setSuccess(`Category "${name}" deleted`)
+        setSuccess(`Category "${name}" deleted successfully`)
         setTimeout(() => setSuccess(''), 3000)
         fetchCategories()
       } else {
-        const data = await res.json()
         setError(data.error || 'Delete failed')
       }
     } catch (err) {
@@ -83,6 +85,14 @@ export default function CategoriesPage() {
     } finally {
       setDeleting('')
     }
+  }
+
+  const downloadPdf = (id: string) => {
+    if (!id) {
+      setError('Category ID missing')
+      return
+    }
+    window.open(`/api/wavecore/store/categories/${id}/pdf`, '_blank')
   }
 
   const filtered = categories.filter(c => 
@@ -177,6 +187,9 @@ export default function CategoriesPage() {
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
             <Tag className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-muted-foreground">No categories found</p>
+            <button onClick={() => setShowForm(true)} className="mt-4 px-4 py-2 rounded-xl bg-pink-600 text-white font-bold">
+              Create First Category
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -196,13 +209,21 @@ export default function CategoriesPage() {
                         <Package className="w-4 h-4" /> {cat.productCount || 0} products
                       </p>
                     </div>
-                    <button 
-                      onClick={() => deleteCategory(cat.name || cat.id)}
-                      disabled={deleting === (cat.name || cat.id)}
-                      className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
-                      title="Delete category">
-                      {deleting === (cat.name || cat.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => downloadPdf(cat.id)}
+                        className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        title="Download PDF">
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => deleteCategory(cat.id, cat.name)}
+                        disabled={deleting === cat.id}
+                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                        title="Delete category">
+                        {deleting === cat.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
