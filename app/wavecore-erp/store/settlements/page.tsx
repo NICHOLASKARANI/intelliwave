@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Wallet, Loader2, TrendingUp, DollarSign, CheckCircle, Clock, Printer, ArrowUpRight, BarChart3, Plus, Trash2, X } from 'lucide-react'
+import { Wallet, Loader2, CheckCircle, Clock, Printer, BarChart3, Plus, Trash2, X } from 'lucide-react'
 
 export default function SettlementsPage() {
   const [settlements, setSettlements] = useState<any[]>([])
@@ -46,7 +46,7 @@ export default function SettlementsPage() {
         fetchSettlements()
       }
     } catch (err) {
-      setError('Failed to create settlement')
+      setError('Failed to create')
     }
   }
 
@@ -66,6 +66,12 @@ export default function SettlementsPage() {
   const downloadPdf = (id: string) => {
     window.open(`/api/wavecore/store/settlements/${id}/pdf`, '_blank')
   }
+
+  const filtered = settlements.filter(s => {
+    if (activeView === 'settled') return s.status === 'COMPLETED' || s.status === 'PAID'
+    if (activeView === 'pending') return s.status === 'PENDING'
+    return true
+  })
 
   const totalSettled = settlements.filter(s => s.status === 'COMPLETED' || s.status === 'PAID').reduce((sum, s) => sum + Number(s.amount || 0), 0)
   const totalPending = settlements.filter(s => s.status === 'PENDING').reduce((sum, s) => sum + Number(s.amount || 0), 0)
@@ -95,7 +101,6 @@ export default function SettlementsPage() {
 
         {error && <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600">{error}</div>}
 
-        {/* Form */}
         {showForm && (
           <form onSubmit={createSettlement} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
@@ -114,48 +119,47 @@ export default function SettlementsPage() {
                 onChange={(e) => setFormData({...formData, customerName: e.target.value})}
                 className="px-4 py-2 rounded-xl border" />
             </div>
-            <button type="submit" className="mt-4 px-6 py-2 rounded-xl bg-purple-600 text-white font-bold">Create Settlement</button>
+            <button type="submit" className="mt-4 px-6 py-2 rounded-xl bg-purple-600 text-white font-bold">Create</button>
           </form>
         )}
 
-        {/* KPI Cards */}
+        {/* Clickable KPI Cards */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <button onClick={() => setActiveView("all")} className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 text-white text-center w-full">
+          <button onClick={() => setActiveView('all')}
+            className={`p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 text-white text-center ${activeView === 'all' ? 'ring-4 ring-purple-300' : ''}`}>
             <BarChart3 className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{settlements.length}</p>
             <p className="text-xs opacity-80">Total</p>
-          </div>
-          <button onClick={() => setActiveView("settled")} className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white text-center w-full">
+          </button>
+          <button onClick={() => setActiveView('settled')}
+            className={`p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white text-center ${activeView === 'settled' ? 'ring-4 ring-green-300' : ''}`}>
             <CheckCircle className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">KSh {totalSettled.toLocaleString()}</p>
             <p className="text-xs opacity-80">Settled</p>
-          </div>
-          <button onClick={() => setActiveView("pending")} className="p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-600 text-white text-center w-full">
+          </button>
+          <button onClick={() => setActiveView('pending')}
+            className={`p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-600 text-white text-center ${activeView === 'pending' ? 'ring-4 ring-yellow-300' : ''}`}>
             <Clock className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">KSh {totalPending.toLocaleString()}</p>
             <p className="text-xs opacity-80">Pending</p>
-          </div>
+          </button>
         </div>
 
         {loading ? (
           <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
-        ) : settlements.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
             <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-muted-foreground">No settlements yet</p>
+            <p className="text-muted-foreground">No settlements</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {settlements.filter(s => {
-              if (activeView === 'settled') return s.status === 'COMPLETED' || s.status === 'PAID'
-              if (activeView === 'pending') return s.status === 'PENDING'
-              return true
-            }).map(s => (
+            {filtered.map(s => (
               <div key={s.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
                   <p className="font-mono font-bold">{s.number}</p>
                   <p className="text-sm text-muted-foreground">{s.customerName || 'N/A'} | {s.method}</p>
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${s.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${s.status === 'COMPLETED' || s.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                     {s.status}
                   </span>
                 </div>
