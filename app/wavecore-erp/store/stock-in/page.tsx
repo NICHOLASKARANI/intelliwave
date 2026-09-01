@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Package, Plus, Download, Loader2, ArrowDown, Search, Printer, CheckCircle } from 'lucide-react'
+import { Plus, Loader2, ArrowDown, Search, Printer, CheckCircle, Package } from 'lucide-react'
 
 export default function StockInPage() {
   const [products, setProducts] = useState<any[]>([])
@@ -19,7 +19,7 @@ export default function StockInPage() {
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/store/stock-in')
+      const res = await fetch('/api/wavecore/store')
       const data = await res.json()
       setProducts(data.products || [])
     } catch (err) {
@@ -53,7 +53,8 @@ export default function StockInPage() {
       })
 
       if (res.ok) {
-        setSuccess(`Stock added successfully! +${quantity} units`)
+        const data = await res.json()
+        setSuccess(`Stock added! +${quantity} units (${data.mode === 'UPDATED' ? 'Updated' : 'Created'})`)
         setSelectedProduct('')
         setQuantity('')
         setShowForm(false)
@@ -70,8 +71,9 @@ export default function StockInPage() {
     }
   }
 
-  const downloadPdf = (product: any) => {
-    window.open(`/api/wavecore/store/${product.id}/pdf`, '_blank')
+  const downloadPdf = (id: string) => {
+    if (!id) return
+    window.open(`/api/wavecore/store/${id}/pdf`, '_blank')
   }
 
   const filtered = products.filter(p => (p.name || '').toLowerCase().includes(search.toLowerCase()))
@@ -91,7 +93,7 @@ export default function StockInPage() {
       <main className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ArrowDown className="w-6 h-6 text-green-500" /> Stock In
+            <ArrowDown className="w-6 h-6 text-green-500" /> Stock In ({products.length})
           </h1>
           <button onClick={() => setShowForm(!showForm)}
             className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2">
@@ -104,7 +106,7 @@ export default function StockInPage() {
 
         {showForm && (
           <form onSubmit={handleStockIn} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <h2 className="font-bold text-lg mb-4">Add Stock In</h2>
+            <h2 className="font-bold text-lg mb-4">Add Stock</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Product</label>
@@ -112,7 +114,7 @@ export default function StockInPage() {
                   className="w-full px-4 py-2.5 rounded-xl border">
                   <option value="">Select product...</option>
                   {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_level || 0})</option>
+                    <option key={p.id} value={p.id}>{p.name} (Current: {p.stock_level || 0})</option>
                   ))}
                 </select>
               </div>
@@ -138,6 +140,11 @@ export default function StockInPage() {
 
         {loading ? (
           <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
+            <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-muted-foreground">No products</p>
+          </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
             <table className="w-full">
@@ -145,26 +152,29 @@ export default function StockInPage() {
                 <tr>
                   <th className="text-left p-4 text-sm">Product</th>
                   <th className="text-left p-4 text-sm">SKU</th>
-                  <th className="text-right p-4 text-sm">Price</th>
-                  <th className="text-right p-4 text-sm">Current Stock</th>
-                  <th className="text-left p-4 text-sm">Actions</th>
+                  <th className="text-right p-4 text-sm">Selling Price</th>
+                  <th className="text-right p-4 text-sm">Stock</th>
+                  <th className="text-left p-4 text-sm">PDF</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(product => (
-                  <tr key={product.id} className="border-t hover:bg-neutral-50">
-                    <td className="p-4 font-bold">{product.name}</td>
-                    <td className="p-4 text-sm">{product.sku || 'N/A'}</td>
-                    <td className="p-4 text-right">KSh {Number(product.sellingPrice || 0).toLocaleString()}</td>
-                    <td className="p-4 text-right font-bold text-green-600">{product.stock_level || 0}</td>
-                    <td className="p-4">
-                      <button onClick={() => downloadPdf(product.id)} title="PDF"
-                        className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
-                        <Printer className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((product) => {
+                  const pid = product.id || ''
+                  return (
+                    <tr key={pid} className="border-t hover:bg-neutral-50">
+                      <td className="p-4 font-bold">{product.name || 'N/A'}</td>
+                      <td className="p-4 text-sm">{product.sku || 'N/A'}</td>
+                      <td className="p-4 text-right">KSh {Number(product.sellingPrice || 0).toLocaleString()}</td>
+                      <td className="p-4 text-right font-bold text-green-600">{product.stock_level || 0}</td>
+                      <td className="p-4">
+                        <button onClick={() => downloadPdf(pid)} title="PDF"
+                          className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
+                          <Printer className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
