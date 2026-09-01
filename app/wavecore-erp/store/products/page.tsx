@@ -32,7 +32,7 @@ export default function ProductsPage() {
     try {
       const res = await fetch('/api/wavecore/store')
       const data = await res.json()
-      setProducts(data.products || [])
+      console.log('API products:', data.products); setProducts(data.products || [])
     } catch (err) {
       setError('Failed to load products')
     } finally {
