@@ -8,6 +8,8 @@ import { Wallet, Loader2, TrendingUp, DollarSign, CheckCircle, Clock, Printer, A
 interface Settlement {
   id: string
   number: string
+  receiptNumber: string
+  customerName: string
   amount: number
   status: string
   method: string
