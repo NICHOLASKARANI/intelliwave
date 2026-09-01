@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
@@ -10,24 +10,16 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT c.*, 
-        (SELECT COUNT(*) FROM "Product" p WHERE p.category = c.name) as "productCount"
-       FROM "Category" c
-       WHERE c."organizationId" = $1 OR c."organizationId" IS NULL
-       ORDER BY c.name ASC`,
-      [session.organizationId]
-    )
-
-    return NextResponse.json({ categories: result.rows })
-  } catch (error) {
-    // Fallback: get distinct categories from Product table
-    const result = await pool.query(
       `SELECT DISTINCT category as name, category, COUNT(*) as "productCount"
        FROM "Product" WHERE "organizationId" = $1 AND category IS NOT NULL
        GROUP BY category ORDER BY category ASC`,
       [session.organizationId]
     )
+
     return NextResponse.json({ categories: result.rows })
+  } catch (error) {
+    // If the above query fails for any reason, just return an empty list
+    return NextResponse.json({ categories: [] })
   }
 }
 
@@ -40,12 +32,12 @@ export async function POST(request: NextRequest) {
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
+    // Attempt to insert into Category table. If it fails, just return the new category object.
     const result = await pool.query(
       `INSERT INTO "Category" (id, name, "organizationId", "createdAt")
        VALUES ($1, $2, $3, NOW()) RETURNING *`,
       [id, body.name, session.organizationId]
-    ).catch(async () => {
-      // If Category table doesn't exist, just return success
+    ).catch(() => {
       return { rows: [{ id, name: body.name, productCount: 0 }] }
     })
 
