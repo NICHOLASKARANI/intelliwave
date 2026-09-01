@@ -11,6 +11,7 @@ export default function SettlementsPage() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
+  const [activeView, setActiveView] = useState('all')
   const [formData, setFormData] = useState({ amount: '', method: 'MPESA', customerName: '' })
 
   const fetchSettlements = async () => {
@@ -119,17 +120,17 @@ export default function SettlementsPage() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 text-white text-center">
+          <button onClick={() => setActiveView("all")} className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 text-white text-center w-full">
             <BarChart3 className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{settlements.length}</p>
             <p className="text-xs opacity-80">Total</p>
           </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white text-center">
+          <button onClick={() => setActiveView("settled")} className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white text-center w-full">
             <CheckCircle className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">KSh {totalSettled.toLocaleString()}</p>
             <p className="text-xs opacity-80">Settled</p>
           </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-600 text-white text-center">
+          <button onClick={() => setActiveView("pending")} className="p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-600 text-white text-center w-full">
             <Clock className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">KSh {totalPending.toLocaleString()}</p>
             <p className="text-xs opacity-80">Pending</p>
@@ -145,7 +146,11 @@ export default function SettlementsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {settlements.map(s => (
+            {settlements.filter(s => {
+              if (activeView === 'settled') return s.status === 'COMPLETED' || s.status === 'PAID'
+              if (activeView === 'pending') return s.status === 'PENDING'
+              return true
+            }).map(s => (
               <div key={s.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
                   <p className="font-mono font-bold">{s.number}</p>
