@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Loader2, ArrowDown, Search, Printer, CheckCircle, Package } from 'lucide-react'
+import { Plus, Loader2, ArrowDown, Search, Printer, CheckCircle, Package, Trash2 } from 'lucide-react'
 
 export default function StockInPage() {
   const [products, setProducts] = useState<any[]>([])
@@ -15,6 +15,7 @@ export default function StockInPage() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const [deleting, setDeleting] = useState('')
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -54,7 +55,7 @@ export default function StockInPage() {
 
       if (res.ok) {
         const data = await res.json()
-        setSuccess(`Stock added! +${quantity} units (${data.mode === 'UPDATED' ? 'Updated' : 'Created'})`)
+        setSuccess(`Stock added! +${quantity} units`)
         setSelectedProduct('')
         setQuantity('')
         setShowForm(false)
@@ -68,6 +69,19 @@ export default function StockInPage() {
       setError('Network error')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const deleteProduct = async (id: string) => {
+    if (!confirm('Delete this product?')) return
+    setDeleting(id)
+    try {
+      const res = await fetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' })
+      if (res.ok) fetchProducts()
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
     }
   }
 
@@ -119,7 +133,7 @@ export default function StockInPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Quantity to Add</label>
+                <label className="text-sm font-medium mb-2 block">Quantity</label>
                 <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)}
                   placeholder="e.g. 10" className="w-full px-4 py-2.5 rounded-xl border" min="1" />
               </div>
@@ -146,37 +160,27 @@ export default function StockInPage() {
             <p className="text-muted-foreground">No products</p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-neutral-50 dark:bg-neutral-800">
-                <tr>
-                  <th className="text-left p-4 text-sm">Product</th>
-                  <th className="text-left p-4 text-sm">SKU</th>
-                  <th className="text-right p-4 text-sm">Selling Price</th>
-                  <th className="text-right p-4 text-sm">Stock</th>
-                  <th className="text-left p-4 text-sm">PDF</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((product) => {
-                  const pid = product.id || ''
-                  return (
-                    <tr key={pid} className="border-t hover:bg-neutral-50">
-                      <td className="p-4 font-bold">{product.name || 'N/A'}</td>
-                      <td className="p-4 text-sm">{product.sku || 'N/A'}</td>
-                      <td className="p-4 text-right">KSh {Number(product.sellingPrice || 0).toLocaleString()}</td>
-                      <td className="p-4 text-right font-bold text-green-600">{product.stock_level || 0}</td>
-                      <td className="p-4">
-                        <button onClick={() => downloadPdf(pid)} title="PDF"
-                          className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
-                          <Printer className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {filtered.map((product) => {
+              const pid = product.id || ''
+              return (
+                <div key={pid} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
+                  <div>
+                    <p className="font-bold">{product.name}</p>
+                    <p className="text-sm text-muted-foreground">{product.sku || 'N/A'}</p>
+                    <p className="text-green-600 font-bold">Stock: {product.stock_level || 0}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => downloadPdf(pid)} className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                      <Printer className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteProduct(pid)} className="p-2 rounded-lg bg-red-50 text-red-600">
+                      {deleting === pid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </main>
