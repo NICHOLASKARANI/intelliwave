@@ -7,7 +7,8 @@ import {
   Loader2, Search, Package, Printer, CheckCircle2, AlertTriangle, 
   Warehouse, MapPin, Boxes, DollarSign, TrendingUp, TrendingDown,
   BarChart3, Layers, ArrowRight, Activity, Box, Tags, Scan, Truck,
-  ClipboardList, RefreshCw, ArrowLeftRight, Plus, Trash2, X, Edit
+  ClipboardList, RefreshCw, ArrowLeftRight, Plus, Trash2, X, Edit,
+  ArrowDown, ArrowUp, MoveRight
 } from 'lucide-react'
 
 export default function InventoryPage() {
@@ -18,33 +19,30 @@ export default function InventoryPage() {
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [activeView, setActiveView] = useState('all')
-  const [showForm, setShowForm] = useState(false)
+  const [showProductForm, setShowProductForm] = useState(false)
+  const [showWarehouseForm, setShowWarehouseForm] = useState(false)
+  const [showStockForm, setShowStockForm] = useState(false)
   const [deleting, setDeleting] = useState('')
-  const [formData, setFormData] = useState({
-    name: '',
-    sku: '',
-    category: '',
-    costPrice: '',
-    sellingPrice: '',
-    minStock: '',
-    maxStock: '',
-    unit: 'pcs',
-    isTracked: true,
-    trackSerial: false,
-    trackBatch: false
+  const [productForm, setProductForm] = useState({
+    name: '', sku: '', category: '', costPrice: '', sellingPrice: '',
+    minStock: '', maxStock: '', unit: 'pcs', isTracked: true, trackSerial: false, trackBatch: false
   })
+  const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', address: '' })
+  const [stockForm, setStockForm] = useState({ productId: '', quantity: '', movementType: 'IN', toLocation: '' })
 
   const fetchInventory = async () => {
     setLoading(true)
     setError('')
     try {
-      const [summaryRes, productsRes] = await Promise.all([
+      const [summaryRes, productsRes, warehousesRes] = await Promise.all([
         fetch('/api/wavecore/inventory/summary'),
-        fetch('/api/wavecore/inventory/products')
+        fetch('/api/wavecore/inventory/products'),
+        fetch('/api/wavecore/inventory/warehouse-management')
       ])
       const summaryData = await summaryRes.json()
       const productsData = await productsRes.json()
-      setData(summaryData)
+      const warehousesData = await warehousesRes.json()
+      setData({ ...summaryData, warehouses: warehousesData.warehouses || summaryData.warehouses || [] })
       setProducts(productsData.products || [])
     } catch (err) {
       setError('Failed to load inventory data')
@@ -61,77 +59,88 @@ export default function InventoryPage() {
     e.preventDefault()
     setError('')
     setSuccess('')
-    
-    if (!formData.name || !formData.sellingPrice) {
+    if (!productForm.name || !productForm.sellingPrice) {
       setError('Product name and selling price are required')
       return
     }
-
     try {
       const res = await fetch('/api/wavecore/inventory/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          costPrice: Number(formData.costPrice || 0),
-          sellingPrice: Number(formData.sellingPrice || 0),
-          minStock: Number(formData.minStock || 0),
-          maxStock: Number(formData.maxStock || 0)
-        })
+        body: JSON.stringify({ ...productForm, costPrice: Number(productForm.costPrice || 0), sellingPrice: Number(productForm.sellingPrice || 0), minStock: Number(productForm.minStock || 0), maxStock: Number(productForm.maxStock || 0) })
       })
-      const result = await res.json()
       if (res.ok) {
-        setSuccess('Product created successfully!')
-        setTimeout(() => setSuccess(''), 3000)
-        setFormData({
-          name: '',
-          sku: '',
-          category: '',
-          costPrice: '',
-          sellingPrice: '',
-          minStock: '',
-          maxStock: '',
-          unit: 'pcs',
-          isTracked: true,
-          trackSerial: false,
-          trackBatch: false
-        })
-        setShowForm(false)
+        setSuccess('Product created!')
+        setProductForm({ name: '', sku: '', category: '', costPrice: '', sellingPrice: '', minStock: '', maxStock: '', unit: 'pcs', isTracked: true, trackSerial: false, trackBatch: false })
+        setShowProductForm(false)
         fetchInventory()
-      } else {
-        setError(result.error || 'Failed to create product')
       }
-    } catch (err) {
-      setError('Network error - failed to create')
-    }
+    } catch (err) { setError('Failed to create product') }
+  }
+
+  const createWarehouse = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!warehouseForm.name) { setError('Warehouse name required'); return }
+    try {
+      const res = await fetch('/api/wavecore/inventory/warehouse-management', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(warehouseForm)
+      })
+      if (res.ok) {
+        setSuccess('Warehouse created!')
+        setWarehouseForm({ name: '', code: '', address: '' })
+        setShowWarehouseForm(false)
+        fetchInventory()
+      }
+    } catch (err) { setError('Failed to create warehouse') }
+  }
+
+  const createStockMovement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!stockForm.productId || !stockForm.quantity) { setError('Product and quantity required'); return }
+    try {
+      const res = await fetch('/api/wavecore/inventory/movements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...stockForm, quantity: Number(stockForm.quantity) })
+      })
+      if (res.ok) {
+        setSuccess('Stock movement recorded!')
+        setStockForm({ productId: '', quantity: '', movementType: 'IN', toLocation: '' })
+        setShowStockForm(false)
+        fetchInventory()
+      }
+    } catch (err) { setError('Failed to record movement') }
   }
 
   const deleteProduct = async (id: string, name: string) => {
-    if (!confirm(`Delete product "${name}"?`)) return
+    if (!confirm(`Delete "${name}"?`)) return
     setDeleting(id)
-    setError('')
-    setSuccess('')
     try {
-      const res = await fetch(`/api/wavecore/inventory/products?id=${encodeURIComponent(id)}`, { 
-        method: 'DELETE' 
-      })
-      const result = await res.json()
-      if (res.ok) {
-        setSuccess(`Product "${name}" deleted successfully`)
-        setTimeout(() => setSuccess(''), 3000)
-        fetchInventory()
-      } else {
-        setError(result.error || 'Delete failed')
-      }
-    } catch (err) {
-      setError('Network error - delete failed')
-    } finally {
-      setDeleting('')
-    }
+      await fetch(`/api/wavecore/inventory/products?id=${id}`, { method: 'DELETE' })
+      setSuccess('Product deleted!')
+      fetchInventory()
+    } catch (err) { setError('Delete failed') }
+    finally { setDeleting('') }
+  }
+
+  const deleteWarehouse = async (id: string, name: string) => {
+    if (!confirm(`Delete warehouse "${name}"?`)) return
+    setDeleting(id)
+    try {
+      await fetch(`/api/wavecore/inventory/warehouse-management?id=${id}`, { method: 'DELETE' })
+      setSuccess('Warehouse deleted!')
+      fetchInventory()
+    } catch (err) { setError('Delete failed') }
+    finally { setDeleting('') }
   }
 
   const downloadPdf = (id: string) => {
-    if (!id) return
     window.open(`/api/wavecore/inventory/products/${id}/pdf`, '_blank')
   }
 
@@ -141,10 +150,20 @@ export default function InventoryPage() {
     (p.category || '').toLowerCase().includes(search.toLowerCase())
   )
 
+  // Apply KPI filters
+  const displayedProducts = filtered.filter(p => {
+    const stockLevel = Number(p.stock_level || p.currentStock || 0)
+    const sellingPrice = Number(p.sellingPrice || p.price || 0)
+    const stockValue = stockLevel * sellingPrice
+    if (activeView === 'value') return stockValue > 0
+    if (activeView === 'low') return stockLevel < Number(p.minStock || 10)
+    if (activeView === 'warehouses') return false // warehouses view shows warehouses, not products
+    return true
+  })
+
   const stats = data?.stats || {}
-  const lowStockProducts = data?.lowStockProducts || []
-  const recentMovements = data?.recentMovements || []
   const warehouses = data?.warehouses || []
+  const recentMovements = data?.recentMovements || []
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -154,7 +173,7 @@ export default function InventoryPage() {
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Inventory</span>
+          <span className="text-sm">Inventory Management</span>
         </div>
       </header>
 
@@ -166,14 +185,18 @@ export default function InventoryPage() {
             </h1>
             <p className="text-sm text-muted-foreground mt-1">Manage products, stock, and warehouses</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 hover:bg-indigo-700 transition-colors">
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowProductForm(!showProductForm)}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 hover:bg-indigo-700">
               <Plus className="w-4 h-4" /> Add Product
             </button>
-            <button onClick={fetchInventory}
-              className="px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-900 border font-bold flex items-center gap-2 hover:bg-neutral-100 transition-colors">
-              <RefreshCw className="w-4 h-4" /> Refresh
+            <button onClick={() => setShowWarehouseForm(!showWarehouseForm)}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2 hover:bg-purple-700">
+              <Warehouse className="w-4 h-4" /> Add Warehouse
+            </button>
+            <button onClick={() => setShowStockForm(!showStockForm)}
+              className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 hover:bg-green-700">
+              <ArrowLeftRight className="w-4 h-4" /> Stock Movement
             </button>
           </div>
         </div>
@@ -181,151 +204,117 @@ export default function InventoryPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600 border border-red-200">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-50 text-green-600 border border-green-200 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
-        {/* ADD PRODUCT FORM */}
-        {showForm && (
-          <form onSubmit={createProduct} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-lg flex items-center gap-2"><Plus className="w-5 h-5 text-indigo-500" /> New Product</h2>
-              <button type="button" onClick={() => setShowForm(false)} className="text-red-500 hover:bg-red-50 p-1 rounded-lg"><X className="w-5 h-5" /></button>
-            </div>
+        {/* FORMS */}
+        {showProductForm && (
+          <form onSubmit={createProduct} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2"><Package className="w-5 h-5 text-indigo-500" /> New Product</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Product Name *</label>
-                <input type="text" value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Product name" 
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">SKU</label>
-                <input type="text" value={formData.sku}
-                  onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                  placeholder="SKU code"
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Category</label>
-                <input type="text" value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  placeholder="Category"
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Cost Price</label>
-                <input type="number" value={formData.costPrice}
-                  onChange={(e) => setFormData({...formData, costPrice: e.target.value})}
-                  placeholder="0.00" step="0.01"
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Selling Price *</label>
-                <input type="number" value={formData.sellingPrice}
-                  onChange={(e) => setFormData({...formData, sellingPrice: e.target.value})}
-                  placeholder="0.00" step="0.01"
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Unit</label>
-                <select value={formData.unit}
-                  onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="pcs">Pieces (pcs)</option>
-                  <option value="kg">Kilograms (kg)</option>
-                  <option value="g">Grams (g)</option>
-                  <option value="l">Liters (l)</option>
-                  <option value="ml">Milliliters (ml)</option>
-                  <option value="box">Box</option>
-                  <option value="carton">Carton</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Min Stock</label>
-                <input type="number" value={formData.minStock}
-                  onChange={(e) => setFormData({...formData, minStock: e.target.value})}
-                  placeholder="10"
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Max Stock</label>
-                <input type="number" value={formData.maxStock}
-                  onChange={(e) => setFormData({...formData, maxStock: e.target.value})}
-                  placeholder="100"
-                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div className="flex items-end gap-4 pb-2">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={formData.isTracked}
-                    onChange={(e) => setFormData({...formData, isTracked: e.target.checked})}
-                    className="rounded" />
-                  <span className="text-sm">Track Stock</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={formData.trackSerial}
-                    onChange={(e) => setFormData({...formData, trackSerial: e.target.checked})}
-                    className="rounded" />
-                  <span className="text-sm">Track Serial</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={formData.trackBatch}
-                    onChange={(e) => setFormData({...formData, trackBatch: e.target.checked})}
-                    className="rounded" />
-                  <span className="text-sm">Track Batch</span>
-                </label>
-              </div>
+              <input type="text" placeholder="Product Name *" value={productForm.name} onChange={(e) => setProductForm({...productForm, name: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="text" placeholder="SKU" value={productForm.sku} onChange={(e) => setProductForm({...productForm, sku: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="text" placeholder="Category" value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="number" placeholder="Cost Price" value={productForm.costPrice} onChange={(e) => setProductForm({...productForm, costPrice: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="number" placeholder="Selling Price *" value={productForm.sellingPrice} onChange={(e) => setProductForm({...productForm, sellingPrice: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="number" placeholder="Min Stock" value={productForm.minStock} onChange={(e) => setProductForm({...productForm, minStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="number" placeholder="Max Stock" value={productForm.maxStock} onChange={(e) => setProductForm({...productForm, maxStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <select value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} className="px-4 py-2.5 rounded-xl border">
+                <option value="pcs">Pieces</option><option value="kg">Kilograms</option><option value="l">Liters</option><option value="box">Box</option>
+              </select>
             </div>
-            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors">
-              Create Product
-            </button>
+            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold">Create Product</button>
+          </form>
+        )}
+
+        {showWarehouseForm && (
+          <form onSubmit={createWarehouse} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2"><Warehouse className="w-5 h-5 text-purple-500" /> New Warehouse</h2>
+            <div className="grid grid-cols-3 gap-4">
+              <input type="text" placeholder="Warehouse Name *" value={warehouseForm.name} onChange={(e) => setWarehouseForm({...warehouseForm, name: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="text" placeholder="Code" value={warehouseForm.code} onChange={(e) => setWarehouseForm({...warehouseForm, code: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="text" placeholder="Address" value={warehouseForm.address} onChange={(e) => setWarehouseForm({...warehouseForm, address: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+            </div>
+            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-purple-600 text-white font-bold">Create Warehouse</button>
+          </form>
+        )}
+
+        {showStockForm && (
+          <form onSubmit={createStockMovement} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2"><ArrowLeftRight className="w-5 h-5 text-green-500" /> Stock Movement</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <select value={stockForm.productId} onChange={(e) => setStockForm({...stockForm, productId: e.target.value})} className="px-4 py-2.5 rounded-xl border">
+                <option value="">Select Product...</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <input type="number" placeholder="Quantity" value={stockForm.quantity} onChange={(e) => setStockForm({...stockForm, quantity: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <select value={stockForm.movementType} onChange={(e) => setStockForm({...stockForm, movementType: e.target.value})} className="px-4 py-2.5 rounded-xl border">
+                <option value="IN">Stock In</option><option value="OUT">Stock Out</option><option value="TRANSFER">Transfer</option>
+              </select>
+              <input type="text" placeholder="To Location" value={stockForm.toLocation} onChange={(e) => setStockForm({...stockForm, toLocation: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+            </div>
+            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold">Record Movement</button>
           </form>
         )}
 
         {/* CLICKABLE KPI CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <button onClick={() => setActiveView('all')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'all' ? 'ring-4 ring-indigo-300' : ''}`}
+            className={`p-5 rounded-2xl text-white text-center ${activeView === 'all' ? 'ring-4 ring-indigo-300' : ''}`}
             style={{ background: 'linear-gradient(135deg, #4f46e5, #4338ca)' }}>
             <Package className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{products.length}</p>
             <p className="text-xs opacity-80">Products</p>
           </button>
           <button onClick={() => setActiveView('value')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'value' ? 'ring-4 ring-green-300' : ''}`}
+            className={`p-5 rounded-2xl text-white text-center ${activeView === 'value' ? 'ring-4 ring-green-300' : ''}`}
             style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}>
             <DollarSign className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">KSh {(stats.totalSellingValue || 0).toLocaleString()}</p>
             <p className="text-xs opacity-80">Stock Value</p>
           </button>
           <button onClick={() => setActiveView('low')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'low' ? 'ring-4 ring-red-300' : ''}`}
+            className={`p-5 rounded-2xl text-white text-center ${activeView === 'low' ? 'ring-4 ring-red-300' : ''}`}
             style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}>
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{stats.lowStockCount || 0}</p>
             <p className="text-xs opacity-80">Low Stock</p>
           </button>
           <button onClick={() => setActiveView('warehouses')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'warehouses' ? 'ring-4 ring-purple-300' : ''}`}
+            className={`p-5 rounded-2xl text-white text-center ${activeView === 'warehouses' ? 'ring-4 ring-purple-300' : ''}`}
             style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
             <Warehouse className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{stats.totalWarehouses || 0}</p>
+            <p className="text-2xl font-bold">{warehouses.length}</p>
             <p className="text-xs opacity-80">Warehouses</p>
           </button>
         </div>
 
+        {/* SEARCH */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2.5 rounded-xl border w-full focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search products..." />
+            className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search..." />
         </div>
 
-        {loading ? (
-          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin mx-auto text-indigo-500" /></div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-muted-foreground">No products found</p>
-            <button onClick={() => setShowForm(true)} className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold">
-              Add Product
-            </button>
+        {/* CONTENT BASED ON ACTIVE VIEW */}
+        {activeView === 'warehouses' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {warehouses.map((wh: any) => (
+              <div key={wh.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold">{wh.name}</p>
+                    <p className="text-xs text-muted-foreground">{wh.code}</p>
+                  </div>
+                  <button onClick={() => deleteWarehouse(wh.id, wh.name)} className="p-2 rounded-lg bg-red-50 text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">{wh.address || 'No address'}</p>
+                <div className="flex gap-4 mt-3 text-sm">
+                  <span>Locations: <b>{wh.locationCount || 0}</b></span>
+                  <span>Stock: <b>{wh.totalStock || 0}</b></span>
+                </div>
+              </div>
+            ))}
+            {warehouses.length === 0 && <p className="col-span-full text-center py-8 text-muted-foreground">No warehouses</p>}
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
@@ -343,49 +332,24 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((product: any) => {
+                {displayedProducts.map((product: any) => {
                   const stockLevel = Number(product.stock_level || product.currentStock || 0)
                   const sellingPrice = Number(product.sellingPrice || product.price || 0)
                   const costPrice = Number(product.costPrice || 0)
                   const stockValue = stockLevel * sellingPrice
                   return (
-                    <tr key={product.id} className="border-t hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
-                      <td className="p-4">
-                        <p className="font-bold">{product.name || 'N/A'}</p>
-                        {product.isTracked && (
-                          <span className="text-xs text-indigo-500 flex items-center gap-1 mt-1">
-                            <Scan className="w-3 h-3" /> Tracked
-                          </span>
-                        )}
-                      </td>
+                    <tr key={product.id} className="border-t hover:bg-neutral-50">
+                      <td className="p-4 font-bold">{product.name || 'N/A'}</td>
                       <td className="p-4 font-mono text-sm">{product.sku || 'N/A'}</td>
-                      <td className="p-4">
-                        <span className="px-2 py-1 rounded-full text-xs bg-indigo-50 text-indigo-600">{product.category || 'Uncategorized'}</span>
-                      </td>
+                      <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-indigo-50 text-indigo-600">{product.category || 'Uncategorized'}</span></td>
                       <td className="p-4 text-right">KSh {costPrice.toLocaleString()}</td>
                       <td className="p-4 text-right font-bold">KSh {sellingPrice.toLocaleString()}</td>
-                      <td className="p-4 text-right">
-                        <span className={`font-bold ${
-                          stockLevel === 0 ? 'text-red-600' :
-                          stockLevel < Number(product.minStock || 10) ? 'text-yellow-600' : 'text-green-600'
-                        }`}>
-                          {stockLevel}
-                        </span>
-                      </td>
+                      <td className="p-4 text-right"><span className={`font-bold ${stockLevel === 0 ? 'text-red-600' : stockLevel < Number(product.minStock || 10) ? 'text-yellow-600' : 'text-green-600'}`}>{stockLevel}</span></td>
                       <td className="p-4 text-right font-bold text-indigo-600">KSh {stockValue.toLocaleString()}</td>
                       <td className="p-4">
                         <div className="flex gap-2 justify-center">
-                          <button onClick={() => downloadPdf(product.id)} 
-                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                            title="Download PDF">
-                            <Printer className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => deleteProduct(product.id, product.name)}
-                            disabled={deleting === product.id}
-                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
-                            title="Delete product">
-                            {deleting === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                          </button>
+                          <button onClick={() => downloadPdf(product.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600"><Printer className="w-4 h-4" /></button>
+                          <button onClick={() => deleteProduct(product.id, product.name)} className="p-2 rounded-lg bg-red-50 text-red-600">{deleting === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button>
                         </div>
                       </td>
                     </tr>
