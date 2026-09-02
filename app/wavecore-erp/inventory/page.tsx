@@ -7,18 +7,23 @@ import {
   Loader2, Search, Package, Printer, CheckCircle2, AlertTriangle, 
   Warehouse, MapPin, Boxes, DollarSign, TrendingUp, TrendingDown,
   BarChart3, Layers, ArrowRight, Activity, Box, Tags, Scan, Truck,
-  ClipboardList, RefreshCw, ArrowLeftRight, Plus, Trash2, X, Edit,
-  ArrowDown, ArrowUp, MoveRight
+  ClipboardList, RefreshCw, ArrowLeftRight, Plus, Trash2, X,
+  ArrowDown, ArrowUp, MoveRight, Calendar, Clock, PieChart, Target,
+  FileText, ShoppingCart, Zap, Award, LineChart, Database
 } from 'lucide-react'
 
 export default function InventoryPage() {
   const [data, setData] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
+  const [valuation, setValuation] = useState<any>(null)
+  const [reorder, setReorder] = useState<any>(null)
+  const [reports, setReports] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [activeView, setActiveView] = useState('all')
+  const [activeSection, setActiveSection] = useState('dashboard')
   const [showProductForm, setShowProductForm] = useState(false)
   const [showWarehouseForm, setShowWarehouseForm] = useState(false)
   const [showStockForm, setShowStockForm] = useState(false)
@@ -34,16 +39,26 @@ export default function InventoryPage() {
     setLoading(true)
     setError('')
     try {
-      const [summaryRes, productsRes, warehousesRes] = await Promise.all([
+      const [summaryRes, productsRes, warehousesRes, valuationRes, reorderRes, reportsRes] = await Promise.all([
         fetch('/api/wavecore/inventory/summary'),
         fetch('/api/wavecore/inventory/products'),
-        fetch('/api/wavecore/inventory/warehouse-management')
+        fetch('/api/wavecore/inventory/warehouse-management'),
+        fetch('/api/wavecore/inventory/valuation'),
+        fetch('/api/wavecore/inventory/reorder'),
+        fetch('/api/wavecore/inventory/reports')
       ])
       const summaryData = await summaryRes.json()
       const productsData = await productsRes.json()
       const warehousesData = await warehousesRes.json()
+      const valuationData = await valuationRes.json()
+      const reorderData = await reorderRes.json()
+      const reportsData = await reportsRes.json()
+      
       setData({ ...summaryData, warehouses: warehousesData.warehouses || summaryData.warehouses || [] })
       setProducts(productsData.products || [])
+      setValuation(valuationData)
+      setReorder(reorderData)
+      setReports(reportsData)
     } catch (err) {
       setError('Failed to load inventory data')
     } finally {
@@ -80,8 +95,6 @@ export default function InventoryPage() {
 
   const createWarehouse = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
     if (!warehouseForm.name) { setError('Warehouse name required'); return }
     try {
       const res = await fetch('/api/wavecore/inventory/warehouse-management', {
@@ -100,8 +113,6 @@ export default function InventoryPage() {
 
   const createStockMovement = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
     if (!stockForm.productId || !stockForm.quantity) { setError('Product and quantity required'); return }
     try {
       const res = await fetch('/api/wavecore/inventory/movements', {
@@ -116,6 +127,20 @@ export default function InventoryPage() {
         fetchInventory()
       }
     } catch (err) { setError('Failed to record movement') }
+  }
+
+  const createReorderPO = async (productId: string, quantity: number) => {
+    try {
+      const res = await fetch('/api/wavecore/inventory/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity })
+      })
+      if (res.ok) {
+        setSuccess('Purchase order created!')
+        fetchInventory()
+      }
+    } catch (err) { setError('Failed to create PO') }
   }
 
   const deleteProduct = async (id: string, name: string) => {
@@ -150,20 +175,22 @@ export default function InventoryPage() {
     (p.category || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  // Apply KPI filters
   const displayedProducts = filtered.filter(p => {
     const stockLevel = Number(p.stock_level || p.currentStock || 0)
     const sellingPrice = Number(p.sellingPrice || p.price || 0)
     const stockValue = stockLevel * sellingPrice
     if (activeView === 'value') return stockValue > 0
     if (activeView === 'low') return stockLevel < Number(p.minStock || 10)
-    if (activeView === 'warehouses') return false // warehouses view shows warehouses, not products
+    if (activeView === 'warehouses') return false
     return true
   })
 
   const stats = data?.stats || {}
   const warehouses = data?.warehouses || []
   const recentMovements = data?.recentMovements || []
+  const valuationSummary = valuation?.summary || {}
+  const reorderList = reorder?.reorderList || []
+  const reportSummary = reports?.summary || {}
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -183,7 +210,7 @@ export default function InventoryPage() {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Warehouse className="w-6 h-6 text-indigo-500" /> Inventory ({products.length})
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">Manage products, stock, and warehouses</p>
+            <p className="text-sm text-muted-foreground mt-1">World-class inventory management</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowProductForm(!showProductForm)}
@@ -204,6 +231,25 @@ export default function InventoryPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600 border border-red-200">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-50 text-green-600 border border-green-200 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
+        {/* NAVIGATION TABS */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+            { id: 'products', label: 'Products', icon: Package },
+            { id: 'valuation', label: 'Valuation', icon: DollarSign },
+            { id: 'reorder', label: 'Reorder', icon: ShoppingCart },
+            { id: 'reports', label: 'Reports', icon: FileText },
+            { id: 'warehouses', label: 'Warehouses', icon: Warehouse }
+          ].map(tab => (
+            <button key={tab.id} onClick={() => { setActiveSection(tab.id); if (tab.id === 'products') setActiveView('all'); }}
+              className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 whitespace-nowrap transition-colors ${
+                activeSection === tab.id ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-neutral-900 text-muted-foreground hover:bg-neutral-100'
+              }`}>
+              <tab.icon className="w-4 h-4" /> {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* FORMS */}
         {showProductForm && (
           <form onSubmit={createProduct} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
@@ -214,9 +260,9 @@ export default function InventoryPage() {
               <input type="text" placeholder="Category" value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <input type="number" placeholder="Cost Price" value={productForm.costPrice} onChange={(e) => setProductForm({...productForm, costPrice: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <input type="number" placeholder="Selling Price *" value={productForm.sellingPrice} onChange={(e) => setProductForm({...productForm, sellingPrice: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="number" placeholder="Initial Stock" value={productForm.initialStock} onChange={(e) => setProductForm({...productForm, initialStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <input type="number" placeholder="Min Stock" value={productForm.minStock} onChange={(e) => setProductForm({...productForm, minStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <input type="number" placeholder="Max Stock" value={productForm.maxStock} onChange={(e) => setProductForm({...productForm, maxStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
-              <input type="number" placeholder="Initial Stock" value={productForm.initialStock} onChange={(e) => setProductForm({...productForm, initialStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <select value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} className="px-4 py-2.5 rounded-xl border">
                 <option value="pcs">Pieces</option><option value="kg">Kilograms</option><option value="l">Liters</option><option value="box">Box</option>
               </select>
@@ -255,69 +301,84 @@ export default function InventoryPage() {
           </form>
         )}
 
-        {/* CLICKABLE KPI CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <button onClick={() => setActiveView('all')}
-            className={`p-5 rounded-2xl text-white text-center ${activeView === 'all' ? 'ring-4 ring-indigo-300' : ''}`}
-            style={{ background: 'linear-gradient(135deg, #4f46e5, #4338ca)' }}>
-            <Package className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{products.length}</p>
-            <p className="text-xs opacity-80">Products</p>
-          </button>
-          <button onClick={() => setActiveView('value')}
-            className={`p-5 rounded-2xl text-white text-center ${activeView === 'value' ? 'ring-4 ring-green-300' : ''}`}
-            style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}>
-            <DollarSign className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">KSh {(stats.totalSellingValue || 0).toLocaleString()}</p>
-            <p className="text-xs opacity-80">Stock Value</p>
-          </button>
-          <button onClick={() => setActiveView('low')}
-            className={`p-5 rounded-2xl text-white text-center ${activeView === 'low' ? 'ring-4 ring-red-300' : ''}`}
-            style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}>
-            <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{stats.lowStockCount || 0}</p>
-            <p className="text-xs opacity-80">Low Stock</p>
-          </button>
-          <button onClick={() => setActiveView('warehouses')}
-            className={`p-5 rounded-2xl text-white text-center ${activeView === 'warehouses' ? 'ring-4 ring-purple-300' : ''}`}
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
-            <Warehouse className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{warehouses.length}</p>
-            <p className="text-xs opacity-80">Warehouses</p>
-          </button>
-        </div>
+        {/* CONTENT SECTIONS */}
+        {activeSection === 'dashboard' && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <button onClick={() => setActiveSection('products')}
+                className={`p-5 rounded-2xl text-white text-center ${activeView === 'all' ? 'ring-4 ring-indigo-300' : ''}`}
+                style={{ background: 'linear-gradient(135deg, #4f46e5, #4338ca)' }}>
+                <Package className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-2xl font-bold">{products.length}</p>
+                <p className="text-xs opacity-80">Products</p>
+              </button>
+              <button onClick={() => setActiveSection('valuation')}
+                className={`p-5 rounded-2xl text-white text-center`}
+                style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}>
+                <DollarSign className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-2xl font-bold">KSh {(stats.totalSellingValue || 0).toLocaleString()}</p>
+                <p className="text-xs opacity-80">Stock Value</p>
+              </button>
+              <button onClick={() => setActiveSection('reorder')}
+                className={`p-5 rounded-2xl text-white text-center`}
+                style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}>
+                <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-2xl font-bold">{reorderList.length}</p>
+                <p className="text-xs opacity-80">Need Reorder</p>
+              </button>
+              <button onClick={() => setActiveSection('warehouses')}
+                className={`p-5 rounded-2xl text-white text-center`}
+                style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+                <Warehouse className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-2xl font-bold">{warehouses.length}</p>
+                <p className="text-xs opacity-80">Warehouses</p>
+              </button>
+            </div>
 
-        {/* SEARCH */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search..." />
-        </div>
-
-        {/* CONTENT BASED ON ACTIVE VIEW */}
-        {activeView === 'warehouses' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {warehouses.map((wh: any) => (
-              <div key={wh.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold">{wh.name}</p>
-                    <p className="text-xs text-muted-foreground">{wh.code}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+                <h2 className="font-bold text-lg mb-4">Stock Health</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Total Products</span><b>{reportSummary.totalProducts || 0}</b>
                   </div>
-                  <button onClick={() => deleteWarehouse(wh.id, wh.name)} className="p-2 rounded-lg bg-red-50 text-red-600">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">{wh.address || 'No address'}</p>
-                <div className="flex gap-4 mt-3 text-sm">
-                  <span>Locations: <b>{wh.locationCount || 0}</b></span>
-                  <span>Stock: <b>{wh.totalStock || 0}</b></span>
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Out of Stock</span><b className="text-red-600">{reportSummary.outOfStock || 0}</b>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Low Stock</span><b className="text-yellow-600">{reportSummary.lowStock || 0}</b>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Overstocked</span><b className="text-orange-600">{reportSummary.overstocked || 0}</b>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Optimal</span><b className="text-green-600">{reportSummary.optimal || 0}</b>
+                  </div>
                 </div>
               </div>
-            ))}
-            {warehouses.length === 0 && <p className="col-span-full text-center py-8 text-muted-foreground">No warehouses</p>}
-          </div>
-        ) : (
+
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+                <h2 className="font-bold text-lg mb-4">Valuation Summary</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Total Inventory Value</span><b>KSh {(valuationSummary.totalInventoryValue || 0).toLocaleString()}</b>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Avg Days of Supply</span><b>{valuationSummary.avgDaysOfSupply || 0} days</b>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Slow Moving Items</span><b className="text-yellow-600">{valuationSummary.totalSlowMoving || 0}</b>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span>Total Reorder Value</span><b className="text-orange-600">KSh {(reorder?.totalReorderValue || 0).toLocaleString()}</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeSection === 'products' && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
             <table className="w-full">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
@@ -362,6 +423,158 @@ export default function InventoryPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {activeSection === 'valuation' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white text-center">
+                <DollarSign className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-xl font-bold">KSh {(valuationSummary.totalInventoryValue || 0).toLocaleString()}</p>
+                <p className="text-xs opacity-80">Total Value</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-center">
+                <Clock className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-xl font-bold">{valuationSummary.avgDaysOfSupply || 0} days</p>
+                <p className="text-xs opacity-80">Avg Days Supply</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-600 text-white text-center">
+                <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-xl font-bold">{valuationSummary.totalSlowMoving || 0}</p>
+                <p className="text-xs opacity-80">Slow Moving</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 text-white text-center">
+                <TrendingUp className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-xl font-bold">{valuation?.daysOfSupply?.length || 0}</p>
+                <p className="text-xs opacity-80">Days Supply Items</p>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+              <h2 className="font-bold text-lg mb-4">Days of Supply Analysis</h2>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {valuation?.daysOfSupply?.map((item: any, i: number) => (
+                  <div key={i} className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                    <span className="font-bold">{item.name}</span>
+                    <span className={Number(item.daysOfSupply) > 90 ? 'text-red-600' : Number(item.daysOfSupply) > 30 ? 'text-yellow-600' : 'text-green-600'}>
+                      {item.daysOfSupply} days
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'reorder' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl p-6 text-white">
+              <p className="text-3xl font-bold">{reorderList.length} items need reordering</p>
+              <p className="text-sm opacity-80">Total reorder value: KSh {(reorder?.totalReorderValue || 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-neutral-50 dark:bg-neutral-800">
+                  <tr>
+                    <th className="text-left p-4 text-sm">Product</th>
+                    <th className="text-right p-4 text-sm">Current</th>
+                    <th className="text-right p-4 text-sm">Reorder Point</th>
+                    <th className="text-right p-4 text-sm">Target</th>
+                    <th className="text-right p-4 text-sm">Suggested Qty</th>
+                    <th className="text-right p-4 text-sm">Value</th>
+                    <th className="text-center p-4 text-sm">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reorderList.map((item: any, i: number) => (
+                    <tr key={i} className="border-t hover:bg-neutral-50">
+                      <td className="p-4 font-bold">{item.name}</td>
+                      <td className="p-4 text-right text-red-600 font-bold">{item.currentStock || 0}</td>
+                      <td className="p-4 text-right">{item.reorderPoint || 0}</td>
+                      <td className="p-4 text-right">{item.targetStock || 0}</td>
+                      <td className="p-4 text-right font-bold">{item.suggestedOrderQty || 0}</td>
+                      <td className="p-4 text-right">KSh {(item.suggestedOrderValue || 0).toLocaleString()}</td>
+                      <td className="p-4 text-center">
+                        <button onClick={() => createReorderPO(item.id, item.suggestedOrderQty)}
+                          className="px-3 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-bold">
+                          Create PO
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {reorderList.length === 0 && (
+                    <tr><td colSpan={7} className="p-8 text-center text-green-600">All products are adequately stocked ✓</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'reports' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+              <h2 className="font-bold text-lg mb-4">Stock Status Summary</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                  <span>Total Products</span><b>{reportSummary.totalProducts || 0}</b>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                  <span>Total Stock Units</span><b>{reportSummary.totalStockUnits || 0}</b>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                  <span>Total Cost Value</span><b>KSh {(reportSummary.totalCostValue || 0).toLocaleString()}</b>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                  <span>Total Selling Value</span><b>KSh {(reportSummary.totalSellingValue || 0).toLocaleString()}</b>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl bg-neutral-50">
+                  <span>Total Profit Value</span><b className="text-green-600">KSh {(reportSummary.totalProfitValue || 0).toLocaleString()}</b>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+              <h2 className="font-bold text-lg mb-4">Stock Classification</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between p-3 rounded-xl bg-red-50">
+                  <span>Out of Stock</span><b className="text-red-600">{reportSummary.outOfStock || 0}</b>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl bg-yellow-50">
+                  <span>Low Stock</span><b className="text-yellow-600">{reportSummary.lowStock || 0}</b>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl bg-orange-50">
+                  <span>Overstocked</span><b className="text-orange-600">{reportSummary.overstocked || 0}</b>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl bg-green-50">
+                  <span>Optimal</span><b className="text-green-600">{reportSummary.optimal || 0}</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'warehouses' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {warehouses.map((wh: any) => (
+              <div key={wh.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold">{wh.name}</p>
+                    <p className="text-xs text-muted-foreground">{wh.code}</p>
+                  </div>
+                  <button onClick={() => deleteWarehouse(wh.id, wh.name)} className="p-2 rounded-lg bg-red-50 text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">{wh.address || 'No address'}</p>
+                <div className="flex gap-4 mt-3 text-sm">
+                  <span>Locations: <b>{wh.locationCount || 0}</b></span>
+                  <span>Stock: <b>{wh.totalStock || 0}</b></span>
+                  <span>Value: <b>KSh {(wh.stockValue || 0).toLocaleString()}</b></span>
+                </div>
+              </div>
+            ))}
+            {warehouses.length === 0 && <p className="col-span-full text-center py-8 text-muted-foreground">No warehouses</p>}
           </div>
         )}
       </main>
