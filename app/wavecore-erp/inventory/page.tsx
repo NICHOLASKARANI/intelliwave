@@ -25,7 +25,7 @@ export default function InventoryPage() {
   const [deleting, setDeleting] = useState('')
   const [productForm, setProductForm] = useState({
     name: '', sku: '', category: '', costPrice: '', sellingPrice: '',
-    minStock: '', maxStock: '', unit: 'pcs', isTracked: true, trackSerial: false, trackBatch: false
+    minStock: '', maxStock: '', initialStock: '', unit: 'pcs', isTracked: true, trackSerial: false, trackBatch: false
   })
   const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', address: '' })
   const [stockForm, setStockForm] = useState({ productId: '', quantity: '', movementType: 'IN', toLocation: '' })
@@ -67,11 +67,11 @@ export default function InventoryPage() {
       const res = await fetch('/api/wavecore/inventory/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...productForm, costPrice: Number(productForm.costPrice || 0), sellingPrice: Number(productForm.sellingPrice || 0), minStock: Number(productForm.minStock || 0), maxStock: Number(productForm.maxStock || 0) })
+        body: JSON.stringify({ ...productForm, costPrice: Number(productForm.costPrice || 0), sellingPrice: Number(productForm.sellingPrice || 0), minStock: Number(productForm.minStock || 0), maxStock: Number(productForm.maxStock || 0), initialStock: Number(productForm.initialStock || 0) })
       })
       if (res.ok) {
         setSuccess('Product created!')
-        setProductForm({ name: '', sku: '', category: '', costPrice: '', sellingPrice: '', minStock: '', maxStock: '', unit: 'pcs', isTracked: true, trackSerial: false, trackBatch: false })
+        setProductForm({ name: '', sku: '', category: '', costPrice: '', sellingPrice: '', minStock: '', maxStock: '', initialStock: '', unit: 'pcs', isTracked: true, trackSerial: false, trackBatch: false })
         setShowProductForm(false)
         fetchInventory()
       }
@@ -216,6 +216,7 @@ export default function InventoryPage() {
               <input type="number" placeholder="Selling Price *" value={productForm.sellingPrice} onChange={(e) => setProductForm({...productForm, sellingPrice: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <input type="number" placeholder="Min Stock" value={productForm.minStock} onChange={(e) => setProductForm({...productForm, minStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <input type="number" placeholder="Max Stock" value={productForm.maxStock} onChange={(e) => setProductForm({...productForm, maxStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+              <input type="number" placeholder="Initial Stock" value={productForm.initialStock} onChange={(e) => setProductForm({...productForm, initialStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
               <select value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} className="px-4 py-2.5 rounded-xl border">
                 <option value="pcs">Pieces</option><option value="kg">Kilograms</option><option value="l">Liters</option><option value="box">Box</option>
               </select>
@@ -326,6 +327,8 @@ export default function InventoryPage() {
                   <th className="text-left p-4 text-sm">Category</th>
                   <th className="text-right p-4 text-sm">Cost</th>
                   <th className="text-right p-4 text-sm">Selling</th>
+                  <th className="text-right p-4 text-sm">Min</th>
+                  <th className="text-right p-4 text-sm">Max</th>
                   <th className="text-right p-4 text-sm">Stock</th>
                   <th className="text-right p-4 text-sm">Value</th>
                   <th className="text-center p-4 text-sm">Actions</th>
@@ -344,6 +347,8 @@ export default function InventoryPage() {
                       <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-indigo-50 text-indigo-600">{product.category || 'Uncategorized'}</span></td>
                       <td className="p-4 text-right">KSh {costPrice.toLocaleString()}</td>
                       <td className="p-4 text-right font-bold">KSh {sellingPrice.toLocaleString()}</td>
+                      <td className="p-4 text-right text-sm">{product.minStock || 10}</td>
+                      <td className="p-4 text-right text-sm">{product.maxStock || 100}</td>
                       <td className="p-4 text-right"><span className={`font-bold ${stockLevel === 0 ? 'text-red-600' : stockLevel < Number(product.minStock || 10) ? 'text-yellow-600' : 'text-green-600'}`}>{stockLevel}</span></td>
                       <td className="p-4 text-right font-bold text-indigo-600">KSh {stockValue.toLocaleString()}</td>
                       <td className="p-4">
