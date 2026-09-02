@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
       SELECT 
         p.*,
         COALESCE(sq.quantity, 0) as "stock_level",
-        COALESCE(sq."availableQty", COALESCE(sq.quantity, 0)) as "availableStock"
+        COALESCE(sq."availableQty", COALESCE(sq.quantity, 0)) as "availableStock",
+        COALESCE(p."minStock", 10) as "minStock",
+        COALESCE(p."maxStock", 0) as "maxStock"
       FROM "Product" p
       LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
@@ -61,8 +63,8 @@ export async function POST(request: NextRequest) {
       body.unit || 'pcs',
       Number(body.costPrice || 0),
       Number(body.sellingPrice || 0),
-      Number(body.minStock || 0),
-      Number(body.maxStock || 0),
+      Number(body.minStock || 10),
+      Number(body.maxStock || 100),
       body.isActive !== false,
       body.isTracked !== false,
       body.trackSerial || false,
@@ -70,7 +72,6 @@ export async function POST(request: NextRequest) {
       session.organizationId
     ])
 
-    // Also create stock quantity record if initial stock is provided
     if (body.initialStock && Number(body.initialStock) > 0) {
       const stockId = crypto.randomUUID()
       await pool.query(`
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       `, [stockId, id, Number(body.initialStock), session.organizationId]).catch(() => {})
     }
 
-    return NextResponse.json({ product: result.rows[0], message: 'Product created successfully' }, { status: 201 })
+    return NextResponse.json({ product: result.rows[0], message: 'Product created' }, { status: 201 })
   } catch (error) {
     console.error('Products POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
@@ -97,36 +98,24 @@ export async function PUT(request: NextRequest) {
       UPDATE "Product" SET
         name = $1,
         sku = $2,
-        barcode = $3,
-        description = $4,
-        category = $5,
-        unit = $6,
-        "costPrice" = $7,
-        "sellingPrice" = $8,
-        "minStock" = $9,
-        "maxStock" = $10,
-        "isActive" = $11,
-        "isTracked" = $12,
-        "trackSerial" = $13,
-        "trackBatch" = $14,
+        category = $3,
+        unit = $4,
+        "costPrice" = $5,
+        "sellingPrice" = $6,
+        "minStock" = $7,
+        "maxStock" = $8,
         "updatedAt" = NOW()
-      WHERE id = $15 AND "organizationId" = $16
+      WHERE id = $9 AND "organizationId" = $10
       RETURNING *
     `, [
       body.name,
       body.sku,
-      body.barcode || null,
-      body.description || '',
       body.category || '',
       body.unit || 'pcs',
       Number(body.costPrice || 0),
       Number(body.sellingPrice || 0),
-      Number(body.minStock || 0),
-      Number(body.maxStock || 0),
-      body.isActive !== false,
-      body.isTracked !== false,
-      body.trackSerial || false,
-      body.trackBatch || false,
+      Number(body.minStock || 10),
+      Number(body.maxStock || 100),
       body.id,
       session.organizationId
     ])
@@ -146,13 +135,9 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    // Delete stock quantity first
     await pool.query(`DELETE FROM "StockQuantity" WHERE "productId" = $1`, [id]).catch(() => {})
-    
-    // Then delete product
     await pool.query(`DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
 
     return NextResponse.json({ success: true, message: 'Product deleted' })
