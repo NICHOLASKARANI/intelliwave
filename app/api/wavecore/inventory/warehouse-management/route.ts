@@ -9,10 +9,7 @@ export async function GET(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const orgId = session.organizationId
-
-    // Get all warehouses with detailed stats
-    const warehouses = await pool.query(`
+    const result = await pool.query(`
       SELECT 
         w.*,
         (SELECT COUNT(*) FROM "StockLocation" sl WHERE sl."warehouseId" = w.id) as "locationCount",
@@ -25,13 +22,13 @@ export async function GET(request: NextRequest) {
          JOIN "Product" p ON sq."productId" = p.id
          WHERE sl."warehouseId" = w.id) as "stockValue"
       FROM "Warehouse" w
-      WHERE w."organizationId" = $1
+      WHERE w."organizationId" = $1 OR w."organizationId" IS NULL
       ORDER BY w.name ASC
-    `, [orgId]).catch(() => ({ rows: [] }))
+    `, [session.organizationId])
 
-    return NextResponse.json({ warehouses: warehouses.rows })
+    return NextResponse.json({ warehouses: result.rows })
   } catch (error) {
-    console.error('Warehouse Management error:', error)
+    console.error('Warehouse GET error:', error)
     return NextResponse.json({ warehouses: [] })
   }
 }
@@ -56,11 +53,9 @@ export async function POST(request: NextRequest) {
       body.address || '',
       body.isActive !== false,
       session.organizationId
-    ]).catch(async () => {
-      return { rows: [{ id, name: body.name, code: body.code, address: body.address, isActive: body.isActive !== false }] }
-    })
+    ])
 
-    return NextResponse.json({ warehouse: result.rows[0] }, { status: 201 })
+    return NextResponse.json({ warehouse: result.rows[0], message: 'Warehouse created' }, { status: 201 })
   } catch (error) {
     console.error('Warehouse POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
@@ -74,10 +69,20 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    await pool.query(`DELETE FROM "Warehouse" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId]).catch(() => {})
+    // Delete regardless of organizationId (for demo warehouses)
+    const result = await pool.query(
+      `DELETE FROM "Warehouse" WHERE id = $1 AND ("organizationId" = $2 OR "organizationId" IS NULL)`,
+      [id, session.organizationId]
+    )
 
-    return NextResponse.json({ success: true })
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Warehouse not found or not authorized' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, message: 'Warehouse deleted' })
   } catch (error) {
     console.error('Warehouse DELETE error:', error)
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
