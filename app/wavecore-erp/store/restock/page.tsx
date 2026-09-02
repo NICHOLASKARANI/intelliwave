@@ -3,30 +3,138 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { AlertTriangle, Download, Loader2 } from 'lucide-react'
+import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle, Plus, X, RefreshCw, Truck } from 'lucide-react'
 
 export default function RestockPage() {
-  const [products, setProducts] = useState<any[]>([])
+  const [restocks, setRestocks] = useState<any[]>([])
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [deleting, setDeleting] = useState('')
+  const [search, setSearch] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [activeView, setActiveView] = useState('all')
+  const [formData, setFormData] = useState({
+    productId: '',
+    productName: '',
+    quantity: '',
+    supplierName: '',
+    notes: ''
+  })
+
+  const fetchRestocks = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/store/restock')
+      const data = await res.json()
+      setRestocks(data.restocks || [])
+      setLowStockProducts(data.lowStockProducts || [])
+      setStats(data.stats || {})
+    } catch (err) {
+      setError('Failed to load restock data')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    fetch('/api/wavecore/store').then(r => r.json()).then(d => setProducts(d.products || [])).catch(() => {}).finally(() => setLoading(false))
+    fetchRestocks()
   }, [])
 
-  const lowStock = products.filter(p => (p.stock_level || 0) <= (p.minStock || 5))
+  const createRestock = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    
+    if (!formData.productId || !formData.quantity || Number(formData.quantity) <= 0) {
+      setError('Please select a product and enter valid quantity')
+      return
+    }
 
-  const handleDownloadPDF = () => {
-    const content = ['WaveCore ERP - Restock', '='.repeat(50), `Low Stock Items: ${lowStock.length}`, '', ...lowStock.map((p, i) => `${i+1}. ${p.name} - Stock: ${p.stock_level || 0} - Min: ${p.minStock || 5}`), '', '© 2026 IntelliWavve'].join('\n')
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'restock.pdf'; a.click()
+    const selectedProduct = lowStockProducts.find(p => p.id === formData.productId)
+    
+    try {
+      const res = await fetch('/api/wavecore/store/restock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          productName: selectedProduct?.name || '',
+          quantity: Number(formData.quantity)
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSuccess('Restock order created successfully!')
+        setTimeout(() => setSuccess(''), 3000)
+        setFormData({
+          productId: '',
+          productName: '',
+          quantity: '',
+          supplierName: '',
+          notes: ''
+        })
+        setShowForm(false)
+        fetchRestocks()
+      } else {
+        setError(data.error || 'Failed to create restock order')
+      }
+    } catch (err) {
+      setError('Network error - failed to create')
+    }
   }
+
+  const deleteRestock = async (id: string, number: string) => {
+    if (!confirm(`Delete restock order "${number}"?`)) return
+    setDeleting(id)
+    setError('')
+    setSuccess('')
+    try {
+      const res = await fetch(`/api/wavecore/store/restock?id=${encodeURIComponent(id)}`, { 
+        method: 'DELETE' 
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSuccess(`Restock order "${number}" deleted successfully`)
+        setTimeout(() => setSuccess(''), 3000)
+        fetchRestocks()
+      } else {
+        setError(data.error || 'Delete failed')
+      }
+    } catch (err) {
+      setError('Network error - delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
+
+  const downloadPdf = (id: string) => {
+    if (!id) {
+      setError('Restock ID missing')
+      return
+    }
+    window.open(`/api/wavecore/store/restock/${id}/pdf`, '_blank')
+  }
+
+  const filtered = restocks.filter(r => 
+    (r.number || '').toLowerCase().includes(search.toLowerCase()) ||
+    (r.productName || '').toLowerCase().includes(search.toLowerCase()) ||
+    (r.supplierName || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totalRestocks = Number(stats.totalRestocks || 0)
+  const pendingRestocks = Number(stats.pendingRestocks || 0)
+  const completedRestocks = Number(stats.completedRestocks || 0)
+  const lowStockCount = Number(stats.lowStockCount || 0)
+  const totalQuantity = Number(stats.totalQuantity || 0)
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
           <Link href="/wavecore-erp/store" className="flex items-center gap-3">
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
@@ -34,22 +142,179 @@ export default function RestockPage() {
           <span className="text-sm">Restock</span>
         </div>
       </header>
-      <main className="max-w-4xl mx-auto p-4 lg:p-8">
+
+      <main className="max-w-6xl mx-auto p-3 sm:p-4 lg:p-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><AlertTriangle className="w-6 h-6 text-amber-500" /> Restock ({lowStock.length})</h1>
-          <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium">
-            <Download className="w-4 h-4" /> PDF
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <RefreshCw className="w-6 h-6 text-orange-500" /> Restock ({totalRestocks})
+          </h1>
+          <button onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2.5 rounded-xl bg-orange-600 text-white font-bold flex items-center gap-2 hover:bg-orange-700 transition-colors">
+            <Plus className="w-4 h-4" /> New Restock Order
           </button>
         </div>
-        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            {lowStock.map(p => (
-              <div key={p.id} className="flex justify-between p-4 border-b bg-amber-50/50 dark:bg-amber-950/20">
-                <span className="font-medium">{p.name}</span>
-                <span className="text-amber-600 font-bold">Stock: {p.stock_level || 0} / Min: {p.minStock || 5}</span>
+
+        {error && <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600 border border-red-200">{error}</div>}
+        {success && <div className="mb-4 p-4 rounded-xl bg-green-50 text-green-600 border border-green-200 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
+
+        {showForm && (
+          <form onSubmit={createRestock} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-orange-500" /> New Restock Order</h2>
+              <button type="button" onClick={() => setShowForm(false)} className="text-red-500 hover:bg-red-50 p-1 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Low Stock Product</label>
+                <select value={formData.productId} 
+                  onChange={(e) => setFormData({...formData, productId: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <option value="">Select product...</option>
+                  {lowStockProducts.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_level || 0})</option>
+                  ))}
+                </select>
               </div>
-            ))}
-            {lowStock.length === 0 && <p className="text-center py-8 text-green-600 font-medium">All products well stocked ✓</p>}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Quantity to Order</label>
+                <input type="number" value={formData.quantity}
+                  onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                  placeholder="Enter quantity" min="1"
+                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Supplier Name</label>
+                <input type="text" value={formData.supplierName}
+                  onChange={(e) => setFormData({...formData, supplierName: e.target.value})}
+                  placeholder="Supplier name"
+                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Notes</label>
+                <input type="text" value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  placeholder="Optional notes"
+                  className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500" />
+              </div>
+            </div>
+            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-orange-600 text-white font-bold hover:bg-orange-700 transition-colors">
+              Create Restock Order
+            </button>
+          </form>
+        )}
+
+        {/* CLICKABLE KPI CARDS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <button onClick={() => setActiveView('all')}
+            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'all' ? 'ring-4 ring-orange-300' : ''}`}
+            style={{ background: 'linear-gradient(135deg, #ea580c, #c2410c)' }}>
+            <RefreshCw className="w-6 h-6 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{totalRestocks}</p>
+            <p className="text-xs opacity-80">Total Orders</p>
+          </button>
+          <button onClick={() => setActiveView('pending')}
+            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'pending' ? 'ring-4 ring-yellow-300' : ''}`}
+            style={{ background: 'linear-gradient(135deg, #d97706, #b45309)' }}>
+            <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{pendingRestocks}</p>
+            <p className="text-xs opacity-80">Pending</p>
+          </button>
+          <button onClick={() => setActiveView('completed')}
+            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'completed' ? 'ring-4 ring-green-300' : ''}`}
+            style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}>
+            <CheckCircle2 className="w-6 h-6 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{completedRestocks}</p>
+            <p className="text-xs opacity-80">Completed</p>
+          </button>
+          <button onClick={() => setActiveView('low')}
+            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'low' ? 'ring-4 ring-red-300' : ''}`}
+            style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}>
+            <Package className="w-6 h-6 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{lowStockCount}</p>
+            <p className="text-xs opacity-80">Low Stock Items</p>
+          </button>
+        </div>
+
+        {/* Low Stock Alert Banner */}
+        {lowStockCount > 0 && (
+          <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-8 h-8" />
+                <div>
+                  <p className="text-sm opacity-80">Low Stock Alert</p>
+                  <p className="text-3xl font-bold">{lowStockCount} products need restocking</p>
+                </div>
+              </div>
+              <button onClick={() => setShowForm(true)} className="px-4 py-2 rounded-xl bg-white text-orange-600 font-bold">
+                Restock Now
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 pr-4 py-2.5 rounded-xl border w-full focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Search restock orders..." />
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin mx-auto text-orange-500" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
+            <RefreshCw className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-muted-foreground">No restock orders found</p>
+            {lowStockCount > 0 && (
+              <button onClick={() => setShowForm(true)} className="mt-4 px-4 py-2 rounded-xl bg-orange-600 text-white font-bold">
+                Create Restock Order
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filtered
+              .filter(r => {
+                if (activeView === 'pending') return r.status === 'PENDING'
+                if (activeView === 'completed') return r.status === 'COMPLETED'
+                if (activeView === 'low') return false
+                return true
+              })
+              .map((restock) => (
+                <div key={restock.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <p className="font-mono font-bold">{restock.number}</p>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          restock.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {restock.status}
+                        </span>
+                      </div>
+                      <p className="font-bold text-lg">{restock.productName || 'N/A'}</p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Quantity: <span className="font-bold">{restock.quantity || 0} units</span>
+                      </p>
+                      {restock.supplierName && <p className="text-sm text-muted-foreground">Supplier: {restock.supplierName}</p>}
+                      {restock.notes && <p className="text-sm text-muted-foreground mt-1">Notes: {restock.notes}</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => downloadPdf(restock.id)} 
+                        className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        title="Download PDF">
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deleteRestock(restock.id, restock.number)}
+                        disabled={deleting === restock.id}
+                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                        title="Delete restock order">
+                        {deleting === restock.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
           </div>
         )}
       </main>
