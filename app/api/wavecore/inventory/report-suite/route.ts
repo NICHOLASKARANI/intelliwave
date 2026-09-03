@@ -143,6 +143,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     console.error('Report Suite error:', error)
-    return NextResponse.json({ reportType, data: [], summary: {} })
+    return NextResponse.json({ reportType: 'stock-summary', data: [], summary: {} })
   }
 }
