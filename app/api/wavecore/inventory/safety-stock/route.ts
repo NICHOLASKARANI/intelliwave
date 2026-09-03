@@ -95,6 +95,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Safety Stock error:', error)
-    return NextResponse.json({ safetyStockResults: [], params: { serviceLevel, leadTimeDays, zScore }, summary: { totalProducts: 0, needsReorder: 0, totalGap: 0, totalSafetyStockValue: 0 } })
+    return NextResponse.json({ safetyStockResults: [], params: { serviceLevel: 95, leadTimeDays: 7, zScore: 1.645 }, summary: { totalProducts: 0, needsReorder: 0, totalGap: 0, totalSafetyStockValue: 0 } })
   }
 }
