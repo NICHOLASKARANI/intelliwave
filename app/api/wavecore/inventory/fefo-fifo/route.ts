@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       expiryDate: batch.expiryDate,
       qualityStatus: batch.qualityStatus,
       binLocation: batch.binLocation,
-      daysToExpiry: batch.expiryDate ? Math.ceil((new Date(batch.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) : null
+      daysToExpiry: batch.expiryDate ? Math.ceil((new Date(batch.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null
     }))
 
     return NextResponse.json({ 
