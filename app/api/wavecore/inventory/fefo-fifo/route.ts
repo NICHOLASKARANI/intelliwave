@@ -47,6 +47,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('FEFO/FIFO error:', error)
-    return NextResponse.json({ strategy, issueOrder: [], totalQuantity: 0 })
+    return NextResponse.json({ strategy: 'FEFO', issueOrder: [], totalQuantity: 0 })
   }
 }
