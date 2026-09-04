@@ -162,6 +162,16 @@ export default function InventoryPage() {
     } catch { setError('Network error') }
   }
 
+  const askCopilot = async () => {
+    if (!copilotQuery.trim()) return
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/inventory/copilot?query=' + encodeURIComponent(copilotQuery))
+      const data = await res.json()
+      setCopilotAnswer(data.answer || 'No answer available')
+    } catch { setError('Failed to query AI Copilot') }
+  }
+
   const deleteEntity = async (endpoint: string, id: string, name: string, type: string) => {
     if (!confirm(`Delete ${type} "${name}"?`)) return
     setDeleting(id)
@@ -457,6 +467,143 @@ export default function InventoryPage() {
                 <td className="p-4 font-mono">{s.serialNumber}</td>
                 <td className="p-4">{s.productName}</td>
                 <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-green-100">{s.status}</span></td>
+              </tr>
+            ))}</tbody></table>
+          </div>
+        )}
+
+        {activeSection === 'movements' && (
+          <div className='bg-white rounded-2xl border overflow-hidden'>
+            <table className='w-full'><thead className='bg-neutral-50'><tr>
+              <th className='text-left p-4'>Type</th><th className='text-left p-4'>Product</th>
+              <th className='text-right p-4'>Qty</th><th className='text-left p-4'>From</th>
+              <th className='text-left p-4'>To</th><th className='text-left p-4'>Date</th>
+            </tr></thead>
+            <tbody>{movements.map((m: any, i: number) => (
+              <tr key={m.id || i} className='border-t'>
+                <td className='p-4'><span className='px-2 py-1 rounded-full text-xs bg-blue-100'>{m.movementType || m.type || 'MOVE'}</span></td>
+                <td className='p-4'>{m.productName || 'N/A'}</td>
+                <td className='p-4 text-right font-bold'>{m.quantity || 0}</td>
+                <td className='p-4'>{m.fromLocation || 'N/A'}</td>
+                <td className='p-4'>{m.toLocation || 'N/A'}</td>
+                <td className='p-4 text-sm'>{new Date(m.createdAt).toLocaleString()}</td>
+              </tr>
+            ))}</tbody></table>
+          </div>
+        )}
+
+        {activeSection === 'ledger' && (
+          <div className='bg-white rounded-2xl border overflow-hidden'>
+            <table className='w-full'><thead className='bg-neutral-50'><tr>
+              <th className='text-left p-4'>Transaction</th><th className='text-left p-4'>Product</th>
+              <th className='text-right p-4'>Qty</th><th className='text-right p-4'>Before</th>
+              <th className='text-right p-4'>After</th><th className='text-left p-4'>Type</th>
+              <th className='text-left p-4'>Date</th>
+            </tr></thead>
+            <tbody>{ledger.map((l: any, i: number) => (
+              <tr key={l.id || i} className='border-t'>
+                <td className='p-4 font-mono text-xs'>{l.transactionId || 'N/A'}</td>
+                <td className='p-4'>{l.productName || 'N/A'}</td>
+                <td className='p-4 text-right font-bold'>{l.quantity || 0}</td>
+                <td className='p-4 text-right'>{l.beforeQuantity || 0}</td>
+                <td className='p-4 text-right'>{l.afterQuantity || 0}</td>
+                <td className='p-4'><span className='px-2 py-1 rounded-full text-xs bg-green-100'>{l.transactionType || 'N/A'}</span></td>
+                <td className='p-4 text-sm'>{new Date(l.createdAt).toLocaleString()}</td>
+              </tr>
+            ))}</tbody></table>
+          </div>
+        )}
+
+        {activeSection === 'atp' && (
+          <div className='bg-white rounded-2xl border overflow-hidden'>
+            <table className='w-full'><thead className='bg-neutral-50'><tr>
+              <th className='text-left p-4'>Product</th><th className='text-right p-4'>On Hand</th>
+              <th className='text-right p-4'>Available</th><th className='text-right p-4'>Reserved</th>
+              <th className='text-right p-4'>ATP</th>
+            </tr></thead>
+            <tbody>{atpList.map((a: any) => (
+              <tr key={a.id} className='border-t'>
+                <td className='p-4 font-bold'>{a.name}</td>
+                <td className='p-4 text-right'>{a.onHand || 0}</td>
+                <td className='p-4 text-right text-green-600'>{a.available || 0}</td>
+                <td className='p-4 text-right text-yellow-600'>{a.reserved || 0}</td>
+                <td className='p-4 text-right font-bold text-blue-600'>{a.atpQuantity || 0}</td>
+              </tr>
+            ))}</tbody></table>
+          </div>
+        )}
+
+        {activeSection === 'forecast' && forecastData && (
+          <div className='space-y-4'>
+            <div className='grid grid-cols-3 gap-4'>
+              <div className='p-4 rounded-2xl bg-green-50 text-center'><p className='text-xl font-bold'>{(forecastData.stats?.avgDailyDemand || 0)}</p><p className='text-xs'>Avg Daily Demand</p></div>
+              <div className='p-4 rounded-2xl bg-blue-50 text-center'><p className='text-xl font-bold'>{(forecastData.stats?.totalForecast30Days || 0)}</p><p className='text-xs'>30-Day Forecast</p></div>
+              <div className='p-4 rounded-2xl bg-yellow-50 text-center'><p className='text-xl font-bold'>{(forecastData.productForecasts?.length || 0)}</p><p className='text-xs'>Products Forecasted</p></div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'abcxyz' && abcXyzData && (
+          <div className='space-y-4'>
+            <div className='grid grid-cols-3 gap-4'>
+              <div className='p-4 rounded-2xl bg-green-50 text-center'><p className='text-xl font-bold'>{abcXyzData.summary?.aClassCount || 0}</p><p className='text-xs'>A Class</p></div>
+              <div className='p-4 rounded-2xl bg-yellow-50 text-center'><p className='text-xl font-bold'>{abcXyzData.summary?.bClassCount || 0}</p><p className='text-xs'>B Class</p></div>
+              <div className='p-4 rounded-2xl bg-red-50 text-center'><p className='text-xl font-bold'>{abcXyzData.summary?.cClassCount || 0}</p><p className='text-xs'>C Class</p></div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'tower' && controlTowerData?.controlTower && (
+          <div className='space-y-4'>
+            <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+              <div className='p-4 rounded-2xl bg-indigo-600 text-white text-center'><p className='text-xl font-bold'>KSh {(controlTowerData.controlTower.inventoryValue || 0).toLocaleString()}</p><p className='text-xs'>Inventory Value</p></div>
+              <div className='p-4 rounded-2xl bg-green-600 text-white text-center'><p className='text-xl font-bold'>{controlTowerData.controlTower.available || 0}</p><p className='text-xs'>Available</p></div>
+              <div className='p-4 rounded-2xl bg-yellow-600 text-white text-center'><p className='text-xl font-bold'>{controlTowerData.controlTower.reserved || 0}</p><p className='text-xs'>Reserved</p></div>
+              <div className='p-4 rounded-2xl bg-red-600 text-white text-center'><p className='text-xl font-bold'>{controlTowerData.controlTower.expiringCount || 0}</p><p className='text-xs'>Expiring</p></div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'copilot' && (
+          <div className='bg-white rounded-2xl border p-6'>
+            <h2 className='font-bold mb-4'>AI Inventory Copilot</h2>
+            <div className='flex gap-2'>
+              <input type='text' value={copilotQuery} onChange={(e) => setCopilotQuery(e.target.value)}
+                placeholder='Ask: Which products will stock out?' className='flex-1 px-4 py-2.5 rounded-xl border'
+                onKeyDown={(e) => { if (e.key === 'Enter') askCopilot() }} />
+              <button onClick={askCopilot} className='px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold'>Ask</button>
+            </div>
+            {copilotAnswer && (
+              <div className='mt-4 p-4 rounded-xl bg-indigo-50'><p>{copilotAnswer}</p></div>
+            )}
+          </div>
+        )}
+
+        {activeSection === 'anomalies' && anomaliesData && (
+          <div className='space-y-4'>
+            <div className='grid grid-cols-3 gap-4'>
+              <div className='p-4 rounded-2xl bg-red-50 text-center'><p className='text-xl font-bold'>{anomaliesData.summary?.movementAnomalies || 0}</p><p className='text-xs'>Movement Anomalies</p></div>
+              <div className='p-4 rounded-2xl bg-yellow-50 text-center'><p className='text-xl font-bold'>{anomaliesData.summary?.negativeStock || 0}</p><p className='text-xs'>Negative Stock</p></div>
+              <div className='p-4 rounded-2xl bg-orange-50 text-center'><p className='text-xl font-bold'>{anomaliesData.summary?.adjustmentAnomalies || 0}</p><p className='text-xs'>Adjustment Anomalies</p></div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'audit' && (
+          <div className='bg-white rounded-2xl border overflow-hidden'>
+            <table className='w-full'><thead className='bg-neutral-50'><tr>
+              <th className='text-left p-4'>Entity</th><th className='text-left p-4'>Action</th>
+              <th className='text-left p-4'>Field</th><th className='text-left p-4'>Old - New</th>
+              <th className='text-left p-4'>User</th><th className='text-left p-4'>Date</th>
+            </tr></thead>
+            <tbody>{auditTrail.map((a: any) => (
+              <tr key={a.id} className='border-t'>
+                <td className='p-4'>{a.entityType}</td>
+                <td className='p-4'>{a.action}</td>
+                <td className='p-4'>{a.fieldName || 'N/A'}</td>
+                <td className='p-4 text-sm'>{a.oldValue} - {a.newValue}</td>
+                <td className='p-4'>{a.userName || 'N/A'}</td>
+                <td className='p-4 text-sm'>{new Date(a.createdAt).toLocaleString()}</td>
               </tr>
             ))}</tbody></table>
           </div>
