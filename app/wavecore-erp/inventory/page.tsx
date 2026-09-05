@@ -12,30 +12,36 @@ import {
 export default function InventoryPage() {
   const [data, setData] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
+  const [warehouses, setWarehouses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [activeSection, setActiveSection] = useState('dashboard')
   const [search, setSearch] = useState('')
   const [showProductForm, setShowProductForm] = useState(false)
+  const [showWarehouseForm, setShowWarehouseForm] = useState(false)
   const [deleting, setDeleting] = useState('')
   const [productForm, setProductForm] = useState({
     name: '', sku: '', category: '', costPrice: '', sellingPrice: '',
-    minStock: '', maxStock: '', initialStock: '', unit: 'pcs', barcode: '', description: ''
+    minStock: '', maxStock: '', initialStock: '', unit: 'pcs'
   })
+  const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', address: '' })
 
   const fetchData = async () => {
     setLoading(true)
     setError('')
     try {
-      const [cmdRes, productsRes] = await Promise.all([
+      const [cmdRes, productsRes, warehousesRes] = await Promise.all([
         fetch('/api/wavecore/inventory/command-center'),
-        fetch('/api/wavecore/inventory/products')
+        fetch('/api/wavecore/inventory/products'),
+        fetch('/api/wavecore/inventory/warehouses')
       ])
       const cmdData = await cmdRes.json()
       const productsData = await productsRes.json()
+      const warehousesData = await warehousesRes.json()
       setData(cmdData)
       setProducts(productsData.products || [])
+      setWarehouses(warehousesData.warehouses || [])
     } catch (err) {
       setError('Failed to load inventory data')
     } finally {
@@ -72,11 +78,40 @@ export default function InventoryPage() {
       if (res.ok) {
         setSuccess('Product created successfully!')
         setTimeout(() => setSuccess(''), 3000)
-        setProductForm({ name: '', sku: '', category: '', costPrice: '', sellingPrice: '', minStock: '', maxStock: '', initialStock: '', unit: 'pcs', barcode: '', description: '' })
+        setProductForm({ name: '', sku: '', category: '', costPrice: '', sellingPrice: '', minStock: '', maxStock: '', initialStock: '', unit: 'pcs' })
         setShowProductForm(false)
         fetchData()
       } else {
         setError(result.error || 'Failed to create product')
+      }
+    } catch (err) {
+      setError('Network error')
+    }
+  }
+
+  const createWarehouse = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!warehouseForm.name) {
+      setError('Warehouse name is required')
+      return
+    }
+    try {
+      const res = await fetch('/api/wavecore/inventory/warehouses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(warehouseForm)
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setSuccess('Warehouse created!')
+        setTimeout(() => setSuccess(''), 3000)
+        setWarehouseForm({ name: '', code: '', address: '' })
+        setShowWarehouseForm(false)
+        fetchData()
+      } else {
+        setError(result.error || 'Failed to create warehouse')
       }
     } catch (err) {
       setError('Network error')
@@ -100,8 +135,29 @@ export default function InventoryPage() {
     }
   }
 
-  const downloadPdf = (id: string) => {
+  const deleteWarehouse = async (id: string, name: string) => {
+    if (!confirm('Delete warehouse "' + name + '"?')) return
+    setDeleting(id)
+    try {
+      const res = await fetch('/api/wavecore/inventory/warehouses?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Warehouse deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchData()
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
+
+  const downloadProductPdf = (id: string) => {
     window.open('/api/wavecore/inventory/products/' + id + '/pdf', '_blank')
+  }
+
+  const downloadWarehousePdf = (id: string) => {
+    window.open('/api/wavecore/inventory/warehouses/' + id + '/pdf', '_blank')
   }
 
   const filteredProducts = products.filter(p => 
@@ -153,13 +209,16 @@ export default function InventoryPage() {
             className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'products' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
             Products ({products.length})
           </button>
+          <button onClick={() => setActiveSection('warehouses')}
+            className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'warehouses' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
+            Warehouses ({warehouses.length})
+          </button>
         </div>
 
         {loading ? (
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-indigo-600" /></div>
         ) : activeSection === 'dashboard' ? (
           <>
-            {/* KPI CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white shadow-md">
                 <Package className="w-6 h-6 mb-2" />
@@ -203,7 +262,6 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            {/* RECENT MOVEMENTS */}
             <div className="bg-white rounded-2xl border shadow-sm p-6 mb-6">
               <h2 className="font-bold text-lg mb-4">Recent Movements</h2>
               {recentMovements.length === 0 ? (
@@ -223,7 +281,6 @@ export default function InventoryPage() {
               )}
             </div>
 
-            {/* LOW STOCK */}
             <div className="bg-white rounded-2xl border shadow-sm p-6">
               <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-yellow-600" /> Low Stock Alerts
@@ -250,8 +307,7 @@ export default function InventoryPage() {
               )}
             </div>
           </>
-        ) : (
-          /* PRODUCTS SECTION */
+        ) : activeSection === 'products' ? (
           <div className="space-y-4">
             <button onClick={() => setShowProductForm(!showProductForm)}
               className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-indigo-700">
@@ -357,7 +413,7 @@ export default function InventoryPage() {
                           <td className="p-4 text-right font-bold">KSh {(stock * price).toLocaleString()}</td>
                           <td className="p-4">
                             <div className="flex gap-2 justify-center">
-                              <button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
+                              <button onClick={() => downloadProductPdf(p.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
                                 <Printer className="w-4 h-4" />
                               </button>
                               <button onClick={() => deleteProduct(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
@@ -370,6 +426,71 @@ export default function InventoryPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <button onClick={() => setShowWarehouseForm(!showWarehouseForm)}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-purple-700">
+              <Plus className="w-4 h-4" /> Add Warehouse
+            </button>
+
+            {showWarehouseForm && (
+              <form onSubmit={createWarehouse} className="bg-white rounded-2xl border p-6 shadow-sm">
+                <div className="flex justify-between mb-4">
+                  <h2 className="font-bold text-lg">New Warehouse</h2>
+                  <button type="button" onClick={() => setShowWarehouseForm(false)} className="text-red-500"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Name *</label>
+                    <input type="text" value={warehouseForm.name} onChange={(e) => setWarehouseForm({...warehouseForm, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Code</label>
+                    <input type="text" value={warehouseForm.code} onChange={(e) => setWarehouseForm({...warehouseForm, code: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Address</label>
+                    <input type="text" value={warehouseForm.address} onChange={(e) => setWarehouseForm({...warehouseForm, address: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
+                  </div>
+                </div>
+                <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-purple-600 text-white font-bold shadow-md hover:bg-purple-700">Create Warehouse</button>
+              </form>
+            )}
+
+            {warehouses.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border">
+                <Warehouse className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-muted-foreground">No warehouses yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {warehouses.map((wh: any) => (
+                  <div key={wh.id} className="p-4 rounded-2xl border bg-white shadow-sm">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-lg">{wh.name}</p>
+                        <p className="text-xs text-muted-foreground">{wh.code || 'No code'}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => downloadWarehousePdf(wh.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteWarehouse(wh.id, wh.name)} disabled={deleting === wh.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
+                          {deleting === wh.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">{wh.address || 'No address'}</p>
+                    <div className="flex gap-4 mt-3 text-sm">
+                      <span>Locations: <b>{wh.locationCount || 0}</b></span>
+                      <span>Stock: <b>{wh.totalStock || 0}</b></span>
+                    </div>
+                    <div className="text-sm mt-1">Value: <b className="text-indigo-600">KSh {(wh.stockValue || 0).toLocaleString()}</b></div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
