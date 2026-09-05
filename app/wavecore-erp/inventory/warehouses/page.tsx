@@ -16,14 +16,13 @@ export default function WarehousesPage() {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
-  const [form, setForm] = useState({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
+  const [products, setProducts] = useState<any[]>([])\n  const [form, setForm] = useState({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
 
   const fetchWarehouses = async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/warehouses')
-      const data = await res.json()
+      const [warehousesRes, productsRes] = await Promise.all([\n        fetch('/api/wavecore/inventory/warehouses'),\n        fetch('/api/wavecore/inventory/products')\n      ])\n      const data = await warehousesRes.json()\n      const productsData = await productsRes.json()\n      setProducts(productsData.products || [])
       setWarehouses(data.warehouses || [])
     } catch (err) {
       setError('Failed to load warehouses')
@@ -183,6 +182,7 @@ export default function WarehousesPage() {
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Product (for stock)</label>
                 <select value={form.productId} onChange={(e) => setForm({...form, productId: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
                   <option value="">Select product...</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name} (KSh {p.sellingPrice || 0})</option>)}
                 </select>
               </div>
               <div>
