@@ -67,7 +67,7 @@ export default function MovementsPage() {
     }
   }
 
-  const deleteMovement = async (id: string) => {
+  const downloadPdf = (id: string) => {\n    window.open('/api/wavecore/inventory/movements/' + id + '/pdf', '_blank')\n  }\n\n  const deleteMovement = async (id: string) => {
     if (!confirm('Delete this movement?')) return
     setDeleting(id)
     try {
@@ -216,7 +216,7 @@ export default function MovementsPage() {
                     <td className="p-4 text-neutral-400">{m.toLocation || 'N/A'}</td>
                     <td className="p-4 text-neutral-400 text-sm">{new Date(m.createdAt).toLocaleString()}</td>
                     <td className="p-4 text-center">
-                      <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800">
+                      <button onClick={() => downloadPdf(m.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button>\n                        <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800">
                         {deleting === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </td>
