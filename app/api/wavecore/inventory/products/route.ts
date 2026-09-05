@@ -4,6 +4,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
+async function getDefaultLocationId(orgId: string): Promise<string | null> {
+  const result = await pool.query(`
+    SELECT sl.id FROM "StockLocation" sl
+    JOIN "Warehouse" w ON sl."warehouseId" = w.id
+    WHERE w."organizationId" = $1
+    LIMIT 1
+  `, [orgId]).catch(() => ({ rows: [] }))
+  return result.rows[0]?.id || null
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -13,13 +23,11 @@ export async function GET(request: NextRequest) {
       SELECT 
         p.*,
         COALESCE(sq.quantity, 0) as "stock_level",
-        COALESCE(sq."availableQty", COALESCE(sq.quantity, 0)) as "available_stock",
-        COALESCE(sq."reservedQty", 0) as "reserved_stock"
+        COALESCE(sq."availableQty", COALESCE(sq.quantity, 0)) as "available_stock"
       FROM "Product" p
       LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
-      ORDER BY p."createdAt" DESC 
-      LIMIT 200
+      ORDER BY p."createdAt" DESC LIMIT 200
     `, [session.organizationId])
 
     return NextResponse.json({ products: result.rows })
@@ -37,6 +45,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
+    const initialStock = Number(body.initialStock || 0)
 
     // Insert Product
     const result = await pool.query(`
@@ -44,21 +53,25 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()) RETURNING *
     `, [id, body.name, body.sku || '', body.barcode || null, body.description || '', body.category || '', body.unit || 'pcs', Number(body.costPrice || 0), Number(body.sellingPrice || 0), Number(body.minStock || 10), Number(body.maxStock || 100), body.isActive !== false, body.isTracked !== false, body.trackSerial || false, body.trackBatch || false, session.organizationId])
 
-    // Insert StockQuantity if initialStock > 0
-    const initialStock = Number(body.initialStock || 0)
+    // Create StockQuantity if initialStock > 0
     if (initialStock > 0) {
-      const stockId = crypto.randomUUID()
-      await pool.query(`
-        INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
-        VALUES ($1, $2, 0, $2, $3, NULL, NOW(), NOW())
-      `, [stockId, initialStock, id]).catch((err) => {
-        console.error('StockQuantity insert error:', err.message)
-      })
+      const locationId = await getDefaultLocationId(session.organizationId)
+      if (locationId) {
+        const stockId = crypto.randomUUID()
+        await pool.query(`
+          INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+          VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())
+        `, [stockId, initialStock, id, locationId]).catch((err) => {
+          console.error('StockQuantity insert error:', err.message)
+        })
+      } else {
+        console.error('No default StockLocation found for org:', session.organizationId)
+      }
     }
 
-    // Return product with stock_level
     return NextResponse.json({ 
-      product: { ...result.rows[0], stock_level: initialStock },
+      product: result.rows[0],
+      stock_level: initialStock,
       message: 'Product created' 
     }, { status: 201 })
   } catch (error) {
