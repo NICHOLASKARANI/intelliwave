@@ -13,6 +13,7 @@ export default function InventoryPage() {
   const [data, setData] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
+  const [movements, setMovements] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -20,28 +21,33 @@ export default function InventoryPage() {
   const [search, setSearch] = useState('')
   const [showProductForm, setShowProductForm] = useState(false)
   const [showWarehouseForm, setShowWarehouseForm] = useState(false)
+  const [showMovementForm, setShowMovementForm] = useState(false)
   const [deleting, setDeleting] = useState('')
   const [productForm, setProductForm] = useState({
     name: '', sku: '', category: '', costPrice: '', sellingPrice: '',
     minStock: '', maxStock: '', initialStock: '', unit: 'pcs'
   })
   const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', address: '' })
+  const [movementForm, setMovementForm] = useState({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '' })
 
   const fetchData = async () => {
     setLoading(true)
     setError('')
     try {
-      const [cmdRes, productsRes, warehousesRes] = await Promise.all([
+      const [cmdRes, productsRes, warehousesRes, movementsRes] = await Promise.all([
         fetch('/api/wavecore/inventory/command-center'),
         fetch('/api/wavecore/inventory/products'),
-        fetch('/api/wavecore/inventory/warehouses')
+        fetch('/api/wavecore/inventory/warehouses'),
+        fetch('/api/wavecore/inventory/movements')
       ])
       const cmdData = await cmdRes.json()
       const productsData = await productsRes.json()
       const warehousesData = await warehousesRes.json()
+      const movementsData = await movementsRes.json()
       setData(cmdData)
       setProducts(productsData.products || [])
       setWarehouses(warehousesData.warehouses || [])
+      setMovements(movementsData.movements || [])
     } catch (err) {
       setError('Failed to load inventory data')
     } finally {
@@ -118,6 +124,35 @@ export default function InventoryPage() {
     }
   }
 
+  const createMovement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!movementForm.productId || !movementForm.quantity || Number(movementForm.quantity) <= 0) {
+      setError('Product and valid quantity required')
+      return
+    }
+    try {
+      const res = await fetch('/api/wavecore/inventory/movements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...movementForm, quantity: Number(movementForm.quantity) })
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setSuccess('Stock movement recorded!')
+        setTimeout(() => setSuccess(''), 3000)
+        setMovementForm({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '' })
+        setShowMovementForm(false)
+        fetchData()
+      } else {
+        setError(result.error || 'Failed to record movement')
+      }
+    } catch (err) {
+      setError('Network error')
+    }
+  }
+
   const deleteProduct = async (id: string, name: string) => {
     if (!confirm('Delete product "' + name + '"?')) return
     setDeleting(id)
@@ -142,6 +177,23 @@ export default function InventoryPage() {
       const res = await fetch('/api/wavecore/inventory/warehouses?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Warehouse deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchData()
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
+
+  const deleteMovement = async (id: string) => {
+    if (!confirm('Delete this movement?')) return
+    setDeleting(id)
+    try {
+      const res = await fetch('/api/wavecore/inventory/movements?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Movement deleted!')
         setTimeout(() => setSuccess(''), 3000)
         fetchData()
       }
@@ -200,7 +252,7 @@ export default function InventoryPage() {
         {success && <div className="mb-4 p-4 rounded-xl bg-green-50 text-green-600 border border-green-200 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
         {/* NAVIGATION TABS */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           <button onClick={() => setActiveSection('dashboard')}
             className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'dashboard' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
             Dashboard
@@ -212,6 +264,10 @@ export default function InventoryPage() {
           <button onClick={() => setActiveSection('warehouses')}
             className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'warehouses' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
             Warehouses ({warehouses.length})
+          </button>
+          <button onClick={() => setActiveSection('movements')}
+            className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'movements' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
+            Movements ({movements.length})
           </button>
         </div>
 
@@ -360,7 +416,6 @@ export default function InventoryPage() {
                       <option value="kg">Kilograms</option>
                       <option value="l">Liters</option>
                       <option value="box">Box</option>
-                      <option value="carton">Carton</option>
                     </select>
                   </div>
                 </div>
@@ -374,62 +429,51 @@ export default function InventoryPage() {
                 className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search products..." />
             </div>
 
-            {filteredProducts.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border">
-                <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-muted-foreground">No products found</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-neutral-50">
-                    <tr>
-                      <th className="text-left p-4">Product</th>
-                      <th className="text-left p-4">SKU</th>
-                      <th className="text-left p-4">Category</th>
-                      <th className="text-right p-4">Cost</th>
-                      <th className="text-right p-4">Selling</th>
-                      <th className="text-right p-4">Stock</th>
-                      <th className="text-right p-4">Value</th>
-                      <th className="text-center p-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProducts.map((p: any) => {
-                      const stock = Number(p.stock_level || 0)
-                      const price = Number(p.sellingPrice || 0)
-                      return (
-                        <tr key={p.id} className="border-t hover:bg-neutral-50">
-                          <td className="p-4 font-bold">{p.name}</td>
-                          <td className="p-4 font-mono text-sm">{p.sku || 'N/A'}</td>
-                          <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-indigo-50 text-indigo-600">{p.category || 'Uncategorized'}</span></td>
-                          <td className="p-4 text-right">KSh {(Number(p.costPrice) || 0).toLocaleString()}</td>
-                          <td className="p-4 text-right">KSh {price.toLocaleString()}</td>
-                          <td className="p-4 text-right">
-                            <span className={stock === 0 ? 'text-red-600 font-bold' : stock < Number(p.minStock || 10) ? 'text-yellow-600 font-bold' : 'text-green-600 font-bold'}>
-                              {stock}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right font-bold">KSh {(stock * price).toLocaleString()}</td>
-                          <td className="p-4">
-                            <div className="flex gap-2 justify-center">
-                              <button onClick={() => downloadProductPdf(p.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
-                                <Printer className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => deleteProduct(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
-                                {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-neutral-50">
+                  <tr>
+                    <th className="text-left p-4">Product</th>
+                    <th className="text-left p-4">SKU</th>
+                    <th className="text-right p-4">Selling</th>
+                    <th className="text-right p-4">Stock</th>
+                    <th className="text-right p-4">Value</th>
+                    <th className="text-center p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((p: any) => {
+                    const stock = Number(p.stock_level || 0)
+                    const price = Number(p.sellingPrice || 0)
+                    return (
+                      <tr key={p.id} className="border-t hover:bg-neutral-50">
+                        <td className="p-4 font-bold">{p.name}</td>
+                        <td className="p-4 font-mono text-sm">{p.sku || 'N/A'}</td>
+                        <td className="p-4 text-right">KSh {price.toLocaleString()}</td>
+                        <td className="p-4 text-right">
+                          <span className={stock === 0 ? 'text-red-600 font-bold' : stock < Number(p.minStock || 10) ? 'text-yellow-600 font-bold' : 'text-green-600 font-bold'}>
+                            {stock}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right font-bold">KSh {(stock * price).toLocaleString()}</td>
+                        <td className="p-4">
+                          <div className="flex gap-2 justify-center">
+                            <button onClick={() => downloadProductPdf(p.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
+                              <Printer className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteProduct(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
+                              {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        ) : (
+        ) : activeSection === 'warehouses' ? (
           <div className="space-y-4">
             <button onClick={() => setShowWarehouseForm(!showWarehouseForm)}
               className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-purple-700">
@@ -460,39 +504,111 @@ export default function InventoryPage() {
               </form>
             )}
 
-            {warehouses.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border">
-                <Warehouse className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-muted-foreground">No warehouses yet</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {warehouses.map((wh: any) => (
-                  <div key={wh.id} className="p-4 rounded-2xl border bg-white shadow-sm">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-lg">{wh.name}</p>
-                        <p className="text-xs text-muted-foreground">{wh.code || 'No code'}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => downloadWarehousePdf(wh.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
-                          <Printer className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => deleteWarehouse(wh.id, wh.name)} disabled={deleting === wh.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
-                          {deleting === wh.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        </button>
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {warehouses.map((wh: any) => (
+                <div key={wh.id} className="p-4 rounded-2xl border bg-white shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-lg">{wh.name}</p>
+                      <p className="text-xs text-muted-foreground">{wh.code || 'No code'}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">{wh.address || 'No address'}</p>
-                    <div className="flex gap-4 mt-3 text-sm">
-                      <span>Locations: <b>{wh.locationCount || 0}</b></span>
-                      <span>Stock: <b>{wh.totalStock || 0}</b></span>
+                    <div className="flex gap-2">
+                      <button onClick={() => downloadWarehousePdf(wh.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deleteWarehouse(wh.id, wh.name)} disabled={deleting === wh.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
+                        {deleting === wh.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
                     </div>
-                    <div className="text-sm mt-1">Value: <b className="text-indigo-600">KSh {(wh.stockValue || 0).toLocaleString()}</b></div>
                   </div>
-                ))}
-              </div>
+                  <p className="text-sm text-muted-foreground mt-2">{wh.address || 'No address'}</p>
+                  <div className="flex gap-4 mt-3 text-sm">
+                    <span>Stock: <b>{wh.totalStock || 0}</b></span>
+                    <span>Value: <b>KSh {(wh.stockValue || 0).toLocaleString()}</b></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <button onClick={() => setShowMovementForm(!showMovementForm)}
+              className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-green-700">
+              <Plus className="w-4 h-4" /> Record Movement
+            </button>
+
+            {showMovementForm && (
+              <form onSubmit={createMovement} className="bg-white rounded-2xl border p-6 shadow-sm">
+                <div className="flex justify-between mb-4">
+                  <h2 className="font-bold text-lg">Stock Movement</h2>
+                  <button type="button" onClick={() => setShowMovementForm(false)} className="text-red-500"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Product *</label>
+                    <select value={movementForm.productId} onChange={(e) => setMovementForm({...movementForm, productId: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border">
+                      <option value="">Select product...</option>
+                      {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_level || 0})</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Quantity *</label>
+                    <input type="number" value={movementForm.quantity} onChange={(e) => setMovementForm({...movementForm, quantity: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Movement Type</label>
+                    <select value={movementForm.movementType} onChange={(e) => setMovementForm({...movementForm, movementType: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border">
+                      <option value="IN">Stock In</option>
+                      <option value="OUT">Stock Out</option>
+                      <option value="TRANSFER">Transfer</option>
+                      <option value="ADJUSTMENT">Adjustment</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">From Location</label>
+                    <input type="text" value={movementForm.fromLocation} onChange={(e) => setMovementForm({...movementForm, fromLocation: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">To Location</label>
+                    <input type="text" value={movementForm.toLocation} onChange={(e) => setMovementForm({...movementForm, toLocation: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
+                  </div>
+                </div>
+                <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold shadow-md hover:bg-green-700">Record Movement</button>
+              </form>
             )}
+
+            <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-neutral-50">
+                  <tr>
+                    <th className="text-left p-4">Type</th>
+                    <th className="text-left p-4">Product</th>
+                    <th className="text-right p-4">Qty</th>
+                    <th className="text-left p-4">From</th>
+                    <th className="text-left p-4">To</th>
+                    <th className="text-left p-4">Date</th>
+                    <th className="text-center p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.map((m: any) => (
+                    <tr key={m.id} className="border-t hover:bg-neutral-50">
+                      <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">{m.type || 'MOVEMENT'}</span></td>
+                      <td className="p-4 font-bold">{m.productName || 'N/A'}</td>
+                      <td className="p-4 text-right font-bold">{m.quantity || 0}</td>
+                      <td className="p-4">{m.fromLocation || 'N/A'}</td>
+                      <td className="p-4">{m.toLocation || 'N/A'}</td>
+                      <td className="p-4 text-sm">{new Date(m.createdAt).toLocaleString()}</td>
+                      <td className="p-4 text-center">
+                        <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
+                          {deleting === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
