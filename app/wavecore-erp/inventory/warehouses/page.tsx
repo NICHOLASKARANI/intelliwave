@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  Loader2, Warehouse, Plus, Trash2, Printer, Search, X,
+  Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
   ArrowLeft, RefreshCw, CheckCircle2, MapPin
 } from 'lucide-react'
 
