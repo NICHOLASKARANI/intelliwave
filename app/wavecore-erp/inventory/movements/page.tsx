@@ -175,6 +175,14 @@ export default function MovementsPage() {
                   <option value="ADJUSTMENT">Adjustment</option>
                 </select>
               </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-neutral-400">From Location</label>
+                <input type="text" value={form.fromLocation} onChange={(e) => setForm({...form, fromLocation: e.target.value})} placeholder="e.g. Main Store" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-neutral-400">To Location</label>
+                <input type="text" value={form.toLocation} onChange={(e) => setForm({...form, toLocation: e.target.value})} placeholder="e.g. Warehouse" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
+              </div>
             </div>
             <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold shadow-lg hover:bg-green-700">Record Movement</button>
           </form>
