@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Boxes, DollarSign, AlertTriangle,
   RefreshCw, Activity, XCircle, CheckCircle2,
-  Plus, Trash2, Printer, Search, X
+  Plus, Trash2, Printer, Search, X, Layers
 } from 'lucide-react'
 
 export default function InventoryPage() {
@@ -14,6 +14,7 @@ export default function InventoryPage() {
   const [products, setProducts] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [movements, setMovements] = useState<any[]>([])
+  const [ledger, setLedger] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -34,20 +35,23 @@ export default function InventoryPage() {
     setLoading(true)
     setError('')
     try {
-      const [cmdRes, productsRes, warehousesRes, movementsRes] = await Promise.all([
+      const [cmdRes, productsRes, warehousesRes, movementsRes, ledgerRes] = await Promise.all([
         fetch('/api/wavecore/inventory/command-center'),
         fetch('/api/wavecore/inventory/products'),
         fetch('/api/wavecore/inventory/warehouses'),
-        fetch('/api/wavecore/inventory/movements')
+        fetch('/api/wavecore/inventory/movements'),
+        fetch('/api/wavecore/inventory/ledger')
       ])
       const cmdData = await cmdRes.json()
       const productsData = await productsRes.json()
       const warehousesData = await warehousesRes.json()
       const movementsData = await movementsRes.json()
+      const ledgerData = await ledgerRes.json()
       setData(cmdData)
       setProducts(productsData.products || [])
       setWarehouses(warehousesData.warehouses || [])
       setMovements(movementsData.movements || [])
+      setLedger(ledgerData.ledger || [])
     } catch (err) {
       setError('Failed to load inventory data')
     } finally {
@@ -222,6 +226,14 @@ export default function InventoryPage() {
   const recentMovements = data?.recentMovements || []
   const lowStockProducts = data?.lowStockProducts || []
 
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard', count: '' },
+    { id: 'products', label: 'Products', count: products.length },
+    { id: 'warehouses', label: 'Warehouses', count: warehouses.length },
+    { id: 'movements', label: 'Movements', count: movements.length },
+    { id: 'ledger', label: 'Ledger', count: ledger.length }
+  ]
+
   return (
     <div className="min-h-screen bg-neutral-50">
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
@@ -253,22 +265,12 @@ export default function InventoryPage() {
 
         {/* NAVIGATION TABS */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          <button onClick={() => setActiveSection('dashboard')}
-            className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'dashboard' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
-            Dashboard
-          </button>
-          <button onClick={() => setActiveSection('products')}
-            className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'products' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
-            Products ({products.length})
-          </button>
-          <button onClick={() => setActiveSection('warehouses')}
-            className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'warehouses' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
-            Warehouses ({warehouses.length})
-          </button>
-          <button onClick={() => setActiveSection('movements')}
-            className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === 'movements' ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
-            Movements ({movements.length})
-          </button>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveSection(tab.id)}
+              className={'px-4 py-2 rounded-xl font-bold ' + (activeSection === tab.id ? 'bg-indigo-600 text-white' : 'bg-white text-muted-foreground hover:bg-neutral-100')}>
+              {tab.label} {tab.count !== '' && '(' + tab.count + ')'}
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -318,49 +320,50 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border shadow-sm p-6 mb-6">
-              <h2 className="font-bold text-lg mb-4">Recent Movements</h2>
-              {recentMovements.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">No recent movements</p>
-              ) : (
-                <div className="space-y-2">
-                  {recentMovements.map((m: any, i: number) => (
-                    <div key={m.id || i} className="flex justify-between items-center p-3 rounded-xl bg-neutral-50">
-                      <div>
-                        <p className="font-bold">{m.productName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground">{m.type || 'MOVEMENT'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl border shadow-sm p-6">
+                <h2 className="font-bold text-lg mb-4">Recent Movements</h2>
+                {recentMovements.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">No recent movements</p>
+                ) : (
+                  <div className="space-y-2">
+                    {recentMovements.map((m: any, i: number) => (
+                      <div key={m.id || i} className="flex justify-between items-center p-3 rounded-xl bg-neutral-50">
+                        <div>
+                          <p className="font-bold">{m.productName || 'N/A'}</p>
+                          <p className="text-xs text-muted-foreground">{m.type || 'MOVEMENT'}</p>
+                        </div>
+                        <span className="font-bold">{m.quantity || 0} units</span>
                       </div>
-                      <span className="font-bold">{m.quantity || 0} units</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            <div className="bg-white rounded-2xl border shadow-sm p-6">
-              <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-600" /> Low Stock Alerts
-              </h2>
-              {lowStockProducts.length === 0 ? (
-                <p className="text-green-600 text-center py-4 flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-5 h-5" /> All products are adequately stocked
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {lowStockProducts.map((p: any) => (
-                    <div key={p.id} className="flex justify-between items-center p-3 rounded-xl bg-yellow-50">
-                      <div>
-                        <p className="font-bold">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.sku || 'N/A'}</p>
+              <div className="bg-white rounded-2xl border shadow-sm p-6">
+                <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600" /> Low Stock Alerts
+                </h2>
+                {lowStockProducts.length === 0 ? (
+                  <p className="text-green-600 text-center py-4 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-5 h-5" /> All products are adequately stocked
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {lowStockProducts.map((p: any) => (
+                      <div key={p.id} className="flex justify-between items-center p-3 rounded-xl bg-yellow-50">
+                        <div>
+                          <p className="font-bold">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">{p.sku || 'N/A'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-red-600">{p.currentStock} / {p.minStock}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-red-600">{p.currentStock} / {p.minStock}</p>
-                        <p className="text-xs text-muted-foreground">Current / Min</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </>
         ) : activeSection === 'products' ? (
@@ -369,7 +372,6 @@ export default function InventoryPage() {
               className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-indigo-700">
               <Plus className="w-4 h-4" /> Add Product
             </button>
-
             {showProductForm && (
               <form onSubmit={createProduct} className="bg-white rounded-2xl border p-6 shadow-sm">
                 <div className="flex justify-between mb-4">
@@ -377,58 +379,25 @@ export default function InventoryPage() {
                   <button type="button" onClick={() => setShowProductForm(false)} className="text-red-500"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Name *</label>
-                    <input type="text" value={productForm.name} onChange={(e) => setProductForm({...productForm, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">SKU</label>
-                    <input type="text" value={productForm.sku} onChange={(e) => setProductForm({...productForm, sku: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Category</label>
-                    <input type="text" value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Cost Price (KSh)</label>
-                    <input type="number" value={productForm.costPrice} onChange={(e) => setProductForm({...productForm, costPrice: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Selling Price (KSh) *</label>
-                    <input type="number" value={productForm.sellingPrice} onChange={(e) => setProductForm({...productForm, sellingPrice: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Initial Stock</label>
-                    <input type="number" value={productForm.initialStock} onChange={(e) => setProductForm({...productForm, initialStock: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Min Stock</label>
-                    <input type="number" value={productForm.minStock} onChange={(e) => setProductForm({...productForm, minStock: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Max Stock</label>
-                    <input type="number" value={productForm.maxStock} onChange={(e) => setProductForm({...productForm, maxStock: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Unit</label>
-                    <select value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border">
-                      <option value="pcs">Pieces</option>
-                      <option value="kg">Kilograms</option>
-                      <option value="l">Liters</option>
-                      <option value="box">Box</option>
-                    </select>
-                  </div>
+                  <input type="text" placeholder="Name *" value={productForm.name} onChange={(e) => setProductForm({...productForm, name: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="text" placeholder="SKU" value={productForm.sku} onChange={(e) => setProductForm({...productForm, sku: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="text" placeholder="Category" value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="number" placeholder="Cost Price" value={productForm.costPrice} onChange={(e) => setProductForm({...productForm, costPrice: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="number" placeholder="Selling Price *" value={productForm.sellingPrice} onChange={(e) => setProductForm({...productForm, sellingPrice: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="number" placeholder="Initial Stock" value={productForm.initialStock} onChange={(e) => setProductForm({...productForm, initialStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="number" placeholder="Min Stock" value={productForm.minStock} onChange={(e) => setProductForm({...productForm, minStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="number" placeholder="Max Stock" value={productForm.maxStock} onChange={(e) => setProductForm({...productForm, maxStock: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <select value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} className="px-4 py-2.5 rounded-xl border">
+                    <option value="pcs">Pieces</option><option value="kg">Kilograms</option><option value="l">Liters</option><option value="box">Box</option>
+                  </select>
                 </div>
                 <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold shadow-md hover:bg-indigo-700">Create Product</button>
               </form>
             )}
-
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search products..." />
+              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search products..." />
             </div>
-
             <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
               <table className="w-full">
                 <thead className="bg-neutral-50">
@@ -450,20 +419,12 @@ export default function InventoryPage() {
                         <td className="p-4 font-bold">{p.name}</td>
                         <td className="p-4 font-mono text-sm">{p.sku || 'N/A'}</td>
                         <td className="p-4 text-right">KSh {price.toLocaleString()}</td>
-                        <td className="p-4 text-right">
-                          <span className={stock === 0 ? 'text-red-600 font-bold' : stock < Number(p.minStock || 10) ? 'text-yellow-600 font-bold' : 'text-green-600 font-bold'}>
-                            {stock}
-                          </span>
-                        </td>
+                        <td className="p-4 text-right"><span className={stock === 0 ? 'text-red-600 font-bold' : stock < Number(p.minStock || 10) ? 'text-yellow-600 font-bold' : 'text-green-600 font-bold'}>{stock}</span></td>
                         <td className="p-4 text-right font-bold">KSh {(stock * price).toLocaleString()}</td>
                         <td className="p-4">
                           <div className="flex gap-2 justify-center">
-                            <button onClick={() => downloadProductPdf(p.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
-                              <Printer className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => deleteProduct(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
-                              {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                            </button>
+                            <button onClick={() => downloadProductPdf(p.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF"><Printer className="w-4 h-4" /></button>
+                            <button onClick={() => deleteProduct(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">{deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button>
                           </div>
                         </td>
                       </tr>
@@ -479,7 +440,6 @@ export default function InventoryPage() {
               className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-purple-700">
               <Plus className="w-4 h-4" /> Add Warehouse
             </button>
-
             {showWarehouseForm && (
               <form onSubmit={createWarehouse} className="bg-white rounded-2xl border p-6 shadow-sm">
                 <div className="flex justify-between mb-4">
@@ -487,23 +447,13 @@ export default function InventoryPage() {
                   <button type="button" onClick={() => setShowWarehouseForm(false)} className="text-red-500"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Name *</label>
-                    <input type="text" value={warehouseForm.name} onChange={(e) => setWarehouseForm({...warehouseForm, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Code</label>
-                    <input type="text" value={warehouseForm.code} onChange={(e) => setWarehouseForm({...warehouseForm, code: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Address</label>
-                    <input type="text" value={warehouseForm.address} onChange={(e) => setWarehouseForm({...warehouseForm, address: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
+                  <input type="text" placeholder="Name *" value={warehouseForm.name} onChange={(e) => setWarehouseForm({...warehouseForm, name: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="text" placeholder="Code" value={warehouseForm.code} onChange={(e) => setWarehouseForm({...warehouseForm, code: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="text" placeholder="Address" value={warehouseForm.address} onChange={(e) => setWarehouseForm({...warehouseForm, address: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
                 </div>
                 <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-purple-600 text-white font-bold shadow-md hover:bg-purple-700">Create Warehouse</button>
               </form>
             )}
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {warehouses.map((wh: any) => (
                 <div key={wh.id} className="p-4 rounded-2xl border bg-white shadow-sm">
@@ -513,12 +463,8 @@ export default function InventoryPage() {
                       <p className="text-xs text-muted-foreground">{wh.code || 'No code'}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => downloadWarehousePdf(wh.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF">
-                        <Printer className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => deleteWarehouse(wh.id, wh.name)} disabled={deleting === wh.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">
-                        {deleting === wh.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </button>
+                      <button onClick={() => downloadWarehousePdf(wh.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="PDF"><Printer className="w-4 h-4" /></button>
+                      <button onClick={() => deleteWarehouse(wh.id, wh.name)} disabled={deleting === wh.id} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete">{deleting === wh.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">{wh.address || 'No address'}</p>
@@ -530,13 +476,12 @@ export default function InventoryPage() {
               ))}
             </div>
           </div>
-        ) : (
+        ) : activeSection === 'movements' ? (
           <div className="space-y-4">
             <button onClick={() => setShowMovementForm(!showMovementForm)}
               className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-green-700">
               <Plus className="w-4 h-4" /> Record Movement
             </button>
-
             {showMovementForm && (
               <form onSubmit={createMovement} className="bg-white rounded-2xl border p-6 shadow-sm">
                 <div className="flex justify-between mb-4">
@@ -544,39 +489,23 @@ export default function InventoryPage() {
                   <button type="button" onClick={() => setShowMovementForm(false)} className="text-red-500"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Product *</label>
-                    <select value={movementForm.productId} onChange={(e) => setMovementForm({...movementForm, productId: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border">
-                      <option value="">Select product...</option>
-                      {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_level || 0})</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Quantity *</label>
-                    <input type="number" value={movementForm.quantity} onChange={(e) => setMovementForm({...movementForm, quantity: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Movement Type</label>
-                    <select value={movementForm.movementType} onChange={(e) => setMovementForm({...movementForm, movementType: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border">
-                      <option value="IN">Stock In</option>
-                      <option value="OUT">Stock Out</option>
-                      <option value="TRANSFER">Transfer</option>
-                      <option value="ADJUSTMENT">Adjustment</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">From Location</label>
-                    <input type="text" value={movementForm.fromLocation} onChange={(e) => setMovementForm({...movementForm, fromLocation: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">To Location</label>
-                    <input type="text" value={movementForm.toLocation} onChange={(e) => setMovementForm({...movementForm, toLocation: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border" />
-                  </div>
+                  <select value={movementForm.productId} onChange={(e) => setMovementForm({...movementForm, productId: e.target.value})} className="px-4 py-2.5 rounded-xl border">
+                    <option value="">Select product...</option>
+                    {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_level || 0})</option>)}
+                  </select>
+                  <input type="number" placeholder="Quantity *" value={movementForm.quantity} onChange={(e) => setMovementForm({...movementForm, quantity: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <select value={movementForm.movementType} onChange={(e) => setMovementForm({...movementForm, movementType: e.target.value})} className="px-4 py-2.5 rounded-xl border">
+                    <option value="IN">Stock In</option>
+                    <option value="OUT">Stock Out</option>
+                    <option value="TRANSFER">Transfer</option>
+                    <option value="ADJUSTMENT">Adjustment</option>
+                  </select>
+                  <input type="text" placeholder="From Location" value={movementForm.fromLocation} onChange={(e) => setMovementForm({...movementForm, fromLocation: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
+                  <input type="text" placeholder="To Location" value={movementForm.toLocation} onChange={(e) => setMovementForm({...movementForm, toLocation: e.target.value})} className="px-4 py-2.5 rounded-xl border" />
                 </div>
                 <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold shadow-md hover:bg-green-700">Record Movement</button>
               </form>
             )}
-
             <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
               <table className="w-full">
                 <thead className="bg-neutral-50">
@@ -609,6 +538,38 @@ export default function InventoryPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-neutral-50">
+                <tr>
+                  <th className="text-left p-4">Transaction</th>
+                  <th className="text-left p-4">Product</th>
+                  <th className="text-right p-4">Qty</th>
+                  <th className="text-right p-4">Before</th>
+                  <th className="text-right p-4">After</th>
+                  <th className="text-left p-4">Type</th>
+                  <th className="text-left p-4">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ledger.map((l: any) => (
+                  <tr key={l.id} className="border-t hover:bg-neutral-50">
+                    <td className="p-4 font-mono text-xs">{l.transactionId || 'N/A'}</td>
+                    <td className="p-4 font-bold">{l.productName || 'N/A'}</td>
+                    <td className="p-4 text-right font-bold">{l.quantity || 0}</td>
+                    <td className="p-4 text-right">{l.beforeQuantity || 0}</td>
+                    <td className="p-4 text-right">{l.afterQuantity || 0}</td>
+                    <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">{l.transactionType || 'N/A'}</span></td>
+                    <td className="p-4 text-sm">{new Date(l.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+                {ledger.length === 0 && (
+                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No ledger entries yet</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </main>
