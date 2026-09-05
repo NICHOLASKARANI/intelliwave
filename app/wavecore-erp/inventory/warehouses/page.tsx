@@ -5,35 +5,44 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
-  ArrowLeft, RefreshCw, CheckCircle2, MapPin
+  ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity, MapPin
 } from 'lucide-react'
 
 export default function WarehousesPage() {
   const [warehouses, setWarehouses] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
-  const [products, setProducts] = useState<any[]>([])\n  const [form, setForm] = useState({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
+  const [form, setForm] = useState({ 
+    name: '', code: '', address: '', city: '', country: '', 
+    locationName: '', locationCode: '', locationsCount: '1', 
+    initialStock: '', productId: '', sellingPrice: '' 
+  })
 
   const fetchWarehouses = async () => {
     setLoading(true)
     setError('')
     try {
-      const [warehousesRes, productsRes] = await Promise.all([\n        fetch('/api/wavecore/inventory/warehouses'),\n        fetch('/api/wavecore/inventory/products')\n      ])\n      const data = await warehousesRes.json()\n      const productsData = await productsRes.json()\n      setProducts(productsData.products || [])
+      const [warehousesRes, productsRes] = await Promise.all([
+        fetch('/api/wavecore/inventory/warehouses'),
+        fetch('/api/wavecore/inventory/products')
+      ])
+      const data = await warehousesRes.json()
+      const productsData = await productsRes.json()
       setWarehouses(data.warehouses || [])
+      setProducts(productsData.products || [])
     } catch (err) {
-      setError('Failed to load warehouses')
+      setError('Failed to load data')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchWarehouses()
-  }, [])
+  useEffect(() => { fetchWarehouses() }, [])
 
   const createWarehouse = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,14 +60,13 @@ export default function WarehousesPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        setSuccess('Warehouse created successfully!')
+        setSuccess('Warehouse created!')
         setTimeout(() => setSuccess(''), 3000)
         setForm({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
         setShowForm(false)
         fetchWarehouses()
       } else {
         setError(data.error || 'Failed to create warehouse')
-        console.error('Create warehouse error:', data)
       }
     } catch (err) {
       setError('Network error')
@@ -88,13 +96,11 @@ export default function WarehousesPage() {
 
   const filtered = warehouses.filter(w => 
     (w.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (w.code || '').toLowerCase().includes(search.toLowerCase()) ||
-    (w.city || '').toLowerCase().includes(search.toLowerCase())
+    (w.code || '').toLowerCase().includes(search.toLowerCase())
   )
 
   return (
     <div className="min-h-screen bg-neutral-950">
-      {/* Dark Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-neutral-900 border-r border-neutral-800 z-50">
         <div className="p-4 border-b border-neutral-800">
           <Link href="/wavecore-erp" className="flex items-center gap-3">
@@ -104,33 +110,42 @@ export default function WarehousesPage() {
         </div>
         <nav className="p-4 space-y-2">
           <Link href="/wavecore-erp/inventory" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
-            <ArrowLeft className="w-5 h-5" /> Back to Inventory
+            <ArrowLeft className="w-5 h-5" /> Dashboard
           </Link>
           <Link href="/wavecore-erp/inventory/products" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
             <Package className="w-5 h-5" /> Products
           </Link>
-          <Link href="/wavecore-erp/inventory/warehouses" className="flex items-center gap-3 p-3 rounded-xl bg-indigo-600 text-white font-bold">
+          <Link href="/wavecore-erp/inventory/warehouses" className="flex items-center gap-3 p-3 rounded-xl bg-purple-600 text-white font-bold">
             <Warehouse className="w-5 h-5" /> Warehouses
+          </Link>
+          <Link href="/wavecore-erp/inventory/movements" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <ArrowLeftRight className="w-5 h-5" /> Movements
+          </Link>
+          <Link href="/wavecore-erp/inventory/adjustments" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <Sliders className="w-5 h-5" /> Adjustments
+          </Link>
+          <Link href="/wavecore-erp/inventory/counts" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <ClipboardList className="w-5 h-5" /> Counts
+          </Link>
+          <Link href="/wavecore-erp/inventory/ledger" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <Layers className="w-5 h-5" /> Ledger
           </Link>
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="ml-64 p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <Warehouse className="w-6 h-6 text-purple-500" /> Warehouses ({warehouses.length})
             </h1>
-            <p className="text-sm text-neutral-400 mt-1">Manage your warehouse locations</p>
+            <p className="text-sm text-neutral-400 mt-1">Manage warehouse locations</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2 hover:bg-purple-700 shadow-lg">
+            <button onClick={() => setShowForm(!showForm)} className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2 hover:bg-purple-700 shadow-lg">
               <Plus className="w-4 h-4" /> Add Warehouse
             </button>
-            <button onClick={fetchWarehouses}
-              className="px-4 py-2.5 rounded-xl bg-neutral-800 text-white font-bold flex items-center gap-2 hover:bg-neutral-700">
+            <button onClick={fetchWarehouses} className="px-4 py-2.5 rounded-xl bg-neutral-800 text-white font-bold flex items-center gap-2 hover:bg-neutral-700">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -167,16 +182,12 @@ export default function WarehousesPage() {
                 <input type="text" value={form.country} onChange={(e) => setForm({...form, country: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block text-neutral-400">Location Name</label>
-                <input type="text" value={form.locationName} onChange={(e) => setForm({...form, locationName: e.target.value})} placeholder="e.g. Main Storage" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
-              </div>
-              <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Number of Locations</label>
                 <input type="number" value={form.locationsCount} onChange={(e) => setForm({...form, locationsCount: e.target.value})} min="1" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block text-neutral-400">Location Code</label>
-                <input type="text" value={form.locationCode} onChange={(e) => setForm({...form, locationCode: e.target.value})} placeholder="e.g. LOC-001" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                <label className="text-sm font-medium mb-1 block text-neutral-400">Location Name</label>
+                <input type="text" value={form.locationName} onChange={(e) => setForm({...form, locationName: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Product (for stock)</label>
@@ -186,12 +197,8 @@ export default function WarehousesPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block text-neutral-400">Selling Price (KSh)</label>
-                <input type="number" value={form.sellingPrice} onChange={(e) => setForm({...form, sellingPrice: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
-              </div>
-              <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Initial Stock</label>
-                <input type="number" value={form.initialStock} onChange={(e) => setForm({...form, initialStock: e.target.value})} placeholder="0" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                <input type="number" value={form.initialStock} onChange={(e) => setForm({...form, initialStock: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
             </div>
             <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-purple-600 text-white font-bold shadow-lg hover:bg-purple-700">Create Warehouse</button>
@@ -200,8 +207,7 @@ export default function WarehousesPage() {
 
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Search warehouses..." />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Search warehouses..." />
         </div>
 
         {loading ? (
@@ -209,7 +215,7 @@ export default function WarehousesPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 bg-neutral-900 rounded-2xl border border-neutral-800">
             <Warehouse className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-neutral-400">No warehouses found</p>
+            <p className="text-neutral-400">No warehouses</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
