@@ -248,13 +248,13 @@ export default function InventoryPage() {
             <p className="text-sm text-muted-foreground mt-1">Manage products, warehouses, zones, bins, serials, and batches</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => { closeAllForms(); setShowProductForm(true) }} className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2"><Plus className="w-4 h-4" /> Product</button>
-            <button onClick={() => { closeAllForms(); setShowWarehouseForm(true) }} className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2"><Warehouse className="w-4 h-4" /> Warehouse</button>
-            <button onClick={() => { closeAllForms(); setShowStockForm(true) }} className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2"><ArrowLeftRight className="w-4 h-4" /> Movement</button>
-            <button onClick={() => { closeAllForms(); setShowZoneForm(true) }} className="px-4 py-2.5 rounded-xl bg-orange-600 text-white font-bold flex items-center gap-2"><MapPin className="w-4 h-4" /> Zone</button>
-            <button onClick={() => { closeAllForms(); setShowBinForm(true) }} className="px-4 py-2.5 rounded-xl bg-cyan-600 text-white font-bold flex items-center gap-2"><Box className="w-4 h-4" /> Bin</button>
-            <button onClick={() => { closeAllForms(); setShowSerialForm(true) }} className="px-4 py-2.5 rounded-xl bg-pink-600 text-white font-bold flex items-center gap-2"><Scan className="w-4 h-4" /> Serial</button>
-            <button onClick={() => { closeAllForms(); setShowBatchForm(true) }} className="px-4 py-2.5 rounded-xl bg-teal-600 text-white font-bold flex items-center gap-2"><Layers className="w-4 h-4" /> Batch</button>
+            <button onClick={() => { closeAllForms(); setShowProductForm(true) }} className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-indigo-700 transition-colors"><Plus className="w-4 h-4" /> Product</button>
+            <button onClick={() => { closeAllForms(); setShowWarehouseForm(true) }} className="px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-purple-700 transition-colors"><Warehouse className="w-4 h-4" /> Warehouse</button>
+            <button onClick={() => { closeAllForms(); setShowStockForm(true) }} className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-green-700 transition-colors"><ArrowLeftRight className="w-4 h-4" /> Movement</button>
+            <button onClick={() => { closeAllForms(); setShowZoneForm(true) }} className="px-4 py-2.5 rounded-xl bg-orange-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-orange-700 transition-colors"><MapPin className="w-4 h-4" /> Zone</button>
+            <button onClick={() => { closeAllForms(); setShowBinForm(true) }} className="px-4 py-2.5 rounded-xl bg-cyan-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-cyan-700 transition-colors"><Box className="w-4 h-4" /> Bin</button>
+            <button onClick={() => { closeAllForms(); setShowSerialForm(true) }} className="px-4 py-2.5 rounded-xl bg-pink-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-pink-700 transition-colors"><Scan className="w-4 h-4" /> Serial</button>
+            <button onClick={() => { closeAllForms(); setShowBatchForm(true) }} className="px-4 py-2.5 rounded-xl bg-teal-600 text-white font-bold flex items-center gap-2 shadow-md hover:bg-teal-700 transition-colors"><Layers className="w-4 h-4" /> Batch</button>
             <button onClick={fetchInventory} className="px-4 py-2.5 rounded-xl bg-white border font-bold"><RefreshCw className="w-4 h-4" /></button>
           </div>
         </div>
