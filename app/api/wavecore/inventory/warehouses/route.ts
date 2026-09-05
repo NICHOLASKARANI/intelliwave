@@ -41,8 +41,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-
-    // Generate unique code - use UUID if no code provided
     const code = body.code || 'WH-' + crypto.randomUUID().substring(0, 8).toUpperCase()
 
     // Insert Warehouse
@@ -51,48 +49,52 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
     `, [id, body.name, code, body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
 
-    // Create StockLocation
-    const locationId = crypto.randomUUID()
-    const locationName = body.locationName || 'Default Location'
-    const locationCode = body.locationCode || 'LOC-' + crypto.randomUUID().substring(0, 8).toUpperCase()
+    // Create MULTIPLE StockLocations based on user input
+    const numLocations = Number(body.locationsCount || body.numLocations || 1)
+    const locationIds = []
     
-    await pool.query(`
-      INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, true, NOW(), NOW())
-    `, [locationId, locationName, locationCode, id]).catch((err) => {
-      console.error('StockLocation insert error:', err.message)
-    })
+    for (let i = 0; i < numLocations; i++) {
+      const locationId = crypto.randomUUID()
+      const locationName = numLocations > 1 
+        ? (body.locationName || 'Location') + ' ' + (i + 1)
+        : (body.locationName || 'Default Location')
+      const locationCode = body.locationCode 
+        ? body.locationCode + '-' + (i + 1)
+        : 'LOC-' + crypto.randomUUID().substring(0, 8).toUpperCase()
+      
+      await pool.query(`
+        INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+      `, [locationId, locationName, locationCode, id]).catch((err) => {
+        console.error('StockLocation insert error:', err.message)
+      })
+      locationIds.push(locationId)
+    }
 
+    // If initial stock is provided, create StockQuantity at first location
+    const initialStock = Number(body.initialStock || 0)
+    if (initialStock > 0 && body.productId) {
+      const stockId = crypto.randomUUID()
+      await pool.query(`
+        INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+        VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())
+      `, [stockId, initialStock, body.productId, locationIds[0]]).catch((err) => {
+        console.error('StockQuantity insert error:', err.message)
+      })
+    }
+
+    // Return with the values user inserted
+    const stockValue = initialStock * Number(body.sellingPrice || 0)
     const warehouseWithStats = {
       ...result.rows[0],
-      locationCount: 1,
-      totalStock: 0,
-      stockValue: 0
+      locationCount: numLocations,
+      totalStock: initialStock,
+      stockValue: stockValue
     }
 
     return NextResponse.json({ warehouse: warehouseWithStats }, { status: 201 })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Warehouses POST error:', error)
-    
-    // If duplicate code, retry with UUID
-    if (error.message && error.message.includes('duplicate key')) {
-      const body = await request.json().catch(() => ({}))
-      const crypto = require('crypto')
-      const id = crypto.randomUUID()
-      const code = 'WH-' + crypto.randomUUID().substring(0, 8).toUpperCase()
-      
-      const result = await pool.query(`
-        INSERT INTO "Warehouse" (id, name, code, address, city, country, "isActive", "organizationId", "createdAt", "updatedAt")
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
-      `, [id, body.name, code, body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId]).catch(() => null)
-      
-      if (result && result.rows && result.rows[0]) {
-        return NextResponse.json({ 
-          warehouse: { ...result.rows[0], locationCount: 1, totalStock: 0, stockValue: 0 }
-        }, { status: 201 })
-      }
-    }
-    
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

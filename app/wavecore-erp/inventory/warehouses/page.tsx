@@ -16,7 +16,7 @@ export default function WarehousesPage() {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
-  const [form, setForm] = useState({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', initialStock: '', productId: '' })
+  const [form, setForm] = useState({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
 
   const fetchWarehouses = async () => {
     setLoading(true)
@@ -54,7 +54,7 @@ export default function WarehousesPage() {
       if (res.ok) {
         setSuccess('Warehouse created successfully!')
         setTimeout(() => setSuccess(''), 3000)
-        setForm({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', initialStock: '', productId: '' })
+        setForm({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
         setShowForm(false)
         fetchWarehouses()
       } else {
@@ -172,8 +172,22 @@ export default function WarehousesPage() {
                 <input type="text" value={form.locationName} onChange={(e) => setForm({...form, locationName: e.target.value})} placeholder="e.g. Main Storage" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
               <div>
+                <label className="text-sm font-medium mb-1 block text-neutral-400">Number of Locations</label>
+                <input type="number" value={form.locationsCount} onChange={(e) => setForm({...form, locationsCount: e.target.value})} min="1" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              </div>
+              <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Location Code</label>
                 <input type="text" value={form.locationCode} onChange={(e) => setForm({...form, locationCode: e.target.value})} placeholder="e.g. LOC-001" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-neutral-400">Product (for stock)</label>
+                <select value={form.productId} onChange={(e) => setForm({...form, productId: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <option value="">Select product...</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-neutral-400">Selling Price (KSh)</label>
+                <input type="number" value={form.sellingPrice} onChange={(e) => setForm({...form, sellingPrice: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Initial Stock</label>
