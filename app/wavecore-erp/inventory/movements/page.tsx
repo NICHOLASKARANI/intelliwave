@@ -67,7 +67,7 @@ export default function MovementsPage() {
     }
   }
 
-  const downloadPdf = (id: string) => {\n    window.open('/api/wavecore/inventory/movements/' + id + '/pdf', '_blank')\n  }\n\n  const deleteMovement = async (id: string) => {
+  const downloadPdf = (id: string) => {('/api/wavecore/inventory/movements/' + id + '/pdf', '_blank')\n  }\n\n  const deleteMovement = async (id: string) => {
     if (!confirm('Delete this movement?')) return
     setDeleting(id)
     try {
