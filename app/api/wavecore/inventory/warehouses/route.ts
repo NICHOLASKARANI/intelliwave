@@ -10,11 +10,20 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT w.*,
+      SELECT 
+        w.*,
         (SELECT COUNT(*) FROM "StockLocation" sl WHERE sl."warehouseId" = w.id) as "locationCount",
-        (SELECT COALESCE(SUM(sq.quantity), 0) FROM "StockQuantity" sq JOIN "StockLocation" sl ON sq."locationId" = sl.id WHERE sl."warehouseId" = w.id) as "totalStock",
-        (SELECT COALESCE(SUM(p."sellingPrice" * COALESCE(sq.quantity, 0)), 0) FROM "StockQuantity" sq JOIN "StockLocation" sl ON sq."locationId" = sl.id JOIN "Product" p ON sq."productId" = p.id WHERE sl."warehouseId" = w.id) as "stockValue"
-      FROM "Warehouse" w WHERE w."organizationId" = $1 ORDER BY w.name ASC
+        (SELECT COALESCE(SUM(sq.quantity), 0) FROM "StockQuantity" sq 
+         JOIN "StockLocation" sl ON sq."locationId" = sl.id 
+         WHERE sl."warehouseId" = w.id) as "totalStock",
+        (SELECT COALESCE(SUM(p."sellingPrice" * COALESCE(sq.quantity, 0)), 0) 
+         FROM "StockQuantity" sq 
+         JOIN "StockLocation" sl ON sq."locationId" = sl.id 
+         JOIN "Product" p ON sq."productId" = p.id
+         WHERE sl."warehouseId" = w.id) as "stockValue"
+      FROM "Warehouse" w 
+      WHERE w."organizationId" = $1 
+      ORDER BY w.name ASC
     `, [session.organizationId]).catch(() => ({ rows: [] }))
 
     return NextResponse.json({ warehouses: result.rows })
@@ -39,7 +48,7 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
     `, [id, body.name, body.code || 'WH-' + Date.now().toString().slice(-4), body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
 
-    // Create StockLocation for this warehouse
+    // Create StockLocation
     const locationId = crypto.randomUUID()
     const locationName = body.locationName || 'Default Location'
     const locationCode = body.locationCode || 'LOC-' + Date.now().toString().slice(-4)
@@ -51,24 +60,12 @@ export async function POST(request: NextRequest) {
       console.error('StockLocation insert error:', err.message)
     })
 
-    // If initial stock is provided, create StockQuantity
-    const initialStock = Number(body.initialStock || 0)
-    if (initialStock > 0 && body.productId) {
-      const stockId = crypto.randomUUID()
-      await pool.query(`
-        INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
-        VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())
-      `, [stockId, initialStock, body.productId, locationId]).catch((err) => {
-        console.error('StockQuantity insert error:', err.message)
-      })
-    }
-
-    // Return warehouse with location count, total stock, stock value
+    // Return warehouse with correct stats
     const warehouseWithStats = {
       ...result.rows[0],
       locationCount: 1,
-      totalStock: initialStock,
-      stockValue: initialStock * Number(body.sellingPrice || 0)
+      totalStock: 0,
+      stockValue: 0
     }
 
     return NextResponse.json({ warehouse: warehouseWithStats }, { status: 201 })
@@ -87,11 +84,8 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    // Delete StockQuantity first
     await pool.query('DELETE FROM "StockQuantity" WHERE "locationId" IN (SELECT id FROM "StockLocation" WHERE "warehouseId" = $1)', [id]).catch(() => {})
-    // Delete StockLocation
     await pool.query('DELETE FROM "StockLocation" WHERE "warehouseId" = $1', [id]).catch(() => {})
-    // Delete Warehouse
     await pool.query('DELETE FROM "Warehouse" WHERE id = $1 AND "organizationId" = $2', [id, session.organizationId])
 
     return NextResponse.json({ success: true })
