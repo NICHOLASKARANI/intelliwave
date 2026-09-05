@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT p.*, COALESCE(sq.quantity, 0) as "stock_level"
+      SELECT p.*, COALESCE(sq.quantity, 0) as "stock_level", COALESCE(sq."availableQty", 0) as "available_stock"
       FROM "Product" p
       LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
@@ -38,13 +38,16 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()) RETURNING *
     `, [id, body.name, body.sku || '', body.barcode || null, body.description || '', body.category || '', body.unit || 'pcs', Number(body.costPrice || 0), Number(body.sellingPrice || 0), Number(body.minStock || 10), Number(body.maxStock || 100), body.isActive !== false, body.isTracked !== false, body.trackSerial || false, body.trackBatch || false, session.organizationId])
 
+    // Insert into StockQuantity - CORRECT columns WITHOUT organizationId
     if (body.initialStock && Number(body.initialStock) > 0) {
       const stockId = crypto.randomUUID()
+      const qty = Number(body.initialStock)
       await pool.query(`
-        INSERT INTO "StockQuantity" (id, quantity, "availableQty", "productId", "organizationId", "createdAt", "updatedAt")
-        VALUES ($1, $2, $2, $3, $4, NOW(), NOW())
-        ON CONFLICT ("productId", "organizationId") DO UPDATE SET quantity = EXCLUDED.quantity, "availableQty" = EXCLUDED."availableQty"
-      `, [stockId, Number(body.initialStock), id, session.organizationId]).catch(() => {})
+        INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+        VALUES ($1, $2, 0, $2, $3, NULL, NOW(), NOW())
+      `, [stockId, qty, id]).catch((err) => {
+        console.error('StockQuantity insert error:', err)
+      })
     }
 
     return NextResponse.json({ product: result.rows[0] }, { status: 201 })

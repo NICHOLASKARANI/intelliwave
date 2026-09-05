@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ movements: result.rows })
   } catch (error) {
-    console.error('Movements GET error:', error)
     return NextResponse.json({ movements: [] })
   }
 }
@@ -44,21 +43,21 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, 'COMPLETED', $3, $4, $5, $6, $7, $8, NOW(), NOW())
     `, [id, movementType, productId, productName, quantity, body.fromLocation || '', body.toLocation || '', session.organizationId]).catch(() => {})
 
+    // Update StockQuantity - CORRECT columns
     if (movementType === 'IN' || movementType === 'RECEIPT') {
-      const existing = await pool.query('SELECT id FROM "StockQuantity" WHERE "productId" = $1 AND "organizationId" = $2', [productId, session.organizationId]).catch(() => ({ rows: [] }))
+      const existing = await pool.query('SELECT id FROM "StockQuantity" WHERE "productId" = $1', [productId]).catch(() => ({ rows: [] }))
       if (existing.rows.length > 0) {
-        await pool.query('UPDATE "StockQuantity" SET quantity = quantity + $1, "updatedAt" = NOW() WHERE "productId" = $2 AND "organizationId" = $3', [quantity, productId, session.organizationId]).catch(() => {})
+        await pool.query('UPDATE "StockQuantity" SET quantity = quantity + $1, "availableQty" = "availableQty" + $1, "updatedAt" = NOW() WHERE "productId" = $2', [quantity, productId]).catch((err) => console.error('Stock update error:', err))
       } else {
         const stockId = crypto.randomUUID()
-        await pool.query('INSERT INTO "StockQuantity" (id, quantity, "availableQty", "productId", "organizationId", "createdAt", "updatedAt") VALUES ($1, $2, $2, $3, $4, NOW(), NOW())', [stockId, quantity, productId, session.organizationId]).catch(() => {})
+        await pool.query('INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt") VALUES ($1, $2, 0, $2, $3, NULL, NOW(), NOW())', [stockId, quantity, productId]).catch((err) => console.error('Stock insert error:', err))
       }
     } else if (movementType === 'OUT' || movementType === 'DELIVERY') {
-      await pool.query('UPDATE "StockQuantity" SET quantity = GREATEST(0, quantity - $1), "updatedAt" = NOW() WHERE "productId" = $2 AND "organizationId" = $3', [quantity, productId, session.organizationId]).catch(() => {})
+      await pool.query('UPDATE "StockQuantity" SET quantity = GREATEST(0, quantity - $1), "availableQty" = GREATEST(0, "availableQty" - $1), "updatedAt" = NOW() WHERE "productId" = $2', [quantity, productId]).catch(() => {})
     }
 
     return NextResponse.json({ success: true, movementId: id }, { status: 201 })
   } catch (error) {
-    console.error('Movements POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
@@ -67,16 +66,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
-
     await pool.query('DELETE FROM "StockMove" WHERE id = $1 AND "organizationId" = $2', [id, session.organizationId])
-
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Movements DELETE error:', error)
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
 }
