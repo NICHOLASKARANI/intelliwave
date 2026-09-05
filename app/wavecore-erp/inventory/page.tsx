@@ -30,17 +30,21 @@ export default function InventoryPage() {
   })
   const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', address: '' })
   const [movementForm, setMovementForm] = useState({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '' })
+  const [adjustments, setAdjustments] = useState<any[]>([])
+  const [showAdjustmentForm, setShowAdjustmentForm] = useState(false)
+  const [adjustmentForm, setAdjustmentForm] = useState({ productId: '', quantity: '', reason: '', adjustmentType: 'MANUAL' })
 
   const fetchData = async () => {
     setLoading(true)
     setError('')
     try {
-      const [cmdRes, productsRes, warehousesRes, movementsRes, ledgerRes] = await Promise.all([
+      const [cmdRes, productsRes, warehousesRes, movementsRes, ledgerRes, adjustmentsRes] = await Promise.all([
         fetch('/api/wavecore/inventory/command-center'),
         fetch('/api/wavecore/inventory/products'),
         fetch('/api/wavecore/inventory/warehouses'),
         fetch('/api/wavecore/inventory/movements'),
-        fetch('/api/wavecore/inventory/ledger')
+        fetch('/api/wavecore/inventory/ledger'),
+        fetch('/api/wavecore/inventory/adjustments')
       ])
       const cmdData = await cmdRes.json()
       const productsData = await productsRes.json()
@@ -52,6 +56,8 @@ export default function InventoryPage() {
       setWarehouses(warehousesData.warehouses || [])
       setMovements(movementsData.movements || [])
       setLedger(ledgerData.ledger || [])
+      const adjustmentsData = await adjustmentsRes.json()
+      setAdjustments(adjustmentsData.adjustments || [])
     } catch (err) {
       setError('Failed to load inventory data')
     } finally {
@@ -210,6 +216,56 @@ export default function InventoryPage() {
 
   const downloadProductPdf = (id: string) => {
     window.open('/api/wavecore/inventory/products/' + id + '/pdf', '_blank')
+  }
+
+  const createAdjustment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!adjustmentForm.productId || !adjustmentForm.quantity) {
+      setError('Product and quantity required')
+      return
+    }
+    try {
+      const res = await fetch('/api/wavecore/inventory/adjustments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...adjustmentForm, quantity: Number(adjustmentForm.quantity) })
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setSuccess('Adjustment created!')
+        setTimeout(() => setSuccess(''), 3000)
+        setAdjustmentForm({ productId: '', quantity: '', reason: '', adjustmentType: 'MANUAL' })
+        setShowAdjustmentForm(false)
+        fetchData()
+      } else {
+        setError(result.error || 'Failed to create adjustment')
+      }
+    } catch (err) {
+      setError('Network error')
+    }
+  }
+
+  const deleteAdjustment = async (id: string) => {
+    if (!confirm('Delete this adjustment?')) return
+    setDeleting(id)
+    try {
+      const res = await fetch('/api/wavecore/inventory/adjustments?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Adjustment deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchData()
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
+
+  const downloadAdjustmentPdf = (id: string) => {
+    window.open('/api/wavecore/inventory/adjustments/' + id + '/pdf', '_blank')
   }
 
   const downloadWarehousePdf = (id: string) => {
