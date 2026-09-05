@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
     `, [id, body.name, body.code || 'WH-' + Date.now().toString().slice(-4), body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
 
+    console.log('Warehouse created:', result.rows[0])
     return NextResponse.json({ warehouse: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Warehouses POST error:', error)

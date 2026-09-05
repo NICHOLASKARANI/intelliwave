@@ -59,6 +59,7 @@ export default function WarehousesPage() {
         fetchWarehouses()
       } else {
         setError(data.error || 'Failed to create warehouse')
+        console.error('Create warehouse error:', data)
       }
     } catch (err) {
       setError('Network error')
