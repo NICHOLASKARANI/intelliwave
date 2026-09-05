@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-    const code = body.code || 'WH-' + crypto.randomUUID().substring(0, 8).toUpperCase()
+
+    // Always generate a unique code using full UUID
+    const code = body.code && body.code.trim() !== '' 
+      ? body.code.trim() 
+      : 'WH-' + crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase()
 
     // Insert Warehouse
     const result = await pool.query(`
@@ -49,8 +53,8 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
     `, [id, body.name, code, body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
 
-    // Create MULTIPLE StockLocations based on user input
-    const numLocations = Number(body.locationsCount || body.numLocations || 1)
+    // Create StockLocation(s)
+    const numLocations = Math.max(1, Number(body.locationsCount || 1))
     const locationIds = []
     
     for (let i = 0; i < numLocations; i++) {
@@ -58,9 +62,7 @@ export async function POST(request: NextRequest) {
       const locationName = numLocations > 1 
         ? (body.locationName || 'Location') + ' ' + (i + 1)
         : (body.locationName || 'Default Location')
-      const locationCode = body.locationCode 
-        ? body.locationCode + '-' + (i + 1)
-        : 'LOC-' + crypto.randomUUID().substring(0, 8).toUpperCase()
+      const locationCode = 'LOC-' + crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase()
       
       await pool.query(`
         INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
@@ -71,9 +73,12 @@ export async function POST(request: NextRequest) {
       locationIds.push(locationId)
     }
 
-    // If initial stock is provided, create StockQuantity at first location
+    // If initial stock and product provided
     const initialStock = Number(body.initialStock || 0)
-    if (initialStock > 0 && body.productId) {
+    let totalStock = 0
+    let stockValue = 0
+    
+    if (initialStock > 0 && body.productId && locationIds.length > 0) {
       const stockId = crypto.randomUUID()
       await pool.query(`
         INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
@@ -81,14 +86,18 @@ export async function POST(request: NextRequest) {
       `, [stockId, initialStock, body.productId, locationIds[0]]).catch((err) => {
         console.error('StockQuantity insert error:', err.message)
       })
+      totalStock = initialStock
+      
+      // Get product selling price
+      const productResult = await pool.query('SELECT "sellingPrice" FROM "Product" WHERE id = $1', [body.productId]).catch(() => ({ rows: [] }))
+      const sellingPrice = Number(productResult.rows[0]?.sellingPrice || 0)
+      stockValue = initialStock * sellingPrice
     }
 
-    // Return with the values user inserted
-    const stockValue = initialStock * Number(body.sellingPrice || 0)
     const warehouseWithStats = {
       ...result.rows[0],
       locationCount: numLocations,
-      totalStock: initialStock,
+      totalStock: totalStock,
       stockValue: stockValue
     }
 
