@@ -42,16 +42,19 @@ export async function POST(request: NextRequest) {
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
+    // Generate unique code - use UUID if no code provided
+    const code = body.code || 'WH-' + crypto.randomUUID().substring(0, 8).toUpperCase()
+
     // Insert Warehouse
     const result = await pool.query(`
       INSERT INTO "Warehouse" (id, name, code, address, city, country, "isActive", "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
-    `, [id, body.name, body.code || 'WH-' + Date.now().toString().slice(-4), body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
+    `, [id, body.name, code, body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
 
     // Create StockLocation
     const locationId = crypto.randomUUID()
     const locationName = body.locationName || 'Default Location'
-    const locationCode = body.locationCode || 'LOC-' + Date.now().toString().slice(-4)
+    const locationCode = body.locationCode || 'LOC-' + crypto.randomUUID().substring(0, 8).toUpperCase()
     
     await pool.query(`
       INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
@@ -60,7 +63,6 @@ export async function POST(request: NextRequest) {
       console.error('StockLocation insert error:', err.message)
     })
 
-    // Return warehouse with correct stats
     const warehouseWithStats = {
       ...result.rows[0],
       locationCount: 1,
@@ -69,8 +71,28 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ warehouse: warehouseWithStats }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Warehouses POST error:', error)
+    
+    // If duplicate code, retry with UUID
+    if (error.message && error.message.includes('duplicate key')) {
+      const body = await request.json().catch(() => ({}))
+      const crypto = require('crypto')
+      const id = crypto.randomUUID()
+      const code = 'WH-' + crypto.randomUUID().substring(0, 8).toUpperCase()
+      
+      const result = await pool.query(`
+        INSERT INTO "Warehouse" (id, name, code, address, city, country, "isActive", "organizationId", "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
+      `, [id, body.name, code, body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId]).catch(() => null)
+      
+      if (result && result.rows && result.rows[0]) {
+        return NextResponse.json({ 
+          warehouse: { ...result.rows[0], locationCount: 1, totalStock: 0, stockValue: 0 }
+        }, { status: 201 })
+      }
+    }
+    
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
