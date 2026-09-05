@@ -208,6 +208,8 @@ export default function MovementsPage() {
                   <th className="text-left p-4 text-neutral-400">Type</th>
                   <th className="text-left p-4 text-neutral-400">Product</th>
                   <th className="text-right p-4 text-neutral-400">Qty</th>
+                  <th className="text-left p-4 text-neutral-400">From</th>
+                  <th className="text-left p-4 text-neutral-400">To</th>
                   <th className="text-left p-4 text-neutral-400">Date</th>
                   <th className="text-center p-4 text-neutral-400">Actions</th>
                 </tr>
@@ -218,6 +220,8 @@ export default function MovementsPage() {
                     <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-blue-900/50 text-blue-300">{m.type || 'MOVEMENT'}</span></td>
                     <td className="p-4 font-bold text-white">{m.productName || 'N/A'}</td>
                     <td className="p-4 text-right font-bold text-white">{m.quantity || 0}</td>
+                    <td className="p-4 text-neutral-400">{m.fromLocation || "N/A"}</td>
+                    <td className="p-4 text-neutral-400">{m.toLocation || "N/A"}</td>
                     <td className="p-4 text-neutral-400 text-sm">{new Date(m.date || m.createdAt).toLocaleString()}</td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-center">

@@ -13,9 +13,11 @@ export async function GET(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT sm.*, p.name as "productName", p.sku
+      SELECT sm.*, p.name as "productName", p.sku, fl.name as "fromLocation", tl.name as "toLocation"
       FROM "StockMove" sm
       LEFT JOIN "Product" p ON p.id = sm."productId"
+      LEFT JOIN "StockLocation" fl ON fl.id = sm."fromLocationId"
+      LEFT JOIN "StockLocation" tl ON tl.id = sm."toLocationId"
       WHERE sm.id = $1 AND sm."organizationId" = $2
     `, [params.id, session.organizationId])
 
