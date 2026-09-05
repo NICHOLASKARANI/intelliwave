@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  Loader2, Package, Warehouse, Plus, Trash2, Search, X,
-  ArrowLeft, RefreshCw, CheckCircle2, ArrowLeftRight
+  Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
+  ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity
 } from 'lucide-react'
 
 export default function MovementsPage() {
@@ -67,7 +67,7 @@ export default function MovementsPage() {
     }
   }
 
-  const downloadPdf = (id: string) => {('/api/wavecore/inventory/movements/' + id + '/pdf', '_blank')\n  }\n\n  const deleteMovement = async (id: string) => {
+  const deleteMovement = async (id: string) => {
     if (!confirm('Delete this movement?')) return
     setDeleting(id)
     try {
@@ -84,6 +84,10 @@ export default function MovementsPage() {
     }
   }
 
+  const downloadPdf = (id: string) => {
+    window.open('/api/wavecore/inventory/movements/' + id + '/pdf', '_blank')
+  }
+
   const filtered = movements.filter(m => 
     (m.productName || '').toLowerCase().includes(search.toLowerCase()) ||
     (m.type || '').toLowerCase().includes(search.toLowerCase())
@@ -91,7 +95,6 @@ export default function MovementsPage() {
 
   return (
     <div className="min-h-screen bg-neutral-950">
-      {/* Dark Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-neutral-900 border-r border-neutral-800 z-50">
         <div className="p-4 border-b border-neutral-800">
           <Link href="/wavecore-erp" className="flex items-center gap-3">
@@ -101,7 +104,7 @@ export default function MovementsPage() {
         </div>
         <nav className="p-4 space-y-2">
           <Link href="/wavecore-erp/inventory" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
-            <ArrowLeft className="w-5 h-5" /> Back to Inventory
+            <ArrowLeft className="w-5 h-5" /> Dashboard
           </Link>
           <Link href="/wavecore-erp/inventory/products" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
             <Package className="w-5 h-5" /> Products
@@ -112,25 +115,31 @@ export default function MovementsPage() {
           <Link href="/wavecore-erp/inventory/movements" className="flex items-center gap-3 p-3 rounded-xl bg-green-600 text-white font-bold">
             <ArrowLeftRight className="w-5 h-5" /> Movements
           </Link>
+          <Link href="/wavecore-erp/inventory/adjustments" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <Sliders className="w-5 h-5" /> Adjustments
+          </Link>
+          <Link href="/wavecore-erp/inventory/counts" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <ClipboardList className="w-5 h-5" /> Counts
+          </Link>
+          <Link href="/wavecore-erp/inventory/ledger" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <Layers className="w-5 h-5" /> Ledger
+          </Link>
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="ml-64 p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <ArrowLeftRight className="w-6 h-6 text-green-500" /> Stock Movements ({movements.length})
             </h1>
-            <p className="text-sm text-neutral-400 mt-1">Record stock in, out, and transfers</p>
+            <p className="text-sm text-neutral-400 mt-1">Record stock in and out</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 hover:bg-green-700 shadow-lg">
+            <button onClick={() => setShowForm(!showForm)} className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 hover:bg-green-700 shadow-lg">
               <Plus className="w-4 h-4" /> Record Movement
             </button>
-            <button onClick={fetchData}
-              className="px-4 py-2.5 rounded-xl bg-neutral-800 text-white font-bold flex items-center gap-2 hover:bg-neutral-700">
+            <button onClick={fetchData} className="px-4 py-2.5 rounded-xl bg-neutral-800 text-white font-bold flex items-center gap-2 hover:bg-neutral-700">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -166,14 +175,6 @@ export default function MovementsPage() {
                   <option value="ADJUSTMENT">Adjustment</option>
                 </select>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block text-neutral-400">From Location</label>
-                <input type="text" value={form.fromLocation} onChange={(e) => setForm({...form, fromLocation: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block text-neutral-400">To Location</label>
-                <input type="text" value={form.toLocation} onChange={(e) => setForm({...form, toLocation: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
             </div>
             <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold shadow-lg hover:bg-green-700">Record Movement</button>
           </form>
@@ -181,8 +182,7 @@ export default function MovementsPage() {
 
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Search movements..." />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Search movements..." />
         </div>
 
         {loading ? (
@@ -200,8 +200,6 @@ export default function MovementsPage() {
                   <th className="text-left p-4 text-neutral-400">Type</th>
                   <th className="text-left p-4 text-neutral-400">Product</th>
                   <th className="text-right p-4 text-neutral-400">Qty</th>
-                  <th className="text-left p-4 text-neutral-400">From</th>
-                  <th className="text-left p-4 text-neutral-400">To</th>
                   <th className="text-left p-4 text-neutral-400">Date</th>
                   <th className="text-center p-4 text-neutral-400">Actions</th>
                 </tr>
@@ -212,13 +210,16 @@ export default function MovementsPage() {
                     <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-blue-900/50 text-blue-300">{m.type || 'MOVEMENT'}</span></td>
                     <td className="p-4 font-bold text-white">{m.productName || 'N/A'}</td>
                     <td className="p-4 text-right font-bold text-white">{m.quantity || 0}</td>
-                    <td className="p-4 text-neutral-400">{m.fromLocation || 'N/A'}</td>
-                    <td className="p-4 text-neutral-400">{m.toLocation || 'N/A'}</td>
-                    <td className="p-4 text-neutral-400 text-sm">{new Date(m.createdAt).toLocaleString()}</td>
-                    <td className="p-4 text-center">
-                      <button onClick={() => downloadPdf(m.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button>\n                        <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800">
-                        {deleting === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </button>
+                    <td className="p-4 text-neutral-400 text-sm">{new Date(m.date || m.createdAt).toLocaleString()}</td>
+                    <td className="p-4">
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => downloadPdf(m.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF">
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
+                          {deleting === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
