@@ -10,11 +10,16 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT p.*, COALESCE(sq.quantity, 0) as "stock_level", COALESCE(sq."availableQty", 0) as "available_stock"
+      SELECT 
+        p.*,
+        COALESCE(sq.quantity, 0) as "stock_level",
+        COALESCE(sq."availableQty", COALESCE(sq.quantity, 0)) as "available_stock",
+        COALESCE(sq."reservedQty", 0) as "reserved_stock"
       FROM "Product" p
       LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
-      ORDER BY p."createdAt" DESC LIMIT 200
+      ORDER BY p."createdAt" DESC 
+      LIMIT 200
     `, [session.organizationId])
 
     return NextResponse.json({ products: result.rows })
@@ -33,24 +38,29 @@ export async function POST(request: NextRequest) {
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
+    // Insert Product
     const result = await pool.query(`
       INSERT INTO "Product" (id, name, sku, barcode, description, category, unit, "costPrice", "sellingPrice", "minStock", "maxStock", "isActive", "isTracked", "trackSerial", "trackBatch", "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()) RETURNING *
     `, [id, body.name, body.sku || '', body.barcode || null, body.description || '', body.category || '', body.unit || 'pcs', Number(body.costPrice || 0), Number(body.sellingPrice || 0), Number(body.minStock || 10), Number(body.maxStock || 100), body.isActive !== false, body.isTracked !== false, body.trackSerial || false, body.trackBatch || false, session.organizationId])
 
-    // Insert into StockQuantity - CORRECT columns WITHOUT organizationId
-    if (body.initialStock && Number(body.initialStock) > 0) {
+    // Insert StockQuantity if initialStock > 0
+    const initialStock = Number(body.initialStock || 0)
+    if (initialStock > 0) {
       const stockId = crypto.randomUUID()
-      const qty = Number(body.initialStock)
       await pool.query(`
         INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
         VALUES ($1, $2, 0, $2, $3, NULL, NOW(), NOW())
-      `, [stockId, qty, id]).catch((err) => {
-        console.error('StockQuantity insert error:', err)
+      `, [stockId, initialStock, id]).catch((err) => {
+        console.error('StockQuantity insert error:', err.message)
       })
     }
 
-    return NextResponse.json({ product: result.rows[0] }, { status: 201 })
+    // Return product with stock_level
+    return NextResponse.json({ 
+      product: { ...result.rows[0], stock_level: initialStock },
+      message: 'Product created' 
+    }, { status: 201 })
   } catch (error) {
     console.error('Products POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
