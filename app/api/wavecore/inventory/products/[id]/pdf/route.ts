@@ -13,11 +13,7 @@ export async function GET(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT 
-        p.*,
-        COALESCE(sq.quantity, 0) as "currentStock",
-        COALESCE(sq."availableQty", COALESCE(sq.quantity, 0)) as "availableStock",
-        COALESCE(sq."reservedQty", 0) as "reservedStock"
+      SELECT p.*, COALESCE(sq.quantity, 0) as "currentStock"
       FROM "Product" p
       LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p.id = $1 AND p."organizationId" = $2
@@ -29,107 +25,42 @@ export async function GET(
 
     const product = result.rows[0]
     const stockValue = Number(product.sellingPrice || 0) * Number(product.currentStock || 0)
-    const costValue = Number(product.costPrice || 0) * Number(product.currentStock || 0)
-    const potentialProfit = stockValue - costValue
-    const stockStatus = Number(product.currentStock || 0) === 0 
-      ? 'OUT OF STOCK' 
-      : Number(product.currentStock || 0) < Number(product.minStock || 10) 
-        ? 'LOW STOCK' 
-        : 'IN STOCK'
 
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Inventory Report - ${product.name}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; background: #fff; }
-    .header { text-align: center; border-bottom: 4px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }
-    .company { font-size: 28px; font-weight: bold; color: #4f46e5; }
-    .title { font-size: 18px; color: #6b7280; margin-top: 5px; }
-    .product-name { font-size: 32px; font-weight: bold; text-align: center; color: #111827; margin: 30px 0; }
-    .status-badge { display: inline-block; padding: 8px 16px; border-radius: 9999px; font-weight: bold; font-size: 14px; }
-    .status-in { background: #d1fae5; color: #065f46; }
-    .status-low { background: #fef3c7; color: #92400e; }
-    .status-out { background: #fee2e2; color: #991b1b; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 30px 0; }
-    .info-card { padding: 20px; border: 2px solid #e5e7eb; border-radius: 12px; text-align: center; }
-    .info-card.highlight { border-color: #4f46e5; background: #eef2ff; }
-    .info-label { font-size: 12px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-value { font-size: 24px; font-weight: bold; color: #4f46e5; }
-    .info-value.green { color: #16a34a; }
-    .info-value.red { color: #dc2626; }
-    .info-value.yellow { color: #d97706; }
-    .barcode { text-align: center; margin: 20px 0; font-family: monospace; font-size: 14px; letter-spacing: 2px; }
-    .footer { margin-top: 40px; text-align: center; color: #9ca3af; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="company">IntelliWavve WaveCore ERP</div>
-    <div class="title">Inventory Product Report</div>
-  </div>
-  
-  <div class="product-name">${product.name}</div>
-  
-  <div class="barcode">SKU: ${product.sku || 'N/A'} | Category: ${product.category || 'N/A'}</div>
-  
-  <div style="text-align: center; margin: 20px 0;">
-    <span class="status-badge ${stockStatus === 'OUT OF STOCK' ? 'status-out' : stockStatus === 'LOW STOCK' ? 'status-low' : 'status-in'}">${stockStatus}</span>
-  </div>
-  
-  <div class="info-grid">
-    <div class="info-card">
-      <div class="info-label">Cost Price</div>
-      <div class="info-value">KSh ${Number(product.costPrice || 0).toLocaleString()}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">Selling Price</div>
-      <div class="info-value">KSh ${Number(product.sellingPrice || 0).toLocaleString()}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">Current Stock</div>
-      <div class="info-value ${stockStatus === 'OUT OF STOCK' ? 'red' : stockStatus === 'LOW STOCK' ? 'yellow' : 'green'}">${product.currentStock || 0} ${product.unit || 'pcs'}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">Reorder Level</div>
-      <div class="info-value">${product.minStock || 10} ${product.unit || 'pcs'}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">Available</div>
-      <div class="info-value green">${product.availableStock || 0}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">Reserved</div>
-      <div class="info-value yellow">${product.reservedStock || 0}</div>
-    </div>
-    <div class="info-card highlight">
-      <div class="info-label">Stock Value (Selling)</div>
-      <div class="info-value">KSh ${stockValue.toLocaleString()}</div>
-    </div>
-    <div class="info-card highlight">
-      <div class="info-label">Potential Profit</div>
-      <div class="info-value green">KSh ${potentialProfit.toLocaleString()}</div>
-    </div>
-  </div>
-  
-  <div class="footer">
-    <p>Generated by IntelliWavve WaveCore ERP - Intelligent Inventory Management</p>
-    <p>${new Date().toLocaleString('en-KE')}</p>
-  </div>
-  
-  <script>window.print();</script>
-</body>
-</html>`
+    const html = '<!DOCTYPE html><html><head><title>Product - ' + product.name + '</title>' +
+      '<style>body{font-family:Arial;padding:40px;max-width:800px;margin:0 auto}' +
+      '.header{text-align:center;border-bottom:3px solid #4f46e5;padding-bottom:20px;margin-bottom:30px}' +
+      '.company{font-size:28px;font-weight:bold;color:#4f46e5}' +
+      '.title{font-size:18px;color:#6b7280;margin-top:5px}' +
+      '.product-name{font-size:32px;font-weight:bold;text-align:center;margin:30px 0}' +
+      '.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:30px 0}' +
+      '.card{padding:20px;border:2px solid #e5e7eb;border-radius:12px;text-align:center}' +
+      '.label{font-size:12px;color:#6b7280;text-transform:uppercase}' +
+      '.value{font-size:24px;font-weight:bold;color:#4f46e5;margin-top:8px}' +
+      '.footer{margin-top:40px;text-align:center;color:#9ca3af;font-size:12px;border-top:1px solid #e5e7eb;padding-top:20px}' +
+      '</style></head><body>' +
+      '<div class="header"><div class="company">WaveCore ERP</div><div class="title">Product Report</div></div>' +
+      '<div class="product-name">' + product.name + '</div>' +
+      '<div class="grid">' +
+      '<div class="card"><div class="label">SKU</div><div class="value">' + (product.sku || 'N/A') + '</div></div>' +
+      '<div class="card"><div class="label">Category</div><div class="value">' + (product.category || 'N/A') + '</div></div>' +
+      '<div class="card"><div class="label">Cost Price</div><div class="value">KSh ' + Number(product.costPrice || 0).toLocaleString() + '</div></div>' +
+      '<div class="card"><div class="label">Selling Price</div><div class="value">KSh ' + Number(product.sellingPrice || 0).toLocaleString() + '</div></div>' +
+      '<div class="card"><div class="label">Current Stock</div><div class="value">' + product.currentStock + ' ' + (product.unit || 'pcs') + '</div></div>' +
+      '<div class="card"><div class="label">Stock Value</div><div class="value">KSh ' + stockValue.toLocaleString() + '</div></div>' +
+      '<div class="card"><div class="label">Min Stock</div><div class="value">' + (product.minStock || 10) + '</div></div>' +
+      '<div class="card"><div class="label">Max Stock</div><div class="value">' + (product.maxStock || 100) + '</div></div>' +
+      '</div>' +
+      '<div class="footer"><p>Generated by WaveCore ERP</p><p>' + new Date().toLocaleString('en-KE') + '</p></div>' +
+      '<script>window.print();</script></body></html>'
 
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html',
-        'Content-Disposition': `inline; filename="inventory-${product.sku || product.id}.html"`
+        'Content-Disposition': 'inline; filename="product-' + (product.sku || product.id) + '.html"'
       }
     })
   } catch (error) {
-    console.error('Inventory PDF error:', error)
+    console.error('Product PDF error:', error)
     return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 })
   }
 }
