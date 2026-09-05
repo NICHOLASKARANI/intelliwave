@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Boxes, DollarSign, AlertTriangle,
-  RefreshCw, Activity, XCircle, CheckCircle2, ArrowLeftRight, ArrowRight,
+  RefreshCw, Activity, XCircle, CheckCircle2, ArrowLeftRight, ArrowRight, ArrowLeft,
   ClipboardList, Sliders, Layers
 } from 'lucide-react'
 
