@@ -35,21 +35,19 @@ export async function POST(request: NextRequest) {
 
     if (!productId || quantity <= 0) return NextResponse.json({ error: 'Product and valid quantity required' }, { status: 400 })
 
-    // Get product
     const productResult = await pool.query('SELECT name FROM "Product" WHERE id = $1 AND "organizationId" = $2', [productId, session.organizationId]).catch(() => ({ rows: [] }))
     const productName = productResult.rows[0]?.name || 'N/A'
 
-    // Insert StockMove - use only columns that exist
+    // Insert StockMove with CORRECT columns - includes date (NOT NULL)
     await pool.query(`
-      INSERT INTO "StockMove" (id, type, status, "productId", "productName", quantity, "organizationId", "createdAt", "updatedAt")
-      VALUES ($1, $2, 'COMPLETED', $3, $4, $5, $6, NOW(), NOW())
-    `, [id, movementType, productId, productName, quantity, session.organizationId]).catch((err) => {
+      INSERT INTO "StockMove" (id, type, date, status, "productId", quantity, "fromLocationId", "toLocationId", "organizationId", "createdAt", "updatedAt")
+      VALUES ($1, $2, NOW(), 'COMPLETED', $3, $4, $5, $6, $7, NOW(), NOW())
+    `, [id, movementType, productId, quantity, body.fromLocationId || null, body.toLocationId || null, session.organizationId]).catch((err) => {
       console.error('StockMove insert error:', err.message)
     })
 
-    // Update stock - find or create default location
+    // Update stock
     if (movementType === 'IN' || movementType === 'RECEIPT') {
-      // Get default location
       const locationResult = await pool.query('SELECT id FROM "StockLocation" LIMIT 1').catch(() => ({ rows: [] }))
       const locationId = locationResult.rows[0]?.id || null
 
