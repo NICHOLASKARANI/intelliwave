@@ -33,18 +33,22 @@ export default function InventoryPage() {
   const [adjustments, setAdjustments] = useState<any[]>([])
   const [showAdjustmentForm, setShowAdjustmentForm] = useState(false)
   const [adjustmentForm, setAdjustmentForm] = useState({ productId: '', quantity: '', reason: '', adjustmentType: 'MANUAL' })
+  const [cycleCounts, setCycleCounts] = useState<any[]>([])
+  const [showCountForm, setShowCountForm] = useState(false)
+  const [countForm, setCountForm] = useState({ productId: '', countedQuantity: '', countedBy: '', notes: '' })
 
   const fetchData = async () => {
     setLoading(true)
     setError('')
     try {
-      const [cmdRes, productsRes, warehousesRes, movementsRes, ledgerRes, adjustmentsRes] = await Promise.all([
+      const [cmdRes, productsRes, warehousesRes, movementsRes, ledgerRes, adjustmentsRes, countsRes] = await Promise.all([
         fetch('/api/wavecore/inventory/command-center'),
         fetch('/api/wavecore/inventory/products'),
         fetch('/api/wavecore/inventory/warehouses'),
         fetch('/api/wavecore/inventory/movements'),
         fetch('/api/wavecore/inventory/ledger'),
-        fetch('/api/wavecore/inventory/adjustments')
+        fetch('/api/wavecore/inventory/adjustments'),
+        fetch('/api/wavecore/inventory/cycle-counts')
       ])
       const cmdData = await cmdRes.json()
       const productsData = await productsRes.json()
@@ -58,6 +62,8 @@ export default function InventoryPage() {
       setLedger(ledgerData.ledger || [])
       const adjustmentsData = await adjustmentsRes.json()
       setAdjustments(adjustmentsData.adjustments || [])
+      const countsData = await countsRes.json()
+      setCycleCounts(countsData.counts || [])
     } catch (err) {
       setError('Failed to load inventory data')
     } finally {
@@ -262,6 +268,56 @@ export default function InventoryPage() {
     } finally {
       setDeleting('')
     }
+  }
+
+  const createCount = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!countForm.productId || !countForm.countedQuantity) {
+      setError('Product and counted quantity required')
+      return
+    }
+    try {
+      const res = await fetch('/api/wavecore/inventory/cycle-counts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...countForm, countedQuantity: Number(countForm.countedQuantity) })
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setSuccess('Cycle count created!')
+        setTimeout(() => setSuccess(''), 3000)
+        setCountForm({ productId: '', countedQuantity: '', countedBy: '', notes: '' })
+        setShowCountForm(false)
+        fetchData()
+      } else {
+        setError(result.error || 'Failed to create count')
+      }
+    } catch (err) {
+      setError('Network error')
+    }
+  }
+
+  const deleteCount = async (id: string) => {
+    if (!confirm('Delete this count?')) return
+    setDeleting(id)
+    try {
+      const res = await fetch('/api/wavecore/inventory/cycle-counts?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Count deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchData()
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
+
+  const downloadCountPdf = (id: string) => {
+    window.open('/api/wavecore/inventory/cycle-counts/' + id + '/pdf', '_blank')
   }
 
   const downloadAdjustmentPdf = (id: string) => {
