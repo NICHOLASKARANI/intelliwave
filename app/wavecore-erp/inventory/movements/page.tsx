@@ -133,7 +133,7 @@ export default function MovementsPage() {
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <ArrowLeftRight className="w-6 h-6 text-green-500" /> Stock Movements ({movements.length})
             </h1>
-            <p className="text-sm text-neutral-400 mt-1">Record stock in and out</p>
+            <p className="text-sm text-neutral-400 mt-1">Record stock in, out, and transfers</p>
           </div>
           <div className="flex gap-2">
             <button onClick={() => setShowForm(!showForm)} className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 hover:bg-green-700 shadow-lg">
@@ -183,18 +183,6 @@ export default function MovementsPage() {
                 <label className="text-sm font-medium mb-1 block text-neutral-400">To Location</label>
                 <input type="text" value={form.toLocation} onChange={(e) => setForm({...form, toLocation: e.target.value})} placeholder="e.g. Warehouse" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
               </div>
-                  <option value="TRANSFER">Transfer</option>
-                  <option value="ADJUSTMENT">Adjustment</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block text-neutral-400">From Location</label>
-                <input type="text" value={form.fromLocation} onChange={(e) => setForm({...form, fromLocation: e.target.value})} placeholder="e.g. Main Store" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block text-neutral-400">To Location</label>
-                <input type="text" value={form.toLocation} onChange={(e) => setForm({...form, toLocation: e.target.value})} placeholder="e.g. Warehouse" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
             </div>
             <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold shadow-lg hover:bg-green-700">Record Movement</button>
           </form>
@@ -232,8 +220,8 @@ export default function MovementsPage() {
                     <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-blue-900/50 text-blue-300">{m.type || 'MOVEMENT'}</span></td>
                     <td className="p-4 font-bold text-white">{m.productName || 'N/A'}</td>
                     <td className="p-4 text-right font-bold text-white">{m.quantity || 0}</td>
-                    <td className="p-4 text-neutral-400">{m.fromLocation || "N/A"}</td>
-                    <td className="p-4 text-neutral-400">{m.toLocation || "N/A"}</td>
+                    <td className="p-4 text-neutral-400">{m.fromLocation || 'N/A'}</td>
+                    <td className="p-4 text-neutral-400">{m.toLocation || 'N/A'}</td>
                     <td className="p-4 text-neutral-400 text-sm">{new Date(m.date || m.createdAt).toLocaleString()}</td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-center">
