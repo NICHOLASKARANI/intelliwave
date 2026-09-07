@@ -58,7 +58,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Save locations in notes field as JSON
-    const notes = JSON.stringify({ fromLocation, toLocation })
+    const buyingPrice = Number(body.buyingPrice || 0)
+    const sellingPrice = Number(body.sellingPrice || 0)
+    const notes = JSON.stringify({ fromLocation, toLocation, buyingPrice, sellingPrice })
 
     // Insert StockMove with notes containing locations
     const insertResult = await pool.query(`
