@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Get or create from location
     let fromLocationId = null
-    if (body.fromLocation) {
+    if (body.fromLocation && body.fromLocation.trim() !== '') {
       const existing = await pool.query('SELECT id FROM "StockLocation" WHERE name = $1 LIMIT 1', [body.fromLocation])
       if (existing.rows.length > 0) {
         fromLocationId = existing.rows[0].id
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // Get or create to location
     let toLocationId = null
-    if (body.toLocation) {
+    if (body.toLocation && body.toLocation.trim() !== '') {
       const existing = await pool.query('SELECT id FROM "StockLocation" WHERE name = $1 LIMIT 1', [body.toLocation])
       if (existing.rows.length > 0) {
         toLocationId = existing.rows[0].id
