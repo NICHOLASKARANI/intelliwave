@@ -220,8 +220,8 @@ export default function MovementsPage() {
                     <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-blue-900/50 text-blue-300">{m.type || 'MOVEMENT'}</span></td>
                     <td className="p-4 font-bold text-white">{m.productName || 'N/A'}</td>
                     <td className="p-4 text-right font-bold text-white">{m.quantity || 0}</td>
-                    <td className="p-4 text-neutral-400">{m.fromLocation || 'N/A'}</td>
-                    <td className="p-4 text-neutral-400">{m.toLocation || 'N/A'}</td>
+                    <td className="p-4 text-neutral-400">{(() => { try { const n = JSON.parse(m.notes || '{}'); return n.fromLocation || 'N/A' } catch { return m.fromLocation || 'N/A' } })()}</td>
+                    <td className="p-4 text-neutral-400">{(() => { try { const n = JSON.parse(m.notes || '{}'); return n.toLocation || 'N/A' } catch { return m.toLocation || 'N/A' } })()}</td>
                     <td className="p-4 text-neutral-400 text-sm">{new Date(m.date || m.createdAt).toLocaleString()}</td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-center">
