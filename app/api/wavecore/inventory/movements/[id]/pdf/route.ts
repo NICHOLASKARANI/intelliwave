@@ -25,16 +25,19 @@ export async function GET(
 
     const m = result.rows[0]
     
-    // Parse locations from notes
+    // Parse notes for locations and prices
     let fromLocation = 'N/A'
     let toLocation = 'N/A'
+    let buyingPrice = 'N/A'
+    let sellingPrice = 'N/A'
     try {
       const notesData = JSON.parse(m.notes || '{}')
       fromLocation = notesData.fromLocation || 'N/A'
       toLocation = notesData.toLocation || 'N/A'
+      buyingPrice = notesData.buyingPrice || 'N/A'
+      sellingPrice = notesData.sellingPrice || 'N/A'
     } catch {
-      fromLocation = m.fromLocation || 'N/A'
-      toLocation = m.toLocation || 'N/A'
+      // Ignore parse errors
     }
 
     const html = '<!DOCTYPE html><html><head><title>Movement - ' + m.id.substring(0, 8) + '</title>' +
@@ -54,6 +57,8 @@ export async function GET(
       '<div class="card"><div class="label">SKU</div><div class="value">' + (m.sku || 'N/A') + '</div></div>' +
       '<div class="card"><div class="label">Type</div><div class="value">' + m.type + '</div></div>' +
       '<div class="card"><div class="label">Quantity</div><div class="value">' + m.quantity + '</div></div>' +
+      '<div class="card"><div class="label">Buying Price</div><div class="value">KSh ' + (buyingPrice !== 'N/A' ? Number(buyingPrice).toLocaleString() : 'N/A') + '</div></div>' +
+      '<div class="card"><div class="label">Selling Price</div><div class="value">KSh ' + (sellingPrice !== 'N/A' ? Number(sellingPrice).toLocaleString() : 'N/A') + '</div></div>' +
       '<div class="card"><div class="label">From Location</div><div class="value" style="font-size:18px">' + fromLocation + '</div></div>' +
       '<div class="card"><div class="label">To Location</div><div class="value" style="font-size:18px">' + toLocation + '</div></div>' +
       '<div class="card"><div class="label">Status</div><div class="value">' + m.status + '</div></div>' +
