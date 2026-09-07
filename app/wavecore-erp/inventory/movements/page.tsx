@@ -5,7 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
-  ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity
+  ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity,
+  TrendingUp, TrendingDown, ArrowRight, Filter, Download, Calendar
 } from 'lucide-react'
 
 export default function MovementsPage() {
@@ -17,6 +18,7 @@ export default function MovementsPage() {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
+  const [filterType, setFilterType] = useState('ALL')
   const [form, setForm] = useState({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '' })
 
   const fetchData = async () => {
@@ -54,7 +56,7 @@ export default function MovementsPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        setSuccess('Movement recorded!')
+        setSuccess('Movement recorded successfully!')
         setTimeout(() => setSuccess(''), 3000)
         setForm({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '' })
         setShowForm(false)
@@ -88,13 +90,30 @@ export default function MovementsPage() {
     window.open('/api/wavecore/inventory/movements/' + id + '/pdf', '_blank')
   }
 
-  const filtered = movements.filter(m => 
-    (m.productName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (m.type || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = movements.filter(m => {
+    const matchesSearch = (m.productName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (m.type || '').toLowerCase().includes(search.toLowerCase())
+    const matchesFilter = filterType === 'ALL' || m.type === filterType
+    return matchesSearch && matchesFilter
+  })
+
+  const totalIn = movements.filter(m => m.type === 'RECEIPT').reduce((s, m) => s + Number(m.quantity || 0), 0)
+  const totalOut = movements.filter(m => m.type === 'DELIVERY').reduce((s, m) => s + Number(m.quantity || 0), 0)
+  const totalTransfers = movements.filter(m => m.type === 'TRANSFER').length
+  const totalAdjustments = movements.filter(m => m.type === 'ADJUSTMENT').length
+
+  const getLocation = (m: any, key: string) => {
+    try {
+      const n = JSON.parse(m.notes || '{}')
+      return n[key] || 'N/A'
+    } catch {
+      return 'N/A'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950">
+      {/* Dark Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-neutral-900 border-r border-neutral-800 z-50">
         <div className="p-4 border-b border-neutral-800">
           <Link href="/wavecore-erp" className="flex items-center gap-3">
@@ -112,7 +131,7 @@ export default function MovementsPage() {
           <Link href="/wavecore-erp/inventory/warehouses" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
             <Warehouse className="w-5 h-5" /> Warehouses
           </Link>
-          <Link href="/wavecore-erp/inventory/movements" className="flex items-center gap-3 p-3 rounded-xl bg-green-600 text-white font-bold">
+          <Link href="/wavecore-erp/inventory/movements" className="flex items-center gap-3 p-3 rounded-xl bg-green-600 text-white font-bold shadow-lg">
             <ArrowLeftRight className="w-5 h-5" /> Movements
           </Link>
           <Link href="/wavecore-erp/inventory/adjustments" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
@@ -127,19 +146,20 @@ export default function MovementsPage() {
         </nav>
       </div>
 
+      {/* Main Content */}
       <div className="ml-64 p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <ArrowLeftRight className="w-6 h-6 text-green-500" /> Stock Movements ({movements.length})
+              <ArrowLeftRight className="w-6 h-6 text-green-500" /> Stock Movements
             </h1>
-            <p className="text-sm text-neutral-400 mt-1">Record stock in, out, and transfers</p>
+            <p className="text-sm text-neutral-400 mt-1">Real-time stock transaction tracking</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowForm(!showForm)} className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 hover:bg-green-700 shadow-lg">
+            <button onClick={() => setShowForm(!showForm)} className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2 hover:bg-green-700 shadow-lg transition-colors">
               <Plus className="w-4 h-4" /> Record Movement
             </button>
-            <button onClick={fetchData} className="px-4 py-2.5 rounded-xl bg-neutral-800 text-white font-bold flex items-center gap-2 hover:bg-neutral-700">
+            <button onClick={fetchData} className="px-4 py-2.5 rounded-xl bg-neutral-800 text-white font-bold flex items-center gap-2 hover:bg-neutral-700 transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -148,11 +168,36 @@ export default function MovementsPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
+        {/* KPI CARDS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg">
+            <TrendingUp className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{totalIn}</p>
+            <p className="text-xs opacity-80">Total Stock In</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg">
+            <TrendingDown className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{totalOut}</p>
+            <p className="text-xs opacity-80">Total Stock Out</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg">
+            <ArrowRight className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{totalTransfers}</p>
+            <p className="text-xs opacity-80">Transfers</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-700 text-white shadow-lg">
+            <Filter className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{totalAdjustments}</p>
+            <p className="text-xs opacity-80">Adjustments</p>
+          </div>
+        </div>
+
+        {/* FORM */}
         {showForm && (
-          <form onSubmit={createMovement} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6 mb-6">
+          <form onSubmit={createMovement} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6 mb-6 shadow-xl">
             <div className="flex justify-between mb-4">
-              <h2 className="font-bold text-lg text-white">Stock Movement</h2>
-              <button type="button" onClick={() => setShowForm(false)} className="text-red-400"><X className="w-5 h-5" /></button>
+              <h2 className="font-bold text-lg text-white">Record Stock Movement</h2>
+              <button type="button" onClick={() => setShowForm(false)} className="text-red-400 hover:text-red-300"><X className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -184,15 +229,23 @@ export default function MovementsPage() {
                 <input type="text" value={form.toLocation} onChange={(e) => setForm({...form, toLocation: e.target.value})} placeholder="e.g. Warehouse" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
               </div>
             </div>
-            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold shadow-lg hover:bg-green-700">Record Movement</button>
+            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold shadow-lg hover:bg-green-700 transition-colors">Record Movement</button>
           </form>
         )}
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Search movements..." />
+        {/* FILTERS + SEARCH */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Search movements..." />
+          </div>
+          <button onClick={() => setFilterType('ALL')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'ALL' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>All</button>
+          <button onClick={() => setFilterType('RECEIPT')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'RECEIPT' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>In</button>
+          <button onClick={() => setFilterType('DELIVERY')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'DELIVERY' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>Out</button>
+          <button onClick={() => setFilterType('TRANSFER')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'TRANSFER' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>Transfers</button>
         </div>
 
+        {/* TABLE */}
         {loading ? (
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-green-500" /></div>
         ) : filtered.length === 0 ? (
@@ -201,34 +254,44 @@ export default function MovementsPage() {
             <p className="text-neutral-400">No movements recorded</p>
           </div>
         ) : (
-          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
+          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden shadow-xl">
             <table className="w-full">
               <thead className="bg-neutral-800">
                 <tr>
-                  <th className="text-left p-4 text-neutral-400">Type</th>
-                  <th className="text-left p-4 text-neutral-400">Product</th>
-                  <th className="text-right p-4 text-neutral-400">Qty</th>
-                  <th className="text-left p-4 text-neutral-400">From</th>
-                  <th className="text-left p-4 text-neutral-400">To</th>
-                  <th className="text-left p-4 text-neutral-400">Date</th>
-                  <th className="text-center p-4 text-neutral-400">Actions</th>
+                  <th className="text-left p-4 text-neutral-400 text-sm">Type</th>
+                  <th className="text-left p-4 text-neutral-400 text-sm">Product</th>
+                  <th className="text-right p-4 text-neutral-400 text-sm">Qty</th>
+                  <th className="text-left p-4 text-neutral-400 text-sm">From</th>
+                  <th className="text-left p-4 text-neutral-400 text-sm">To</th>
+                  <th className="text-left p-4 text-neutral-400 text-sm">Date</th>
+                  <th className="text-center p-4 text-neutral-400 text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((m: any) => (
-                  <tr key={m.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
-                    <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-blue-900/50 text-blue-300">{m.type || 'MOVEMENT'}</span></td>
+                  <tr key={m.id} className="border-t border-neutral-800 hover:bg-neutral-800/50 transition-colors">
+                    <td className="p-4">
+                      <span className={'px-2 py-1 rounded-full text-xs font-bold ' + 
+                        (m.type === 'RECEIPT' ? 'bg-green-900/50 text-green-300' :
+                         m.type === 'DELIVERY' ? 'bg-red-900/50 text-red-300' :
+                         m.type === 'TRANSFER' ? 'bg-blue-900/50 text-blue-300' :
+                         'bg-orange-900/50 text-orange-300')}>
+                        {m.type || 'MOVEMENT'}
+                      </span>
+                    </td>
                     <td className="p-4 font-bold text-white">{m.productName || 'N/A'}</td>
                     <td className="p-4 text-right font-bold text-white">{m.quantity || 0}</td>
-                    <td className="p-4 text-neutral-400">{(() => { try { const n = JSON.parse(m.notes || '{}'); return n.fromLocation || 'N/A' } catch { return m.fromLocation || 'N/A' } })()}</td>
-                    <td className="p-4 text-neutral-400">{(() => { try { const n = JSON.parse(m.notes || '{}'); return n.toLocation || 'N/A' } catch { return m.toLocation || 'N/A' } })()}</td>
-                    <td className="p-4 text-neutral-400 text-sm">{new Date(m.date || m.createdAt).toLocaleString()}</td>
+                    <td className="p-4 text-neutral-300">{getLocation(m, 'fromLocation')}</td>
+                    <td className="p-4 text-neutral-300">{getLocation(m, 'toLocation')}</td>
+                    <td className="p-4 text-neutral-400 text-sm flex items-center gap-1">
+                      <Calendar className="w-3 h-3" /> {new Date(m.date || m.createdAt).toLocaleString()}
+                    </td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-center">
-                        <button onClick={() => downloadPdf(m.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF">
+                        <button onClick={() => downloadPdf(m.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800 transition-colors" title="Download PDF">
                           <Printer className="w-4 h-4" />
                         </button>
-                        <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
+                        <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50 transition-colors" title="Delete">
                           {deleting === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
