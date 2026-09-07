@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
+    console.log('BODY RECEIVED:', JSON.stringify(body))
     const crypto = require('crypto')
     const id = crypto.randomUUID()
     
