@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
     const productResult = await pool.query('SELECT name FROM "Product" WHERE id = $1 AND "organizationId" = $2', [body.productId, session.organizationId]).catch(() => ({ rows: [] }))
     const productName = productResult.rows[0]?.name || 'N/A'
 
-    // Save prices in notes
     const notes = JSON.stringify({ 
       buyingPrice: Number(body.buyingPrice || 0), 
       sellingPrice: Number(body.sellingPrice || 0) 
@@ -41,8 +40,14 @@ export async function POST(request: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, 'COMPLETED', $8, NOW(), $9, $10, NOW(), NOW()) RETURNING *
     `, [id, number, body.productId, productName, expectedQty, countedQty, variance, body.countedBy || '', notes, session.organizationId])
 
-    // Update stock to counted quantity
     await pool.query('UPDATE "StockQuantity" SET quantity = $1, "availableQty" = $1, "updatedAt" = NOW() WHERE "productId" = $2', [countedQty, body.productId]).catch(() => {})
+
+    // Write to Ledger
+    const ledgerId = crypto.randomUUID()
+    await pool.query(
+      'INSERT INTO "InventoryLedger" (id, "transactionId", "productId", "productName", quantity, "beforeQuantity", "afterQuantity", "transactionType", "organizationId", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())',
+      [ledgerId, id, body.productId, productName, variance, expectedQty, countedQty, 'CYCLE_COUNT', session.organizationId]
+    ).catch((err) => console.error('Ledger insert error:', err.message))
 
     return NextResponse.json({ count: result.rows[0] }, { status: 201 })
   } catch (error) {
