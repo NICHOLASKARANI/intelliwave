@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
     const productId = body.productId
     const fromLocation = body.fromLocation || ''
     const toLocation = body.toLocation || ''
+    const buyingPrice = Number(body.buyingPrice || 0)
+    const sellingPrice = Number(body.sellingPrice || 0)
 
     if (!productId || quantity <= 0) {
       return NextResponse.json({ error: 'Product and valid quantity required' }, { status: 400 })
@@ -57,17 +59,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // Save locations in notes field as JSON
-    const buyingPrice = Number(body.buyingPrice || 0)
-    const sellingPrice = Number(body.sellingPrice || 0)
     const notes = JSON.stringify({ fromLocation, toLocation, buyingPrice, sellingPrice })
 
-    // Insert StockMove with notes containing locations
     const insertResult = await pool.query(`
       INSERT INTO "StockMove" (id, type, date, status, notes, "productId", quantity, "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, NOW(), 'COMPLETED', $3, $4, $5, $6, NOW(), NOW())
       RETURNING *
     `, [id, movementType, notes, productId, quantity, session.organizationId])
+
+    // Get current stock before update
+    const stockBefore = await pool.query('SELECT COALESCE(quantity, 0) as qty FROM "StockQuantity" WHERE "productId" = $1', [productId]).catch(() => ({ rows: [{ qty: 0 }] }))
+    const beforeQty = Number(stockBefore.rows[0]?.qty || 0)
 
     // Update stock
     if (movementType === 'RECEIPT') {
@@ -82,14 +84,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const movement = {
-      ...insertResult.rows[0],
-      productName: productResult.rows[0].name,
-      fromLocation,
-      toLocation
-    }
+    const afterQty = movementType === 'RECEIPT' ? beforeQty + quantity : beforeQty - quantity
 
-    return NextResponse.json({ success: true, movement, message: 'Movement recorded' }, { status: 201 })
+    // Write to InventoryLedger
+    const ledgerId = crypto.randomUUID()
+    await pool.query(
+      'INSERT INTO "InventoryLedger" (id, "transactionId", "productId", "productName", quantity, "beforeQuantity", "afterQuantity", "transactionType", "organizationId", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())',
+      [ledgerId, id, productId, productResult.rows[0].name, movementType === 'RECEIPT' ? quantity : -quantity, beforeQty, afterQty, movementType, session.organizationId]
+    ).catch((err) => console.error('Ledger insert error:', err.message))
+
+    return NextResponse.json({ 
+      success: true, 
+      movement: { ...insertResult.rows[0], productName: productResult.rows[0].name },
+      message: 'Movement recorded' 
+    }, { status: 201 })
   } catch (error) {
     console.error('Movements POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
@@ -100,11 +108,8 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
-
     await pool.query('DELETE FROM "StockMove" WHERE id = $1 AND "organizationId" = $2', [id, session.organizationId])
     return NextResponse.json({ success: true })
   } catch (error) {
