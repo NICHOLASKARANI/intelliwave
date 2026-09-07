@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
   ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity,
-  TrendingUp, TrendingDown, ArrowRight, Filter, Download, Calendar
+  TrendingUp, TrendingDown, ArrowRight, Filter, Download, Calendar, DollarSign
 } from 'lucide-react'
 
 export default function MovementsPage() {
@@ -19,7 +19,11 @@ export default function MovementsPage() {
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
   const [filterType, setFilterType] = useState('ALL')
-  const [form, setForm] = useState({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '' })
+  const [activeKpi, setActiveKpi] = useState('ALL')
+  const [form, setForm] = useState({ 
+    productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '',
+    buyingPrice: '', sellingPrice: ''
+  })
 
   const fetchData = async () => {
     setLoading(true)
@@ -49,16 +53,26 @@ export default function MovementsPage() {
       return
     }
     try {
+      // Auto-fill selling price from product if not provided
+      const selectedProduct = products.find(p => p.id === form.productId)
+      const buyingPrice = form.buyingPrice || selectedProduct?.costPrice || 0
+      const sellingPrice = form.sellingPrice || selectedProduct?.sellingPrice || 0
+
       const res = await fetch('/api/wavecore/inventory/movements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, quantity: Number(form.quantity) })
+        body: JSON.stringify({ 
+          ...form, 
+          quantity: Number(form.quantity),
+          buyingPrice: Number(buyingPrice),
+          sellingPrice: Number(sellingPrice)
+        })
       })
       const data = await res.json()
       if (res.ok) {
         setSuccess('Movement recorded successfully!')
         setTimeout(() => setSuccess(''), 3000)
-        setForm({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '' })
+        setForm({ productId: '', quantity: '', movementType: 'IN', toLocation: '', fromLocation: '', buyingPrice: '', sellingPrice: '' })
         setShowForm(false)
         fetchData()
       } else {
@@ -90,18 +104,6 @@ export default function MovementsPage() {
     window.open('/api/wavecore/inventory/movements/' + id + '/pdf', '_blank')
   }
 
-  const filtered = movements.filter(m => {
-    const matchesSearch = (m.productName || '').toLowerCase().includes(search.toLowerCase()) ||
-      (m.type || '').toLowerCase().includes(search.toLowerCase())
-    const matchesFilter = filterType === 'ALL' || m.type === filterType
-    return matchesSearch && matchesFilter
-  })
-
-  const totalIn = movements.filter(m => m.type === 'RECEIPT').reduce((s, m) => s + Number(m.quantity || 0), 0)
-  const totalOut = movements.filter(m => m.type === 'DELIVERY').reduce((s, m) => s + Number(m.quantity || 0), 0)
-  const totalTransfers = movements.filter(m => m.type === 'TRANSFER').length
-  const totalAdjustments = movements.filter(m => m.type === 'ADJUSTMENT').length
-
   const getLocation = (m: any, key: string) => {
     try {
       const n = JSON.parse(m.notes || '{}')
@@ -111,9 +113,38 @@ export default function MovementsPage() {
     }
   }
 
+  const getBuyingPrice = (m: any) => {
+    try {
+      const n = JSON.parse(m.notes || '{}')
+      return n.buyingPrice || 'N/A'
+    } catch {
+      return 'N/A'
+    }
+  }
+
+  const getSellingPrice = (m: any) => {
+    try {
+      const n = JSON.parse(m.notes || '{}')
+      return n.sellingPrice || 'N/A'
+    } catch {
+      return 'N/A'
+    }
+  }
+
+  const filtered = movements.filter(m => {
+    const matchesSearch = (m.productName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (m.type || '').toLowerCase().includes(search.toLowerCase())
+    const matchesFilter = activeKpi === 'ALL' ? filterType === 'ALL' || m.type === filterType : m.type === activeKpi
+    return matchesSearch && matchesFilter
+  })
+
+  const totalIn = movements.filter(m => m.type === 'RECEIPT').reduce((s, m) => s + Number(m.quantity || 0), 0)
+  const totalOut = movements.filter(m => m.type === 'DELIVERY').reduce((s, m) => s + Number(m.quantity || 0), 0)
+  const totalTransfers = movements.filter(m => m.type === 'TRANSFER').length
+  const totalAdjustments = movements.filter(m => m.type === 'ADJUSTMENT').length
+
   return (
     <div className="min-h-screen bg-neutral-950">
-      {/* Dark Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-neutral-900 border-r border-neutral-800 z-50">
         <div className="p-4 border-b border-neutral-800">
           <Link href="/wavecore-erp" className="flex items-center gap-3">
@@ -146,7 +177,6 @@ export default function MovementsPage() {
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="ml-64 p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -168,28 +198,32 @@ export default function MovementsPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
-        {/* KPI CARDS */}
+        {/* CLICKABLE KPI CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg">
+          <button onClick={() => { setActiveKpi(activeKpi === 'RECEIPT' ? 'ALL' : 'RECEIPT'); setFilterType('ALL') }}
+            className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'RECEIPT' ? 'ring-4 ring-green-300' : '')}>
             <TrendingUp className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{totalIn}</p>
             <p className="text-xs opacity-80">Total Stock In</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg">
+          </button>
+          <button onClick={() => { setActiveKpi(activeKpi === 'DELIVERY' ? 'ALL' : 'DELIVERY'); setFilterType('ALL') }}
+            className={'p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'DELIVERY' ? 'ring-4 ring-red-300' : '')}>
             <TrendingDown className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{totalOut}</p>
             <p className="text-xs opacity-80">Total Stock Out</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg">
+          </button>
+          <button onClick={() => { setActiveKpi(activeKpi === 'TRANSFER' ? 'ALL' : 'TRANSFER'); setFilterType('ALL') }}
+            className={'p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'TRANSFER' ? 'ring-4 ring-blue-300' : '')}>
             <ArrowRight className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{totalTransfers}</p>
             <p className="text-xs opacity-80">Transfers</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-700 text-white shadow-lg">
+          </button>
+          <button onClick={() => { setActiveKpi(activeKpi === 'ADJUSTMENT' ? 'ALL' : 'ADJUSTMENT'); setFilterType('ALL') }}
+            className={'p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-700 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'ADJUSTMENT' ? 'ring-4 ring-orange-300' : '')}>
             <Filter className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{totalAdjustments}</p>
             <p className="text-xs opacity-80">Adjustments</p>
-          </div>
+          </button>
         </div>
 
         {/* FORM */}
@@ -199,7 +233,7 @@ export default function MovementsPage() {
               <h2 className="font-bold text-lg text-white">Record Stock Movement</h2>
               <button type="button" onClick={() => setShowForm(false)} className="text-red-400 hover:text-red-300"><X className="w-5 h-5" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Product *</label>
                 <select value={form.productId} onChange={(e) => setForm({...form, productId: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500">
@@ -221,6 +255,14 @@ export default function MovementsPage() {
                 </select>
               </div>
               <div>
+                <label className="text-sm font-medium mb-1 block text-neutral-400">Buying Price (KSh)</label>
+                <input type="number" value={form.buyingPrice} onChange={(e) => setForm({...form, buyingPrice: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-neutral-400">Selling Price (KSh)</label>
+                <input type="number" value={form.sellingPrice} onChange={(e) => setForm({...form, sellingPrice: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
+              </div>
+              <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">From Location</label>
                 <input type="text" value={form.fromLocation} onChange={(e) => setForm({...form, fromLocation: e.target.value})} placeholder="e.g. Main Store" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500" />
               </div>
@@ -233,16 +275,10 @@ export default function MovementsPage() {
           </form>
         )}
 
-        {/* FILTERS + SEARCH */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Search movements..." />
-          </div>
-          <button onClick={() => setFilterType('ALL')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'ALL' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>All</button>
-          <button onClick={() => setFilterType('RECEIPT')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'RECEIPT' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>In</button>
-          <button onClick={() => setFilterType('DELIVERY')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'DELIVERY' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>Out</button>
-          <button onClick={() => setFilterType('TRANSFER')} className={'px-4 py-2 rounded-xl font-bold ' + (filterType === 'TRANSFER' ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>Transfers</button>
+        {/* SEARCH */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Search movements..." />
         </div>
 
         {/* TABLE */}
@@ -261,6 +297,8 @@ export default function MovementsPage() {
                   <th className="text-left p-4 text-neutral-400 text-sm">Type</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Product</th>
                   <th className="text-right p-4 text-neutral-400 text-sm">Qty</th>
+                  <th className="text-right p-4 text-neutral-400 text-sm">Buying</th>
+                  <th className="text-right p-4 text-neutral-400 text-sm">Selling</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">From</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">To</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Date</th>
@@ -281,6 +319,8 @@ export default function MovementsPage() {
                     </td>
                     <td className="p-4 font-bold text-white">{m.productName || 'N/A'}</td>
                     <td className="p-4 text-right font-bold text-white">{m.quantity || 0}</td>
+                    <td className="p-4 text-right text-neutral-300">KSh {getBuyingPrice(m)}</td>
+                    <td className="p-4 text-right text-neutral-300">KSh {getSellingPrice(m)}</td>
                     <td className="p-4 text-neutral-300">{getLocation(m, 'fromLocation')}</td>
                     <td className="p-4 text-neutral-300">{getLocation(m, 'toLocation')}</td>
                     <td className="p-4 text-neutral-400 text-sm flex items-center gap-1">
