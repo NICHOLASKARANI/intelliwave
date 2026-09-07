@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     await ensureTable()
+    const notes = JSON.stringify({ buyingPrice: Number(body.buyingPrice || 0), sellingPrice: Number(body.sellingPrice || 0) })
     const result = await pool.query('SELECT * FROM "InventoryAdjustment" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 100', [session.organizationId]).catch(() => ({ rows: [] }))
     return NextResponse.json({ adjustments: result.rows })
   } catch (error) { return NextResponse.json({ adjustments: [] }) }
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
     const productResult = await pool.query('SELECT name FROM "Product" WHERE id = $1 AND "organizationId" = $2', [body.productId, session.organizationId]).catch(() => ({ rows: [] }))
     const productName = productResult.rows[0]?.name || 'N/A'
 
+    const notes = JSON.stringify({ buyingPrice: Number(body.buyingPrice || 0), sellingPrice: Number(body.sellingPrice || 0) })
     const result = await pool.query(`
       INSERT INTO "InventoryAdjustment" (id, number, "productId", "productName", "adjustmentType", quantity, reason, status, "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, $5, $6, $7, 'APPROVED', $8, NOW(), NOW()) RETURNING *
