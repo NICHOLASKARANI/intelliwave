@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Calendar, LineChart, PieChart, Target
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Calendar, LineChart, PieChart
 } from 'lucide-react'
 
 export default function ForecastingPage() {
