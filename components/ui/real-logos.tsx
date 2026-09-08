@@ -57,7 +57,6 @@ export const BritamLogo = ({ className }: { className?: string }) => (
 )
 
 // Aga Khan University - Crescent/starburst
-export const AKULogo = AgaKhanLogo
 export const AgaKhanLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
     <circle cx="25" cy="20" r="14" fill="#006633" />
