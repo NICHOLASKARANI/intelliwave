@@ -16,6 +16,7 @@ export default function ValuationPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [method, setMethod] = useState('WEIGHTED_AVERAGE')
+  const [activeKpi, setActiveKpi] = useState('ALL')
 
   const fetchData = async (m?: string) => {
     setLoading(true)
@@ -48,10 +49,15 @@ export default function ValuationPage() {
     }
   }
 
-  const filtered = products.filter(p =>
-    (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.sku || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = products.filter(p => {
+    const matchesSearch = (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.sku || '').toLowerCase().includes(search.toLowerCase())
+    const matchesKpi = activeKpi === 'ALL' ||
+      (activeKpi === 'UNITS' && Number(p.currentStock || 0) > 0) ||
+      (activeKpi === 'VALUE' && Number(p.totalCost || 0) > 0) ||
+      (activeKpi === 'PROFIT' && (Number(p.totalSellingValue || 0) - Number(p.totalCost || 0)) > 0)
+    return matchesSearch && matchesKpi
+  })
 
   return (
     <div className="min-h-screen bg-neutral-950">
@@ -126,26 +132,26 @@ export default function ValuationPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-600 to-green-800 text-white shadow-lg">
+          <button onClick={() => setActiveKpi(activeKpi === "ALL" ? "ALL" : "ALL")} className="p-4 rounded-2xl bg-gradient-to-br from-emerald-600 to-green-800 text-white shadow-lg text-left">
             <BarChart3 className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.totalProducts || 0}</p>
             <p className="text-xs opacity-80">Products</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg">
+          </button>
+          <button onClick={() => setActiveKpi(activeKpi === "UNITS" ? "ALL" : "UNITS")} className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left">
             <Package className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.totalUnits || 0}</p>
             <p className="text-xs opacity-80">Total Units</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-teal-800 text-white shadow-lg">
+          </button>
+          <button onClick={() => setActiveKpi(activeKpi === "VALUE" ? "ALL" : "VALUE")} className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-teal-800 text-white shadow-lg text-left">
             <DollarSign className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">KSh {(summary.totalValue || 0).toLocaleString()}</p>
             <p className="text-xs opacity-80">Cost Value</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-700 text-white shadow-lg">
+          </button>
+          <button onClick={() => setActiveKpi(activeKpi === "PROFIT" ? "ALL" : "PROFIT")} className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-700 text-white shadow-lg text-left">
             <TrendingUp className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">KSh {(summary.potentialProfit || 0).toLocaleString()}</p>
             <p className="text-xs opacity-80">Potential Profit</p>
-          </div>
+          </button>
         </div>
 
         <div className="relative mb-4">
