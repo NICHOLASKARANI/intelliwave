@@ -27,6 +27,7 @@ export const EquityLogo = ({ className }: { className?: string }) => (
 )
 
 // Kenya Airways - Red/black flying bird
+export const KQLogo = KenyaAirwaysLogo
 export const KenyaAirwaysLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
     <path d="M10 25 Q30 5 60 20 Q90 35 110 20" stroke="#DC0000" strokeWidth="3" fill="none" />
@@ -54,6 +55,7 @@ export const BritamLogo = ({ className }: { className?: string }) => (
 )
 
 // Aga Khan University - Crescent/starburst
+export const AKULogo = AgaKhanLogo
 export const AgaKhanLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
     <circle cx="25" cy="20" r="14" fill="#006633" />
@@ -71,3 +73,50 @@ export const logos = {
   britam: BritamLogo,
   agaKhan: AgaKhanLogo,
 }
+export const CopiaLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <rect x="10" y="10" width="50" height="20" rx="4" fill="#FF6B00" />
+    <text x="20" y="25" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">copia</text>
+  </svg>
+)
+export const AWSLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <text x="10" y="28" fill="#FF9900" fontSize="18" fontWeight="bold" fontFamily="Arial">aws</text>
+  </svg>
+)
+export const AzureLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <text x="10" y="28" fill="#0078D4" fontSize="18" fontWeight="bold" fontFamily="Arial">Microsoft Azure</text>
+  </svg>
+)
+export const GCPSLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <text x="10" y="28" fill="#4285F4" fontSize="14" fontWeight="bold" fontFamily="Arial">Google Cloud</text>
+  </svg>
+)
+export const VercelLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <text x="10" y="28" fill="white" fontSize="18" fontWeight="bold" fontFamily="Arial">Vercel</text>
+  </svg>
+)
+export const StripeLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <text x="10" y="28" fill="#635BFF" fontSize="18" fontWeight="bold" fontFamily="Arial">stripe</text>
+  </svg>
+)
+export const MPesaLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <rect x="10" y="10" width="50" height="20" rx="3" fill="#00A850" />
+    <text x="20" y="25" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">M-PESA</text>
+  </svg>
+)
+export const DockerLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <text x="10" y="28" fill="#2496ED" fontSize="18" fontWeight="bold" fontFamily="Arial">docker</text>
+  </svg>
+)
+export const K8sLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <text x="10" y="28" fill="#326CE5" fontSize="18" fontWeight="bold" fontFamily="Arial">Kubernetes</text>
+  </svg>
+)
