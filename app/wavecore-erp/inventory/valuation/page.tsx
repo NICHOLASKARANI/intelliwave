@@ -7,7 +7,7 @@ import {
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert, Truck,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
   TrendingUp, CheckCircle2, BarChart3, Trash2
-} from 'lucide-react''
+} from 'lucide-react'
 
 export default function ValuationPage() {
   const [products, setProducts] = useState<any[]>([])
