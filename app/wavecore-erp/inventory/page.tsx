@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Boxes, DollarSign, AlertTriangle,
   RefreshCw, Activity, XCircle, CheckCircle2, ArrowLeftRight, ArrowRight, ArrowLeft,
-  ClipboardList, Sliders, Layers, Brain, LineChart, PieChart, ShoppingCart, Zap, ShieldAlert
+  ClipboardList, Sliders, Layers, Brain, LineChart, PieChart, ShoppingCart, Zap, ShieldAlert, Truck
 } from 'lucide-react'
 
 export default function InventoryPage() {
@@ -45,6 +45,7 @@ export default function InventoryPage() {
     { href: '/wavecore-erp/inventory/forecasting', label: 'Forecasting', icon: LineChart, color: 'blue', description: 'AI demand predictions' },
     { href: '/wavecore-erp/inventory/abc-xyz', label: 'ABC/XYZ', icon: PieChart, color: 'purple', description: 'Value and variability classification' },
     { href: '/wavecore-erp/inventory/reorder', label: 'Reorder', icon: ShoppingCart, color: 'orange', description: 'Auto-suggest purchase orders' },
+    { href: '/wavecore-erp/inventory/transfers', label: 'Transfers', icon: Truck, color: 'violet', description: 'Warehouse transfers' },
     { href: '/wavecore-erp/inventory/atp', label: 'ATP', icon: Zap, color: 'cyan', description: 'Available-to-Promise' },
     { href: '/wavecore-erp/inventory/valuation', label: 'Valuation', icon: DollarSign, color: 'emerald', description: 'Inventory valuation reports' },
     { href: '/wavecore-erp/inventory/anomalies', label: 'Anomalies', icon: ShieldAlert, color: 'red', description: 'Detect unusual movements' }
