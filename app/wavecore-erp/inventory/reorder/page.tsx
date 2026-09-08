@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  AlertTriangle, CheckCircle2, DollarSign, TrendingDown, Plus, Trash2
+  AlertTriangle, CheckCircle2, DollarSign, ShieldAlert, TrendingDown, Plus, Trash2
 } from 'lucide-react'
 
 export default function ReorderPage() {
@@ -165,7 +165,7 @@ export default function ReorderPage() {
             <p className="text-xs opacity-80">Low Stock</p>
           </button>
           <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left'}>
-            <DollarSign className="w-5 h-5 mb-2" />
+            <DollarSign, ShieldAlert className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">KSh {(summary.totalReorderValue || 0).toLocaleString()}</p>
             <p className="text-xs opacity-80">Total Value</p>
           </button>

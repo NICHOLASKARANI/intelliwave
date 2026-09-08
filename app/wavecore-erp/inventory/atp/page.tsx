@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  CheckCircle2, XCircle, DollarSign, Boxes
+  CheckCircle2, XCircle, DollarSign, ShieldAlert, Boxes
 } from 'lucide-react'
 
 export default function AtpPage() {

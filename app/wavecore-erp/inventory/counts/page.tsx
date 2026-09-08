@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
   ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity, LineChart, PieChart, ShoppingCart, Zap,
-  TrendingUp, TrendingDown, Filter, Calendar, DollarSign, Scale, CheckCircle, XCircle
+  TrendingUp, TrendingDown, Filter, Calendar, DollarSign, ShieldAlert, Scale, CheckCircle, XCircle
 } from 'lucide-react'
 
 export default function CountsPage() {
