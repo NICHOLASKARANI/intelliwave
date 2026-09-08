@@ -40,7 +40,8 @@ export default function InventoryPage() {
     { href: '/wavecore-erp/inventory/movements', label: 'Movements', icon: ArrowLeftRight, color: 'green', description: 'Stock in/out' },
     { href: '/wavecore-erp/inventory/adjustments', label: 'Adjustments', icon: Sliders, color: 'orange', description: 'Stock adjustments' },
     { href: '/wavecore-erp/inventory/counts', label: 'Counts', icon: ClipboardList, color: 'cyan', description: 'Cycle counts' },
-    { href: '/wavecore-erp/inventory/ledger', label: 'Ledger', icon: Layers, color: 'yellow', description: 'Transaction history' }
+    { href: '/wavecore-erp/inventory/ledger', label: 'Ledger', icon: Layers, color: 'yellow', description: 'Transaction history' },
+    { href: '/wavecore-erp/inventory/copilot', label: 'AI Copilot', icon: Brain, color: 'indigo', description: 'Ask inventory questions' }
   ]
 
   return (
