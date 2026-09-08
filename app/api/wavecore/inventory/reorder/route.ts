@@ -4,22 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
-async function ensurePurchaseOrderTable() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS "PurchaseOrder" (
-      id TEXT PRIMARY KEY,
-      number TEXT UNIQUE,
-      "productId" TEXT,
-      quantity DECIMAL(15,2) DEFAULT 0,
-      status TEXT DEFAULT 'PENDING',
-      notes TEXT,
-      "organizationId" TEXT NOT NULL,
-      "createdAt" TIMESTAMP DEFAULT NOW(),
-      "updatedAt" TIMESTAMP DEFAULT NOW()
-    )
-  `).catch(() => {})
-}
-
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -64,15 +48,12 @@ export async function POST(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    await ensurePurchaseOrderTable()
-
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-    const number = 'PO-' + Date.now().toString().slice(-8)
 
     const productResult = await pool.query(
-      'SELECT name FROM "Product" WHERE id = $1 AND "organizationId" = $2',
+      'SELECT name, "costPrice" FROM "Product" WHERE id = $1 AND "organizationId" = $2',
       [body.productId, session.organizationId]
     )
 
@@ -80,10 +61,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
+    const product = productResult.rows[0]
+    const quantity = Number(body.quantity || 0)
+    const costPrice = Number(product.costPrice || 0)
+    const amount = quantity * costPrice
+
+    // Insert using CORRECT columns: id, supplierName, amount, status, organizationId, createdAt
     const result = await pool.query(`
-      INSERT INTO "PurchaseOrder" (id, number, "productId", quantity, status, notes, "organizationId", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, NOW(), NOW()) RETURNING *
-    `, [id, number, body.productId, Number(body.quantity || 0), body.notes || '', session.organizationId])
+      INSERT INTO "PurchaseOrder" (id, "supplierName", amount, status, "organizationId", "createdAt")
+      VALUES ($1, $2, $3, 'PENDING', $4, NOW()) RETURNING *
+    `, [id, body.supplier || 'Default Supplier', amount, session.organizationId])
+
+    // Write to Ledger
+    const ledgerId = crypto.randomUUID()
+    await pool.query(
+      'INSERT INTO "InventoryLedger" (id, "transactionId", "productId", "productName", quantity, "beforeQuantity", "afterQuantity", "transactionType", "organizationId", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())',
+      [ledgerId, id, body.productId, product.name, quantity, 0, quantity, 'PURCHASE_ORDER', session.organizationId]
+    ).catch(() => {})
 
     return NextResponse.json({ 
       success: true, 
@@ -100,8 +94,6 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    await ensurePurchaseOrderTable()
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
