@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  AlertTriangle, CheckCircle2, DollarSign, TrendingDown, Plus
+  AlertTriangle, CheckCircle2, DollarSign, TrendingDown, Plus, Trash2
 } from 'lucide-react'
 
 export default function ReorderPage() {
@@ -16,7 +16,7 @@ export default function ReorderPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
-  const [activeKpi, setActiveKpi] = useState('ALL')
+  const [activeKpi, setActiveKpi] = useState('ALL')\n  const [deleting, setDeleting] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -57,7 +57,7 @@ export default function ReorderPage() {
     }
   }
 
-  const downloadPdf = (id: string) => {
+  const deletePO = async (id: string) => {\n    if (!confirm('Delete this purchase order?')) return\n    setDeleting(id)\n    try {\n      const res = await fetch('/api/wavecore/inventory/reorder?id=' + id, { method: 'DELETE' })\n      if (res.ok) {\n        setSuccess('Purchase order deleted!')\n        setTimeout(() => setSuccess(''), 3000)\n        fetchData()\n      }\n    } catch (err) {\n      setError('Delete failed')\n    } finally {\n      setDeleting('')\n    }\n  }\n\n  const downloadPdf = (id: string) => {
     window.open('/api/wavecore/inventory/reorder/' + id + '/pdf', '_blank')
   }
 
