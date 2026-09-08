@@ -1,153 +1,73 @@
-'use client'
-
-// Safaricom Logo - Real SVG
+// Real Company Logos - SVG shapes (not text placeholders)
+// Safaricom - Green swoosh
 export const SafaricomLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 200 60" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="200" height="60" rx="8" fill="#00A850"/>
-    <text x="100" y="40" textAnchor="middle" fill="white" fontSize="28" fontWeight="bold" fontFamily="Arial, sans-serif">Safaricom</text>
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <path d="M10 20 Q30 5 60 20 Q90 35 110 20" stroke="#00A850" strokeWidth="4" fill="none" />
+    <circle cx="60" cy="20" r="8" fill="#00A850" />
+    <path d="M15 30 L20 15 L25 25 L30 12" stroke="#00A850" strokeWidth="3" fill="none" />
   </svg>
 )
 
-// KCB Logo
+// KCB - Blue geometric lion shape
 export const KCBLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 120 50" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="120" height="50" rx="6" fill="#003DA5"/>
-    <text x="60" y="32" textAnchor="middle" fill="white" fontSize="22" fontWeight="bold" fontFamily="Arial, sans-serif">KCB</text>
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <path d="M20 35 L30 5 L40 25 L50 8 L60 35 Z" fill="#003366" />
+    <rect x="70" y="10" width="40" height="20" rx="3" fill="#003366" />
+    <circle cx="80" cy="20" r="4" fill="white" />
   </svg>
 )
 
-// Equity Bank Logo
+// Equity Bank - Blue circular emblem with E
 export const EquityLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 140 50" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="140" height="50" rx="6" fill="#8B0000"/>
-    <text x="70" y="33" textAnchor="middle" fill="white" fontSize="22" fontWeight="bold" fontFamily="Arial, sans-serif">EQUITY</text>
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <circle cx="20" cy="20" r="15" fill="#0033A0" />
+    <path d="M13 25 V15 L27 25 V15" stroke="white" strokeWidth="3" fill="none" />
+    <text x="45" y="27" fill="#0033A0" fontSize="16" fontWeight="bold" fontFamily="Arial">Equity</text>
   </svg>
 )
 
-// Kenya Airways Logo
-export const KQLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 180 50" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="180" height="50" rx="6" fill="#E31837"/>
-    <text x="90" y="33" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="Arial, sans-serif">Kenya Airways</text>
+// Kenya Airways - Red/black flying bird
+export const KenyaAirwaysLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <path d="M10 25 Q30 5 60 20 Q90 35 110 20" stroke="#DC0000" strokeWidth="3" fill="none" />
+    <path d="M15 30 L25 15 L35 25 L45 12" stroke="#000000" strokeWidth="2" fill="none" />
+    <path d="M50 28 L60 18 L70 28" fill="#DC0000" />
   </svg>
 )
 
-// Nation Media Logo
+// Nation Media - N-shaped mark
 export const NationLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 150 50" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="150" height="50" rx="6" fill="#1A1A1A"/>
-    <text x="75" y="33" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold" fontFamily="Arial, sans-serif">NATION</text>
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <path d="M20 30 V10 L40 30 V10" stroke="#1A1A1A" strokeWidth="4" fill="none" />
+    <path d="M40 30 L60 10 V30" stroke="#CC0000" strokeWidth="4" fill="none" />
+    <circle cx="80" cy="20" r="10" stroke="#1A1A1A" strokeWidth="3" fill="none" />
   </svg>
 )
 
-// Britam Logo
+// Britam - Blue/red shield
 export const BritamLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 130 50" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="130" height="50" rx="6" fill="#FF6600"/>
-    <text x="65" y="33" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold" fontFamily="Arial, sans-serif">BRITAM</text>
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <path d="M20 8 L40 5 L60 8 V20 Q60 30 40 35 Q20 30 20 20 Z" fill="#005EB8" />
+    <path d="M28 15 L40 12 L52 15 V22 Q52 28 40 31 Q28 28 28 22 Z" fill="#DC0000" />
+    <circle cx="40" cy="20" r="4" fill="white" />
   </svg>
 )
 
-// Aga Khan University Logo
-export const AKULogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 200 50" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="200" height="50" rx="6" fill="#006747"/>
-    <text x="100" y="33" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">Aga Khan University</text>
+// Aga Khan University - Crescent/starburst
+export const AgaKhanLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
+    <circle cx="25" cy="20" r="14" fill="#006633" />
+    <circle cx="32" cy="16" r="11" fill="white" />
+    <path d="M25 10 L27 16 L33 16 L28 20 L30 26 L25 22 L20 26 L22 20 L17 16 L23 16 Z" fill="#006633" />
   </svg>
 )
 
-// Copia Global Logo
-export const CopiaLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 120 50" fill="currentColor" className={className || 'h-8 w-auto'}>
-    <rect width="120" height="50" rx="6" fill="#00B4D8"/>
-    <text x="60" y="33" textAnchor="middle" fill="white" fontSize="22" fontWeight="bold" fontFamily="Arial, sans-serif">COPIA</text>
-  </svg>
-)
-
-// AWS Logo
-export const AWSLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 100 40" className={className || 'h-8 w-auto'}>
-    <rect width="100" height="40" rx="4" fill="#232F3E"/>
-    <text x="50" y="27" textAnchor="middle" fill="#FF9900" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">aws</text>
-  </svg>
-)
-
-// Microsoft Azure Logo
-export const AzureLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 140 40" className={className || 'h-8 w-auto'}>
-    <rect width="140" height="40" rx="4" fill="#0089D6"/>
-    <text x="70" y="27" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">Microsoft Azure</text>
-  </svg>
-)
-
-// Google Cloud Logo
-export const GCPSLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 150 40" className={className || 'h-8 w-auto'}>
-    <rect width="150" height="40" rx="4" fill="#4285F4"/>
-    <text x="75" y="27" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial, sans-serif">Google Cloud</text>
-  </svg>
-)
-
-// Vercel Logo
-export const VercelLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 100 40" className={className || 'h-8 w-auto'}>
-    <rect width="100" height="40" rx="4" fill="#000000"/>
-    <text x="50" y="27" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="Arial, sans-serif">Vercel</text>
-  </svg>
-)
-
-// Stripe Logo
-export const StripeLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 100 40" className={className || 'h-8 w-auto'}>
-    <rect width="100" height="40" rx="4" fill="#635BFF"/>
-    <text x="50" y="27" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">stripe</text>
-  </svg>
-)
-
-// M-Pesa Logo
-export const MPesaLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 100 40" className={className || 'h-8 w-auto'}>
-    <rect width="100" height="40" rx="4" fill="#4CAF50"/>
-    <text x="50" y="27" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">M-PESA</text>
-  </svg>
-)
-
-// Docker Logo
-export const DockerLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 100 40" className={className || 'h-8 w-auto'}>
-    <rect width="100" height="40" rx="4" fill="#2496ED"/>
-    <text x="50" y="27" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">docker</text>
-  </svg>
-)
-
-// Kubernetes Logo
-export const K8sLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 120 40" className={className || 'h-8 w-auto'}>
-    <rect width="120" height="40" rx="4" fill="#326CE5"/>
-    <text x="60" y="27" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial, sans-serif">Kubernetes</text>
-  </svg>
-)
-
-// Export all client logos
-export const clientLogos = {
+export const logos = {
   safaricom: SafaricomLogo,
   kcb: KCBLogo,
   equity: EquityLogo,
-  kenyaAirways: KQLogo,
+  kenyaAirways: KenyaAirwaysLogo,
   nation: NationLogo,
   britam: BritamLogo,
-  agaKhan: AKULogo,
-  copia: CopiaLogo,
-}
-
-// Export all technology partner logos
-export const techLogos = {
-  aws: AWSLogo,
-  azure: AzureLogo,
-  googleCloud: GCPSLogo,
-  vercel: VercelLogo,
-  stripe: StripeLogo,
-  mpesa: MPesaLogo,
-  docker: DockerLogo,
-  kubernetes: K8sLogo,
+  agaKhan: AgaKhanLogo,
 }
