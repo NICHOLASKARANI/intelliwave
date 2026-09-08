@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  Loader2, Package, Warehouse, Printer, Search, Brain, LineChart,
+  Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, PieChart, BarChart3
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, BarChart3
 } from 'lucide-react'
 
 export default function AbcXyzPage() {
@@ -103,53 +103,44 @@ export default function AbcXyzPage() {
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
 
-        {/* CLICKABLE KPI CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <button onClick={() => setActiveKpi('A')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'A' ? 'ring-4 ring-green-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'A' ? 'ALL' : 'A')} className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left ' + (activeKpi === 'A' ? 'ring-4 ring-green-300' : '')}>
             <BarChart3 className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.aClass || 0}</p>
-            <p className="text-xs opacity-80">A Class (80%)</p>
+            <p className="text-xs opacity-80">A Class</p>
           </button>
-          <button onClick={() => setActiveKpi('B')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'B' ? 'ring-4 ring-yellow-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'B' ? 'ALL' : 'B')} className={'p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg text-left ' + (activeKpi === 'B' ? 'ring-4 ring-yellow-300' : '')}>
             <BarChart3 className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.bClass || 0}</p>
-            <p className="text-xs opacity-80">B Class (15%)</p>
+            <p className="text-xs opacity-80">B Class</p>
           </button>
-          <button onClick={() => setActiveKpi('C')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'C' ? 'ring-4 ring-red-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'C' ? 'ALL' : 'C')} className={'p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg text-left ' + (activeKpi === 'C' ? 'ring-4 ring-red-300' : '')}>
             <BarChart3 className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.cClass || 0}</p>
-            <p className="text-xs opacity-80">C Class (5%)</p>
+            <p className="text-xs opacity-80">C Class</p>
           </button>
-          <button onClick={() => setActiveKpi('X')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'X' ? 'ring-4 ring-blue-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'X' ? 'ALL' : 'X')} className={'p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left ' + (activeKpi === 'X' ? 'ring-4 ring-blue-300' : '')}>
             <TrendingUp className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.xClass || 0}</p>
-            <p className="text-xs opacity-80">X Class (Stable)</p>
+            <p className="text-xs opacity-80">X Class</p>
           </button>
-          <button onClick={() => setActiveKpi('Y')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'Y' ? 'ring-4 ring-orange-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'Y' ? 'ALL' : 'Y')} className={'p-4 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-800 text-white shadow-lg text-left ' + (activeKpi === 'Y' ? 'ring-4 ring-orange-300' : '')}>
             <TrendingUp className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.yClass || 0}</p>
-            <p className="text-xs opacity-80">Y Class (Variable)</p>
+            <p className="text-xs opacity-80">Y Class</p>
           </button>
-          <button onClick={() => setActiveKpi('Z')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-lg text-left transition-all hover:shadow-xl ' + (activeKpi === 'Z' ? 'ring-4 ring-purple-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'Z' ? 'ALL' : 'Z')} className={'p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-lg text-left ' + (activeKpi === 'Z' ? 'ring-4 ring-purple-300' : '')}>
             <TrendingDown className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.zClass || 0}</p>
-            <p className="text-xs opacity-80">Z Class (Erratic)</p>
+            <p className="text-xs opacity-80">Z Class</p>
           </button>
         </div>
 
-        {/* SEARCH */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Search products..." />
         </div>
 
-        {/* TABLE */}
         {loading ? (
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-purple-500" /></div>
         ) : filtered.length === 0 ? (
@@ -173,39 +164,14 @@ export default function AbcXyzPage() {
               </thead>
               <tbody>
                 {filtered.map((p: any) => (
-                  <tr key={p.id} className="border-t border-neutral-800 hover:bg-neutral-800/50 transition-colors">
-                    <td className="p-4">
-                      <p className="font-bold text-white">{p.name}</p>
-                      <p className="text-xs text-neutral-400">{p.sku || 'N/A'}</p>
-                    </td>
+                  <tr key={p.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
+                    <td className="p-4"><p className="font-bold text-white">{p.name}</p><p className="text-xs text-neutral-400">{p.sku}</p></td>
                     <td className="p-4 text-right text-white">KSh {Number(p.stockValue || 0).toLocaleString()}</td>
-                    <td className="p-4 text-center">
-                      <span className={'px-3 py-1 rounded-full text-xs font-bold ' + 
-                        (p.abcClass === 'A' ? 'bg-green-900/50 text-green-300' :
-                         p.abcClass === 'B' ? 'bg-yellow-900/50 text-yellow-300' :
-                         'bg-red-900/50 text-red-300')}>
-                        {p.abcClass}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className={'px-3 py-1 rounded-full text-xs font-bold ' + 
-                        (p.xyzClass === 'X' ? 'bg-blue-900/50 text-blue-300' :
-                         p.xyzClass === 'Y' ? 'bg-orange-900/50 text-orange-300' :
-                         'bg-purple-900/50 text-purple-300')}>
-                        {p.xyzClass}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-900/50 text-indigo-300">
-                        {p.combinedClass}
-                      </span>
-                    </td>
+                    <td className="p-4 text-center"><span className={'px-3 py-1 rounded-full text-xs font-bold ' + (p.abcClass === 'A' ? 'bg-green-900/50 text-green-300' : p.abcClass === 'B' ? 'bg-yellow-900/50 text-yellow-300' : 'bg-red-900/50 text-red-300')}>{p.abcClass}</span></td>
+                    <td className="p-4 text-center"><span className={'px-3 py-1 rounded-full text-xs font-bold ' + (p.xyzClass === 'X' ? 'bg-blue-900/50 text-blue-300' : p.xyzClass === 'Y' ? 'bg-orange-900/50 text-orange-300' : 'bg-purple-900/50 text-purple-300')}>{p.xyzClass}</span></td>
+                    <td className="p-4 text-center"><span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-900/50 text-indigo-300">{p.combinedClass}</span></td>
                     <td className="p-4 text-neutral-300 text-sm">{p.recommendedServiceLevel}</td>
-                    <td className="p-4 text-center">
-                      <button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800 transition-colors" title="Download PDF">
-                        <Printer className="w-4 h-4" />
-                      </button>
-                    </td>
+                    <td className="p-4 text-center"><button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800"><Printer className="w-4 h-4" /></button></td>
                   </tr>
                 ))}
               </tbody>
