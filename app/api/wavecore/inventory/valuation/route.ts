@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       products: [], 
       aging: [], 
-      summary: { method: methodName, totalProducts: 0, totalUnits: 0, totalValue: 0, totalSellingValue: 0, potentialProfit: 0 }
+      summary: { method: 'Weighted Average Cost', totalProducts: 0, totalUnits: 0, totalValue: 0, totalSellingValue: 0, potentialProfit: 0 }
     })
   }
 }
