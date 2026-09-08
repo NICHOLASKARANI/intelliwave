@@ -66,7 +66,16 @@ export default function RealtimeDashboardPage() {
     }
   }
 
-  const filteredMovements = recentMovements
+  const filteredMovements = recentMovements.filter(m => {
+    if (activeKpi === 'ALL') return true
+    if (activeKpi === 'PRODUCTS') return true
+    if (activeKpi === 'UNITS') return true
+    if (activeKpi === 'VALUE') return true
+    if (activeKpi === 'WAREHOUSES') return true
+    if (activeKpi === 'LOW') return true
+    if (activeKpi === 'MOVEMENTS') return true
+    return true
+  })
 
   return (
     <div className="min-h-screen bg-neutral-950">
