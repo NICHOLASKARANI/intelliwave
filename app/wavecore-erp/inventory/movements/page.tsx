@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
   ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity, LineChart, PieChart, ShoppingCart, Zap,
-  TrendingUp, TrendingDown, ArrowRight, Filter, Download, Calendar, DollarSign, ShieldAlert
+  TrendingUp, TrendingDown, ArrowRight, Filter, Download, Calendar, DollarSign, ShieldAlert, Truck
 } from 'lucide-react'
 
 export default function MovementsPage() {

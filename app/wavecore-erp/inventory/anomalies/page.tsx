@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, AlertTriangle,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingDown, CheckCircle2, XCircle, ShieldAlert, Eye
+  TrendingDown, CheckCircle2, XCircle, ShieldAlert, Truck, Eye
 } from 'lucide-react'
 
 export default function AnomaliesPage() {
@@ -87,7 +87,7 @@ export default function AnomaliesPage() {
             <DollarSign className="w-5 h-5" /> Valuation
           </Link>
           <Link href="/wavecore-erp/inventory/anomalies" className="flex items-center gap-3 p-3 rounded-xl bg-red-600 text-white font-bold shadow-lg">
-            <ShieldAlert className="w-5 h-5" /> Anomalies
+            <ShieldAlert, Truck className="w-5 h-5" /> Anomalies
           </Link>
         </nav>
       </div>
@@ -96,7 +96,7 @@ export default function AnomaliesPage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <ShieldAlert className="w-6 h-6 text-red-500" /> Anomaly Detection
+              <ShieldAlert, Truck className="w-6 h-6 text-red-500" /> Anomaly Detection
             </h1>
             <p className="text-sm text-neutral-400 mt-1">Detect unusual stock movements, theft, and shrinkage</p>
           </div>

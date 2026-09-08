@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Search, Brain, Sparkles, Send,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity, LineChart, PieChart, ShoppingCart, Zap,
-  TrendingUp, AlertTriangle, CheckCircle2, XCircle, DollarSign, ShieldAlert
+  TrendingUp, AlertTriangle, CheckCircle2, XCircle, DollarSign, ShieldAlert, Truck
 } from 'lucide-react'
 
 export default function CopilotPage() {

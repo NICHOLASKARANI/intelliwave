@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity, LineChart, PieChart, ShoppingCart, Zap,
-  TrendingUp, TrendingDown, Calendar, DollarSign, ShieldAlert, ArrowRight, ArrowDown, Database
+  TrendingUp, TrendingDown, Calendar, DollarSign, ShieldAlert, Truck, ArrowRight, ArrowDown, Database
 } from 'lucide-react'
 
 export default function LedgerPage() {
