@@ -129,7 +129,10 @@ export default function ReorderPage() {
             <PieChart className="w-5 h-5" /> ABC/XYZ
           </Link>
           <Link href="/wavecore-erp/inventory/reorder" className="flex items-center gap-3 p-3 rounded-xl bg-orange-600 text-white font-bold shadow-lg">
-            <ShoppingCart, Zap className="w-5 h-5" /> Reorder
+            <ShoppingCart className="w-5 h-5" /> Reorder
+          </Link>
+          <Link href="/wavecore-erp/inventory/atp" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <Zap className="w-5 h-5" /> ATP
           </Link>
         </nav>
       </div>
@@ -138,7 +141,7 @@ export default function ReorderPage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <ShoppingCart, Zap className="w-6 h-6 text-orange-500" /> Reorder Automation
+              <ShoppingCart className="w-6 h-6 text-orange-500" /> Reorder Automation
             </h1>
             <p className="text-sm text-neutral-400 mt-1">Auto-suggest purchase orders when stock is low</p>
           </div>
@@ -167,7 +170,7 @@ export default function ReorderPage() {
             <p className="text-xs opacity-80">Total Value</p>
           </button>
           <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left'}>
-            <ShoppingCart, Zap className="w-5 h-5 mb-2" />
+            <ShoppingCart className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.totalQuantity || 0}</p>
             <p className="text-xs opacity-80">Units to Order</p>
           </button>
@@ -207,9 +210,7 @@ export default function ReorderPage() {
                     <td className="p-4 text-right text-neutral-400">{r.minStock}</td>
                     <td className="p-4 text-right font-bold text-white">{r.suggestedOrderQty}</td>
                     <td className="p-4 text-right text-neutral-300">KSh {Number(r.suggestedOrderValue || 0).toLocaleString()}</td>
-                    <td className="p-4">
-                      <span className={'px-2 py-1 rounded-full text-xs font-bold ' + (r.priority === 'CRITICAL' ? 'bg-red-900/50 text-red-300' : 'bg-yellow-900/50 text-yellow-300')}>{r.priority}</span>
-                    </td>
+                    <td className="p-4"><span className={'px-2 py-1 rounded-full text-xs font-bold ' + (r.priority === 'CRITICAL' ? 'bg-red-900/50 text-red-300' : 'bg-yellow-900/50 text-yellow-300')}>{r.priority}</span></td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-center">
                         <button onClick={() => createPO(r.id, r.suggestedOrderQty)} className="px-3 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-bold hover:bg-orange-700" title="Create PO">
