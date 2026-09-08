@@ -27,7 +27,6 @@ export const EquityLogo = ({ className }: { className?: string }) => (
 )
 
 // Kenya Airways - Red/black flying bird
-export const KQLogo = KenyaAirwaysLogo
 export const KenyaAirwaysLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
     <path d="M10 25 Q30 5 60 20 Q90 35 110 20" stroke="#DC0000" strokeWidth="3" fill="none" />
@@ -35,6 +34,9 @@ export const KenyaAirwaysLogo = ({ className }: { className?: string }) => (
     <path d="M50 28 L60 18 L70 28" fill="#DC0000" />
   </svg>
 )
+
+// Kenya Airways alias
+export const KQLogo = KenyaAirwaysLogo
 
 // Nation Media - N-shaped mark
 export const NationLogo = ({ className }: { className?: string }) => (
