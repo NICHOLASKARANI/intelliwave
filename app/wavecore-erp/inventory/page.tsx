@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Boxes, DollarSign, AlertTriangle,
   RefreshCw, Activity, XCircle, CheckCircle2, ArrowLeftRight, ArrowRight, ArrowLeft,
-  ClipboardList, Sliders, Layers, Brain
+  ClipboardList, Sliders, Layers, Brain, LineChart
 } from 'lucide-react'
 
 export default function InventoryPage() {
@@ -41,7 +41,8 @@ export default function InventoryPage() {
     { href: '/wavecore-erp/inventory/adjustments', label: 'Adjustments', icon: Sliders, color: 'orange', description: 'Stock adjustments' },
     { href: '/wavecore-erp/inventory/counts', label: 'Counts', icon: ClipboardList, color: 'cyan', description: 'Cycle counts' },
     { href: '/wavecore-erp/inventory/ledger', label: 'Ledger', icon: Layers, color: 'yellow', description: 'Transaction history' },
-    { href: '/wavecore-erp/inventory/copilot', label: 'AI Copilot', icon: Brain, color: 'indigo', description: 'Ask inventory questions' }
+    { href: '/wavecore-erp/inventory/copilot', label: 'AI Copilot', icon: Brain, color: 'indigo', description: 'Ask inventory questions' },
+    { href: '/wavecore-erp/inventory/forecasting', label: 'Forecasting', icon: LineChart, color: 'blue', description: 'AI demand predictions' }
   ]
 
   return (

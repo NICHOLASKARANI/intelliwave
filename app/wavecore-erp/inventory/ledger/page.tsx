@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search,
-  ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
+  ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity, LineChart,
   TrendingUp, TrendingDown, Calendar, DollarSign, ArrowRight, ArrowDown, Database
 } from 'lucide-react'
 
