@@ -65,6 +65,8 @@ export const AgaKhanLogo = ({ className }: { className?: string }) => (
   </svg>
 )
 
+export const AKULogo = AgaKhanLogo
+
 export const logos = {
   safaricom: SafaricomLogo,
   kcb: KCBLogo,
@@ -73,6 +75,7 @@ export const logos = {
   nation: NationLogo,
   britam: BritamLogo,
   agaKhan: AgaKhanLogo,
+  aku: AKULogo,
 }
 export const CopiaLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 120 40" fill="none" className={className || 'h-8 w-auto'}>
