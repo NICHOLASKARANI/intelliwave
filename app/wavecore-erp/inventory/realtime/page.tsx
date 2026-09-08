@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert, Clock, Activity,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react'
 
 export default function RealtimeDashboardPage() {
+  const router = useRouter()
   const [kpis, setKpis] = useState<any>({})
   const [recentMovements, setRecentMovements] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,16 +68,19 @@ export default function RealtimeDashboardPage() {
     }
   }
 
-  const filteredMovements = recentMovements.filter(m => {
-    if (activeKpi === 'ALL') return true
-    if (activeKpi === 'PRODUCTS') return true
-    if (activeKpi === 'UNITS') return true
-    if (activeKpi === 'VALUE') return true
-    if (activeKpi === 'WAREHOUSES') return true
-    if (activeKpi === 'LOW') return true
-    if (activeKpi === 'MOVEMENTS') return true
-    return true
-  })
+  const handleKpiClick = (page: string) => {
+    const routes: Record<string, string> = {
+      'PRODUCTS': '/wavecore-erp/inventory/products',
+      'UNITS': '/wavecore-erp/inventory/stock-aging',
+      'VALUE': '/wavecore-erp/inventory/valuation',
+      'WAREHOUSES': '/wavecore-erp/inventory/warehouses',
+      'LOW': '/wavecore-erp/inventory/reorder',
+      'MOVEMENTS': '/wavecore-erp/inventory/movements'
+    }
+    if (routes[page]) {
+      router.push(routes[page])
+    }
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950">
@@ -95,7 +100,7 @@ export default function RealtimeDashboardPage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Radio className="w-6 h-6 text-green-500" /> Real-time Dashboard</h1>
-            <p className="text-sm text-neutral-400 mt-1">Live updates every 5 seconds</p>
+            <p className="text-sm text-neutral-400 mt-1">Live updates every 5 seconds - Click KPIs to navigate</p>
           </div>
           <div className="flex gap-2 items-center">
             <button onClick={() => setAutoRefresh(!autoRefresh)} className={'px-4 py-2 rounded-xl font-bold ' + (autoRefresh ? 'bg-green-600 text-white' : 'bg-neutral-800 text-neutral-400')}>
@@ -117,26 +122,26 @@ export default function RealtimeDashboardPage() {
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              <button onClick={() => setActiveKpi(activeKpi === 'PRODUCTS' ? 'ALL' : 'PRODUCTS')} className={'p-5 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white shadow-lg text-left ' + (activeKpi === 'PRODUCTS' ? 'ring-4 ring-indigo-300' : '')}><Package className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.totalProducts}</p><p className="text-xs opacity-80">Products</p></button>
-              <button onClick={() => setActiveKpi(activeKpi === 'UNITS' ? 'ALL' : 'UNITS')} className={'p-5 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left ' + (activeKpi === 'UNITS' ? 'ring-4 ring-green-300' : '')}><Boxes className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{(kpis.totalUnits || 0).toLocaleString()}</p><p className="text-xs opacity-80">Units</p></button>
-              <button onClick={() => setActiveKpi(activeKpi === 'VALUE' ? 'ALL' : 'VALUE')} className={'p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg text-left ' + (activeKpi === 'VALUE' ? 'ring-4 ring-blue-300' : '')}><DollarSign className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">KSh {(kpis.stockValue || 0).toLocaleString()}</p><p className="text-xs opacity-80">Stock Value</p></button>
-              <button onClick={() => setActiveKpi(activeKpi === 'WAREHOUSES' ? 'ALL' : 'WAREHOUSES')} className={'p-5 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-lg text-left ' + (activeKpi === 'WAREHOUSES' ? 'ring-4 ring-purple-300' : '')}><Warehouse className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.totalWarehouses}</p><p className="text-xs opacity-80">Warehouses</p></button>
-              <button onClick={() => setActiveKpi(activeKpi === 'LOW' ? 'ALL' : 'LOW')} className={'p-5 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg text-left ' + (activeKpi === 'LOW' ? 'ring-4 ring-red-300' : '')}><AlertTriangle className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.lowStockCount}</p><p className="text-xs opacity-80">Low Stock</p></button>
-              <button onClick={() => setActiveKpi(activeKpi === 'MOVEMENTS' ? 'ALL' : 'MOVEMENTS')} className={'p-5 rounded-2xl bg-gradient-to-br from-cyan-600 to-teal-800 text-white shadow-lg text-left ' + (activeKpi === 'MOVEMENTS' ? 'ring-4 ring-cyan-300' : '')}><Activity className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.movements24h}</p><p className="text-xs opacity-80">Movements (24h)</p></button>
+              <button onClick={() => handleKpiClick('PRODUCTS')} className="p-5 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white shadow-lg text-left hover:shadow-xl transition-all"><Package className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.totalProducts}</p><p className="text-xs opacity-80">Products →</p></button>
+              <button onClick={() => handleKpiClick('UNITS')} className="p-5 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left hover:shadow-xl transition-all"><Boxes className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{(kpis.totalUnits || 0).toLocaleString()}</p><p className="text-xs opacity-80">Units →</p></button>
+              <button onClick={() => handleKpiClick('VALUE')} className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg text-left hover:shadow-xl transition-all"><DollarSign className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">KSh {(kpis.stockValue || 0).toLocaleString()}</p><p className="text-xs opacity-80">Stock Value →</p></button>
+              <button onClick={() => handleKpiClick('WAREHOUSES')} className="p-5 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-lg text-left hover:shadow-xl transition-all"><Warehouse className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.totalWarehouses}</p><p className="text-xs opacity-80">Warehouses →</p></button>
+              <button onClick={() => handleKpiClick('LOW')} className="p-5 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg text-left hover:shadow-xl transition-all"><AlertTriangle className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.lowStockCount}</p><p className="text-xs opacity-80">Low Stock →</p></button>
+              <button onClick={() => handleKpiClick('MOVEMENTS')} className="p-5 rounded-2xl bg-gradient-to-br from-cyan-600 to-teal-800 text-white shadow-lg text-left hover:shadow-xl transition-all"><Activity className="w-6 h-6 mb-2" /><p className="text-3xl font-bold">{kpis.movements24h}</p><p className="text-xs opacity-80">Movements →</p></button>
             </div>
 
             <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6">
               <h2 className="font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-400" /> Live Movements</h2>
-              {filteredMovements.length === 0 ? (
+              {recentMovements.length === 0 ? (
                 <p className="text-neutral-400">No recent movements</p>
               ) : (
                 <div className="space-y-2">
-                  {filteredMovements.map((m: any, i: number) => (
+                  {recentMovements.map((m: any, i: number) => (
                     <div key={i} className="p-3 rounded-xl bg-neutral-800 flex justify-between items-center">
                       <div><p className="font-bold text-white">{m.productName}</p><p className="text-xs text-neutral-400">{m.type}</p></div>
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-white">{m.quantity} units</span>
-                        <button onClick={() => downloadPdf(m.productId)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button>
+                        <button onClick={() => downloadPdf(m.productId || m.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button>
                         <button onClick={() => deleteMovement(m.id)} disabled={deleting === m.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete">{deleting === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button>
                       </div>
                     </div>
