@@ -7,7 +7,7 @@ import {
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert, Truck,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
   AlertTriangle, CheckCircle2, TrendingDown, Plus, Trash2
-} from 'lucide-react'
+} from 'lucide-react''
 
 export default function ReorderPage() {
   const [reorderList, setReorderList] = useState<any[]>([])
