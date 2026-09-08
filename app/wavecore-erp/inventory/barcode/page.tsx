@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert, Barcode as BarcodeIcon,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  CheckCircle2, Scan, QrCode, Trash2, Printer
+  CheckCircle2, Scan, QrCode, Trash2
 } from 'lucide-react'
 
 export default function BarcodePage() {
