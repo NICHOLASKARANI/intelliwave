@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Calendar, LineChart, Target
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Calendar, LineChart, PieChart, Target
 } from 'lucide-react'
 
 export default function ForecastingPage() {
@@ -81,7 +81,7 @@ export default function ForecastingPage() {
             <Layers className="w-5 h-5" /> Ledger
           </Link>
           <Link href="/wavecore-erp/inventory/forecasting" className="flex items-center gap-3 p-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg">
-            <LineChart className="w-5 h-5" /> Forecasting
+            <LineChart, PieChart className="w-5 h-5" /> Forecasting
           </Link>
         </nav>
       </div>
@@ -90,7 +90,7 @@ export default function ForecastingPage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <LineChart className="w-6 h-6 text-blue-500" /> Demand Forecasting
+              <LineChart, PieChart className="w-6 h-6 text-blue-500" /> Demand Forecasting
             </h1>
             <p className="text-sm text-neutral-400 mt-1">AI-powered demand predictions based on historical movements</p>
           </div>
@@ -140,7 +140,7 @@ export default function ForecastingPage() {
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-blue-500" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 bg-neutral-900 rounded-2xl border border-neutral-800">
-            <LineChart className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <LineChart, PieChart className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-neutral-400">No forecast data available</p>
           </div>
         ) : (
