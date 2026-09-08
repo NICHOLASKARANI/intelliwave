@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, AlertTriangle,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingDown, CheckCircle2, XCircle, ShieldAlert, Truck, Eye
+  TrendingDown, CheckCircle2, XCircle, ShieldAlert
 } from 'lucide-react'
 
 export default function AnomaliesPage() {
