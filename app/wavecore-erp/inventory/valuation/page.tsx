@@ -119,9 +119,7 @@ export default function ValuationPage() {
               <option value="FIFO">FIFO</option>
               <option value="STANDARD_COST">Standard Cost</option>
             </select>
-            <button onClick={downloadPdf} className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-2 hover:bg-emerald-700">
-              <Printer className="w-4 h-4" /> PDF
-            </button>
+            
           </div>
         </div>
 
