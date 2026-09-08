@@ -43,7 +43,8 @@ export default function InventoryPage() {
     { href: '/wavecore-erp/inventory/ledger', label: 'Ledger', icon: Layers, color: 'yellow', description: 'Transaction history' },
     { href: '/wavecore-erp/inventory/copilot', label: 'AI Copilot', icon: Brain, color: 'indigo', description: 'Ask inventory questions' },
     { href: '/wavecore-erp/inventory/forecasting', label: 'Forecasting', icon: LineChart, color: 'blue', description: 'AI demand predictions' },
-    { href: '/wavecore-erp/inventory/abc-xyz', label: 'ABC/XYZ', icon: PieChart, color: 'purple', description: 'Value and variability classification' }
+    { href: '/wavecore-erp/inventory/abc-xyz', label: 'ABC/XYZ', icon: PieChart, color: 'purple', description: 'Value and variability classification' },
+    { href: '/wavecore-erp/inventory/reorder', label: 'Reorder', icon: ShoppingCart, color: 'orange', description: 'Auto-suggest purchase orders' }
   ]
 
   return (
