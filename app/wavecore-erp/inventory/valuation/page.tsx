@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert, Truck,
+  Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
   TrendingUp, CheckCircle2, BarChart3, Trash2
 } from 'lucide-react'
@@ -80,15 +80,11 @@ export default function ValuationPage() {
           <Link href="/wavecore-erp/inventory/forecasting" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white"><LineChart className="w-5 h-5" /> Forecasting</Link>
           <Link href="/wavecore-erp/inventory/abc-xyz" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white"><PieChart className="w-5 h-5" /> ABC/XYZ</Link>
           <Link href="/wavecore-erp/inventory/reorder" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white"><ShoppingCart className="w-5 h-5" /> Reorder</Link>
-          <Link href='/wavecore-erp/inventory/transfers' className='flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white'>
-            <Truck className='w-5 h-5' /> Transfers
-          </Link>
           <Link href="/wavecore-erp/inventory/atp" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white"><Zap className="w-5 h-5" /> ATP</Link>
           <Link href="/wavecore-erp/inventory/valuation" className="flex items-center gap-3 p-3 rounded-xl bg-emerald-600 text-white font-bold shadow-lg"><DollarSign className="w-5 h-5" /> Valuation</Link>
-          <Link href="/wavecore-erp/inventory/anomalies" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white"><ShieldAlert, Truck className="w-5 h-5" /> Anomalies</Link>
+          <Link href="/wavecore-erp/inventory/anomalies" className="flex items-center gap-3 p-3 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white"><ShieldAlert className="w-5 h-5" /> Anomalies</Link>
         </nav>
       </div>
-
       <div className="ml-64 p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -101,18 +97,14 @@ export default function ValuationPage() {
             <option value="STANDARD_COST">Standard Cost</option>
           </select>
         </div>
-
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
-
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <button onClick={() => setActiveKpi('ALL')} className="p-4 rounded-2xl bg-gradient-to-br from-emerald-600 to-green-800 text-white shadow-lg text-left"><BarChart3 className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalProducts || 0}</p><p className="text-xs opacity-80">Products</p></button>
-          <button onClick={() => setActiveKpi(activeKpi === 'UNITS' ? 'ALL' : 'UNITS')} className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left"><Package className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalUnits || 0}</p><p className="text-xs opacity-80">Total Units</p></button>
+          <button onClick={() => setActiveKpi(activeKpi === 'UNITS' ? 'ALL' : 'UNITS')} className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left"><Package className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalUnits || 0}</p><p className="text-xs opacity-80">Units</p></button>
           <button onClick={() => setActiveKpi(activeKpi === 'VALUE' ? 'ALL' : 'VALUE')} className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-teal-800 text-white shadow-lg text-left"><DollarSign className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">KSh {(summary.totalValue || 0).toLocaleString()}</p><p className="text-xs opacity-80">Cost Value</p></button>
           <button onClick={() => setActiveKpi(activeKpi === 'PROFIT' ? 'ALL' : 'PROFIT')} className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-700 text-white shadow-lg text-left"><TrendingUp className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">KSh {(summary.potentialProfit || 0).toLocaleString()}</p><p className="text-xs opacity-80">Profit</p></button>
         </div>
-
         <div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" /><input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Search products..." /></div>
-
         {loading ? (
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-emerald-500" /></div>
         ) : (
