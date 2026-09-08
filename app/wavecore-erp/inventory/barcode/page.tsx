@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert, Barcode as BarcodeIcon,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  CheckCircle2, Scan, QrCode
+  CheckCircle2, Scan, QrCode, Trash2, Printer
 } from 'lucide-react'
 
 export default function BarcodePage() {
@@ -54,6 +54,24 @@ export default function BarcodePage() {
     } catch (err) {
       setError('Network error')
     }
+  }
+
+  const deleteProduct = async (id: string, name: string) => {
+    if (!confirm('Delete product ' + name + '?')) return
+    try {
+      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Product deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchProducts()
+      }
+    } catch (err) {
+      setError('Delete failed')
+    }
+  }
+
+  const downloadPdf = (id: string) => {
+    window.open('/api/wavecore/inventory/products/' + id + '/pdf', '_blank')
   }
 
   const scanBarcode = async () => {
@@ -164,9 +182,17 @@ export default function BarcodePage() {
                     </td>
                     <td className="p-4 text-right text-neutral-300">KSh {Number(p.sellingPrice || 0).toLocaleString()}</td>
                     <td className="p-4 text-center">
-                      <button onClick={() => generateBarcode(p.id)} className="px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-700">
-                        <QrCode className="w-3 h-3" /> Generate
-                      </button>
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => generateBarcode(p.id)} className="px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-700" title="Generate Barcode">
+                          <QrCode className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF">
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteProduct(p.id, p.name)} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
