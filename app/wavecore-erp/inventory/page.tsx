@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Boxes, DollarSign, AlertTriangle,
   RefreshCw, Activity, XCircle, CheckCircle2, ArrowLeftRight, ArrowRight, ArrowLeft,
-  ClipboardList, Sliders, Layers, Brain, LineChart, PieChart, ShoppingCart, Zap, ShieldAlert, Barcode, Truck
+  ClipboardList, Sliders, Layers, Brain, LineChart, PieChart, ShoppingCart, Zap, ShieldAlert, Barcode, Clock, Truck
 } from 'lucide-react'
 
 export default function InventoryPage() {
@@ -45,11 +45,12 @@ export default function InventoryPage() {
     { href: '/wavecore-erp/inventory/forecasting', label: 'Forecasting', icon: LineChart, color: 'blue', description: 'AI demand predictions' },
     { href: '/wavecore-erp/inventory/abc-xyz', label: 'ABC/XYZ', icon: PieChart, color: 'purple', description: 'Value and variability classification' },
     { href: '/wavecore-erp/inventory/reorder', label: 'Reorder', icon: ShoppingCart, color: 'orange', description: 'Auto-suggest purchase orders' },
+    { href: '/wavecore-erp/inventory/stock-aging', label: 'Stock Aging', icon: Clock, color: 'amber', description: 'Track inventory age' },
     { href: '/wavecore-erp/inventory/barcode', label: 'Barcode', icon: Barcode, color: 'cyan', description: 'Generate and scan barcodes' },
     { href: '/wavecore-erp/inventory/transfers', label: 'Transfers', icon: Truck, color: 'violet', description: 'Warehouse transfers' },
     { href: '/wavecore-erp/inventory/atp', label: 'ATP', icon: Zap, color: 'cyan', description: 'Available-to-Promise' },
     { href: '/wavecore-erp/inventory/valuation', label: 'Valuation', icon: DollarSign, color: 'emerald', description: 'Inventory valuation reports' },
-    { href: '/wavecore-erp/inventory/anomalies', label: 'Anomalies', icon: ShieldAlert, Barcode, color: 'red', description: 'Detect unusual movements' }
+    { href: '/wavecore-erp/inventory/anomalies', label: 'Anomalies', icon: ShieldAlert, Barcode, Clock, color: 'red', description: 'Detect unusual movements' }
   ]
 
   return (
