@@ -58,7 +58,24 @@ export default function ReorderPage() {
     }
   }
 
-  const deletePO = async (id: string) => {\n    if (!confirm('Delete this purchase order?')) return\n    setDeleting(id)\n    try {\n      const res = await fetch('/api/wavecore/inventory/reorder?id=' + id, { method: 'DELETE' })\n      if (res.ok) {\n        setSuccess('Purchase order deleted!')\n        setTimeout(() => setSuccess(''), 3000)\n        fetchData()\n      }\n    } catch (err) {\n      setError('Delete failed')\n    } finally {\n      setDeleting('')\n    }\n  }\n\n  const downloadPdf = (id: string) => {
+  const deletePO = async (id: string) => {
+    if (!confirm('Delete this purchase order?')) return
+    setDeleting(id)
+    try {
+      const res = await fetch('/api/wavecore/inventory/reorder?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Purchase order deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchData()
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
+
+  const downloadPdf = (id: string) => {
     window.open('/api/wavecore/inventory/reorder/' + id + '/pdf', '_blank')
   }
 
@@ -133,41 +150,34 @@ export default function ReorderPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
-        {/* CLICKABLE KPI CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <button onClick={() => setActiveKpi('CRITICAL')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg text-left ' + (activeKpi === 'CRITICAL' ? 'ring-4 ring-red-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'CRITICAL' ? 'ALL' : 'CRITICAL')} className={'p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg text-left ' + (activeKpi === 'CRITICAL' ? 'ring-4 ring-red-300' : '')}>
             <AlertTriangle className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.criticalCount || 0}</p>
             <p className="text-xs opacity-80">Critical</p>
           </button>
-          <button onClick={() => setActiveKpi('LOW')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg text-left ' + (activeKpi === 'LOW' ? 'ring-4 ring-yellow-300' : '')}>
+          <button onClick={() => setActiveKpi(activeKpi === 'LOW' ? 'ALL' : 'LOW')} className={'p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg text-left ' + (activeKpi === 'LOW' ? 'ring-4 ring-yellow-300' : '')}>
             <TrendingDown className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.lowCount || 0}</p>
             <p className="text-xs opacity-80">Low Stock</p>
           </button>
-          <button onClick={() => setActiveKpi('ALL')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left'}>
+          <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left'}>
             <DollarSign className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">KSh {(summary.totalReorderValue || 0).toLocaleString()}</p>
             <p className="text-xs opacity-80">Total Value</p>
           </button>
-          <button onClick={() => setActiveKpi('ALL')}
-            className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left'}>
+          <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left'}>
             <ShoppingCart className="w-5 h-5 mb-2" />
             <p className="text-2xl font-bold">{summary.totalQuantity || 0}</p>
             <p className="text-xs opacity-80">Units to Order</p>
           </button>
         </div>
 
-        {/* SEARCH */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Search products..." />
         </div>
 
-        {/* TABLE */}
         {loading ? (
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-orange-500" /></div>
         ) : filtered.length === 0 ? (
@@ -183,8 +193,7 @@ export default function ReorderPage() {
                   <th className="text-left p-4 text-neutral-400 text-sm">Product</th>
                   <th className="text-right p-4 text-neutral-400 text-sm">Current</th>
                   <th className="text-right p-4 text-neutral-400 text-sm">Min</th>
-                  <th className="text-right p-4 text-neutral-400 text-sm">Max</th>
-                  <th className="text-right p-4 text-neutral-400 text-sm">Suggested Order</th>
+                  <th className="text-right p-4 text-neutral-400 text-sm">Suggested</th>
                   <th className="text-right p-4 text-neutral-400 text-sm">Value</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Priority</th>
                   <th className="text-center p-4 text-neutral-400 text-sm">Actions</th>
@@ -196,13 +205,10 @@ export default function ReorderPage() {
                     <td className="p-4"><p className="font-bold text-white">{r.name}</p><p className="text-xs text-neutral-400">{r.sku}</p></td>
                     <td className="p-4 text-right text-red-400 font-bold">{r.currentStock}</td>
                     <td className="p-4 text-right text-neutral-400">{r.minStock}</td>
-                    <td className="p-4 text-right text-neutral-400">{r.maxStock}</td>
                     <td className="p-4 text-right font-bold text-white">{r.suggestedOrderQty}</td>
                     <td className="p-4 text-right text-neutral-300">KSh {Number(r.suggestedOrderValue || 0).toLocaleString()}</td>
                     <td className="p-4">
-                      <span className={'px-2 py-1 rounded-full text-xs font-bold ' + (r.priority === 'CRITICAL' ? 'bg-red-900/50 text-red-300' : 'bg-yellow-900/50 text-yellow-300')}>
-                        {r.priority}
-                      </span>
+                      <span className={'px-2 py-1 rounded-full text-xs font-bold ' + (r.priority === 'CRITICAL' ? 'bg-red-900/50 text-red-300' : 'bg-yellow-900/50 text-yellow-300')}>{r.priority}</span>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-center">
@@ -211,6 +217,9 @@ export default function ReorderPage() {
                         </button>
                         <button onClick={() => downloadPdf(r.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF">
                           <Printer className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deletePO(r.id)} disabled={deleting === r.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete">
+                          {deleting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
                     </td>
