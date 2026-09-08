@@ -16,7 +16,8 @@ export default function ReorderPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
-  const [activeKpi, setActiveKpi] = useState('ALL')\n  const [deleting, setDeleting] = useState('')
+  const [activeKpi, setActiveKpi] = useState('ALL')
+  const [deleting, setDeleting] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
