@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap, DollarSign,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingUp, CheckCircle2, BarChart3
+  TrendingUp, CheckCircle2, BarChart3, Trash2
 } from 'lucide-react'
 
 export default function ValuationPage() {
@@ -34,8 +34,18 @@ export default function ValuationPage() {
 
   useEffect(() => { fetchData() }, [])
 
-  const downloadPdf = () => {
-    window.open('/api/wavecore/inventory/valuation/report/pdf?method=' + method, '_blank')
+  const downloadPdf = (id: string) => {
+    window.open('/api/wavecore/inventory/valuation/' + id + '/pdf', '_blank')
+  }
+
+  const deleteProduct = async (id: string, name: string) => {
+    if (!confirm('Delete product ' + name + '?')) return
+    try {
+      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      if (res.ok) fetchData()
+    } catch (err) {
+      setError('Delete failed')
+    }
   }
 
   const filtered = products.filter(p =>
@@ -159,6 +169,7 @@ export default function ValuationPage() {
                   <th className="text-right p-4 text-neutral-400 text-sm">Total Cost</th>
                   <th className="text-right p-4 text-neutral-400 text-sm">Selling Value</th>
                   <th className="text-right p-4 text-neutral-400 text-sm">Profit</th>
+                  <th className="text-center p-4 text-neutral-400 text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,6 +182,12 @@ export default function ValuationPage() {
                     <td className="p-4 text-right text-neutral-300">KSh {Number(p.totalCost || 0).toLocaleString()}</td>
                     <td className="p-4 text-right text-neutral-300">KSh {Number(p.totalSellingValue || 0).toLocaleString()}</td>
                     <td className="p-4 text-right font-bold text-emerald-400">KSh {(Number(p.totalSellingValue || 0) - Number(p.totalCost || 0)).toLocaleString()}</td>
+                    <td className="p-4">
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button>
+                        <button onClick={() => deleteProduct(p.id, p.name)} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
