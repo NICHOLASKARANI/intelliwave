@@ -4,26 +4,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
-async function getDefaultLocationId(orgId: string): Promise<string | null> {
-  const result = await pool.query(`
-    SELECT sl.id FROM "StockLocation" sl
-    JOIN "Warehouse" w ON sl."warehouseId" = w.id
-    WHERE w."organizationId" = $1
-    LIMIT 1
-  `, [orgId]).catch(() => ({ rows: [] }))
-  return result.rows[0]?.id || null
-}
-
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT 
-        p.*,
-        COALESCE(sq.quantity, 0) as "stock_level",
-        COALESCE(sq."availableQty", COALESCE(sq.quantity, 0)) as "available_stock"
+      SELECT p.*, COALESCE(sq.quantity, 0) as "stock_level"
       FROM "Product" p
       LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
@@ -45,35 +32,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-    const initialStock = Number(body.initialStock || 0)
 
-    // Insert Product
     const result = await pool.query(`
       INSERT INTO "Product" (id, name, sku, barcode, description, category, unit, "costPrice", "sellingPrice", "minStock", "maxStock", "isActive", "isTracked", "trackSerial", "trackBatch", "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()) RETURNING *
     `, [id, body.name, body.sku || '', body.barcode || null, body.description || '', body.category || '', body.unit || 'pcs', Number(body.costPrice || 0), Number(body.sellingPrice || 0), Number(body.minStock || 10), Number(body.maxStock || 100), body.isActive !== false, body.isTracked !== false, body.trackSerial || false, body.trackBatch || false, session.organizationId])
 
-    // Create StockQuantity if initialStock > 0
+    const initialStock = Number(body.initialStock || 0)
     if (initialStock > 0) {
-      const locationId = await getDefaultLocationId(session.organizationId)
-      if (locationId) {
-        const stockId = crypto.randomUUID()
-        await pool.query(`
-          INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
-          VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())
-        `, [stockId, initialStock, id, locationId]).catch((err) => {
-          console.error('StockQuantity insert error:', err.message)
-        })
-      } else {
-        console.error('No default StockLocation found for org:', session.organizationId)
-      }
+      const stockId = crypto.randomUUID()
+      await pool.query(`
+        INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+        SELECT $1, $2, 0, $2, $3, id, NOW(), NOW() FROM "StockLocation" LIMIT 1
+      `, [stockId, initialStock, id]).catch(() => {})
     }
 
-    return NextResponse.json({ 
-      product: result.rows[0],
-      stock_level: initialStock,
-      message: 'Product created' 
-    }, { status: 201 })
+    return NextResponse.json({ product: { ...result.rows[0], stock_level: initialStock } }, { status: 201 })
   } catch (error) {
     console.error('Products POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
@@ -89,12 +63,27 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
+    // Delete ALL related records in correct order
     await pool.query('DELETE FROM "StockQuantity" WHERE "productId" = $1', [id]).catch(() => {})
-    await pool.query('DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2', [id, session.organizationId])
+    await pool.query('DELETE FROM "StockMove" WHERE "productId" = $1', [id]).catch(() => {})
+    await pool.query('DELETE FROM "InventoryLedger" WHERE "productId" = $1', [id]).catch(() => {})
+    await pool.query('DELETE FROM "InventoryAdjustment" WHERE "productId" = $1', [id]).catch(() => {})
+    await pool.query('DELETE FROM "CycleCount" WHERE "productId" = $1', [id]).catch(() => {})
+    await pool.query('DELETE FROM "Transfer" WHERE "productId" = $1', [id]).catch(() => {})
 
-    return NextResponse.json({ success: true })
+    // Finally delete the product
+    const result = await pool.query(
+      'DELETE FROM "Product" WHERE id = $1 AND "organizationId" = $2',
+      [id, session.organizationId]
+    )
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Product not found or cannot be deleted' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, message: 'Product and all related records deleted' })
   } catch (error) {
     console.error('Products DELETE error:', error)
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
