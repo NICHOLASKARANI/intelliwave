@@ -235,6 +235,7 @@ export default function ProductsPage() {
                 {filtered.map((p: any) => {
                   const stock = Number(p.stock_level || 0)
                   const price = Number(p.sellingPrice || 0)
+                  const displayValue = stock > 0 ? stock * price : price
                   return (
                     <tr key={p.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
                       <td className="p-4 font-bold text-white">{p.name}</td>
@@ -247,7 +248,7 @@ export default function ProductsPage() {
                           {stock}
                         </span>
                       </td>
-                      <td className="p-4 text-right text-indigo-300 font-bold">KSh {(stock * price).toLocaleString()}</td>
+                      <td className="p-4 text-right text-indigo-300 font-bold">KSh {displayValue.toLocaleString()}</td>
                       <td className="p-4">
                         <div className="flex gap-2 justify-center">
                           <button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF">
