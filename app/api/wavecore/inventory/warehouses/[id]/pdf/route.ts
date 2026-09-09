@@ -15,6 +15,8 @@ export async function GET(
     const result = await pool.query(`
       SELECT w.*,
         (SELECT COUNT(*) FROM "StockLocation" sl WHERE sl."warehouseId" = w.id) as "locationCount",
+        (SELECT sl.name FROM "StockLocation" sl WHERE sl."warehouseId" = w.id LIMIT 1) as "locationName",
+        (SELECT p.name FROM "Product" p JOIN "StockQuantity" sq ON sq."productId" = p.id JOIN "StockLocation" sl ON sq."locationId" = sl.id WHERE sl."warehouseId" = w.id LIMIT 1) as "productName",
         (SELECT COALESCE(SUM(sq.quantity), 0) FROM "StockQuantity" sq JOIN "StockLocation" sl ON sq."locationId" = sl.id WHERE sl."warehouseId" = w.id) as "totalStock",
         (SELECT COALESCE(SUM(p."sellingPrice" * COALESCE(sq.quantity, 0)), 0) FROM "StockQuantity" sq JOIN "StockLocation" sl ON sq."locationId" = sl.id JOIN "Product" p ON sq."productId" = p.id WHERE sl."warehouseId" = w.id) as "stockValue"
       FROM "Warehouse" w WHERE w.id = $1 AND w."organizationId" = $2
@@ -46,6 +48,8 @@ export async function GET(
       '<div class="card"><div class="label">City</div><div class="value">' + (wh.city || 'N/A') + '</div></div>' +
       '<div class="card"><div class="label">Country</div><div class="value">' + (wh.country || 'N/A') + '</div></div>' +
       '<div class="card"><div class="label">Locations</div><div class="value">' + (wh.locationCount || 0) + '</div></div>' +
+      '<div class="card"><div class="label">Location Name</div><div class="value" style="font-size:16px">' + (wh.locationName || 'N/A') + '</div></div>' +
+      '<div class="card"><div class="label">Product</div><div class="value" style="font-size:16px">' + (wh.productName || 'N/A') + '</div></div>' +
       '<div class="card"><div class="label">Total Stock</div><div class="value">' + (wh.totalStock || 0) + '</div></div>' +
       '<div class="card"><div class="label">Stock Value</div><div class="value">KSh ' + Number(wh.stockValue || 0).toLocaleString() + '</div></div>' +
       '<div class="card"><div class="label">Status</div><div class="value">' + (wh.isActive ? 'Active' : 'Inactive') + '</div></div>' +
