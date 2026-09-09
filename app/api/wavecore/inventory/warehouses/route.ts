@@ -10,20 +10,13 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT 
-        w.*,
+      SELECT w.*,
         (SELECT COUNT(*) FROM "StockLocation" sl WHERE sl."warehouseId" = w.id) as "locationCount",
-        (SELECT COALESCE(SUM(sq.quantity), 0) FROM "StockQuantity" sq 
-         JOIN "StockLocation" sl ON sq."locationId" = sl.id 
-         WHERE sl."warehouseId" = w.id) as "totalStock",
-        (SELECT COALESCE(SUM(p."sellingPrice" * COALESCE(sq.quantity, 0)), 0) 
-         FROM "StockQuantity" sq 
-         JOIN "StockLocation" sl ON sq."locationId" = sl.id 
-         JOIN "Product" p ON sq."productId" = p.id
-         WHERE sl."warehouseId" = w.id) as "stockValue"
-      FROM "Warehouse" w 
-      WHERE w."organizationId" = $1 
-      ORDER BY w.name ASC
+        (SELECT sl.name FROM "StockLocation" sl WHERE sl."warehouseId" = w.id LIMIT 1) as "locationName",
+        (SELECT p.name FROM "Product" p JOIN "StockQuantity" sq ON sq."productId" = p.id JOIN "StockLocation" sl ON sq."locationId" = sl.id WHERE sl."warehouseId" = w.id LIMIT 1) as "productName",
+        (SELECT COALESCE(SUM(sq.quantity), 0) FROM "StockQuantity" sq JOIN "StockLocation" sl ON sq."locationId" = sl.id WHERE sl."warehouseId" = w.id) as "totalStock",
+        (SELECT COALESCE(SUM(p."sellingPrice" * COALESCE(sq.quantity, 0)), 0) FROM "StockQuantity" sq JOIN "StockLocation" sl ON sq."locationId" = sl.id JOIN "Product" p ON sq."productId" = p.id WHERE sl."warehouseId" = w.id) as "stockValue"
+      FROM "Warehouse" w WHERE w."organizationId" = $1 ORDER BY w.name ASC
     `, [session.organizationId]).catch(() => ({ rows: [] }))
 
     return NextResponse.json({ warehouses: result.rows })
@@ -40,38 +33,62 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-
-    // Generate a GUARANTEED unique code using timestamp + random
     const uniqueCode = 'WH-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomUUID().substring(0, 4).toUpperCase()
 
-    // Insert Warehouse - use the unique code
+    // Get product name if productId provided
+    let productName = ''
+    if (body.productId) {
+      const productResult = await pool.query('SELECT name FROM "Product" WHERE id = $1', [body.productId]).catch(() => ({ rows: [] }))
+      productName = productResult.rows[0]?.name || ''
+    }
+
     const result = await pool.query(`
       INSERT INTO "Warehouse" (id, name, code, address, city, country, "isActive", "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
     `, [id, body.name, uniqueCode, body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
 
-    // Create StockLocation(s)
+    // Create StockLocation with the location name user provided
     const numLocations = Math.max(1, Number(body.locationsCount || 1))
-    
+    const locationName = body.locationName || 'Default Location'
+    let firstLocationId = null
+
     for (let i = 0; i < numLocations; i++) {
       const locationId = crypto.randomUUID()
-      const locationName = numLocations > 1 
-        ? (body.locationName || 'Location') + ' ' + (i + 1)
-        : (body.locationName || 'Default Location')
-      const locationCode = 'LOC-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomUUID().substring(0, 4).toUpperCase() + '-' + i
-      
+      const locName = numLocations > 1 ? locationName + ' ' + (i + 1) : locationName
+      const locCode = 'LOC-' + crypto.randomUUID().substring(0, 8).toUpperCase()
       await pool.query(`
         INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
         VALUES ($1, $2, $3, $4, true, NOW(), NOW())
-      `, [locationId, locationName, locationCode, id]).catch(() => {})
+      `, [locationId, locName, locCode, id]).catch(() => {})
+      if (i === 0) firstLocationId = locationId
+    }
+
+    // If initial stock and product provided, create StockQuantity
+    const initialStock = Number(body.initialStock || 0)
+    let totalStock = 0
+    let stockValue = 0
+
+    if (initialStock > 0 && body.productId && firstLocationId) {
+      const stockId = crypto.randomUUID()
+      await pool.query(`
+        INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+        VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())
+      `, [stockId, initialStock, body.productId, firstLocationId]).catch((err) => {
+        console.error('StockQuantity insert error:', err.message)
+      })
+      totalStock = initialStock
+
+      const productResult = await pool.query('SELECT "sellingPrice" FROM "Product" WHERE id = $1', [body.productId]).catch(() => ({ rows: [] }))
+      const sellingPrice = Number(productResult.rows[0]?.sellingPrice || 0)
+      stockValue = initialStock * sellingPrice
     }
 
     return NextResponse.json({ 
-      warehouse: { ...result.rows[0], locationCount: numLocations, totalStock: 0, stockValue: 0 },
+      warehouse: { ...result.rows[0], locationCount: numLocations, locationName, productName, totalStock, stockValue },
       message: 'Warehouse created' 
     }, { status: 201 })
   } catch (error) {
-    console.error('Warehouses POST error:', error)
+    console.error('Warehouse POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
