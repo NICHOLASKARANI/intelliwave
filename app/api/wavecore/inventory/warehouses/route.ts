@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
+    console.log('WAREHOUSE POST BODY:', JSON.stringify(body))
     const crypto = require('crypto')
     const id = crypto.randomUUID()
     const uniqueCode = 'WH-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomUUID().substring(0, 4).toUpperCase()
@@ -83,13 +84,16 @@ export async function POST(request: NextRequest) {
       stockValue = initialStock * sellingPrice
     }
 
+    console.log('WAREHOUSE CREATED:', result.rows[0])
     return NextResponse.json({ 
       warehouse: { ...result.rows[0], locationCount: numLocations, locationName, productName, totalStock, stockValue },
       message: 'Warehouse created' 
     }, { status: 201 })
   } catch (error) {
-    console.error('Warehouse POST error:', error)
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+    console.error('Warehouse POST error FULL:', error)
+    console.error('Warehouse POST error message:', (error as Error).message)
+    console.error('Warehouse POST error stack:', (error as Error).stack)
+    return NextResponse.json({ error: (error as Error).message, details: (error as Error).stack }, { status: 500 })
   }
 }
 
