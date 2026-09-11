@@ -238,8 +238,10 @@ export default function WarehousesPage() {
                 <p className="text-sm text-neutral-400 mt-2 flex items-center gap-1">
                   <MapPin className="w-3 h-3" /> {wh.address || 'No address'}{wh.city ? ', ' + wh.city : ''}{wh.country ? ', ' + wh.country : ''}
                 </p>
-                <div className="flex gap-4 mt-3 text-sm">
+                <div className="flex flex-wrap gap-4 mt-3 text-sm">
                   <span className="text-neutral-400">Locations: <b className="text-white">{wh.locationCount || 0}</b></span>
+                  <span className="text-neutral-400">Location: <b className="text-white">{wh.locationName || 'N/A'}</b></span>
+                  <span className="text-neutral-400">Product: <b className="text-white">{wh.productName || 'N/A'}</b></span>
                   <span className="text-neutral-400">Stock: <b className="text-white">{wh.totalStock || 0}</b></span>
                 </div>
                 <div className="text-sm mt-1 text-neutral-400">
