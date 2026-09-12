@@ -32,9 +32,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     console.log('WAREHOUSE POST BODY:', JSON.stringify(body))
+
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-    const uniqueCode = 'WH-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomUUID().substring(0, 4).toUpperCase()
+
+    // USE body.code IF PROVIDED, otherwise auto-generate
+    const uniqueCode = (body.code && body.code.trim() !== '') 
+      ? body.code.trim() 
+      : 'WH-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomUUID().substring(0, 4).toUpperCase()
 
     // Get product name if productId provided
     let productName = ''
@@ -43,12 +48,13 @@ export async function POST(request: NextRequest) {
       productName = productResult.rows[0]?.name || ''
     }
 
+    // Insert Warehouse with the USER'S code
     const result = await pool.query(`
       INSERT INTO "Warehouse" (id, name, code, address, city, country, "isActive", "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *
     `, [id, body.name, uniqueCode, body.address || '', body.city || '', body.country || '', body.isActive !== false, session.organizationId])
 
-    // Create StockLocation with the location name user provided
+    // Create StockLocation
     const numLocations = Math.max(1, Number(body.locationsCount || 1))
     const locationName = body.locationName || 'Default Location'
     let firstLocationId = null
@@ -57,43 +63,51 @@ export async function POST(request: NextRequest) {
       const locationId = crypto.randomUUID()
       const locName = numLocations > 1 ? locationName + ' ' + (i + 1) : locationName
       const locCode = 'LOC-' + crypto.randomUUID().substring(0, 8).toUpperCase()
-      await pool.query(`
-        INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
-        VALUES ($1, $2, $3, $4, true, NOW(), NOW())
-      `, [locationId, locName, locCode, id]).catch(() => {})
-      if (i === 0) firstLocationId = locationId
+      
+      try {
+        await pool.query(`
+          INSERT INTO "StockLocation" (id, name, code, "warehouseId", "isActive", "createdAt", "updatedAt")
+          VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+        `, [locationId, locName, locCode, id])
+        console.log('StockLocation CREATED:', locationId, locName)
+        if (i === 0) firstLocationId = locationId
+      } catch (err: any) {
+        console.error('StockLocation insert FAILED:', err.message)
+      }
     }
 
-    // If initial stock and product provided, create StockQuantity
+    // Create StockQuantity if initialStock and productId
     const initialStock = Number(body.initialStock || 0)
     let totalStock = 0
     let stockValue = 0
 
     if (initialStock > 0 && body.productId && firstLocationId) {
       const stockId = crypto.randomUUID()
-      await pool.query(`
-        INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
-        VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())
-      `, [stockId, initialStock, body.productId, firstLocationId]).catch((err) => {
-        console.error('StockQuantity insert error:', err.message)
-      })
-      totalStock = initialStock
+      try {
+        await pool.query(`
+          INSERT INTO "StockQuantity" (id, quantity, "reservedQty", "availableQty", "productId", "locationId", "createdAt", "updatedAt")
+          VALUES ($1, $2, 0, $2, $3, $4, NOW(), NOW())
+        `, [stockId, initialStock, body.productId, firstLocationId])
+        console.log('StockQuantity CREATED:', stockId, 'qty:', initialStock)
+        totalStock = initialStock
 
-      const productResult = await pool.query('SELECT "sellingPrice" FROM "Product" WHERE id = $1', [body.productId]).catch(() => ({ rows: [] }))
-      const sellingPrice = Number(productResult.rows[0]?.sellingPrice || 0)
-      stockValue = initialStock * sellingPrice
+        const productResult = await pool.query('SELECT "sellingPrice" FROM "Product" WHERE id = $1', [body.productId]).catch(() => ({ rows: [] }))
+        const sellingPrice = Number(productResult.rows[0]?.sellingPrice || 0)
+        stockValue = initialStock * sellingPrice
+      } catch (err: any) {
+        console.error('StockQuantity insert FAILED:', err.message)
+      }
+    } else {
+      console.log('SKIPPED StockQuantity - initialStock:', initialStock, 'productId:', body.productId, 'firstLocationId:', firstLocationId)
     }
 
-    console.log('WAREHOUSE CREATED:', result.rows[0])
     return NextResponse.json({ 
       warehouse: { ...result.rows[0], locationCount: numLocations, locationName, productName, totalStock, stockValue },
       message: 'Warehouse created' 
     }, { status: 201 })
   } catch (error) {
-    console.error('Warehouse POST error FULL:', error)
-    console.error('Warehouse POST error message:', (error as Error).message)
-    console.error('Warehouse POST error stack:', (error as Error).stack)
-    return NextResponse.json({ error: (error as Error).message, details: (error as Error).stack }, { status: 500 })
+    console.error('Warehouse POST error:', error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
