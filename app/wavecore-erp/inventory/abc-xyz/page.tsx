@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, BarChart3
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, BarChart3, Trash2
 } from 'lucide-react'
 
 export default function AbcXyzPage() {
@@ -16,6 +16,8 @@ export default function AbcXyzPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [activeKpi, setActiveKpi] = useState('ALL')
+  const [deleting, setDeleting] = useState('')
+  const [success, setSuccess] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -33,6 +35,27 @@ export default function AbcXyzPage() {
   }
 
   useEffect(() => { fetchData() }, [])
+
+  const deleteProduct = async (id: string, name: string) => {
+    if (!confirm('Delete product ' + name + '?')) return
+    setDeleting(id)
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Product deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchData()
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Delete failed')
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
 
   const downloadPdf = (id: string) => {
     window.open('/api/wavecore/inventory/abc-xyz/' + id + '/pdf', '_blank')
@@ -159,7 +182,7 @@ export default function AbcXyzPage() {
                   <th className="text-center p-4 text-neutral-400 text-sm">XYZ</th>
                   <th className="text-center p-4 text-neutral-400 text-sm">Combined</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Service Level</th>
-                  <th className="text-center p-4 text-neutral-400 text-sm">PDF</th>
+                  <th className="text-center p-4 text-neutral-400 text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,7 +194,7 @@ export default function AbcXyzPage() {
                     <td className="p-4 text-center"><span className={'px-3 py-1 rounded-full text-xs font-bold ' + (p.xyzClass === 'X' ? 'bg-blue-900/50 text-blue-300' : p.xyzClass === 'Y' ? 'bg-orange-900/50 text-orange-300' : 'bg-purple-900/50 text-purple-300')}>{p.xyzClass}</span></td>
                     <td className="p-4 text-center"><span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-900/50 text-indigo-300">{p.combinedClass}</span></td>
                     <td className="p-4 text-neutral-300 text-sm">{p.recommendedServiceLevel}</td>
-                    <td className="p-4 text-center"><button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800"><Printer className="w-4 h-4" /></button></td>
+                    <td className="p-4"><div className="flex gap-2 justify-center"><button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button><button onClick={() => deleteProduct(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete">{deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button></div></td>
                   </tr>
                 ))}
               </tbody>
