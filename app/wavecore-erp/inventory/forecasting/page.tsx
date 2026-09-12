@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Calendar, LineChart
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Calendar, LineChart, Trash2
 } from 'lucide-react'
 
 export default function ForecastingPage() {
@@ -16,6 +16,8 @@ export default function ForecastingPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [activeKpi, setActiveKpi] = useState('ALL')
+  const [deleting, setDeleting] = useState('')
+  const [success, setSuccess] = useState('')
 
   const fetchForecasts = async () => {
     setLoading(true)
@@ -33,6 +35,27 @@ export default function ForecastingPage() {
   }
 
   useEffect(() => { fetchForecasts() }, [])
+
+  const deleteForecast = async (id: string, name: string) => {
+    if (!confirm('Delete product ' + name + '? This removes it from forecasting.')) return
+    setDeleting(id)
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Product deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchForecasts()
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Delete failed')
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
 
   const downloadPdf = (id: string) => {
     window.open('/api/wavecore/inventory/forecasting/' + id + '/pdf', '_blank')
@@ -151,7 +174,7 @@ export default function ForecastingPage() {
                   <th className="text-right p-4 text-neutral-400 text-sm">Days Supply</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Trend</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Status</th>
-                  <th className="text-center p-4 text-neutral-400 text-sm">PDF</th>
+                  <th className="text-center p-4 text-neutral-400 text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,7 +187,7 @@ export default function ForecastingPage() {
                     <td className="p-4 text-right"><span className={f.daysOfSupply < 14 ? 'text-red-400 font-bold' : 'text-green-400 font-bold'}>{f.daysOfSupply === 999 ? '∞' : f.daysOfSupply}</span></td>
                     <td className="p-4"><span className={'px-2 py-1 rounded-full text-xs font-bold ' + (f.trend === 'UP' ? 'bg-green-900/50 text-green-300' : f.trend === 'DOWN' ? 'bg-orange-900/50 text-orange-300' : 'bg-blue-900/50 text-blue-300')}>{f.trend}</span></td>
                     <td className="p-4"><span className={'px-2 py-1 rounded-full text-xs font-bold ' + (f.willStockout ? 'bg-red-900/50 text-red-300' : 'bg-green-900/50 text-green-300')}>{f.willStockout ? 'STOCKOUT' : 'OK'}</span></td>
-                    <td className="p-4 text-center"><button onClick={() => downloadPdf(f.productId)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800"><Printer className="w-4 h-4" /></button></td>
+                    <td className="p-4"><div className="flex gap-2 justify-center"><button onClick={() => downloadPdf(f.productId)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button><button onClick={() => deleteForecast(f.productId, f.name)} disabled={deleting === f.productId} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete">{deleting === f.productId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}</button></div></td>
                   </tr>
                 ))}
               </tbody>
