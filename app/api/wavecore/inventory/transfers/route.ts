@@ -12,12 +12,9 @@ export async function GET(request: NextRequest) {
     const orgId = session.organizationId
 
     const transfers = await pool.query(`
-      SELECT t.*, p.name as "productName", p.sku,
-        fw.name as "fromWarehouse", tw.name as "toWarehouse"
+      SELECT t.*, p.sku
       FROM "Transfer" t
       LEFT JOIN "Product" p ON p.id = t."productId"
-      LEFT JOIN "Warehouse" fw ON fw.id = t."fromWarehouseId"
-      LEFT JOIN "Warehouse" tw ON tw.id = t."toWarehouseId"
       WHERE t."organizationId" = $1
       ORDER BY t."createdAt" DESC LIMIT 100
     `, [orgId]).catch(() => ({ rows: [] }))
@@ -54,20 +51,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // Save transfer with notes containing details
+    // Get warehouse names from IDs
+    let fromLocation = body.fromWarehouseId || ''
+    let toLocation = body.toWarehouseId || ''
+
+    if (body.fromWarehouseId) {
+      const fw = await pool.query('SELECT name FROM "Warehouse" WHERE id = $1', [body.fromWarehouseId]).catch(() => ({ rows: [] }))
+      if (fw.rows[0]) fromLocation = fw.rows[0].name
+    }
+    if (body.toWarehouseId) {
+      const tw = await pool.query('SELECT name FROM "Warehouse" WHERE id = $1', [body.toWarehouseId]).catch(() => ({ rows: [] }))
+      if (tw.rows[0]) toLocation = tw.rows[0].name
+    }
+
+    // Save transfer with details in notes
     const notes = JSON.stringify({
       buyingPrice: Number(body.buyingPrice || 0),
-      sellingPrice: Number(body.sellingPrice || 0),
-      quantity: Number(body.quantity || 0)
+      sellingPrice: Number(body.sellingPrice || 0)
     })
 
     const result = await pool.query(`
-      INSERT INTO "Transfer" (id, number, "productId", "productName", "fromWarehouseId", "toWarehouseId", quantity, status, notes, "organizationId", "createdAt", "updatedAt")
+      INSERT INTO "Transfer" (id, number, "productId", "productName", "fromLocation", "toLocation", quantity, status, notes, "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', $8, $9, NOW(), NOW()) RETURNING *
-    `, [id, number, body.productId, productResult.rows[0].name, body.fromWarehouseId, body.toWarehouseId, Number(body.quantity || 0), notes, session.organizationId])
+    `, [id, number, body.productId, productResult.rows[0].name, fromLocation, toLocation, Number(body.quantity || 0), notes, session.organizationId])
 
     return NextResponse.json({ transfer: result.rows[0], message: 'Transfer created' }, { status: 201 })
   } catch (error) {
+    console.error('Transfers POST error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
