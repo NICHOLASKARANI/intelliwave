@@ -51,18 +51,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // Get warehouse names from IDs
-    let fromLocation = body.fromWarehouseId || ''
-    let toLocation = body.toWarehouseId || ''
-
-    if (body.fromWarehouseId) {
-      const fw = await pool.query('SELECT name FROM "Warehouse" WHERE id = $1', [body.fromWarehouseId]).catch(() => ({ rows: [] }))
-      if (fw.rows[0]) fromLocation = fw.rows[0].name
-    }
-    if (body.toWarehouseId) {
-      const tw = await pool.query('SELECT name FROM "Warehouse" WHERE id = $1', [body.toWarehouseId]).catch(() => ({ rows: [] }))
-      if (tw.rows[0]) toLocation = tw.rows[0].name
-    }
+    // User-typed locations
+    const fromLocation = body.fromLocation || ''
+    const toLocation = body.toLocation || ''
 
     // Save transfer with details in notes
     const notes = JSON.stringify({
