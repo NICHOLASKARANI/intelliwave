@@ -97,6 +97,10 @@ export default function ReorderPage() {
     }
   }
 
+  const downloadPoPdf = (id: string) => {
+    window.open('/api/wavecore/inventory/reorder/po/' + id + '/pdf', '_blank')
+  }
+
   const deletePO = async (id: string) => {
     if (!confirm('Delete this purchase order?')) return
     setDeleting(id)
@@ -234,7 +238,7 @@ export default function ReorderPage() {
                       <div className="flex items-center gap-3">
                         <span className={'px-2 py-1 rounded-full text-xs font-bold ' + (po.status === 'PENDING' ? 'bg-yellow-900/50 text-yellow-300' : 'bg-green-900/50 text-green-300')}>{po.status}</span>
                         <span className="font-bold text-white">KSh {Number(po.amount || 0).toLocaleString()}</span>
-                        <button onClick={() => deletePO(po.id)} disabled={deleting === po.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete PO">
+                        <button onClick={() => downloadPoPdf(po.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF"><Printer className="w-4 h-4" /></button>`n                        <button onClick={() => deletePO(po.id)} disabled={deleting === po.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete PO">
                           {deleting === po.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
