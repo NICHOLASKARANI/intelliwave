@@ -198,10 +198,15 @@ export default function LedgerPage() {
                     <td className="p-4 text-neutral-400 text-sm flex items-center gap-1">
                       <Calendar className="w-3 h-3" /> {new Date(l.createdAt).toLocaleString()}
                     </td>
-                    <td className="p-4 text-center">
-                      <button onClick={() => downloadPdf(l.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800 transition-colors" title="Download PDF">
-                        <Printer className="w-4 h-4" />
-                      </button>
+                    <td className="p-4">
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => downloadPdf(l.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800 transition-colors" title="Download PDF">
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteLedger(l.id)} disabled={deleting === l.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50 transition-colors" title="Delete">
+                          {deleting === l.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
