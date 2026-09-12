@@ -49,7 +49,7 @@ export default function TransfersPage() {
     e.preventDefault()
     setError('')
     setSuccess('')
-    if (!form.productId || !form.fromWarehouseId || !form.toWarehouseId || !form.quantity) {
+    if (!form.productId || !form.fromLocation || !form.toLocation || !form.quantity) {
       setError('All fields required')
       return
     }
@@ -57,7 +57,7 @@ export default function TransfersPage() {
       const res = await fetch('/api/wavecore/inventory/transfers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, quantity: Number(form.quantity) })
+        body: JSON.stringify({ ...form, quantity: Number(form.quantity), buyingPrice: Number(form.buyingPrice || 0), sellingPrice: Number(form.sellingPrice || 0) })
       })
       const data = await res.json()
       if (res.ok) {
