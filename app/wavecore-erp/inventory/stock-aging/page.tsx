@@ -48,10 +48,15 @@ export default function StockAgingPage() {
     }
   }
 
-  const filtered = products.filter(p =>
-    (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.sku || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = products.filter(p => {
+    const matchesSearch = (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.sku || '').toLowerCase().includes(search.toLowerCase())
+    const matchesKpi = activeKpi === 'ALL' ||
+      (activeKpi === 'HEALTHY' && p.daysInInventory <= 30) ||
+      (activeKpi === 'SLOW' && p.daysInInventory > 90 && p.daysInInventory <= 180) ||
+      (activeKpi === 'DEAD' && p.daysInInventory > 180)
+    return matchesSearch && matchesKpi
+  })
 
   return (
     <div className="min-h-screen bg-neutral-950">
