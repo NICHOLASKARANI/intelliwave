@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search, Brain, LineChart, PieChart, ShoppingCart, Zap,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity,
-  CheckCircle2, XCircle, DollarSign, ShieldAlert, Truck, Boxes
+  CheckCircle2, XCircle, Trash2, DollarSign, ShieldAlert, Truck, Boxes
 } from 'lucide-react'
 
 export default function AtpPage() {
@@ -16,6 +16,8 @@ export default function AtpPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [activeKpi, setActiveKpi] = useState('ALL')
+  const [deleting, setDeleting] = useState('')
+  const [success, setSuccess] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -33,6 +35,27 @@ export default function AtpPage() {
   }
 
   useEffect(() => { fetchData() }, [])
+
+  const deleteProduct = async (id: string, name: string) => {
+    if (!confirm('Delete product ' + name + '?')) return
+    setDeleting(id)
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Product deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchData()
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Delete failed')
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
 
   const downloadPdf = (id: string) => {
     window.open('/api/wavecore/inventory/atp/' + id + '/pdf', '_blank')
@@ -157,7 +180,7 @@ export default function AtpPage() {
                   <th className="text-right p-4 text-neutral-400 text-sm">Reserved</th>
                   <th className="text-right p-4 text-neutral-400 text-sm">ATP</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Status</th>
-                  <th className="text-center p-4 text-neutral-400 text-sm">PDF</th>
+                  <th className="text-center p-4 text-neutral-400 text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,10 +196,15 @@ export default function AtpPage() {
                         {p.canPromise ? 'CAN PROMISE' : 'CANNOT PROMISE'}
                       </span>
                     </td>
-                    <td className="p-4 text-center">
-                      <button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800">
-                        <Printer className="w-4 h-4" />
-                      </button>
+                    <td className="p-4">
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => downloadPdf(p.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF">
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteProduct(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete">
+                          {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
