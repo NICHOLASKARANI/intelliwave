@@ -54,3 +54,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ledger: result.rows[0] }, { status: 201 })
   } catch (error) { return NextResponse.json({ error: (error as Error).message }, { status: 500 }) }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+    const result = await pool.query(
+      'DELETE FROM "InventoryLedger" WHERE id = $1 AND "organizationId" = $2',
+      [id, session.organizationId]
+    )
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Ledger entry not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, message: 'Ledger entry deleted' })
+  } catch (error) {
+    console.error('Ledger DELETE error:', error)
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  }
+}

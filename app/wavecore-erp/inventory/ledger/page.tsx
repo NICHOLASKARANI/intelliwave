@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Loader2, Package, Warehouse, Printer, Search,
   ArrowLeft, ArrowLeftRight, RefreshCw, Sliders, ClipboardList, Layers, Activity, LineChart, PieChart, ShoppingCart, Zap,
-  TrendingUp, TrendingDown, Calendar, DollarSign, ShieldAlert, Truck, ArrowRight, ArrowDown, Database
+  TrendingUp, TrendingDown, Calendar, DollarSign, ShieldAlert, Truck, ArrowRight, ArrowDown, Database, Trash2
 } from 'lucide-react'
 
 export default function LedgerPage() {
@@ -15,6 +15,8 @@ export default function LedgerPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [activeKpi, setActiveKpi] = useState('ALL')
+  const [deleting, setDeleting] = useState('')
+  const [success, setSuccess] = useState('')
 
   const fetchLedger = async () => {
     setLoading(true)
@@ -31,6 +33,23 @@ export default function LedgerPage() {
   }
 
   useEffect(() => { fetchLedger() }, [])
+
+  const deleteLedger = async (id: string) => {
+    if (!confirm('Delete this ledger entry?')) return
+    setDeleting(id)
+    try {
+      const res = await fetch('/api/wavecore/inventory/ledger?id=' + id, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Ledger entry deleted!')
+        setTimeout(() => setSuccess(''), 3000)
+        fetchLedger()
+      }
+    } catch (err) {
+      setError('Delete failed')
+    } finally {
+      setDeleting('')
+    }
+  }
 
   const downloadPdf = (id: string) => {
     window.open('/api/wavecore/inventory/ledger/' + id + '/pdf', '_blank')
@@ -156,7 +175,7 @@ export default function LedgerPage() {
                   <th className="text-right p-4 text-neutral-400 text-sm">After</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Type</th>
                   <th className="text-left p-4 text-neutral-400 text-sm">Date</th>
-                  <th className="text-center p-4 text-neutral-400 text-sm">PDF</th>
+                  <th className="text-center p-4 text-neutral-400 text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
