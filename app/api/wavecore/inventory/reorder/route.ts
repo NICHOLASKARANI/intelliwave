@@ -29,8 +29,6 @@ export async function GET(request: NextRequest) {
 
     const reorderList = products.rows
 
-    // Get recent purchase orders
-    const purchaseOrders = await pool.query(`SELECT * FROM "PurchaseOrder" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 50`, [orgId]).catch(() => ({ rows: [] }))
     const totalReorderValue = reorderList.reduce((sum, r) => sum + Number(r.suggestedOrderValue || 0), 0)
 
     // Get existing POs
