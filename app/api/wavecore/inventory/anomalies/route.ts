@@ -93,3 +93,38 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ movementAnomalies: [], negativeStock: [], adjustmentAnomalies: [], shrinkage: [], summary: { movementAnomalies: 0, negativeStock: 0, adjustmentAnomalies: 0, shrinkageItems: 0, totalAnomalies: 0 } })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type')
+    const id = searchParams.get('id')
+    const productId = searchParams.get('productId')
+
+    if (type === 'movement' && id) {
+      // Delete the StockMove record (removes anomaly)
+      await pool.query('DELETE FROM "StockMove" WHERE id = $1 AND "organizationId" = $2', [id, session.organizationId])
+      return NextResponse.json({ success: true, message: 'Movement record deleted' })
+    }
+
+    if (type === 'negative' && productId) {
+      // Fix negative stock to 0
+      await pool.query('UPDATE "StockQuantity" SET quantity = 0, "availableQty" = 0, "updatedAt" = NOW() WHERE "productId" = $1', [productId])
+      return NextResponse.json({ success: true, message: 'Negative stock fixed to 0' })
+    }
+
+    if (type === 'shrinkage' && productId) {
+      // Delete shrinkage-type movements for that product
+      await pool.query(`DELETE FROM "StockMove" WHERE "productId" = $1 AND "organizationId" = $2 AND type = 'ADJUSTMENT' AND quantity < 0`, [productId, session.organizationId])
+      return NextResponse.json({ success: true, message: 'Shrinkage records deleted' })
+    }
+
+    return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+  } catch (error) {
+    console.error('Anomalies DELETE error:', error)
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  }
+}
