@@ -179,8 +179,8 @@ export default function TransfersPage() {
                   <tr key={t.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
                     <td className="p-4 font-mono text-xs text-neutral-400">{t.number}</td>
                     <td className="p-4 font-bold text-white">{t.productName}</td>
-                    <td className="p-4 text-neutral-300">{t.fromWarehouse || 'N/A'}</td>
-                    <td className="p-4 text-neutral-300">{t.toWarehouse || 'N/A'}</td>
+                    <td className="p-4 text-neutral-300">{t.fromLocation || 'N/A'}</td>
+                    <td className="p-4 text-neutral-300">{t.toLocation || 'N/A'}</td>
                     <td className="p-4 text-right text-white font-bold">{t.quantity}</td>
                     <td className="p-4"><span className={'px-2 py-1 rounded-full text-xs font-bold ' + (t.status === 'COMPLETED' ? 'bg-green-900/50 text-green-300' : 'bg-yellow-900/50 text-yellow-300')}>{t.status}</span></td>
                     <td className="p-4"><div className="flex gap-2 justify-center"><button onClick={() => downloadPdf(t.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300"><Printer className="w-4 h-4" /></button><button onClick={() => deleteTransfer(t.id)} className="p-2 rounded-lg bg-red-900/50 text-red-300"><Trash2 className="w-4 h-4" /></button></div></td>
