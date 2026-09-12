@@ -87,9 +87,9 @@ export async function POST(request: NextRequest) {
 
     // Insert with supplierName and amount columns
     const result = await pool.query(`
-      INSERT INTO "PurchaseOrder" (id, "supplierName", amount, status, "organizationId", "createdAt")
-      VALUES ($1, $2, $3, 'PENDING', $4, NOW()) RETURNING *
-    `, [id, body.supplier || 'Default Supplier', amount, session.organizationId])
+      INSERT INTO "PurchaseOrder" (id, "supplierName", amount, status, "organizationId", "productId", "productName", "createdAt")
+      VALUES ($1, $2, $3, 'PENDING', $4, $5, $6, NOW()) RETURNING *
+    `, [id, body.supplier || 'Default Supplier', amount, session.organizationId, body.productId || null, product.name || null])
 
     return NextResponse.json({ 
       success: true, 

@@ -233,6 +233,7 @@ export default function ReorderPage() {
                     <div key={po.id} className="p-3 rounded-xl bg-neutral-800 flex justify-between items-center">
                       <div>
                         <p className="font-bold text-white">PO-{po.id.substring(0, 8)}</p>
+                        <p className="text-sm text-orange-300 font-bold">{po.productName || "N/A"}</p>
                         <p className="text-xs text-neutral-400">{po.supplierName} | {new Date(po.createdAt).toLocaleString()}</p>
                       </div>
                       <div className="flex items-center gap-3">

@@ -37,6 +37,7 @@ export async function GET(
       '<div class="header"><div class="company">WaveCore ERP</div><div class="title">Purchase Order</div></div>' +
       '<div class="grid">' +
       '<div class="card"><div class="label">PO Number</div><div class="value" style="font-size:16px">PO-' + po.id.substring(0, 8) + '</div></div>' +
+      '<div class="card"><div class="label">Product</div><div class="value" style="font-size:16px">' + (po.productName || 'N/A') + '</div></div>' +
       '<div class="card"><div class="label">Supplier</div><div class="value" style="font-size:16px">' + (po.supplierName || 'N/A') + '</div></div>' +
       '<div class="card"><div class="label">Amount</div><div class="value">KSh ' + Number(po.amount || 0).toLocaleString() + '</div></div>' +
       '<div class="card"><div class="label">Status</div><div class="value">' + (po.status || 'PENDING') + '</div></div>' +
