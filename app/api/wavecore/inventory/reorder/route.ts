@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       purchaseOrders: purchaseOrders.rows,
       reorderList,
-      purchaseOrders: purchaseOrders.rows,
       summary: {
         totalReorderValue,
         criticalCount: reorderList.filter(r => r.priority === 'CRITICAL').length,
