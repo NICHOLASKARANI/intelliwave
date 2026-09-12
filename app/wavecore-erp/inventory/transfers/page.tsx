@@ -20,7 +20,7 @@ export default function TransfersPage() {
   const [showForm, setShowForm] = useState(false)
   const [activeKpi, setActiveKpi] = useState('ALL')
   const [deleting, setDeleting] = useState('')
-  const [form, setForm] = useState({ productId: '', fromWarehouseId: '', toWarehouseId: '', quantity: '' })
+  const [form, setForm] = useState({ productId: '', fromLocation: '', toLocation: '', quantity: '', buyingPrice: '', sellingPrice: '' })
 
   const fetchData = async () => {
     setLoading(true)
@@ -63,7 +63,7 @@ export default function TransfersPage() {
       if (res.ok) {
         setSuccess('Transfer created!')
         setTimeout(() => setSuccess(''), 3000)
-        setForm({ productId: '', fromWarehouseId: '', toWarehouseId: '', quantity: '' })
+        setForm({ productId: '', fromLocation: '', toLocation: '', quantity: '', buyingPrice: '', sellingPrice: '' })
         setShowForm(false)
         fetchData()
       } else {
@@ -149,14 +149,10 @@ export default function TransfersPage() {
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
               <input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
-              <select value={form.fromWarehouseId} onChange={(e) => setForm({...form, fromWarehouseId: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                <option value="">From warehouse...</option>
-                {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
-              <select value={form.toWarehouseId} onChange={(e) => setForm({...form, toWarehouseId: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                <option value="">To warehouse...</option>
-                {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
+              <input type="text" placeholder="From Location (e.g. Nairobi Store)" value={form.fromLocation} onChange={(e) => setForm({...form, fromLocation: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+              <input type="text" placeholder="To Location (e.g. Mombasa Warehouse)" value={form.toLocation} onChange={(e) => setForm({...form, toLocation: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+              <input type="number" placeholder="Buying Price (KSh)" value={form.buyingPrice} onChange={(e) => setForm({...form, buyingPrice: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+              <input type="number" placeholder="Selling Price (KSh)" value={form.sellingPrice} onChange={(e) => setForm({...form, sellingPrice: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
             </div>
             <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700">Create Transfer</button>
           </form>
