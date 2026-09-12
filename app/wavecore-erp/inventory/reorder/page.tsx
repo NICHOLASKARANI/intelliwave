@@ -19,15 +19,23 @@ export default function ReorderPage() {
   const [search, setSearch] = useState('')
   const [activeKpi, setActiveKpi] = useState('ALL')
   const [deleting, setDeleting] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [products, setProducts] = useState<any[]>([])
+  const [form, setForm] = useState({ productId: '', quantity: '', supplier: '' })
 
   const fetchData = async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/reorder')
-      const data = await res.json()
+      const [reorderRes, productsRes] = await Promise.all([
+        fetch('/api/wavecore/inventory/reorder'),
+        fetch('/api/wavecore/inventory/products')
+      ])
+      const data = await reorderRes.json()
+      const productsData = await productsRes.json()
       setReorderList(data.reorderList || [])
       setPurchaseOrders(data.purchaseOrders || [])
+      setProducts(productsData.products || [])
       setSummary(data.summary || {})
     } catch (err) {
       setError('Failed to load reorder data')
@@ -37,6 +45,35 @@ export default function ReorderPage() {
   }
 
   useEffect(() => { fetchData() }, [])
+
+  const createManualPO = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!form.productId || !form.quantity || Number(form.quantity) <= 0) {
+      setError('Product and quantity required')
+      return
+    }
+    try {
+      const res = await fetch('/api/wavecore/inventory/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: form.productId, quantity: Number(form.quantity), supplier: form.supplier || 'Manual Entry' })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSuccess('Purchase order created!')
+        setTimeout(() => setSuccess(''), 3000)
+        setForm({ productId: '', quantity: '', supplier: '' })
+        setShowForm(false)
+        fetchData()
+      } else {
+        setError(data.error || 'Failed to create PO')
+      }
+    } catch (err) {
+      setError('Network error')
+    }
+  }
 
   const createPO = async (productId: string, quantity: number) => {
     setError('')
@@ -132,6 +169,29 @@ export default function ReorderPage() {
           <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg text-left'}><DollarSign className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">KSh {(summary.totalReorderValue || 0).toLocaleString()}</p><p className="text-xs opacity-80">Total Value</p></button>
           <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg text-left'}><ShoppingCart className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalQuantity || 0}</p><p className="text-xs opacity-80">Units</p></button>
         </div>
+        {/* New PO Button */}
+        <div className="mb-4">
+          <button onClick={() => setShowForm(!showForm)} className="px-4 py-2.5 rounded-xl bg-orange-600 text-white font-bold flex items-center gap-2 hover:bg-orange-700">
+            <Plus className="w-4 h-4" /> New Purchase Order
+          </button>
+        </div>
+
+        {/* New PO Form */}
+        {showForm && (
+          <form onSubmit={createManualPO} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6 mb-6">
+            <h2 className="font-bold text-lg text-white mb-4">New Purchase Order</h2>
+            <div className="grid grid-cols-3 gap-4">
+              <select value={form.productId} onChange={(e) => setForm({...form, productId: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
+                <option value="">Select product...</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+              <input type="text" placeholder="Supplier name" value={form.supplier} onChange={(e) => setForm({...form, supplier: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+            </div>
+            <button type="submit" className="mt-4 px-6 py-2.5 rounded-xl bg-orange-600 text-white font-bold">Create Purchase Order</button>
+          </form>
+        )}
+
         <div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" /><input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white w-full focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Search products..." /></div>
         {loading ? (
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-orange-500" /></div>
