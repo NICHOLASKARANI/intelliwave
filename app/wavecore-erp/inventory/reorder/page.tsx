@@ -11,6 +11,7 @@ import {
 
 export default function ReorderPage() {
   const [reorderList, setReorderList] = useState<any[]>([])
+  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -26,6 +27,7 @@ export default function ReorderPage() {
       const res = await fetch('/api/wavecore/inventory/reorder')
       const data = await res.json()
       setReorderList(data.reorderList || [])
+      setPurchaseOrders(data.purchaseOrders || [])
       setSummary(data.summary || {})
     } catch (err) {
       setError('Failed to load reorder data')
@@ -155,7 +157,32 @@ export default function ReorderPage() {
             </table>
           </div>
         )}
-      </div>
+
+            {/* Recent Purchase Orders */}
+            {purchaseOrders.length > 0 && (
+              <div className="mt-6 bg-neutral-900 rounded-2xl border border-neutral-800 p-6">
+                <h2 className="font-bold text-white mb-4 flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-orange-400" /> Recent Purchase Orders ({purchaseOrders.length})
+                </h2>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {purchaseOrders.map((po: any) => (
+                    <div key={po.id} className="p-3 rounded-xl bg-neutral-800 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-white">PO-{po.id.substring(0, 8)}</p>
+                        <p className="text-xs text-neutral-400">{po.supplierName} | {new Date(po.createdAt).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={'px-2 py-1 rounded-full text-xs font-bold ' + (po.status === 'PENDING' ? 'bg-yellow-900/50 text-yellow-300' : 'bg-green-900/50 text-green-300')}>{po.status}</span>
+                        <span className="font-bold text-white">KSh {Number(po.amount || 0).toLocaleString()}</span>
+                        <button onClick={() => deletePO(po.id)} disabled={deleting === po.id} className="p-2 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800 disabled:opacity-50" title="Delete PO">
+                          {deleting === po.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}      </div>
     </div>
   )
 }

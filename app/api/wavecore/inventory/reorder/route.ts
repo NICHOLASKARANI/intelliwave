@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
     `, [orgId]).catch(() => ({ rows: [] }))
 
     const reorderList = products.rows
+
+    // Get recent purchase orders
+    const purchaseOrders = await pool.query(
+      SELECT * FROM "PurchaseOrder" WHERE "organizationId" =  ORDER BY "createdAt" DESC LIMIT 50
+    , [orgId]).catch(() => ({ rows: [] }))
     const totalReorderValue = reorderList.reduce((sum, r) => sum + Number(r.suggestedOrderValue || 0), 0)
 
     // Get existing POs
@@ -36,6 +41,7 @@ export async function GET(request: NextRequest) {
     `, [orgId]).catch(() => ({ rows: [] }))
 
     return NextResponse.json({
+      purchaseOrders: purchaseOrders.rows,
       reorderList,
       purchaseOrders: purchaseOrders.rows,
       summary: {
