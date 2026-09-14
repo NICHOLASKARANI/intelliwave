@@ -44,7 +44,7 @@ export default function ManufacturingPage() {
   }
 
   const modules = [
-    { name: 'Work Orders', href: '/wavecore-erp/manufacturing/orders', icon: ClipboardList, color: 'from-indigo-500 to-blue-600', desc: 'Production orders' },
+    { name: 'Work Orders', href: '/wavecore-erp/manufacturing/work-orders', icon: ClipboardList, color: 'from-indigo-500 to-blue-600', desc: 'Production orders' },
     { name: 'BOM', href: '/wavecore-erp/manufacturing/bom', icon: Layers, color: 'from-purple-500 to-violet-600', desc: 'Bill of Materials' },
     { name: 'Work Centers', href: '/wavecore-erp/manufacturing/centers', icon: Cog, color: 'from-amber-500 to-orange-600', desc: 'Production centers' },
     { name: 'Quality', href: '/wavecore-erp/manufacturing/quality', icon: CheckCircle, color: 'from-green-500 to-emerald-600', desc: 'Quality control' },
