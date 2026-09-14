@@ -91,6 +91,8 @@ export default function WorkOrdersPage() {
     setError('')
     if (!form.productId) { setError('Select a product'); return }
     if (!form.quantity || Number(form.quantity) <= 0) { setError('Quantity must be > 0'); return }
+    if (!form.workCenterId) { setError('Select a work center'); return }
+    if (!form.bomId) { setError('Select a BOM'); return }
     try {
       const res = await fetch('/api/wavecore/manufacturing/work-orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -391,16 +393,16 @@ export default function WorkOrdersPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Work Center</label>
-                <select value={form.workCenterId} onChange={e => setForm({ ...form, workCenterId: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                  <option value="">— None —</option>
+                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Work Center *</label>
+                <select value={form.workCenterId} onChange={e => setForm({ ...form, workCenterId: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
+                  <option value="">— Select work center —</option>
                   {workCenters.map(w => <option key={w.id} value={w.id}>{w.name} {w.code ? '(' + w.code + ')' : ''}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">BOM</label>
-                <select value={form.bomId} onChange={e => setForm({ ...form, bomId: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                  <option value="">— None —</option>
+                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">BOM *</label>
+                <select value={form.bomId} onChange={e => setForm({ ...form, bomId: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
+                  <option value="">— Select BOM —</option>
                   {boms.map(b => <option key={b.id} value={b.id}>{b.name || b.id}</option>)}
                 </select>
               </div>

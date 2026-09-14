@@ -11,10 +11,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const woRes = await pool.query(
       `SELECT wo.*, p.name AS "productName", p.sku AS "productSku",
-              wc.name AS "workCenterName", wc.code AS "workCenterCode"
+              wc.name AS "workCenterName", wc.code AS "workCenterCode", b.name AS "bomName"
        FROM "WorkOrder" wo
        LEFT JOIN "Product" p ON p.id = wo."productId"
        LEFT JOIN "WorkCenter" wc ON wc.id = wo."workCenterId"
+       LEFT JOIN "BillOfMaterial" b ON b.id = wo."bomId"
        WHERE wo.id = $1 AND wo."organizationId" = $2`,
       [params.id, session.organizationId]
     )
@@ -102,6 +103,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   <div class="meta-card"><div class="meta-label">Type</div><div class="meta-value">${wo.type || 'MANUFACTURING'}</div></div>
   <div class="meta-card"><div class="meta-label">Priority</div><div class="meta-value">${wo.priority || 'MEDIUM'}</div></div>
   <div class="meta-card"><div class="meta-label">Work Center</div><div class="meta-value">${wo.workCenterName || '—'}</div></div>
+  <div class="meta-card"><div class="meta-label">BOM</div><div class="meta-value">${wo.bomName || '—'}</div></div>
   <div class="meta-card"><div class="meta-label">Start Date</div><div class="meta-value">${fmtDate(wo.startDate)}</div></div>
   <div class="meta-card"><div class="meta-label">Due Date</div><div class="meta-value">${fmtDate(wo.endDate)}</div></div>
   <div class="meta-card"><div class="meta-label">Created</div><div class="meta-value">${fmtDate(wo.createdAt)}</div></div>
