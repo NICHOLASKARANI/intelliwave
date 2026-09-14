@@ -26,16 +26,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-    const orderNumber = 'WO-' + Date.now().toString().slice(-6)
+    const number = 'WO-' + Date.now().toString().slice(-8)
     const result = await pool.query(
-      `INSERT INTO "WorkOrder" (id, "orderNumber", "productName", quantity, status, "organizationId", "createdAt")
-       VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *`,
-      [id, orderNumber, body.productName, body.quantity || 1, body.status || 'PENDING', session.organizationId]
+      `INSERT INTO "WorkOrder" (id, number, type, status, quantity, "completedQty", priority, notes, "productId", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) RETURNING *`,
+      [id, number, body.type || 'MANUFACTURING', body.status || 'DRAFT', Number(body.quantity || 1), 0, body.priority || 'MEDIUM', body.notes || null, body.productId || null, session.organizationId]
     )
     return NextResponse.json({ workOrder: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Work orders POST error:', error)
-    return NextResponse.json({ error: 'Failed to create work order' }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
