@@ -5,13 +5,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Factory, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
-  CheckCircle2, Clock, AlertTriangle, Package, Activity, PlayCircle,
-  FileEdit, ChevronRight, Sparkles, TrendingUp
+  CheckCircle2, Activity, PlayCircle,
+  FileEdit, ChevronRight, Sparkles, TrendingUp, AlertTriangle,
 } from 'lucide-react'
 
 type WO = any
 
-const STATUSES = ['ALL', 'DRAFT', 'RELEASED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 const TYPES = ['ALL', 'MANUFACTURING', 'ASSEMBLY', 'PACKAGING']
 const PRIORITIES = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT']
 
@@ -37,9 +36,6 @@ const priorityColor = (p: string) => {
 
 export default function WorkOrdersPage() {
   const [orders, setOrders] = useState<WO[]>([])
-  const [products, setProducts] = useState<WO[]>([])
-  const [workCenters, setWorkCenters] = useState<WO[]>([])
-  const [boms, setBoms] = useState<WO[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -48,7 +44,6 @@ export default function WorkOrdersPage() {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('ALL')
   const [filterPriority, setFilterPriority] = useState('ALL')
-
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -59,28 +54,17 @@ export default function WorkOrdersPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const [form, setForm] = useState({
-    productId: '', quantity: '', type: 'MANUFACTURING', priority: 'MEDIUM',
-    startDate: '', endDate: '', workCenterId: '', bomId: '', notes: '',
+    productName: '', quantity: '', type: 'MANUFACTURING', priority: 'MEDIUM',
+    startDate: '', endDate: '', workCenterName: '', bomName: '', notes: '',
   })
 
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [o, p, wc, b] = await Promise.all([
-        fetch('/api/wavecore/manufacturing/work-orders').then(r => r.json()).catch(() => ({ workOrders: [] })),
-        fetch('/api/wavecore/inventory/products').then(r => r.json()).catch(() => ({ products: [] })),
-        fetch('/api/wavecore/manufacturing/centers').then(r => r.json()).catch(() => ({ workCenters: [] })),
-        fetch('/api/wavecore/manufacturing/bom').then(r => r.json()).catch(() => ({ boms: [] })),
-      ])
+      const o = await fetch('/api/wavecore/manufacturing/work-orders').then(r => r.json()).catch(() => ({ workOrders: [] }))
       setOrders(o.workOrders || [])
-      setProducts(p.products || [])
-      setWorkCenters(wc.workCenters || wc.centers || [])
-      setBoms(b.boms || [])
-    } catch {
-      setError('Failed to load data')
-    } finally {
-      setLoading(false)
-    }
+    } catch { setError('Failed to load data') }
+    finally { setLoading(false) }
   }
   useEffect(() => { fetchAll() }, [])
 
@@ -89,10 +73,10 @@ export default function WorkOrdersPage() {
   const createOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!form.productId) { setError('Select a product'); return }
+    if (!form.productName.trim()) { setError('Product name is required'); return }
     if (!form.quantity || Number(form.quantity) <= 0) { setError('Quantity must be > 0'); return }
-    if (!form.workCenterId) { setError('Select a work center'); return }
-    if (!form.bomId) { setError('Select a BOM'); return }
+    if (!form.workCenterName.trim()) { setError('Work Center is required'); return }
+    if (!form.bomName.trim()) { setError('BOM is required'); return }
     try {
       const res = await fetch('/api/wavecore/manufacturing/work-orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -100,9 +84,9 @@ export default function WorkOrdersPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
-      flash('Work order ' + data.workOrder.number + ' created')
+      flash('Work order ' + (data.workOrder?.number || '') + ' created')
       setShowCreate(false)
-      setForm({ productId: '', quantity: '', type: 'MANUFACTURING', priority: 'MEDIUM', startDate: '', endDate: '', workCenterId: '', bomId: '', notes: '' })
+      setForm({ productName: '', quantity: '', type: 'MANUFACTURING', priority: 'MEDIUM', startDate: '', endDate: '', workCenterName: '', bomName: '', notes: '' })
       fetchAll()
     } catch { setError('Network error') }
   }
@@ -133,9 +117,7 @@ export default function WorkOrdersPage() {
     for (const id of Array.from(selected)) {
       await fetch('/api/wavecore/manufacturing/work-orders/' + id, { method: 'DELETE' })
     }
-    setSelected(new Set())
-    flash('Bulk delete complete')
-    fetchAll()
+    setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }
 
   const openDetail = async (id: string) => {
@@ -175,12 +157,12 @@ export default function WorkOrdersPage() {
       const s = search.toLowerCase()
       list = list.filter(o =>
         (o.number || '').toLowerCase().includes(s) ||
-        (o.productName || '').toLowerCase().includes(s)
+        (o.productName || '').toLowerCase().includes(s) ||
+        (o.productId || '').toLowerCase().includes(s)
       )
     }
     list.sort((a, b) => {
-      const av = a[sortBy] ?? ''
-      const bv = b[sortBy] ?? ''
+      const av = a[sortBy] ?? ''; const bv = b[sortBy] ?? ''
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
       return 0
@@ -192,10 +174,9 @@ export default function WorkOrdersPage() {
     if (sortBy === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortBy(field); setSortDir('asc') }
   }
-
   const toggleSelect = (id: string) => {
     const next = new Set(selected)
-    if (next.has(id)) next.delete(id); else next.add(id)
+    next.has(id) ? next.delete(id) : next.add(id)
     setSelected(next)
   }
   const toggleAll = () => {
@@ -233,7 +214,7 @@ export default function WorkOrdersPage() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
           <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-indigo-800 text-white shadow-lg ' + (activeKpi === 'ALL' ? 'ring-4 ring-purple-300' : '')}>
-            <Package className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.total}</p><p className="text-xs opacity-90">Total</p>
+            <Factory className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.total}</p><p className="text-xs opacity-90">Total</p>
           </button>
           <button onClick={() => setActiveKpi('DRAFT')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-amber-600 to-orange-800 text-white shadow-lg ' + (activeKpi === 'DRAFT' ? 'ring-4 ring-amber-300' : '')}>
             <FileEdit className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.draft}</p><p className="text-xs opacity-90">Draft</p>
@@ -290,10 +271,7 @@ export default function WorkOrdersPage() {
                 <thead className="bg-neutral-800">
                   <tr>
                     <th className="p-3 w-10"><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleAll} /></th>
-                    {[
-                      ['number', 'Number'], ['productName', 'Product'], ['type', 'Type'], ['quantity', 'Qty'],
-                      ['status', 'Status'], ['priority', 'Priority'], ['endDate', 'Due'],
-                    ].map(([f, label]) => (
+                    {[['number','Number'],['productId','Product'],['type','Type'],['quantity','Qty'],['status','Status'],['priority','Priority'],['endDate','Due']].map(([f, label]) => (
                       <th key={f} onClick={() => toggleSort(f)} className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400 cursor-pointer hover:text-white select-none">
                         <span className="inline-flex items-center gap-1">{label}<ArrowUpDown className="w-3 h-3" /></span>
                       </th>
@@ -312,7 +290,7 @@ export default function WorkOrdersPage() {
                         <td className="p-3 font-mono text-white">{o.number}</td>
                         <td className="p-3 text-neutral-200">
                           <button onClick={() => openDetail(o.id)} className="hover:text-purple-400 inline-flex items-center gap-1">
-                            {o.productName || '—'} <ChevronRight className="w-3 h-3" />
+                            {o.productId || '—'} <ChevronRight className="w-3 h-3" />
                           </button>
                         </td>
                         <td className="p-3 text-neutral-400 text-xs">{o.type || 'MANUFACTURING'}</td>
@@ -365,11 +343,8 @@ export default function WorkOrdersPage() {
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Product *</label>
-                <select value={form.productId} onChange={e => setForm({ ...form, productId: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                  <option value="">— Select product —</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} {p.sku ? '(' + p.sku + ')' : ''}</option>)}
-                </select>
+                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Product Name *</label>
+                <input value={form.productName} onChange={e => setForm({ ...form, productName: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" placeholder="Type product name..." />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Quantity *</label>
@@ -394,17 +369,11 @@ export default function WorkOrdersPage() {
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Work Center *</label>
-                <select value={form.workCenterId} onChange={e => setForm({ ...form, workCenterId: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                  <option value="">— Select work center —</option>
-                  {workCenters.map(w => <option key={w.id} value={w.id}>{w.name} {w.code ? '(' + w.code + ')' : ''}</option>)}
-                </select>
+                <input value={form.workCenterName} onChange={e => setForm({ ...form, workCenterName: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" placeholder="Type work center..." />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">BOM *</label>
-                <select value={form.bomId} onChange={e => setForm({ ...form, bomId: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                  <option value="">— Select BOM —</option>
-                  {boms.map(b => <option key={b.id} value={b.id}>{b.name || b.id}</option>)}
-                </select>
+                <input value={form.bomName} onChange={e => setForm({ ...form, bomName: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" placeholder="Type BOM name..." />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Start Date</label>
@@ -438,15 +407,14 @@ export default function WorkOrdersPage() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   ['Number', detail.workOrder?.number],
-                  ['Product', detail.workOrder?.productName],
-                  ['SKU', detail.workOrder?.productSku],
+                  ['Product', detail.workOrder?.productId],
                   ['Type', detail.workOrder?.type],
                   ['Status', detail.workOrder?.status],
                   ['Priority', detail.workOrder?.priority],
                   ['Quantity', detail.workOrder?.quantity],
                   ['Completed', detail.workOrder?.completedQty],
-                  ['Work Center', detail.workOrder?.workCenterName],
-                  ['BOM', detail.workOrder?.bomName],
+                  ['Work Center', detail.workOrder?.workCenterId],
+                  ['BOM', detail.workOrder?.bomId],
                 ].map(([k, v]) => (
                   <div key={k as string} className="bg-neutral-800 rounded-xl p-3">
                     <div className="text-[10px] uppercase tracking-wide text-neutral-500">{k}</div>
@@ -454,22 +422,6 @@ export default function WorkOrdersPage() {
                   </div>
                 ))}
               </div>
-              {detail.components && detail.components.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wide mb-2">BOM Components</h3>
-                  <div className="space-y-2">
-                    {detail.components.map((c: any, i: number) => (
-                      <div key={i} className="bg-neutral-800 rounded-xl p-3 flex justify-between">
-                        <div>
-                          <div className="text-sm font-bold text-white">{c.componentName}</div>
-                          <div className="text-xs text-neutral-400">{c.componentSku} · {c.operation || 'No op'}</div>
-                        </div>
-                        <div className="text-sm text-white">{Number(c.quantity).toFixed(2)} {c.unit}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               <button onClick={() => downloadPdf(detail.workOrder.id)} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-2">
                 <Printer className="w-4 h-4" /> Print Work Order PDF
               </button>
