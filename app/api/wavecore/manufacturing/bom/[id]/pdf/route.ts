@@ -1,0 +1,125 @@
+export const dynamic = 'force-dynamic'
+
+import { NextRequest, NextResponse } from 'next/server'
+import { pool } from '@/lib/wavecore/db'
+import { requireTenant } from '@/lib/wavecore/auth'
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const bomRes = await pool.query(
+      `SELECT b.*, p.name AS "productName", p.sku AS "productSku"
+       FROM "BillOfMaterial" b
+       LEFT JOIN "Product" p ON p.id = b."productId"
+       WHERE b.id = $1 AND b."organizationId" = $2`,
+      [params.id, session.organizationId]
+    )
+    if (bomRes.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const bom = bomRes.rows[0]
+
+    const compRes = await pool.query(
+      `SELECT bc.*, p.name AS "componentName", p.sku AS "componentSku",
+              COALESCE(p."costPrice", 0) AS "unitCost",
+              (bc.quantity * COALESCE(p."costPrice", 0)) AS "extendedCost"
+       FROM "BOMComponent" bc
+       LEFT JOIN "Product" p ON p.id = bc."productId"
+       WHERE bc."bomId" = $1
+       ORDER BY bc."createdAt" ASC`,
+      [params.id]
+    )
+    const components = compRes.rows
+    const totalCost = components.reduce((s, c) => s + Number(c.extendedCost || 0), 0)
+
+    const rows = components.length > 0
+      ? components.map((c, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${c.componentSku || '—'}</td>
+            <td>${c.componentName || '—'}</td>
+            <td style="text-align:right">${Number(c.quantity).toFixed(2)} ${c.unit || ''}</td>
+            <td style="text-align:right">${c.scrapRate ? Number(c.scrapRate).toFixed(1) + '%' : '0%'}</td>
+            <td>${c.operation || '—'}</td>
+            <td style="text-align:right">${Number(c.unitCost).toFixed(2)}</td>
+            <td style="text-align:right">${Number(c.extendedCost).toFixed(2)}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:#9ca3af">No components</td></tr>'
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>BOM ${bom.code || bom.name}</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #111827; margin: 0; }
+  .hdr { display: flex; justify-content: space-between; border-bottom: 4px solid #7c3aed; padding-bottom: 18px; margin-bottom: 24px; }
+  .brand { font-size: 30px; font-weight: 800; color: #7c3aed; }
+  .brand-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .doc-title h1 { font-size: 22px; margin: 0; }
+  .doc-title .num { font-family: 'Courier New', monospace; font-size: 16px; color: #7c3aed; margin-top: 4px; font-weight: 700; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .meta-card { padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f9fafb; }
+  .meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 700; }
+  .meta-value { font-size: 15px; font-weight: 700; margin-top: 4px; }
+  .section-title { font-size: 14px; font-weight: 800; color: #7c3aed; text-transform: uppercase; letter-spacing: 0.6px; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #ede9fe; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: #7c3aed; color: white; text-align: left; padding: 10px 8px; font-size: 11px; text-transform: uppercase; }
+  tbody td { padding: 9px 8px; border-bottom: 1px solid #f3f4f6; }
+  tbody tr:nth-child(even) { background: #faf5ff; }
+  .totals { margin-top: 14px; text-align: right; font-size: 14px; font-weight: 800; color: #7c3aed; }
+  .footer { margin-top: 40px; text-align: center; color: #9ca3af; font-size: 10px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+  .badge-active { background: #dcfce7; color: #166534; }
+  .badge-inactive { background: #fee2e2; color: #991b1b; }
+</style></head><body>
+
+<div class="hdr">
+  <div>
+    <div class="brand">WaveCore ERP</div>
+    <div class="brand-sub">Manufacturing · Bill of Materials</div>
+  </div>
+  <div class="doc-title">
+    <h1>BILL OF MATERIALS</h1>
+    <div class="num">${bom.code || bom.name}</div>
+    <div style="margin-top:8px"><span class="badge badge-${bom.isActive ? 'active' : 'inactive'}">${bom.isActive ? 'ACTIVE' : 'INACTIVE'}</span></div>
+  </div>
+</div>
+
+<div class="meta-grid">
+  <div class="meta-card"><div class="meta-label">BOM Name</div><div class="meta-value">${bom.name}</div></div>
+  <div class="meta-card"><div class="meta-label">Product</div><div class="meta-value">${bom.productName || '—'}</div></div>
+  <div class="meta-card"><div class="meta-label">SKU</div><div class="meta-value">${bom.productSku || '—'}</div></div>
+  <div class="meta-card"><div class="meta-label">Output Qty</div><div class="meta-value">${bom.quantity}</div></div>
+  <div class="meta-card"><div class="meta-label">Components</div><div class="meta-value">${components.length}</div></div>
+  <div class="meta-card"><div class="meta-label">Created</div><div class="meta-value">${new Date(bom.createdAt).toLocaleDateString('en-GB')}</div></div>
+</div>
+
+<div class="section-title">Component Breakdown</div>
+<table>
+  <thead>
+    <tr>
+      <th>#</th><th>SKU</th><th>Component</th>
+      <th style="text-align:right">Qty</th>
+      <th style="text-align:right">Scrap %</th>
+      <th>Operation</th>
+      <th style="text-align:right">Unit Cost</th>
+      <th style="text-align:right">Extended</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+
+<div class="totals">Total Material Cost: ${totalCost.toFixed(2)}</div>
+
+<div class="footer">
+  <p>Generated by WaveCore ERP · ${new Date().toLocaleString('en-GB')}</p>
+  <p>© ${new Date().getFullYear()} IntelliWavve</p>
+</div>
+
+<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };</script>
+</body></html>`
+
+    return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+  }
+}
