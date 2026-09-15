@@ -22,6 +22,12 @@ export default function ManufacturingPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const summary = data.summary || {}
+  const workOrdersCount = summary.totalWorkOrders ?? (Array.isArray(data.workOrders) ? data.workOrders.length : 0)
+  const outputCount = summary.output ?? 0
+  const qualityRate = summary.qualityRate ?? '100%'
+  const efficiencyValue = summary.efficiency ?? '100%'
+
   const handleDownloadPDF = () => {
     const content = [
       'WaveCore ERP - Manufacturing Dashboard',
@@ -30,10 +36,10 @@ export default function ManufacturingPage() {
       'IntelliWavve - Enterprise Manufacturing',
       '='.repeat(50),
       '',
-      'Active Work Orders: ' + (data.workOrders || 0),
-      'Production Output: ' + (data.output || 0),
-      'Quality Pass Rate: ' + (data.qualityRate || '100%'),
-      'Efficiency: ' + (data.efficiency || '100%'),
+      'Active Work Orders: ' + (workOrdersCount),
+      'Production Output: ' + outputCount,
+      'Quality Pass Rate: ' + qualityRate,
+      'Efficiency: ' + efficiencyValue,
       '',
       '© 2026 IntelliWavve - All Rights Reserved'
     ].join('\n')
@@ -91,22 +97,22 @@ export default function ManufacturingPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <ClipboardList className="w-8 h-8 text-indigo-500 mb-3" />
-                <p className="text-3xl font-extrabold">{data.workOrders || 0}</p>
+                <p className="text-3xl font-extrabold">{workOrdersCount}</p>
                 <p className="text-xs text-muted-foreground mt-1">Work Orders</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <BarChart3 className="w-8 h-8 text-purple-500 mb-3" />
-                <p className="text-3xl font-extrabold">{data.output || 0}</p>
+                <p className="text-3xl font-extrabold">{outputCount}</p>
                 <p className="text-xs text-muted-foreground mt-1">Output</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <CheckCircle className="w-8 h-8 text-green-500 mb-3" />
-                <p className="text-3xl font-extrabold">{data.qualityRate || '100%'}</p>
+                <p className="text-3xl font-extrabold">{qualityRate}</p>
                 <p className="text-xs text-muted-foreground mt-1">Quality</p>
               </div>
               <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
                 <Gauge className="w-8 h-8 text-emerald-500 mb-3" />
-                <p className="text-3xl font-extrabold">{data.efficiency || '100%'}</p>
+                <p className="text-3xl font-extrabold">{efficiencyValue}</p>
                 <p className="text-xs text-muted-foreground mt-1">Efficiency</p>
               </div>
             </div>
