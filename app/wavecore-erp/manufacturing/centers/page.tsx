@@ -32,10 +32,19 @@ export default function CentersPage() {
 
   const fetchAll = async () => {
     setLoading(true)
+    setError('')
     try {
-      const c = await fetch('/api/wavecore/manufacturing/centers').then(r => r.json()).catch(() => ({ centers: [] }))
-      setCenters(c.centers || [])
-    } catch { setError('Failed to load work centers') }
+      const res = await fetch('/api/wavecore/manufacturing/centers')
+      const data = await res.json()
+      if (!res.ok) {
+        setError('API error: ' + (data.error || res.status))
+        setCenters([])
+      } else {
+        setCenters(data.centers || [])
+      }
+    } catch (e: any) {
+      setError('Network error: ' + (e?.message || 'unknown'))
+    }
     finally { setLoading(false) }
   }
   useEffect(() => { fetchAll() }, [])
@@ -180,9 +189,14 @@ export default function CentersPage() {
             </h1>
             <p className="text-sm text-neutral-400 mt-1">Production capacity · Load balancing · Efficiency</p>
           </div>
-          <button onClick={openCreate} className="px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-amber-900/40">
-            <Plus className="w-5 h-5" /> Create Work Center
-          </button>
+          <div className="flex gap-3">
+            <button onClick={fetchAll} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
+              <Loader2 className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
+            </button>
+            <button onClick={openCreate} className="px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-amber-900/40">
+              <Plus className="w-5 h-5" /> Create Work Center
+            </button>
+          </div>
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}

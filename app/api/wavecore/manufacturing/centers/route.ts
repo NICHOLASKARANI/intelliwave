@@ -12,55 +12,73 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
 
-    let sql = `
-      SELECT wc.*,
-             COALESCE(wo.cnt, 0) AS "activeWorkOrders",
-             COALESCE(wo.openQty, 0) AS "openQty"
-      FROM "WorkCenter" wc
-      LEFT JOIN (
-        SELECT "workCenterId",
-               COUNT(*) AS cnt,
-               SUM(quantity - COALESCE("completedQty", 0)) AS "openQty"
-        FROM "WorkOrder"
-        WHERE status NOT IN ('COMPLETED', 'CANCELLED')
-        GROUP BY "workCenterId"
-      ) wo ON wo."workCenterId" = wc.id OR wo."workCenterId" = wc.name
-      WHERE wc."organizationId" = $1
-    `
+    let sql = `SELECT * FROM "WorkCenter" WHERE "organizationId" = $1`
     const params: any[] = [session.organizationId]
     if (search) {
-      sql += ` AND (wc.name ILIKE $2 OR wc.code ILIKE $2)`
+      sql += ` AND (name ILIKE $2 OR code ILIKE $2)`
       params.push(`%${search}%`)
     }
-    sql += ` ORDER BY wc."createdAt" DESC`
+    sql += ` ORDER BY "createdAt" DESC`
 
     const result = await pool.query(sql, params)
     const centers = result.rows
 
-    const totalCapacity = centers.reduce((s, c) => s + Number(c.capacity || 0), 0)
-    const totalLoad = centers.reduce((s, c) => s + Number(c.openQty || 0), 0)
-    const avgEfficiency = centers.length > 0
-      ? Math.round(centers.reduce((s, c) => s + Number(c.efficiency || 0), 0) / centers.length * 100)
+    // Compute load for each center separately (avoids risky JOIN)
+    const ids = centers.map(c => c.id)
+    const names = centers.map(c => c.name)
+    let loadMap: Record<string, { cnt: number; openQty: number }> = {}
+
+    if (ids.length > 0 || names.length > 0) {
+      try {
+        const loadRes = await pool.query(
+          `SELECT "workCenterId", COUNT(*)::int AS cnt,
+                  SUM(quantity - COALESCE("completedQty", 0))::float AS "openQty"
+           FROM "WorkOrder"
+           WHERE "organizationId" = $1
+             AND status NOT IN ('COMPLETED', 'CANCELLED')
+             AND ("workCenterId" = ANY($2::text[]) OR "workCenterId" = ANY($3::text[]))
+           GROUP BY "workCenterId"`,
+          [session.organizationId, ids, names]
+        )
+        for (const row of loadRes.rows) {
+          loadMap[row.workCenterId] = { cnt: Number(row.cnt), openQty: Number(row.openQty || 0) }
+        }
+      } catch (e) {
+        console.error('Load calc error (non-fatal):', e)
+      }
+    }
+
+    const enriched = centers.map(c => ({
+      ...c,
+      activeWorkOrders: loadMap[c.id]?.cnt ?? loadMap[c.name]?.cnt ?? 0,
+      openQty: loadMap[c.id]?.openQty ?? loadMap[c.name]?.openQty ?? 0,
+    }))
+
+    const totalCapacity = enriched.reduce((s, c) => s + Number(c.capacity || 0), 0)
+    const totalLoad = enriched.reduce((s, c) => s + Number(c.openQty || 0), 0)
+    const avgEfficiency = enriched.length > 0
+      ? Math.round(enriched.reduce((s, c) => s + Number(c.efficiency || 0), 0) / enriched.length * 100)
       : 0
-    const avgCost = centers.length > 0
-      ? Math.round(centers.reduce((s, c) => s + Number(c.costPerHour || 0), 0) / centers.length)
+    const avgCost = enriched.length > 0
+      ? Math.round(enriched.reduce((s, c) => s + Number(c.costPerHour || 0), 0) / enriched.length)
       : 0
 
     const summary = {
-      total: centers.length,
-      active: centers.filter(c => Number(c.activeWorkOrders) > 0).length,
-      idle: centers.filter(c => Number(c.activeWorkOrders) === 0).length,
+      total: enriched.length,
+      active: enriched.filter(c => Number(c.activeWorkOrders) > 0).length,
+      idle: enriched.filter(c => Number(c.activeWorkOrders) === 0).length,
       totalCapacity,
       totalLoad,
       utilization: totalCapacity > 0 ? Math.round((totalLoad / totalCapacity) * 100) : 0,
       avgEfficiency: avgEfficiency + '%',
       avgCost,
+      totalOpenQty: totalLoad,
     }
 
-    return NextResponse.json({ centers, summary })
+    return NextResponse.json({ centers: enriched, summary })
   } catch (error) {
     console.error('Centers GET error:', error)
-    return NextResponse.json({ centers: [], summary: {} })
+    return NextResponse.json({ centers: [], summary: {}, error: (error as Error).message })
   }
 }
 
