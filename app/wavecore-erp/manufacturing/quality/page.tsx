@@ -84,6 +84,61 @@ export default function QualityPage() {
     return 'PENDING'
   }
 
+  // When user edits inspected qty, auto-balance passed/rejected
+  const onInspectedChange = (value: string) => {
+    const inspected = Number(value || 0)
+    const passed = Number(form.passedQty || 0)
+    const rejected = Number(form.rejectedQty || 0)
+    // If both passed and rejected are empty/0, default passed = inspected
+    if (passed === 0 && rejected === 0 && inspected > 0) {
+      setForm({ ...form, inspectedQty: value, passedQty: String(inspected), rejectedQty: '0', result: 'PASS' })
+      return
+    }
+    setForm({ ...form, inspectedQty: value })
+  }
+
+  // When user edits passed qty, auto-set rejected = inspected - passed
+  const onPassedChange = (value: string) => {
+    const inspected = Number(form.inspectedQty || 0)
+    const passed = Number(value || 0)
+    let rejected = Number(form.rejectedQty || 0)
+    // If passed > inspected, clamp
+    if (passed > inspected && inspected > 0) {
+      setForm({ ...form, passedQty: String(inspected), rejectedQty: '0', result: 'PASS' })
+      return
+    }
+    // If rejected doesn't fit, reduce it
+    if (passed + rejected > inspected && inspected > 0) {
+      rejected = Math.max(0, inspected - passed)
+    }
+    setForm({
+      ...form,
+      passedQty: value,
+      rejectedQty: String(rejected),
+      result: autoCalcResult(value, String(rejected)),
+    })
+  }
+
+  // When user edits rejected qty, auto-set passed = inspected - rejected
+  const onRejectedChange = (value: string) => {
+    const inspected = Number(form.inspectedQty || 0)
+    const rejected = Number(value || 0)
+    let passed = Number(form.passedQty || 0)
+    if (rejected > inspected && inspected > 0) {
+      setForm({ ...form, rejectedQty: String(inspected), passedQty: '0', result: 'FAIL' })
+      return
+    }
+    if (passed + rejected > inspected && inspected > 0) {
+      passed = Math.max(0, inspected - rejected)
+    }
+    setForm({
+      ...form,
+      rejectedQty: value,
+      passedQty: String(passed),
+      result: autoCalcResult(String(passed), value),
+    })
+  }
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -91,8 +146,16 @@ export default function QualityPage() {
     const inspected = Number(form.inspectedQty || 0)
     const passed = Number(form.passedQty || 0)
     const rejected = Number(form.rejectedQty || 0)
-    if (inspected <= 0) { setError('Inspected quantity must be > 0'); return }
-    if (passed + rejected > inspected) { setError('Passed + Rejected cannot exceed Inspected'); return }
+    if (inspected <= 0) { setError('Inspected quantity must be greater than 0'); return }
+    if (passed + rejected > inspected) {
+      setError('Passed (' + passed + ') + Rejected (' + rejected + ') = ' + (passed + rejected) + ' exceeds Inspected (' + inspected + '). Please fix the quantities.')
+      return
+    }
+    if (passed + rejected < inspected) {
+      const diff = inspected - passed - rejected
+      setError('Passed + Rejected = ' + (passed + rejected) + ' but Inspected = ' + inspected + '. Missing ' + diff + ' unit(s). Please account for all units.')
+      return
+    }
     try {
       const url = editing ? '/api/wavecore/manufacturing/quality/' + editing.id : '/api/wavecore/manufacturing/quality'
       const res = await fetch(url, {
@@ -338,7 +401,7 @@ export default function QualityPage() {
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Inspected Qty *</label>
-                <input type="number" min="1" value={form.inspectedQty} onChange={e => setForm({ ...form, inspectedQty: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+                <input type="number" min="1" value={form.inspectedQty} onChange={e => onInspectedChange(e.target.value)} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Result</label>
@@ -350,17 +413,11 @@ export default function QualityPage() {
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Passed Qty</label>
-                <input type="number" min="0" value={form.passedQty} onChange={e => {
-                  const passed = e.target.value
-                  setForm({ ...form, passedQty: passed, result: autoCalcResult(passed, form.rejectedQty) })
-                }} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+                <input type="number" min="0" value={form.passedQty} onChange={e => onPassedChange(e.target.value)} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Rejected Qty</label>
-                <input type="number" min="0" value={form.rejectedQty} onChange={e => {
-                  const rejected = e.target.value
-                  setForm({ ...form, rejectedQty: rejected, result: autoCalcResult(form.passedQty, rejected) })
-                }} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+                <input type="number" min="0" value={form.rejectedQty} onChange={e => onRejectedChange(e.target.value)} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
               </div>
               <div className="md:col-span-2">
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Notes</label>
