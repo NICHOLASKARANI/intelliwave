@@ -10,9 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const bomRes = await pool.query(
-      `SELECT b.*, p.name AS "productName", p.sku AS "productSku"
-       FROM "BillOfMaterial" b
-       LEFT JOIN "Product" p ON p.id = b."productId"
+      `SELECT b.* FROM "BillOfMaterial" b
        WHERE b.id = $1 AND b."organizationId" = $2`,
       [params.id, session.organizationId]
     )
@@ -20,20 +18,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const compRes = await pool.query(
       `SELECT bc.*,
-              p.name AS "componentName",
-              p.sku AS "componentSku",
-              p."costPrice" AS "unitCost",
-              (bc.quantity * COALESCE(p."costPrice", 0)) AS "extendedCost"
+              bc."productId" AS "componentName",
+              NULL::text AS "componentSku",
+              0::float AS "unitCost",
+              0::float AS "extendedCost"
        FROM "BOMComponent" bc
-       LEFT JOIN "Product" p ON p.id = bc."productId"
        WHERE bc."bomId" = $1
        ORDER BY bc."createdAt" ASC`,
       [params.id]
     )
 
-    const totalCost = compRes.rows.reduce((s, r) => s + Number(r.extendedCost || 0), 0)
-
-    return NextResponse.json({ bom: bomRes.rows[0], components: compRes.rows, totalCost })
+    return NextResponse.json({ bom: bomRes.rows[0], components: compRes.rows, totalCost: 0 })
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
@@ -58,9 +53,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const sets: string[] = []
     const values: any[] = []
     let i = 1
-    for (const key of ['name', 'code', 'productId', 'quantity', 'isActive']) {
-      if (body[key] !== undefined) { sets.push(`"${key}" = $${i++}`); values.push(body[key]) }
-    }
+    if (body.name !== undefined) { sets.push(`"name" = $${i++}`); values.push(body.name) }
+    if (body.code !== undefined) { sets.push(`"code" = $${i++}`); values.push(body.code) }
+    if (body.productName !== undefined) { sets.push(`"productId" = $${i++}`); values.push(body.productName) }
+    if (body.quantity !== undefined) { sets.push(`"quantity" = $${i++}`); values.push(Number(body.quantity)) }
+    if (body.isActive !== undefined) { sets.push(`"isActive" = $${i++}`); values.push(body.isActive) }
     if (sets.length > 0) {
       sets.push(`"updatedAt" = NOW()`)
       values.push(params.id)
@@ -71,12 +68,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       await client.query(`DELETE FROM "BOMComponent" WHERE "bomId" = $1`, [params.id])
       const crypto = require('crypto')
       for (const c of body.components) {
-        if (!c.productId || !c.quantity) continue
+        if (!c.productName || !c.quantity) continue
         await client.query(
           `INSERT INTO "BOMComponent"
             (id, "bomId", "productId", quantity, unit, "scrapRate", operation, "createdAt")
            VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
-          [crypto.randomUUID(), params.id, c.productId, Number(c.quantity), c.unit || 'pcs', Number(c.scrapRate || 0), c.operation || null]
+          [crypto.randomUUID(), params.id, c.productName, Number(c.quantity), c.unit || 'pcs', Number(c.scrapRate || 0), c.operation || null]
         )
       }
     }

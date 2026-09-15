@@ -5,8 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Layers, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
-  CheckCircle2, Package, Activity, TrendingUp, FileEdit, Copy,
-  ChevronRight, Sparkles, DollarSign, AlertTriangle, Boxes,
+  CheckCircle2, Package, Activity, FileEdit, Copy,
+  ChevronRight, Sparkles, Boxes,
 } from 'lucide-react'
 
 const statusColor = (active: boolean) =>
@@ -15,7 +15,6 @@ const statusColor = (active: boolean) =>
 
 export default function BOMPage() {
   const [boms, setBoms] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -34,19 +33,15 @@ export default function BOMPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const [form, setForm] = useState({
-    name: '', code: '', productId: '', quantity: '1', isActive: true,
-    components: [{ productId: '', quantity: '', unit: 'pcs', scrapRate: '', operation: '' }] as any[],
+    name: '', code: '', productName: '', quantity: '1', isActive: true,
+    components: [{ productName: '', quantity: '', unit: 'pcs', scrapRate: '', operation: '' }] as any[],
   })
 
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [b, p] = await Promise.all([
-        fetch('/api/wavecore/manufacturing/bom').then(r => r.json()).catch(() => ({ boms: [] })),
-        fetch('/api/wavecore/inventory/products').then(r => r.json()).catch(() => ({ products: [] })),
-      ])
+      const b = await fetch('/api/wavecore/manufacturing/bom').then(r => r.json()).catch(() => ({ boms: [] }))
       setBoms(b.boms || [])
-      setProducts(p.products || [])
     } catch { setError('Failed to load BOMs') }
     finally { setLoading(false) }
   }
@@ -55,11 +50,12 @@ export default function BOMPage() {
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
 
   const resetForm = () => setForm({
-    name: '', code: '', productId: '', quantity: '1', isActive: true,
-    components: [{ productId: '', quantity: '', unit: 'pcs', scrapRate: '', operation: '' }],
+    name: '', code: '', productName: '', quantity: '1', isActive: true,
+    components: [{ productName: '', quantity: '', unit: 'pcs', scrapRate: '', operation: '' }],
   })
 
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
+
   const openEdit = async (id: string) => {
     const res = await fetch('/api/wavecore/manufacturing/bom/' + id)
     const data = await res.json()
@@ -67,12 +63,15 @@ export default function BOMPage() {
     setForm({
       name: data.bom.name || '',
       code: data.bom.code || '',
-      productId: data.bom.productId || '',
+      productName: data.bom.productId || '',
       quantity: String(data.bom.quantity || 1),
       isActive: !!data.bom.isActive,
       components: (data.components || []).map((c: any) => ({
-        productId: c.productId, quantity: String(c.quantity), unit: c.unit || 'pcs',
-        scrapRate: String(c.scrapRate || ''), operation: c.operation || '',
+        productName: c.productId || '',
+        quantity: String(c.quantity),
+        unit: c.unit || 'pcs',
+        scrapRate: String(c.scrapRate || ''),
+        operation: c.operation || '',
       })),
     })
     setEditing(data.bom)
@@ -81,7 +80,7 @@ export default function BOMPage() {
 
   const addRow = () => setForm({
     ...form,
-    components: [...form.components, { productId: '', quantity: '', unit: 'pcs', scrapRate: '', operation: '' }],
+    components: [...form.components, { productName: '', quantity: '', unit: 'pcs', scrapRate: '', operation: '' }],
   })
   const removeRow = (i: number) => setForm({
     ...form,
@@ -97,18 +96,25 @@ export default function BOMPage() {
     e.preventDefault()
     setError('')
     if (!form.name.trim()) { setError('BOM name is required'); return }
-    if (!form.productId) { setError('Product is required'); return }
+    if (!form.productName.trim()) { setError('Product name is required'); return }
     if (form.components.length === 0) { setError('Add at least one component'); return }
     for (const c of form.components) {
-      if (!c.productId) { setError('Every component needs a product'); return }
+      if (!c.productName.trim()) { setError('Every component needs a name'); return }
       if (!c.quantity || Number(c.quantity) <= 0) { setError('Component quantities must be > 0'); return }
     }
 
     const payload = {
-      ...form,
+      name: form.name,
+      code: form.code,
+      productName: form.productName,
       quantity: Number(form.quantity || 1),
+      isActive: form.isActive,
       components: form.components.map(c => ({
-        ...c, quantity: Number(c.quantity), scrapRate: Number(c.scrapRate || 0),
+        productName: c.productName,
+        quantity: Number(c.quantity),
+        unit: c.unit,
+        scrapRate: Number(c.scrapRate || 0),
+        operation: c.operation,
       })),
     }
 
@@ -170,9 +176,7 @@ export default function BOMPage() {
     const withComponents = boms.filter(b => Number(b.componentCount) > 0).length
     const totalComponents = boms.reduce((s, b) => s + Number(b.componentCount || 0), 0)
     const avgComponents = total > 0 ? Math.round(totalComponents / total) : 0
-    const avgCost = total > 0 ? Math.round(boms.reduce((s, b) => s + Number(b.totalCost || 0), 0) / total) : 0
-    const totalValue = Math.round(boms.reduce((s, b) => s + Number(b.totalCost || 0), 0))
-    return { total, active, inactive, withComponents, totalComponents, avgComponents, avgCost, totalValue }
+    return { total, active, inactive, withComponents, totalComponents, avgComponents }
   }, [boms])
 
   const filtered = useMemo(() => {
@@ -180,7 +184,6 @@ export default function BOMPage() {
     if (activeKpi === 'ACTIVE') list = list.filter(b => b.isActive)
     else if (activeKpi === 'INACTIVE') list = list.filter(b => !b.isActive)
     else if (activeKpi === 'WITH') list = list.filter(b => Number(b.componentCount) > 0)
-    else if (activeKpi === 'EMPTY') list = list.filter(b => Number(b.componentCount) === 0)
     if (filterActive === 'YES') list = list.filter(b => b.isActive)
     if (filterActive === 'NO') list = list.filter(b => !b.isActive)
     if (search) {
@@ -188,7 +191,7 @@ export default function BOMPage() {
       list = list.filter(b =>
         (b.name || '').toLowerCase().includes(s) ||
         (b.code || '').toLowerCase().includes(s) ||
-        (b.productName || '').toLowerCase().includes(s)
+        (b.productId || '').toLowerCase().includes(s)
       )
     }
     list.sort((a, b) => {
@@ -242,7 +245,7 @@ export default function BOMPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-indigo-800 text-white shadow-lg ' + (activeKpi === 'ALL' ? 'ring-4 ring-purple-300' : '')}>
             <Layers className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.total}</p><p className="text-xs opacity-90">Total</p>
           </button>
@@ -260,9 +263,6 @@ export default function BOMPage() {
           </div>
           <div className="p-4 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-800 text-white shadow-lg">
             <Activity className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.avgComponents}</p><p className="text-xs opacity-90">Avg / BOM</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-purple-800 text-white shadow-lg">
-            <DollarSign className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalValue.toLocaleString()}</p><p className="text-xs opacity-90">Total Value</p>
           </div>
         </div>
 
@@ -300,7 +300,7 @@ export default function BOMPage() {
                 <thead className="bg-neutral-800">
                   <tr>
                     <th className="p-3 w-10"><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleAll} /></th>
-                    {[['name','Name'],['code','Code'],['productName','Product'],['componentCount','Components'],['totalCost','Cost'],['isActive','Status'],['updatedAt','Updated']].map(([f,label]) => (
+                    {[['name','Name'],['code','Code'],['productId','Product'],['componentCount','Components'],['isActive','Status'],['updatedAt','Updated']].map(([f,label]) => (
                       <th key={f} onClick={() => toggleSort(f)} className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400 cursor-pointer hover:text-white select-none">
                         <span className="inline-flex items-center gap-1">{label}<ArrowUpDown className="w-3 h-3" /></span>
                       </th>
@@ -318,9 +318,8 @@ export default function BOMPage() {
                         </button>
                       </td>
                       <td className="p-3 font-mono text-xs text-neutral-400">{b.code || '—'}</td>
-                      <td className="p-3 text-neutral-200">{b.productName || '—'}</td>
+                      <td className="p-3 text-neutral-200">{b.productId || '—'}</td>
                       <td className="p-3 text-right text-white font-bold">{Number(b.componentCount || 0)}</td>
-                      <td className="p-3 text-right text-purple-300 font-bold">{Number(b.totalCost || 0).toFixed(2)}</td>
                       <td className="p-3"><span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + statusColor(b.isActive)}>{b.isActive ? 'ACTIVE' : 'INACTIVE'}</span></td>
                       <td className="p-3 text-xs text-neutral-400">{b.updatedAt ? new Date(b.updatedAt).toLocaleDateString('en-GB') : '—'}</td>
                       <td className="p-3">
@@ -363,11 +362,8 @@ export default function BOMPage() {
                 <input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" placeholder="auto if blank" />
               </div>
               <div className="md:col-span-2">
-                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Product *</label>
-                <select value={form.productId} onChange={e => setForm({ ...form, productId: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
-                  <option value="">— Select product —</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} {p.sku ? '(' + p.sku + ')' : ''}</option>)}
-                </select>
+                <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Product Name *</label>
+                <input value={form.productName} onChange={e => setForm({ ...form, productName: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" placeholder="Type product name..." />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Output Qty *</label>
@@ -389,10 +385,7 @@ export default function BOMPage() {
               <div className="space-y-2">
                 {form.components.map((c, i) => (
                   <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                    <select value={c.productId} onChange={e => updateRow(i, 'productId', e.target.value)} className="col-span-4 px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm">
-                      <option value="">— Component —</option>
-                      {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    <input placeholder="Component name" value={c.productName} onChange={e => updateRow(i, 'productName', e.target.value)} className="col-span-4 px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />
                     <input type="number" step="0.01" placeholder="Qty" value={c.quantity} onChange={e => updateRow(i, 'quantity', e.target.value)} className="col-span-2 px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />
                     <input placeholder="Unit" value={c.unit} onChange={e => updateRow(i, 'unit', e.target.value)} className="col-span-1 px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />
                     <input type="number" step="0.1" placeholder="Scrap %" value={c.scrapRate} onChange={e => updateRow(i, 'scrapRate', e.target.value)} className="col-span-2 px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />
@@ -422,7 +415,7 @@ export default function BOMPage() {
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                {[['Name', detail.bom?.name],['Code', detail.bom?.code],['Product', detail.bom?.productName],['SKU', detail.bom?.productSku],['Output Qty', detail.bom?.quantity],['Status', detail.bom?.isActive ? 'ACTIVE' : 'INACTIVE']].map(([k,v]) => (
+                {[['Name', detail.bom?.name],['Code', detail.bom?.code],['Product', detail.bom?.productId],['Output Qty', detail.bom?.quantity],['Status', detail.bom?.isActive ? 'ACTIVE' : 'INACTIVE']].map(([k,v]) => (
                   <div key={k as string} className="bg-neutral-800 rounded-xl p-3">
                     <div className="text-[10px] uppercase tracking-wide text-neutral-500">{k}</div>
                     <div className="text-sm font-bold text-white">{v ?? '—'}</div>
@@ -436,19 +429,12 @@ export default function BOMPage() {
                     {detail.components.map((c: any, i: number) => (
                       <div key={i} className="bg-neutral-800 rounded-xl p-3 flex justify-between items-center">
                         <div>
-                          <div className="text-sm font-bold text-white">{c.componentName}</div>
-                          <div className="text-xs text-neutral-400">{c.componentSku} · {c.operation || 'no operation'}</div>
+                          <div className="text-sm font-bold text-white">{c.productId}</div>
+                          <div className="text-xs text-neutral-400">{c.operation || 'no operation'}</div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm text-white">{Number(c.quantity).toFixed(2)} {c.unit}</div>
-                          <div className="text-xs text-purple-300">${Number(c.extendedCost || 0).toFixed(2)}</div>
-                        </div>
+                        <div className="text-sm text-white">{Number(c.quantity).toFixed(2)} {c.unit}</div>
                       </div>
                     ))}
-                  </div>
-                  <div className="mt-3 p-3 rounded-xl bg-purple-900/30 border border-purple-800 flex justify-between items-center">
-                    <span className="text-xs uppercase text-purple-300 font-bold">Total Material Cost</span>
-                    <span className="text-lg font-bold text-white">${Number(detail.totalCost || 0).toFixed(2)}</span>
                   </div>
                 </div>
               )}

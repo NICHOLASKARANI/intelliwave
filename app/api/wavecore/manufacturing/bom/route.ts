@@ -11,23 +11,18 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
-    const productId = searchParams.get('productId')
     const active = searchParams.get('active')
 
     let sql = `
       SELECT b.*,
-             p.name AS "productName",
-             p.sku AS "productSku",
              COALESCE(c.cnt, 0) AS "componentCount",
              COALESCE(c.cost, 0) AS "totalCost"
       FROM "BillOfMaterial" b
-      LEFT JOIN "Product" p ON p.id = b."productId"
       LEFT JOIN (
         SELECT bc."bomId",
                COUNT(*) AS cnt,
-               SUM(bc.quantity * COALESCE(comp."costPrice", 0)) AS cost
+               SUM(bc.quantity * COALESCE(bc."scrapRate", 0) * 0 + bc.quantity) AS cost
         FROM "BOMComponent" bc
-        LEFT JOIN "Product" comp ON comp.id = bc."productId"
         GROUP BY bc."bomId"
       ) c ON c."bomId" = b.id
       WHERE b."organizationId" = $1
@@ -36,12 +31,8 @@ export async function GET(request: NextRequest) {
     let idx = 2
 
     if (search) {
-      sql += ` AND (b.name ILIKE $${idx} OR b.code ILIKE $${idx} OR p.name ILIKE $${idx})`
+      sql += ` AND (b.name ILIKE $${idx} OR b.code ILIKE $${idx} OR b."productId" ILIKE $${idx})`
       params.push(`%${search}%`); idx++
-    }
-    if (productId && productId !== 'ALL') {
-      sql += ` AND b."productId" = $${idx++}`
-      params.push(productId)
     }
     if (active === 'true') sql += ` AND b."isActive" = TRUE`
     if (active === 'false') sql += ` AND b."isActive" = FALSE`
@@ -49,7 +40,8 @@ export async function GET(request: NextRequest) {
     sql += ` ORDER BY b."createdAt" DESC`
 
     const result = await pool.query(sql, params)
-    const boms = result.rows
+    const rows = result.rows.map(r => ({ ...r, productName: r.productId || null }))
+    const boms = rows
 
     const summary = {
       total: boms.length,
@@ -58,8 +50,8 @@ export async function GET(request: NextRequest) {
       withComponents: boms.filter(b => Number(b.componentCount) > 0).length,
       totalComponents: boms.reduce((s, b) => s + Number(b.componentCount || 0), 0),
       avgComponents: boms.length > 0 ? Math.round(boms.reduce((s, b) => s + Number(b.componentCount || 0), 0) / boms.length) : 0,
-      avgCost: boms.length > 0 ? Math.round(boms.reduce((s, b) => s + Number(b.totalCost || 0), 0) / boms.length) : 0,
-      totalValue: Math.round(boms.reduce((s, b) => s + Number(b.totalCost || 0), 0)),
+      avgCost: 0,
+      totalValue: 0,
     }
 
     return NextResponse.json({ boms, summary })
@@ -77,12 +69,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     if (!body.name || !body.name.trim()) return NextResponse.json({ error: 'BOM name is required' }, { status: 400 })
-    if (!body.productId) return NextResponse.json({ error: 'Product is required' }, { status: 400 })
+    if (!body.productName || !body.productName.trim()) return NextResponse.json({ error: 'Product name is required' }, { status: 400 })
     if (!Array.isArray(body.components) || body.components.length === 0) {
       return NextResponse.json({ error: 'At least one component is required' }, { status: 400 })
     }
     for (const c of body.components) {
-      if (!c.productId) return NextResponse.json({ error: 'Every component needs a product' }, { status: 400 })
+      if (!c.productName || !c.productName.trim()) return NextResponse.json({ error: 'Every component needs a name' }, { status: 400 })
       if (!c.quantity || Number(c.quantity) <= 0) return NextResponse.json({ error: 'Component quantity must be > 0' }, { status: 400 })
     }
 
@@ -97,7 +89,7 @@ export async function POST(request: NextRequest) {
         (id, name, code, "productId", quantity, "isActive", "organizationId", "createdAt", "updatedAt")
        VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())
        RETURNING *`,
-      [bomId, body.name.trim(), code, body.productId, Number(body.quantity || 1), body.isActive !== false, session.organizationId]
+      [bomId, body.name.trim(), code, body.productName.trim(), Number(body.quantity || 1), body.isActive !== false, session.organizationId]
     )
 
     for (const c of body.components) {
@@ -108,7 +100,7 @@ export async function POST(request: NextRequest) {
         [
           crypto.randomUUID(),
           bomId,
-          c.productId,
+          c.productName.trim(),
           Number(c.quantity),
           c.unit || 'pcs',
           Number(c.scrapRate || 0),
