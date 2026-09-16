@@ -64,16 +64,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     if (!body.type || !body.type.trim()) return NextResponse.json({ error: 'Inspection type is required' }, { status: 400 })
 
-    const inspected = Number(body.inspectedQty || 0)
-    const passed = Number(body.passedQty || 0)
-    const rejected = Number(body.rejectedQty || 0)
+    let inspected = Number(body.inspectedQty || 0)
+    let passed = Number(body.passedQty || 0)
+    let rejected = Number(body.rejectedQty || 0)
 
-    if (inspected <= 0) return NextResponse.json({ error: 'Inspected quantity must be > 0' }, { status: 400 })
-    if (passed + rejected > inspected) return NextResponse.json({ error: 'Passed + Rejected cannot exceed Inspected' }, { status: 400 })
+    if (inspected <= 0) return NextResponse.json({ error: 'Inspected quantity must be greater than 0' }, { status: 400 })
+
+    // Server-side auto-balance — never error on arithmetic, just correct it
+    if (passed < 0) passed = 0
+    if (rejected < 0) rejected = 0
+    if (passed + rejected !== inspected) {
+      if (rejected > 0 && passed === 0) {
+        passed = Math.max(0, inspected - rejected)
+      } else if (passed > 0) {
+        rejected = Math.max(0, inspected - passed)
+      } else {
+        passed = inspected
+        rejected = 0
+      }
+    }
 
     const crypto = require('crypto')
     const id = crypto.randomUUID()
-    const result = body.result || (rejected > 0 ? 'FAIL' : 'PASS')
+    const result = rejected > 0 ? 'FAIL' : (passed > 0 ? 'PASS' : 'PENDING')
 
     const inserted = await pool.query(
       `INSERT INTO "QualityCheck"
