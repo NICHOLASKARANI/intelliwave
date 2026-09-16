@@ -4,29 +4,66 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireTenant(request)
-    const tableName = request.url.includes('work-orders') ? 'WorkOrder' :
-      request.url.includes('bom') ? 'BillOfMaterial' :
-      request.url.includes('quality') ? 'QualityCheck' :
-      request.url.includes('centers') ? 'WorkCenter' : 'MaintenanceRequest'
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const result = await pool.query(
+      `SELECT * FROM "MaintenanceRequest" WHERE id = $1 AND "organizationId" = $2`,
+      [params.id, session.organizationId]
+    )
+    if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ request: result.rows[0] })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await request.json()
+    const sets: string[] = []
+    const values: any[] = []
+    let i = 1
+
+    for (const key of ['type', 'status', 'description', 'assetName', 'assetCode', 'priority', 'assignedToId']) {
+      if (body[key] !== undefined) { sets.push(`"${key}" = $${i++}`); values.push(body[key]) }
+    }
+    for (const key of ['requestedDate', 'completedDate']) {
+      if (body[key] !== undefined) { sets.push(`"${key}" = $${i++}`); values.push(body[key] || null) }
+    }
+    if (sets.length === 0) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+
+    sets.push(`"updatedAt" = NOW()`)
+    values.push(params.id, session.organizationId)
 
     const result = await pool.query(
-      `DELETE FROM "${tableName}" WHERE id = $1 AND "organizationId" = $2`,
-      [params.id, session!.organizationId]
+      `UPDATE "MaintenanceRequest" SET ${sets.join(', ')}
+       WHERE id = $${i++} AND "organizationId" = $${i}
+       RETURNING *`,
+      values
     )
+    if (result.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ request: result.rows[0] })
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+  }
+}
 
-    if (result.rowCount === 0) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    }
-
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const result = await pool.query(
+      `DELETE FROM "MaintenanceRequest" WHERE id = $1 AND "organizationId" = $2`,
+      [params.id, session.organizationId]
+    )
+    if (result.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    console.error('DELETE error:', (error as Error).message)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }
