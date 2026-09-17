@@ -8,11 +8,7 @@ import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
 function generateToken(userId: string, organizationId: string): string {
   const secret = process.env.JWT_SECRET || ''
-  return sign(
-    { userId, organizationId, type: 'access' },
-    secret,
-    { expiresIn: '24h' }
-  )
+  return sign({ userId, organizationId, type: 'access' }, secret, { expiresIn: '24h' })
 }
 
 const securityHeaders = {
@@ -24,6 +20,7 @@ const securityHeaders = {
 }
 
 export async function POST(req: NextRequest) {
+  const client = await pool.connect()
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const rateLimit = await checkRedisRateLimit('signup:' + ip, 5, 3600)
@@ -38,10 +35,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Name, email, and password required' }, { status: 400 })
     }
 
-    const existing = await pool.query('SELECT id FROM "User" WHERE email = $1', [email])
-    if (existing.rows.length > 0) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
+    const normalizedEmail = String(email).trim().toLowerCase()
+    const normalizedPhone = phone ? String(phone).trim().replace(/[\s-]/g, '') : null
+
+    const existingEmail = await client.query(
+      'SELECT id FROM "User" WHERE LOWER(email) = $1 LIMIT 1',
+      [normalizedEmail]
+    )
+    if (existingEmail.rows.length > 0) {
+      return NextResponse.json({
+        error: 'This email is already registered. Please login or use Forgot Password.',
+        code: 'EMAIL_EXISTS'
+      }, { status: 409 })
     }
+
+    if (normalizedPhone) {
+      const existingPhone = await client.query(
+        'SELECT id FROM "User" WHERE phone = $1 LIMIT 1',
+        [normalizedPhone]
+      )
+      if (existingPhone.rows.length > 0) {
+        return NextResponse.json({
+          error: 'This phone number is already registered. Please login or use Forgot Password.',
+          code: 'PHONE_EXISTS'
+        }, { status: 409 })
+      }
+    }
+
+    await client.query('BEGIN')
 
     const hashedPassword = await hash(password, 12)
     const crypto = require('crypto')
@@ -49,31 +70,32 @@ export async function POST(req: NextRequest) {
     const orgId = crypto.randomUUID()
     const sessionToken = crypto.randomUUID()
 
-    const userResult = await pool.query(
-      `INSERT INTO "User" (id, name, email, phone, password, role, "isActive", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, 'TENANT_ADMIN', true, NOW(), NOW())
-       RETURNING id, name, email, phone, role, "isActive", "createdAt"`,
-      [userId, name, email, phone || null, hashedPassword]
-    )
-
-    const orgResult = await pool.query(
+    await client.query(
       `INSERT INTO "Organization" (id, name, "ownerId", "isActive", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, true, NOW(), NOW())
-       RETURNING id, name`,
-      [orgId, name + "'s Business", userId]
+       VALUES ($1, $2, $3, true, NOW(), NOW())`,
+      [orgId, name.trim() + "'s Business", userId]
     )
 
-    await pool.query(
+    const userResult = await client.query(
+      `INSERT INTO "User" (id, name, email, phone, password, role, "isActive", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, 'TENANT_ADMIN', true, $6, NOW(), NOW())
+       RETURNING id, name, email, phone, role, "organizationId", "isActive", "createdAt"`,
+      [userId, name.trim(), normalizedEmail, normalizedPhone, hashedPassword, orgId]
+    )
+
+    await client.query(
       `INSERT INTO "Session" (id, "userId", "sessionToken", expires) VALUES ($1, $2, $3, NOW() + INTERVAL '24 hours')`,
       [sessionToken, userId, sessionToken]
     )
+
+    await client.query('COMMIT')
 
     const jwtToken = generateToken(userId, orgId)
 
     const response = NextResponse.json({
       success: true,
       user: userResult.rows[0],
-      organization: orgResult.rows[0],
+      organization: { id: orgId, name: name.trim() + "'s Business" },
       requiresPayment: true,
       subscriptionAmount: 500,
       token: jwtToken,
@@ -94,7 +116,10 @@ export async function POST(req: NextRequest) {
 
     return response
   } catch (error) {
+    try { await client.query('ROLLBACK') } catch {}
     console.error('Signup error:', error)
-    return NextResponse.json({ error: 'Unable to process signup' }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message || 'Unable to process signup' }, { status: 500 })
+  } finally {
+    client.release()
   }
 }
