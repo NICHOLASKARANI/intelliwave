@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
 
     // Work center live state
     const workCenters = wcRes.rows.map(wc => {
-      const activeWO = running.find(w => w.workCenterId === wc.id || w.workCenterId === wc.name)
-      const queuedCount = queued.filter(w => w.workCenterId === wc.id || w.workCenterId === wc.name).length
+      const activeWO = running.find(w => w.workCenter === wc.id || w.workCenter === wc.name)
+      const queuedCount = queued.filter(w => w.workCenter === wc.id || w.workCenter === wc.name).length
       const openQty = [...running, ...queued]
-        .filter(w => w.workCenterId === wc.id || w.workCenterId === wc.name)
+        .filter(w => w.workCenter === wc.id || w.workCenter === wc.name)
         .reduce((s, w) => s + w.remaining, 0)
       const util = Number(wc.capacity) > 0 ? Math.min(999, Math.round((openQty / Number(wc.capacity)) * 100)) : 0
       return {
