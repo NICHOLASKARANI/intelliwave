@@ -5,8 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Monitor, Loader2, Printer, X, CheckCircle2, AlertTriangle, Activity,
-  Clock, PlayCircle, PauseCircle, ChevronRight, Sparkles, Gauge, Layers,
-  TrendingUp, Cog, Wrench,
+  Clock, PlayCircle, PauseCircle, ChevronRight, Gauge, Layers,
+  TrendingUp, Cog, Search,
 } from 'lucide-react'
 
 const priorityStyle = (p: string) => {
@@ -17,6 +17,16 @@ const priorityStyle = (p: string) => {
     case 'LOW': return 'bg-blue-900/40 text-blue-300 border border-blue-700'
     default: return 'bg-neutral-800 text-neutral-300'
   }
+}
+
+const kpiActiveRing: Record<string, string> = {
+  ALL: 'ring-4 ring-emerald-300',
+  RUNNING: 'ring-4 ring-yellow-300',
+  QUEUED: 'ring-4 ring-blue-300',
+  TODAY: 'ring-4 ring-green-300',
+  OVERDUE: 'ring-4 ring-red-300',
+  OUTPUT: 'ring-4 ring-purple-300',
+  ONTIME: 'ring-4 ring-teal-300',
 }
 
 export default function ShopFloorPage() {
@@ -32,12 +42,16 @@ export default function ShopFloorPage() {
   const [detail, setDetail] = useState<any>(null)
   const [busy, setBusy] = useState('')
 
+  const [activeKpi, setActiveKpi] = useState('ALL')
+  const [search, setSearch] = useState('')
+  const [wcFilter, setWcFilter] = useState('ALL')
+
   const fetchAll = async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/wavecore/manufacturing/shop-floor')
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Failed to load'); }
+      if (!res.ok) { setError(data.error || 'Failed to load') }
       else {
         setRunning(data.running || [])
         setQueued(data.queued || [])
@@ -49,6 +63,7 @@ export default function ShopFloorPage() {
     } catch { setError('Network error') }
     finally { setLoading(false) }
   }
+
   useEffect(() => {
     fetchAll()
     const t = setInterval(fetchAll, 15000)
@@ -71,6 +86,54 @@ export default function ShopFloorPage() {
 
   const pdf = () => window.open('/api/wavecore/manufacturing/shop-floor/pdf', '_blank')
 
+  // ============ FILTERING LOGIC ============
+  const matchesSearch = (w: any) => {
+    if (!search) return true
+    const s = search.toLowerCase()
+    return (w.number || '').toLowerCase().includes(s)
+      || (w.product || '').toLowerCase().includes(s)
+      || (w.workCenterName || '').toLowerCase().includes(s)
+  }
+  const matchesWC = (w: any) => wcFilter === 'ALL' || w.workCenterName === wcFilter
+
+  const filteredRunning = useMemo(() => {
+    let list = running.filter(w => matchesSearch(w) && matchesWC(w))
+    if (activeKpi === 'QUEUED' || activeKpi === 'TODAY') return []
+    if (activeKpi === 'OVERDUE') list = list.filter(w => w.overdue || (w.dueDate && new Date(w.dueDate) < new Date()))
+    return list
+  }, [running, search, wcFilter, activeKpi])
+
+  const filteredQueued = useMemo(() => {
+    let list = queued.filter(w => matchesSearch(w) && matchesWC(w))
+    if (activeKpi === 'RUNNING' || activeKpi === 'TODAY') return []
+    if (activeKpi === 'OVERDUE') list = list.filter(w => w.overdue || (w.dueDate && new Date(w.dueDate) < new Date()))
+    return list
+  }, [queued, search, wcFilter, activeKpi])
+
+  const filteredCompleted = useMemo(() => {
+    let list = completed.filter(w => matchesSearch(w) && matchesWC(w))
+    if (activeKpi === 'RUNNING' || activeKpi === 'QUEUED' || activeKpi === 'OVERDUE') return []
+    return list
+  }, [completed, search, wcFilter, activeKpi])
+
+  const filteredActivity = useMemo(() => {
+    let list = activity
+    if (search) {
+      const s = search.toLowerCase()
+      list = list.filter(a => (a.number || '').toLowerCase().includes(s) || (a.product || '').toLowerCase().includes(s))
+    }
+    return list
+  }, [activity, search])
+
+  // Unique work centers for dropdown
+  const wcOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const w of [...running, ...queued, ...completed]) {
+      if (w.workCenterName) set.add(w.workCenterName)
+    }
+    return Array.from(set).sort()
+  }, [running, queued, completed])
+
   return (
     <div className="min-h-screen bg-neutral-950">
       <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-800">
@@ -90,7 +153,7 @@ export default function ShopFloorPage() {
               <Monitor className="w-7 h-7 text-emerald-500" /> Shop Floor
             </h1>
             <p className="text-sm text-neutral-400 mt-1">
-              Live production · Auto-refresh every 15s · Last update {new Date().toLocaleTimeString('en-GB')}
+              Live production · Auto-refresh every 15s
             </p>
           </div>
           <div className="flex gap-3">
@@ -106,30 +169,79 @@ export default function ShopFloorPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
+        {/* ============ CLICKABLE KPI CARDS ============ */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-emerald-600 to-teal-800 text-white shadow-lg">
-            <Layers className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.total || 0}</p><p className="text-xs opacity-90">Total WOs</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg">
-            <Activity className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.running || 0}</p><p className="text-xs opacity-90">Running</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg">
-            <Clock className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.queued || 0}</p><p className="text-xs opacity-90">Queued</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg">
-            <CheckCircle2 className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.completedToday || 0}</p><p className="text-xs opacity-90">Today</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg">
-            <AlertTriangle className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.overdue || 0}</p><p className="text-xs opacity-90">Overdue</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-fuchsia-800 text-white shadow-lg">
-            <TrendingUp className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.throughput || 0}</p><p className="text-xs opacity-90">Units Output</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-teal-600 to-cyan-800 text-white shadow-lg">
-            <Gauge className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.onTimePct || 100}%</p><p className="text-xs opacity-90">On-Time</p>
-          </div>
+          <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-emerald-600 to-teal-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'ALL' ? kpiActiveRing.ALL : '')}>
+            <Layers className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.total || 0}</p>
+            <p className="text-xs opacity-90">Total WOs</p>
+          </button>
+
+          <button onClick={() => setActiveKpi('RUNNING')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'RUNNING' ? kpiActiveRing.RUNNING : '')}>
+            <Activity className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.running || 0}</p>
+            <p className="text-xs opacity-90">Running</p>
+          </button>
+
+          <button onClick={() => setActiveKpi('QUEUED')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'QUEUED' ? kpiActiveRing.QUEUED : '')}>
+            <Clock className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.queued || 0}</p>
+            <p className="text-xs opacity-90">Queued</p>
+          </button>
+
+          <button onClick={() => setActiveKpi('TODAY')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'TODAY' ? kpiActiveRing.TODAY : '')}>
+            <CheckCircle2 className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.completedToday || 0}</p>
+            <p className="text-xs opacity-90">Today</p>
+          </button>
+
+          <button onClick={() => setActiveKpi('OVERDUE')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'OVERDUE' ? kpiActiveRing.OVERDUE : '')}>
+            <AlertTriangle className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.overdue || 0}</p>
+            <p className="text-xs opacity-90">Overdue</p>
+          </button>
+
+          <button onClick={() => setActiveKpi('OUTPUT')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-fuchsia-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'OUTPUT' ? kpiActiveRing.OUTPUT : '')}>
+            <TrendingUp className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.throughput || 0}</p>
+            <p className="text-xs opacity-90">Units Output</p>
+          </button>
+
+          <button onClick={() => setActiveKpi('ONTIME')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-teal-600 to-cyan-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'ONTIME' ? kpiActiveRing.ONTIME : '')}>
+            <Gauge className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.onTimePct || 100}%</p>
+            <p className="text-xs opacity-90">On-Time</p>
+          </button>
         </div>
 
+        {/* ============ FILTER BAR ============ */}
+        <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 mb-6 flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search WO #, product or work center..."
+              className="pl-9 pr-4 py-2.5 rounded-xl border border-neutral-700 bg-neutral-800 text-white w-full"
+            />
+          </div>
+          <select value={wcFilter} onChange={e => setWcFilter(e.target.value)} className="px-3 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm">
+            <option value="ALL">All Work Centers</option>
+            {wcOptions.map(wc => <option key={wc} value={wc}>{wc}</option>)}
+          </select>
+          {(activeKpi !== 'ALL' || search || wcFilter !== 'ALL') && (
+            <button onClick={() => { setActiveKpi('ALL'); setSearch(''); setWcFilter('ALL') }} className="px-3 py-2.5 rounded-xl bg-neutral-700 hover:bg-neutral-600 text-white text-sm font-bold">
+              Clear Filters
+            </button>
+          )}
+          <span className="text-sm text-neutral-400 ml-auto">
+            Showing: <b className="text-white">{filteredRunning.length + filteredQueued.length + filteredCompleted.length}</b>
+            {' / '}
+            <b className="text-white">{running.length + queued.length + completed.length}</b>
+          </span>
+        </div>
+
+        {/* ============ WORK CENTER FLOOR MAP ============ */}
         <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 mb-6">
           <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wide mb-3 flex items-center gap-2">
             <Cog className="w-4 h-4" /> Work Center Floor Map
@@ -177,16 +289,16 @@ export default function ShopFloorPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* RUNNING COLUMN */}
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4">
+            <div className={'bg-neutral-900 rounded-2xl border p-4 transition-all ' + ((activeKpi === 'RUNNING' || activeKpi === 'ALL') ? 'border-yellow-800' : 'border-neutral-800 opacity-50')}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-yellow-400 flex items-center gap-2">
-                  <Activity className="w-4 h-4" /> Running ({running.length})
+                  <Activity className="w-4 h-4" /> Running ({filteredRunning.length})
                 </h3>
               </div>
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {running.length === 0 ? (
+                {filteredRunning.length === 0 ? (
                   <p className="text-center py-8 text-neutral-500 text-sm">Nothing running</p>
-                ) : running.map(w => (
+                ) : filteredRunning.map(w => (
                   <div key={w.id} className="p-3 rounded-xl bg-yellow-900/20 border border-yellow-800/50">
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -220,16 +332,16 @@ export default function ShopFloorPage() {
             </div>
 
             {/* QUEUED COLUMN */}
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4">
+            <div className={'bg-neutral-900 rounded-2xl border p-4 transition-all ' + ((activeKpi === 'QUEUED' || activeKpi === 'ALL' || activeKpi === 'OVERDUE') ? 'border-blue-800' : 'border-neutral-800 opacity-50')}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-blue-400 flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Queued ({queued.length})
+                  <Clock className="w-4 h-4" /> Queued ({filteredQueued.length})
                 </h3>
               </div>
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {queued.length === 0 ? (
+                {filteredQueued.length === 0 ? (
                   <p className="text-center py-8 text-neutral-500 text-sm">Nothing queued</p>
-                ) : queued.map(w => (
+                ) : filteredQueued.map(w => (
                   <div key={w.id} className={'p-3 rounded-xl bg-blue-900/10 border ' + (w.overdue ? 'border-red-700' : 'border-blue-800/50')}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -256,16 +368,16 @@ export default function ShopFloorPage() {
               </div>
             </div>
 
-            {/* COMPLETED TODAY + ACTIVITY */}
+            {/* COMPLETED + ACTIVITY */}
             <div className="space-y-4">
-              <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4">
+              <div className={'bg-neutral-900 rounded-2xl border p-4 transition-all ' + ((activeKpi === 'TODAY' || activeKpi === 'ALL') ? 'border-green-800' : 'border-neutral-800 opacity-50')}>
                 <h3 className="font-bold text-green-400 flex items-center gap-2 mb-3">
-                  <CheckCircle2 className="w-4 h-4" /> Completed Today ({completed.length})
+                  <CheckCircle2 className="w-4 h-4" /> Completed Today ({filteredCompleted.length})
                 </h3>
                 <div className="space-y-2 max-h-[240px] overflow-y-auto">
-                  {completed.length === 0 ? (
+                  {filteredCompleted.length === 0 ? (
                     <p className="text-center py-4 text-neutral-500 text-sm">Nothing today</p>
-                  ) : completed.map(w => (
+                  ) : filteredCompleted.map(w => (
                     <div key={w.id} className="p-2 rounded-lg bg-green-900/10 border border-green-800/30">
                       <div className="flex justify-between items-center">
                         <div>
@@ -284,9 +396,9 @@ export default function ShopFloorPage() {
                   <Activity className="w-4 h-4" /> Recent Activity
                 </h3>
                 <div className="space-y-1 max-h-[240px] overflow-y-auto">
-                  {activity.length === 0 ? (
+                  {filteredActivity.length === 0 ? (
                     <p className="text-center py-4 text-neutral-500 text-xs">No recent activity</p>
-                  ) : activity.map((a, i) => (
+                  ) : filteredActivity.map((a, i) => (
                     <div key={i} className="text-xs py-1.5 border-b border-neutral-800/50 last:border-0">
                       <div className="flex justify-between">
                         <span className="font-mono text-neutral-300">{a.number}</span>
