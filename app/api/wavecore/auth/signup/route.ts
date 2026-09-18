@@ -70,19 +70,30 @@ export async function POST(req: NextRequest) {
     const orgId = crypto.randomUUID()
     const sessionToken = crypto.randomUUID()
 
+    // STEP 1: Insert User FIRST (with organizationId temporarily null — FK to Organization is not enforced if nullable)
+    // We create the user without orgId first, then attach org after.
+    await client.query(
+      `INSERT INTO "User" (id, name, email, phone, password, role, "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, 'TENANT_ADMIN', true, NOW(), NOW())`,
+      [userId, name.trim(), normalizedEmail, normalizedPhone, hashedPassword]
+    )
+
+    // STEP 2: Now insert Organization (ownerId FK now satisfies — User exists)
     await client.query(
       `INSERT INTO "Organization" (id, name, "ownerId", "isActive", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, true, NOW(), NOW())`,
       [orgId, name.trim() + "'s Business", userId]
     )
 
+    // STEP 3: Attach organizationId to User
     const userResult = await client.query(
-      `INSERT INTO "User" (id, name, email, phone, password, role, "isActive", "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, 'TENANT_ADMIN', true, $6, NOW(), NOW())
+      `UPDATE "User" SET "organizationId" = $1, "updatedAt" = NOW()
+       WHERE id = $2
        RETURNING id, name, email, phone, role, "organizationId", "isActive", "createdAt"`,
-      [userId, name.trim(), normalizedEmail, normalizedPhone, hashedPassword, orgId]
+      [orgId, userId]
     )
 
+    // STEP 4: Create session
     await client.query(
       `INSERT INTO "Session" (id, "userId", "sessionToken", expires) VALUES ($1, $2, $3, NOW() + INTERVAL '24 hours')`,
       [sessionToken, userId, sessionToken]

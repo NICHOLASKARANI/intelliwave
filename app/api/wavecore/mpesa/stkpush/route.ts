@@ -10,8 +10,8 @@ import { requireTenant } from '@/lib/wavecore/auth'
 // MPESA_SHORTCODE=174379 (Paybill)
 // MPESA_CALLBACK_URL=https://www.intelliwavve.com/api/wavecore/mpesa/callback
 
-const MPESA_AUTH_URL = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
-const MPESA_STK_URL = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
+const MPESA_AUTH_URL = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
+const MPESA_STK_URL = 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
 
 // Rate limiting
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
