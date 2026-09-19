@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Users, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
   CheckCircle2, UserPlus, Briefcase, TrendingUp, DollarSign, FileEdit, Sparkles,
-  Mail, Phone, MapPin, Building2, Calendar, Star, FileText, Wallet, IdCard,
+  Mail, Phone, MapPin, Building2, Calendar, Star, FileText, Wallet, CreditCard,
 } from 'lucide-react'
 
 const STATUSES = ['ACTIVE', 'PROBATION', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED']
@@ -389,7 +389,7 @@ export default function EmployeesPage() {
               {/* ID & TAX */}
               <div>
                 <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-                  <IdCard className="w-4 h-4" /> Identity & Statutory
+                  <CreditCard className="w-4 h-4" /> Identity & Statutory
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div><label className="text-xs text-neutral-400 font-bold">ID Number</label>
