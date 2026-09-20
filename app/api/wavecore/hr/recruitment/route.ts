@@ -3,11 +3,17 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD (wave 2) ===
+    const guard = await guardHR(request, 'HR_WRITE')
+    if (guard.deny) return guard.response!
+    // ============================
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const status = searchParams.get('status')
@@ -69,6 +75,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD (wave 2) ===
+    const guard = await guardHR(request, 'HR_WRITE')
+    if (guard.deny) return guard.response!
+    // ============================
     const body = await request.json()
     if (!body.title || !body.title.trim()) return NextResponse.json({ error: 'Job title required' }, { status: 400 })
 
