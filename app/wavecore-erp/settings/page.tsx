@@ -115,7 +115,6 @@ export default function SettingsPage() {
     { label: 'Currency', href: '/wavecore-erp/settings/currency', icon: Coins, desc: 'Multi-currency support', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950', border: 'hover:border-amber-300' },
     { label: 'Email Templates', href: '/wavecore-erp/settings/email', icon: Mail, desc: 'Notification templates', color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950', border: 'hover:border-pink-300' },
     { label: 'Integrations', href: '/wavecore-erp/settings/integrations', icon: Webhook, desc: 'API keys & connections', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950', border: 'hover:border-indigo-300' },
-    { label: 'Localization', href: '/wavecore-erp/settings/localization', icon: Languages, desc: 'Language, timezone, date', color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-950', border: 'hover:border-cyan-300' },
     { label: 'Audit Logs', href: '/wavecore-erp/settings/audit', icon: FileText, desc: 'System activity tracking', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950', border: 'hover:border-emerald-300' },
   ]
 
