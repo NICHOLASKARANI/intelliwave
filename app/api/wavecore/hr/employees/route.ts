@@ -112,7 +112,8 @@ export async function POST(request: NextRequest) {
     // === INPUT VALIDATION ===
     const validation = validateEmployeeInput(body, true)
     if (!validation.valid) return validationErrorResponse(validation)
-    // ========================    if (!body.firstName || !body.firstName.trim()) return NextResponse.json({ error: 'First name required' }, { status: 400 })
+    // ========================
+    if (!body.firstName || !body.firstName.trim()) return NextResponse.json({ error: 'First name required' }, { status: 400 })
     if (!body.lastName || !body.lastName.trim()) return NextResponse.json({ error: 'Last name required' }, { status: 400 })
 
     const crypto = require('crypto')

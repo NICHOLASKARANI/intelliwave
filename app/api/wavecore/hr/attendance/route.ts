@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
     // ============================
-
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const status = searchParams.get('status')
@@ -120,13 +119,13 @@ export async function POST(request: NextRequest) {
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
     // ============================
-
     const body = await request.json()
 
     // === INPUT VALIDATION ===
     const validation = validateAttendanceInput(body, true)
     if (!validation.valid) return validationErrorResponse(validation)
-    // ========================    if (!body.employeeId) return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
+    // ========================
+    if (!body.employeeId) return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
     if (!body.date) return NextResponse.json({ error: 'Date is required' }, { status: 400 })
 
     const crypto = require('crypto')

@@ -65,7 +65,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // === INPUT VALIDATION ===
     const validation = validateEmployeeInput(body, false)
     if (!validation.valid) return validationErrorResponse(validation)
-    // ========================    const sets: string[] = []
+    // ========================
+    const sets: string[] = []
     const values: any[] = []
     let i = 1
 
