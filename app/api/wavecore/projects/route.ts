@@ -9,6 +9,12 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === PROJECTS RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_READ')
+    if (guard.deny) return guard.response!
+    // ===========================
+
     const orgId = session.organizationId
 
     const { searchParams } = new URL(request.url)

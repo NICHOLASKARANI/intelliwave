@@ -3,11 +3,17 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === PROJECTS RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_WRITE')
+    if (guard.deny) return guard.response!
+    // ===========================
     const result = await pool.query(
       `DELETE FROM "ProjectComment" WHERE id = $1 AND "organizationId" = $2`,
       [params.id, session.organizationId]

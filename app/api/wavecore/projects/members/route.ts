@@ -3,11 +3,17 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === PROJECTS RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_READ')
+    if (guard.deny) return guard.response!
+    // ===========================
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
     const orgId = session.organizationId
@@ -41,6 +47,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === PROJECTS RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_READ')
+    if (guard.deny) return guard.response!
+    // ===========================
     const body = await request.json()
     if (!body.projectId) return NextResponse.json({ error: 'Project required' }, { status: 400 })
     if (!body.employeeName && !body.userId) return NextResponse.json({ error: 'Employee required' }, { status: 400 })

@@ -55,6 +55,13 @@ export interface GuardResult {
  *   if (g.deny) return g.response
  *   const session = g.session!   // safe to use
  */
+export async function guardModule(
+  request: Request,
+  action: GuardAction
+): Promise<GuardResult> {
+  return guardHR(request, action)
+}
+
 export async function guardHR(
   request: Request,
   action: GuardAction
