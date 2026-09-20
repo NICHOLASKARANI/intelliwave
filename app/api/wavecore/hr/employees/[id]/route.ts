@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { validateEmployeeInput, validationErrorResponse } from '@/lib/wavecore/validate'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -60,7 +61,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // ==================
 
     const body = await request.json()
-    const sets: string[] = []
+
+    // === INPUT VALIDATION ===
+    const validation = validateEmployeeInput(body, false)
+    if (!validation.valid) return validationErrorResponse(validation)
+    // ========================    const sets: string[] = []
     const values: any[] = []
     let i = 1
 

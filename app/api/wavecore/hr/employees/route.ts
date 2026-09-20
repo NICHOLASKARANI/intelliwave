@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { validateEmployeeInput, validationErrorResponse } from '@/lib/wavecore/validate'
 
 // Auto-generate next Employee code like EMP-0001
 async function nextEmployeeCode(orgId: string): Promise<string> {
@@ -108,7 +109,10 @@ export async function POST(request: NextRequest) {
     // ==================
     const body = await request.json()
 
-    if (!body.firstName || !body.firstName.trim()) return NextResponse.json({ error: 'First name required' }, { status: 400 })
+    // === INPUT VALIDATION ===
+    const validation = validateEmployeeInput(body, true)
+    if (!validation.valid) return validationErrorResponse(validation)
+    // ========================    if (!body.firstName || !body.firstName.trim()) return NextResponse.json({ error: 'First name required' }, { status: 400 })
     if (!body.lastName || !body.lastName.trim()) return NextResponse.json({ error: 'Last name required' }, { status: 400 })
 
     const crypto = require('crypto')

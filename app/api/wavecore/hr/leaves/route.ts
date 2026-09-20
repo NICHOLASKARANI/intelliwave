@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { validateLeaveInput, validationErrorResponse } from '@/lib/wavecore/validate'
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,7 +95,11 @@ export async function POST(request: NextRequest) {
     // ============================
 
     const body = await request.json()
-    if (!body.employeeId) return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
+
+    // === INPUT VALIDATION ===
+    const validation = validateLeaveInput(body, true)
+    if (!validation.valid) return validationErrorResponse(validation)
+    // ========================    if (!body.employeeId) return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
     if (!body.startDate) return NextResponse.json({ error: 'Start date is required' }, { status: 400 })
     if (!body.endDate) return NextResponse.json({ error: 'End date is required' }, { status: 400 })
 

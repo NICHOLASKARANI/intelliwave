@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { validateAttendanceInput, validationErrorResponse } from '@/lib/wavecore/validate'
 
 export async function GET(request: NextRequest) {
   try {
@@ -121,7 +122,11 @@ export async function POST(request: NextRequest) {
     // ============================
 
     const body = await request.json()
-    if (!body.employeeId) return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
+
+    // === INPUT VALIDATION ===
+    const validation = validateAttendanceInput(body, true)
+    if (!validation.valid) return validationErrorResponse(validation)
+    // ========================    if (!body.employeeId) return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
     if (!body.date) return NextResponse.json({ error: 'Date is required' }, { status: 400 })
 
     const crypto = require('crypto')
