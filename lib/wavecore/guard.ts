@@ -8,6 +8,8 @@
 import { NextResponse } from 'next/server'
 import { requireTenant, WaveCoreSession } from './auth'
 import { pool } from './db'
+import { guardRateLimit } from './rate-limit'
+import { checkCsrf } from './csrf'
 
 // ============ CONFIG ============
 const ENFORCE = false // soft launch — flip to true after 48h of clean logs
@@ -67,6 +69,19 @@ export async function guardHR(
       requiredTier: REQUIRED_TIER[action],
     }
   }
+
+  // === WAVE 4: CSRF + RATE LIMIT ===
+  const csrf = checkCsrf(request)
+  if (!csrf.allow) return { deny: true, response: csrf.response!, session, tier: 0, requiredTier: 0 }
+
+  const method = (request.method || 'GET').toUpperCase()
+  const kind: 'mutation' | 'export' | 'read' =
+    action === 'HR_EXPORT' ? 'export'
+    : (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE') ? 'mutation'
+    : 'read'
+  const rl = guardRateLimit(session.userId, kind)
+  if (!rl.allow) return { deny: true, response: rl.response!, session, tier: 0, requiredTier: 0 }
+  // ==================================
 
   // Org must be active
   if (!session.orgActive) {
