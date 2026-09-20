@@ -118,3 +118,47 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
+// PATCH: Auth + ownership required — update listing (e.g. remove images)
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await requireTenant(req)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const guard = await guardHR(req, 'HR_WRITE')
+    if (guard.deny) return guard.response!
+
+    const body = await req.json()
+    if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+    const check = await pool.query(`SELECT "sellerId" FROM "MarketplaceListing" WHERE id = $1`, [parseInt(body.id)])
+    if (check.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    // Admin override: allow owner OR admin session
+    const isOwner = check.rows[0].sellerId === session.userId
+    const isAdmin = session.role === 'OWNER' || session.role === 'TENANT_ADMIN'
+    if (!isOwner && !isAdmin) return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+
+    const sets: string[] = []
+    const values: any[] = []
+    let i = 1
+
+    for (const k of ['title', 'description', 'category', 'condition', 'location', 'status']) {
+      if (body[k] !== undefined) { sets.push(`"${k}" = $${i++}`); values.push(body[k] || null) }
+    }
+    if (body.price !== undefined) { sets.push(`price = $${i++}`); values.push(Number(body.price || 0)) }
+    if (body.images !== undefined) { sets.push(`images = $${i++}`); values.push(body.images) }
+
+    if (sets.length === 0) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+    sets.push(`"updatedAt" = NOW()`)
+    values.push(parseInt(body.id))
+
+    const result = await pool.query(
+      `UPDATE "MarketplaceListing" SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`,
+      values
+    )
+    return NextResponse.json({ listing: result.rows[0] })
+  } catch (error) {
+    console.error('Listings PATCH error:', error)
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+  }
+}
