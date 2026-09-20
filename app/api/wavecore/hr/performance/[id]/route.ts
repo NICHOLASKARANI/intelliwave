@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     )
     if (result.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ review: result.rows[0] })
-  } catch (error) { return NextResponse.json({ error: (error as Error).message }, { status: 500 }) }
+  } catch (error) { console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 }) }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {

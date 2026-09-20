@@ -246,6 +246,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('HR summary GET error:', error)
-    return NextResponse.json({ summary: {}, error: (error as Error).message })
+    return NextResponse.json({ summary: {}, error: 'Something went wrong. Please try again.' })
   }
 }

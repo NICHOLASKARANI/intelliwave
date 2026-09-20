@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ leaves: records, requests: records, summary })
   } catch (error) {
     console.error('Leaves GET error:', error)
-    return NextResponse.json({ leaves: [], requests: [], summary: {}, error: (error as Error).message })
+    return NextResponse.json({ leaves: [], requests: [], summary: {}, error: 'Something went wrong. Please try again.' })
   }
 }
 
@@ -161,6 +161,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ leave: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Leaves POST error:', error)
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+    console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

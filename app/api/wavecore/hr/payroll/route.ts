@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ periods, activePeriod, items, payroll: items, summary })
   } catch (error) {
     console.error('Payroll GET error:', error)
-    return NextResponse.json({ periods: [], items: [], payroll: [], summary: {}, error: (error as Error).message })
+    return NextResponse.json({ periods: [], items: [], payroll: [], summary: {}, error: 'Something went wrong. Please try again.' })
   }
 }
 
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
   } catch (error) {
     console.error('Payroll POST error:', error)
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+    console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
 

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ jobs, summary, applicantsByStage })
   } catch (error) {
     console.error('Recruitment GET error:', error)
-    return NextResponse.json({ jobs: [], summary: {}, applicantsByStage: [], error: (error as Error).message })
+    return NextResponse.json({ jobs: [], summary: {}, applicantsByStage: [], error: 'Something went wrong. Please try again.' })
   }
 }
 
@@ -100,6 +100,6 @@ export async function POST(request: NextRequest) {
     )
     return NextResponse.json({ job: result.rows[0] }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+    console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ attendance: records, summary })
   } catch (error) {
     console.error('Attendance GET error:', error)
-    return NextResponse.json({ attendance: [], summary: {}, error: (error as Error).message })
+    return NextResponse.json({ attendance: [], summary: {}, error: 'Something went wrong. Please try again.' })
   }
 }
 
@@ -146,6 +146,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ attendance: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Attendance POST error:', error)
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+    console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

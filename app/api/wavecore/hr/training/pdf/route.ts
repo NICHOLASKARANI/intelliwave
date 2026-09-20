@@ -117,6 +117,6 @@ export async function GET(request: NextRequest) {
     return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
   } catch (error) {
     console.error('Training PDF error:', error)
-    return NextResponse.json({ error: 'Failed', message: (error as Error).message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed', message: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
