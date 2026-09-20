@@ -218,7 +218,7 @@ export default function EmployeesPage() {
             <Building2 className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.departments || 0}</p><p className="text-xs opacity-90">Departments</p>
           </div>
           <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-cyan-600 to-teal-800 text-white shadow-lg">
-            <DollarSign className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{(summary.monthlyPayroll || 0).toLocaleString()}</p><p className="text-xs opacity-90">Payroll/mo</p>
+            <DollarSign className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{(summary.monthlyPayroll || 0).toLocaleString()}</p><p className="text-xs opacity-90">Payroll/mo 🔒</p>
           </div>
         </div>
 
@@ -257,7 +257,7 @@ export default function EmployeesPage() {
               <table className="w-full">
                 <thead className="bg-neutral-800">
                   <tr>
-                    {[['employeeId','Code'],['firstName','Name'],['email','Email'],['phone','Phone'],['department','Department'],['jobTitle','Job Title'],['salary','Salary'],['status','Status']].map(([f,label]) => (
+                    {[['employeeId','Code'],['firstName','Name'],['email','Email'],['phone','Phone'],['department','Department'],['jobTitle','Job Title'],['status','Status']].map(([f,label]) => (
                       <th key={f} onClick={() => toggleSort(f)} className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400 cursor-pointer hover:text-white select-none">
                         <span className="inline-flex items-center gap-1">{label}<ArrowUpDown className="w-3 h-3" /></span>
                       </th>
@@ -276,7 +276,7 @@ export default function EmployeesPage() {
                       <td className="p-3 text-xs text-neutral-400">{e.phone || '—'}</td>
                       <td className="p-3 text-xs text-neutral-300">{e.department || '—'}</td>
                       <td className="p-3 text-xs text-neutral-300">{e.jobTitle || e.position || '—'}</td>
-                      <td className="p-3 text-right text-white font-bold">{(Number(e.salary) || 0).toLocaleString()}</td>
+                      
                       <td className="p-3"><span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + statusStyle(e.status)}>{e.status}</span></td>
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">

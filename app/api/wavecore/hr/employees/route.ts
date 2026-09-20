@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
     const department = searchParams.get('department')
     const orgId = session.organizationId
 
-    let sql = `SELECT * FROM "Employee" WHERE "organizationId" = $1`
+    // Projection — list view NEVER returns PII (taxPin, idNumber, bankAccount, nssfNumber, nhifNumber, salary)
+    // Full PII is available only via GET /employees/[id] which enforces RBAC + logs access
+    let sql = `SELECT id, "employeeId", "firstName", "lastName", "preferredName", email, phone, department, position, "jobTitle", "employmentType", status, "hireDate", "terminationDate", "organizationId", "createdAt", "updatedAt" FROM "Employee" WHERE "organizationId" = $1`
     const params: any[] = [orgId]
     let idx = 2
 
