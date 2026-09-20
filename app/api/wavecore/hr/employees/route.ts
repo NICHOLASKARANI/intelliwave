@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
     const employees = res.rows.map(e => ({
       ...e,
       fullName: `${e.firstName || ''} ${e.lastName || ''}`.trim(),
-      salary: Number(e.salary || 0),
     }))
 
     // Compute summary
@@ -60,8 +59,14 @@ export async function GET(request: NextRequest) {
     const newHires = employees.filter(e => e.hireDate && new Date(e.hireDate) >= monthStart)
 
     const depts = new Set(employees.map(e => e.department).filter(Boolean))
-    const totalPayroll = active.reduce((s, e) => s + e.salary, 0)
-    const avgSalary = active.length > 0 ? Math.round(totalPayroll / active.length) : 0
+    // Aggregate salary server-side — individual salaries are NEVER sent to client
+    const salaryAgg = await pool.query(
+      SELECT COALESCE(SUM(salary), 0) AS total, COALESCE(AVG(salary), 0) AS avg
+       FROM "Employee" WHERE "organizationId" =  AND status = 'ACTIVE',
+      [orgId]
+    ).catch(() => ({ rows: [{ total: 0, avg: 0 }] }))
+    const totalPayroll = Number(salaryAgg.rows[0]?.total || 0)
+    const avgSalary = Math.round(Number(salaryAgg.rows[0]?.avg || 0))
 
     const summary = {
       total: employees.length,
