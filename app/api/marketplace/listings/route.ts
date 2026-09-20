@@ -2,60 +2,53 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
-import { getSessionFromRequest } from '@/lib/wavecore/auth'
+import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
-// GET: List or single listing
+// GET: Public — anyone can browse active listings
 export async function GET(req: NextRequest) {
   try {
+    const session = await requireTenant(req)
+
+    // Optional guard only if logged in (public reads are fine)
+    if (session) {
+      const guard = await guardHR(req, 'HR_READ')
+      if (guard.deny) return guard.response!
+    }
+
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     const category = searchParams.get('category') || ''
     const search = searchParams.get('search') || ''
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200)
     const sellerId = searchParams.get('sellerId')
 
-    // Get single listing by ID
     if (id) {
       const result = await pool.query(
         `SELECT l.*, u.name as "sellerName", u.image as "sellerImage"
          FROM "MarketplaceListing" l
          JOIN "User" u ON l."sellerId" = u.id
          WHERE l.id = $1 AND l.status = 'ACTIVE'`,
-        [parseInt(id!)]
+        [parseInt(id)]
       )
-      
-      if (result.rows.length > 0) {
-        // Increment views
-        await pool.query(
-          `UPDATE "MarketplaceListing" SET views = views + 1 WHERE id = $1`,
-          [parseInt(id!)]
-        )
-      }
-      
-      return NextResponse.json({ listing: result.rows[0] || null })
+
+      if (result.rows.length === 0) return NextResponse.json({ listing: null })
+      await pool.query(`UPDATE "MarketplaceListing" SET views = views + 1 WHERE id = $1`, [parseInt(id)])
+      return NextResponse.json({ listing: result.rows[0] })
     }
 
-    // Build query
     let query = `SELECT l.*, u.name as "sellerName", u.image as "sellerImage"
                  FROM "MarketplaceListing" l
                  JOIN "User" u ON l."sellerId" = u.id
                  WHERE l.status = 'ACTIVE'`
     const params: any[] = []
 
-    if (category) {
-      query += ` AND l.category = $${params.length + 1}`
-      params.push(category)
-    }
-
+    if (category) { query += ` AND l.category = $${params.length + 1}`; params.push(category) }
     if (search) {
       query += ` AND (l.title ILIKE $${params.length + 1} OR l.description ILIKE $${params.length + 1})`
       params.push(`%${search}%`)
     }
-
-    if (sellerId) {
-      query += ` AND l."sellerId" = $${params.length + 1}`
-      params.push(sellerId)
-    }
+    if (sellerId) { query += ` AND l."sellerId" = $${params.length + 1}`; params.push(sellerId) }
 
     query += ` ORDER BY l."createdAt" DESC LIMIT $${params.length + 1}`
     params.push(limit)
@@ -64,61 +57,64 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ listings: result.rows })
   } catch (error) {
     console.error('Listings GET error:', error)
-    return NextResponse.json({ listings: [], error: 'Failed to fetch listings' })
+    return NextResponse.json({ listings: [], error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
 
-// POST: Create listing
+// POST: Auth required — create listing
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSessionFromRequest(req)
+    const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const guard = await guardHR(req, 'HR_WRITE')
+    if (guard.deny) return guard.response!
+
     const body = await req.json()
+    if (!body.title || !body.title.trim()) return NextResponse.json({ error: 'Title required' }, { status: 400 })
+    if (!body.price) return NextResponse.json({ error: 'Price required' }, { status: 400 })
 
     const result = await pool.query(
       `INSERT INTO "MarketplaceListing" ("sellerId", title, description, price, category, condition, location, images, status, "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE', NOW(), NOW())
        RETURNING *`,
-      [session!.userId, body.title, body.description || '', body.price, body.category, body.condition || 'Used', body.location || '', body.images || []]
+      [session.userId, body.title.trim(), body.description || '', body.price, body.category, body.condition || 'Used', body.location || '', body.images || []]
     )
 
-    // Update category count
     await pool.query(
       `UPDATE "MarketplaceCategory" SET "listingCount" = "listingCount" + 1 WHERE name = $1`,
       [body.category]
-    )
+    ).catch(() => {})
 
     return NextResponse.json({ listing: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Listings POST error:', error)
-    return NextResponse.json({ error: 'Failed to create listing: ' + (error as Error).message }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
 
-// DELETE: Delete listing
+// DELETE: Auth + ownership required
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSessionFromRequest(req)
+    const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const guard = await guardHR(req, 'HR_WRITE')
+    if (guard.deny) return guard.response!
 
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-    // Verify ownership
-    const check = await pool.query(
-      `SELECT "sellerId" FROM "MarketplaceListing" WHERE id = $1`,
-      [parseInt(id!)]
-    )
-
-    if (check.rows.length === 0 || check.rows[0].sellerId !== session!.userId) {
+    const check = await pool.query(`SELECT "sellerId" FROM "MarketplaceListing" WHERE id = $1`, [parseInt(id)])
+    if (check.rows.length === 0 || check.rows[0].sellerId !== session.userId) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
-    await pool.query(`DELETE FROM "MarketplaceListing" WHERE id = $1`, [parseInt(id!)])
-
+    await pool.query(`DELETE FROM "MarketplaceListing" WHERE id = $1`, [parseInt(id)])
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
+    console.error('Listings DELETE error:', error)
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
