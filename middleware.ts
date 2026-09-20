@@ -69,20 +69,24 @@ export function middleware(request: NextRequest) {
       return redirectToDashboard(request, 'hr-role-required')
     }
 
-    // Wave 4 — Subscription gate (unpaid orgs bounce to /subscription)
-    const subscribed = request.cookies.get('wavecore_subscribed')?.value
-    if (subscribed === 'false') {
-      return NextResponse.redirect(new URL('/wavecore-erp/subscription', request.url))
-    }
-
+    // Note: subscription check happens at the generic ERP gate below
     return NextResponse.next()
   }
 
   // ============ GENERIC ERP GATE ============
   if (pathname.startsWith('/wavecore-erp')) {
+    // Free-to-access paths
     if (pathname.startsWith('/wavecore-erp/subscription')) return NextResponse.next()
+    if (pathname.startsWith('/wavecore-erp/billing')) return NextResponse.next()
+
     if (!hasSession(request)) {
       return redirectToLogin(request, pathname)
+    }
+
+    // Subscription gate — applies to ALL ERP modules
+    const subscribed = request.cookies.get('wavecore_subscribed')?.value
+    if (subscribed === 'false') {
+      return NextResponse.redirect(new URL('/wavecore-erp/subscription', request.url))
     }
   }
 
