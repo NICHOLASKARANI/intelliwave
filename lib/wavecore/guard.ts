@@ -12,7 +12,7 @@ import { guardRateLimit } from './rate-limit'
 import { checkCsrf } from './csrf'
 
 // ============ CONFIG ============
-const ENFORCE = false // soft launch — flip to true after 48h of clean logs
+const ENFORCE = true // soft launch — flip to true after 48h of clean logs
 // ================================
 
 export type GuardAction =

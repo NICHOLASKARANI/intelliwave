@@ -68,6 +68,13 @@ export function middleware(request: NextRequest) {
     if (role && !HR_ALLOWED_ROLES.includes(role)) {
       return redirectToDashboard(request, 'hr-role-required')
     }
+
+    // Wave 4 — Subscription gate (unpaid orgs bounce to /subscription)
+    const subscribed = request.cookies.get('wavecore_subscribed')?.value
+    if (subscribed === 'false') {
+      return NextResponse.redirect(new URL('/wavecore-erp/subscription', request.url))
+    }
+
     return NextResponse.next()
   }
 

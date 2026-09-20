@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server'
 
 // ============ CONFIG ============
-const ENFORCE = false // soft launch — flip after observation
+const ENFORCE = true // soft launch — flip after observation
 
 // Max mutations per window per user
 const MAX_MUTATIONS_PER_MIN = 30

@@ -10,7 +10,7 @@
 import { NextResponse } from 'next/server'
 
 // ============ CONFIG ============
-const ENFORCE = false // soft launch — flip after observation
+const ENFORCE = true // soft launch — flip after observation
 const CSRF_COOKIE = 'wavecore_csrf'
 const CSRF_HEADER = 'x-csrf-token'
 // ================================

@@ -70,6 +70,9 @@ export async function POST(request: NextRequest) {
     const hasActiveSubscription = subResult.rows.length > 0
     const jwtToken = generateToken(user.id, user.org_id)
 
+    // Wave 4 — CSRF token for double-submit cookie pattern
+    const csrfToken = crypto.randomUUID()
+
     const response = NextResponse.json({
       success: true,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, organizationId: user.org_id },
@@ -80,12 +83,34 @@ export async function POST(request: NextRequest) {
       tokenExpiresIn: '24h'
     })
 
-    response.cookies.set('wavecore_session', sessionToken, {
+        response.cookies.set('wavecore_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60,
-      path: '/',
+      maxAge: 24 * 60 * 60
+    })
+
+    // Wave 4 — CSRF token cookie (readable by JS for double-submit)
+    response.cookies.set('wavecore_csrf', csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60
+    })
+
+    // Wave 1.5 — Role cookie for middleware HR gate
+    response.cookies.set('wavecore_role', user.role || 'USER', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60
+    })
+    // Wave 4 — Subscription flag for middleware subscription gate
+    response.cookies.set('wavecore_subscribed', hasActiveSubscription ? 'true' : 'false', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60
     })
 
     return response
