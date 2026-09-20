@@ -106,6 +106,7 @@ export default function SettingsPage() {
 
   const settingsModules = [
     { label: 'General Settings', href: '/wavecore-erp/settings/general', icon: Settings, desc: 'Company info & preferences', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950', border: 'hover:border-blue-300' },
+    { label: 'Subscription & Billing', href: '/wavecore-erp/settings/subscription', icon: CreditCard, desc: 'Plan, expiry & payments', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950', border: 'hover:border-indigo-300' },
     { label: 'User Management', href: '/wavecore-erp/settings/users', icon: Users, desc: 'Users, roles & access', color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950', border: 'hover:border-green-300' },
     { label: 'Roles & Permissions', href: '/wavecore-erp/settings/roles', icon: Key, desc: 'Role-based access control', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950', border: 'hover:border-purple-300' },
     { label: 'Security', href: '/wavecore-erp/settings/security', icon: Shield, desc: 'Password policies & 2FA', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950', border: 'hover:border-red-300' },
