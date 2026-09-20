@@ -108,6 +108,32 @@ export async function POST(req: NextRequest) {
           `UPDATE "MarketplaceListing" SET stock = stock - $1 WHERE id = $2 AND stock >= $1`,
           [item.quantity, item.listing_id]
         )
+
+        // Mirror decrement in ERP StockMove (if SKU is linked to a Product)
+        try {
+          const listingSku = await pool.query(`SELECT sku FROM "MarketplaceListing" WHERE id = $1`, [item.listing_id])
+          const sku = listingSku.rows[0]?.sku
+          if (sku) {
+            const prodRes = await pool.query(`SELECT id FROM "Product" WHERE sku = $1 LIMIT 1`, [sku])
+            if (prodRes.rows.length > 0) {
+              const smId = crypto.randomUUID()
+              await pool.query(
+                `INSERT INTO "StockMove" (id, type, reference, date, status, notes, "productId", quantity, "organizationId", "createdAt", "updatedAt")
+                 VALUES ($1, 'ISSUE', $2, NOW(), 'DONE', $3, $4, $5, $6, NOW(), NOW())`,
+                [
+                  smId,
+                  orderNumber,
+                  `Marketplace sale — ${item.title}`,
+                  prodRes.rows[0].id,
+                  Number(item.quantity),
+                  session.organizationId,
+                ]
+              )
+            }
+          }
+        } catch (e) {
+          console.error('StockMove mirror error (non-fatal):', e)
+        }
       }
 
       // Update seller wallet pending balance
