@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
     const depts = new Set(employees.map(e => e.department).filter(Boolean))
     // Aggregate salary server-side — individual salaries are NEVER sent to client
     const salaryAgg = await pool.query(
-      SELECT COALESCE(SUM(salary), 0) AS total, COALESCE(AVG(salary), 0) AS avg
-       FROM "Employee" WHERE "organizationId" =  AND status = 'ACTIVE',
+      `SELECT COALESCE(SUM(salary), 0) AS total, COALESCE(AVG(salary), 0) AS avg
+       FROM "Employee" WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
       [orgId]
     ).catch(() => ({ rows: [{ total: 0, avg: 0 }] }))
     const totalPayroll = Number(salaryAgg.rows[0]?.total || 0)
