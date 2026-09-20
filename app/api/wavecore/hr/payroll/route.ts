@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
 // ============================================================
 // KENYAN STATUTORY PAYROLL CALCULATOR (configurable)
@@ -60,6 +61,11 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PAYROLL')
+    if (guard.deny) return guard.response!
+    // ==================
     const orgId = session.organizationId
 
     const { searchParams } = new URL(request.url)
@@ -140,6 +146,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PAYROLL')
+    if (guard.deny) return guard.response!
+    // ==================
     const orgId = session.organizationId
     const body = await request.json()
     const action = body.action || 'run'
@@ -215,6 +226,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PAYROLL')
+    if (guard.deny) return guard.response!
+    // ==================
     const { searchParams } = new URL(request.url)
     const periodId = searchParams.get('periodId')
     if (!periodId) return NextResponse.json({ error: 'periodId required' }, { status: 400 })

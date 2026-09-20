@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
 // Auto-generate next Employee code like EMP-0001
 async function nextEmployeeCode(orgId: string): Promise<string> {
@@ -18,6 +19,11 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PII_READ')
+    if (guard.deny) return guard.response!
+    // ==================
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const status = searchParams.get('status')
@@ -88,6 +94,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PII_READ')
+    if (guard.deny) return guard.response!
+    // ==================
     const body = await request.json()
 
     if (!body.firstName || !body.firstName.trim()) return NextResponse.json({ error: 'First name required' }, { status: 400 })

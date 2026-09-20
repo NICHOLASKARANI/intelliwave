@@ -3,11 +3,17 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PII_READ')
+    if (guard.deny) return guard.response!
+    // ==================
 
     const empRes = await pool.query(
       `SELECT * FROM "Employee" WHERE id = $1 AND "organizationId" = $2`,
@@ -47,6 +53,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PII_READ')
+    if (guard.deny) return guard.response!
+    // ==================
 
     const body = await request.json()
     const sets: string[] = []
@@ -92,6 +103,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // === RBAC GUARD ===
+    const guard = await guardHR(request, 'HR_PII_READ')
+    if (guard.deny) return guard.response!
+    // ==================
 
     // Block delete if active leave/payroll records exist
     const leaveCount = await pool.query(
