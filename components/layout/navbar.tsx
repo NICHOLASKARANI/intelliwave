@@ -182,6 +182,19 @@ export function Navbar() {
                 )
               }
 
+              if (item.name === "WavveMarket") {
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="relative ml-1 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105"
+                  >
+                    <Star className="w-3.5 h-3.5" />
+                    {item.name}
+                  </Link>
+                )
+              }
+
               if (item.name === "WaveCore ERP") {
                 return (
                   <Link
@@ -199,17 +212,23 @@ export function Navbar() {
                 )
               }
 
+              const isActive = pathname === item.href
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                    pathname === item.href
-                      ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950'
-                      : 'text-neutral-700 dark:text-neutral-200 hover:text-indigo-600 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  className={`relative group px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isActive
+                      ? 'text-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50'
+                      : 'text-neutral-700 dark:text-neutral-200 hover:text-indigo-600 hover:bg-neutral-100/70 dark:hover:bg-neutral-800/70'
                   }`}
                 >
                   {item.name}
+                  <span
+                    className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${
+                      isActive ? 'w-8' : 'w-0 group-hover:w-6'
+                    }`}
+                  />
                 </Link>
               )
             })}
@@ -242,9 +261,22 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white dark:bg-neutral-950 border-t max-h-[80vh] overflow-y-auto">
+        <div className="lg:hidden bg-white dark:bg-neutral-950 border-t max-h-[80vh] overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200">
           <div className="p-4 space-y-1">
             {navigation.map((item) => {
+              if (item.name === "WavveMarket") {
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="relative ml-1 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105"
+                  >
+                    <Star className="w-3.5 h-3.5" />
+                    {item.name}
+                  </Link>
+                )
+              }
+
               if (item.name === "WaveCore ERP") {
                 return (
                   <Link
