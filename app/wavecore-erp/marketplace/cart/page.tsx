@@ -55,14 +55,14 @@ export default function CartPage() {
     if (!confirm('Remove item from cart?')) return
     setUpdating(itemId)
     try {
-      const res = await fetch('/api/marketplace/cart?itemId=' + itemId, { method: 'DELETE' })
+      const res = await authedFetch('/api/marketplace/cart?itemId=' + itemId, { method: 'DELETE' })
       if (res.ok) { flash('Removed'); fetchCart() }
     } finally { setUpdating('') }
   }
 
   const clearCart = async () => {
     if (!confirm('Clear all items from cart?')) return
-    const res = await fetch('/api/marketplace/cart?clear=true', { method: 'DELETE' })
+    const res = await authedFetch('/api/marketplace/cart?clear=true', { method: 'DELETE' })
     if (res.ok) { flash('Cart cleared'); fetchCart() }
   }
 
@@ -84,7 +84,7 @@ export default function CartPage() {
         longitude = pos.coords.longitude
       } catch {}
 
-      const res = await fetch('/api/marketplace/checkout', {
+      const res = await authedFetch('/api/marketplace/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...checkoutForm, latitude, longitude }),
