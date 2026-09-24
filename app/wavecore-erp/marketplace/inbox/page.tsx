@@ -25,7 +25,7 @@ export default function InboxPage() {
   const fetchConversations = async () => {
     setLoading(true)
     try {
-      const res = await authedFetch('/api/marketplace/conversations')
+      const res = await fetch('/api/marketplace/conversations')
       const data = await res.json()
       setConversations(data.conversations || [])
     } catch { setError('Network error') }

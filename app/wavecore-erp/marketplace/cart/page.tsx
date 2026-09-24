@@ -28,7 +28,7 @@ export default function CartPage() {
   const fetchCart = async () => {
     setLoading(true)
     try {
-      const res = await authedFetch('/api/marketplace/cart')
+      const res = await fetch('/api/marketplace/cart')
       const data = await res.json()
       setItems(data.items || [])
       setSummary(data.summary || {})
