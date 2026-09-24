@@ -28,7 +28,7 @@ export default function CartPage() {
   const fetchCart = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/cart')
+      const res = await authedFetch('/api/marketplace/cart')
       const data = await res.json()
       setItems(data.items || [])
       setSummary(data.summary || {})
@@ -42,7 +42,7 @@ export default function CartPage() {
   const updateQty = async (itemId: string, newQty: number) => {
     setUpdating(itemId)
     try {
-      const res = await fetch('/api/marketplace/cart', {
+      const res = await authedFetch('/api/marketplace/cart', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, quantity: newQty }),

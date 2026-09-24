@@ -22,7 +22,7 @@ export default function SavedPage() {
   const fetchSaved = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/saved')
+      const res = await authedFetch('/api/marketplace/saved')
       const data = await res.json()
       setSaved(data.saved || [])
     } catch { setError('Network error') }
@@ -43,7 +43,7 @@ export default function SavedPage() {
   const addToCart = async (listingId: number) => {
     setAddingCart(listingId.toString())
     try {
-      const res = await fetch('/api/marketplace/cart', {
+      const res = await authedFetch('/api/marketplace/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId, quantity: 1 }),

@@ -1,5 +1,7 @@
 'use client'
 
+import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
+
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -68,7 +70,7 @@ export default function SellPage() {
 
     setSubmitting(true)
     try {
-      const res = await fetch('/api/marketplace/listings', {
+      const res = await authedFetch('/api/marketplace/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,5 +1,7 @@
 'use client'
 
+import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
+
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -31,12 +33,12 @@ export default function CheckoutPage() {
     setError('')
     try {
       const body: any = { latitude: lat, longitude: lng }
-      const res = await fetch('/api/marketplace/routing', {
+      const res = await authedFetch('/api/marketplace/routing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      const data = await res.json()
+      const data = res.data || res
       if (!res.ok) { setError(data.error || 'Failed to load options'); return }
       setOptions(data.options)
       setOffersByItem(data.offersByItem || [])
@@ -76,7 +78,7 @@ export default function CheckoutPage() {
     try {
       // The checkout API uses the cart as-is; routing is informational.
       // In future: pass selected strategy to checkout to enforce routing.
-      const res = await fetch('/api/marketplace/checkout', {
+      const res = await authedFetch('/api/marketplace/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -87,7 +89,8 @@ export default function CheckoutPage() {
           longitude: buyerLocation?.lng,
         }),
       })
-      const data = await res.json()
+      if (res.needsLogin) { redirectToLogin(); return }
+      const data = res.data
       if (!res.ok) { setError(data.error || 'Checkout failed'); return }
       router.push('/wavecore-erp/marketplace/orders/' + data.orderId)
     } catch { setError('Network error') }
