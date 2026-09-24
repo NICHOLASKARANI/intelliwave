@@ -47,9 +47,22 @@ export async function authedFetch(url: string, options: RequestInit = {}): Promi
     let data: any = null
     try { data = await res.json() } catch {}
 
-    return { ok: res.ok, status: res.status, data, needsLogin }
+    return {
+      ok: res.ok,
+      status: res.status,
+      data,
+      needsLogin,
+      // Compat: allow code that does `await res.json()` to keep working
+      json: async () => data,
+    } as any
   } catch (err) {
-    return { ok: false, status: 0, data: { error: 'Network error' }, needsLogin: false }
+    return {
+      ok: false,
+      status: 0,
+      data: { error: 'Network error' },
+      needsLogin: false,
+      json: async () => ({ error: 'Network error' }),
+    } as any
   }
 }
 

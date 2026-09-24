@@ -23,7 +23,7 @@ export default function SavedPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/marketplace/saved')
-      const data = res.data !== undefined ? res.data : await res.json()
+      const data = await res.json()
       setSaved(data.saved || [])
     } catch { setError('Network error') }
     finally { setLoading(false) }

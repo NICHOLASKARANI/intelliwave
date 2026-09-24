@@ -26,7 +26,7 @@ export default function InboxPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/marketplace/conversations')
-      const data = res.data !== undefined ? res.data : await res.json()
+      const data = await res.json()
       setConversations(data.conversations || [])
     } catch { setError('Network error') }
     finally { setLoading(false) }
@@ -37,7 +37,7 @@ export default function InboxPage() {
     setLoadingMessages(true)
     try {
       const res = await fetch('/api/marketplace/messages?conversationId=' + conversationId)
-      const data = res.data !== undefined ? res.data : await res.json()
+      const data = await res.json()
       setMessages(data.messages || [])
     } catch {}
     finally { setLoadingMessages(false) }
