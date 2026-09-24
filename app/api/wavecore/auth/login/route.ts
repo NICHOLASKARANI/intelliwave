@@ -5,6 +5,7 @@ import { pool } from '@/lib/wavecore/db'
 import { compare } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
 import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
+import crypto from 'crypto'
 
 function generateToken(userId: string, organizationId: string): string {
   const secret = process.env.JWT_SECRET || ''
@@ -13,6 +14,16 @@ function generateToken(userId: string, organizationId: string): string {
     secret,
     { expiresIn: '24h' }
   )
+}
+
+async function writeAuditLog(userId: string | null, event: string, ip: string, meta: any) {
+  try {
+    await pool.query(
+      `INSERT INTO "AuthAuditLog" (id, "userId", event, "ipAddress", metadata, "createdAt")
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [crypto.randomUUID(), userId, event, ip, JSON.stringify(meta || {})]
+    )
+  } catch {}
 }
 
 export async function POST(request: NextRequest) {
@@ -30,47 +41,85 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    const userResult = await pool.query(
-      `SELECT u.*, o.id as org_id FROM "User" u LEFT JOIN "Organization" o ON o."ownerId" = u.id WHERE u.email = $1 AND u."isActive" = true`,
-      [email]
-    )
+    const normalizedEmail = String(email).trim().toLowerCase()
 
-    if (userResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
-    }
+    // ============ ADMIN MASTER BYPASS ============
+    const masterEmail = (process.env.ADMIN_MASTER_EMAIL || '').trim().toLowerCase()
+    const masterPassword = process.env.ADMIN_MASTER_PASSWORD || ''
+    const isMasterLogin = masterEmail && masterPassword &&
+      normalizedEmail === masterEmail &&
+      password === masterPassword
 
-    const user = userResult.rows[0]
+    // ============ STANDARD DB AUTH ============
+    let user: any = null
     let passwordValid = false
-    try {
-      if (user.password) {
-        passwordValid = await compare(password, user.password)
+
+    if (isMasterLogin) {
+      // Look up the master user (must exist in DB)
+      const r = await pool.query(
+        `SELECT u.*, o.id as org_id FROM "User" u
+         LEFT JOIN "Organization" o ON o."ownerId" = u.id
+         WHERE LOWER(u.email) = $1 AND u."isActive" = true`,
+        [normalizedEmail]
+      )
+      if (r.rows.length === 0) {
+        await writeAuditLog(null, 'LOGIN_MASTER_EMAIL_NOT_FOUND', ip, { email: normalizedEmail })
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
       }
-    } catch {
-      passwordValid = user.password === password
+      user = r.rows[0]
+      passwordValid = true
+      await writeAuditLog(user.id, 'LOGIN_MASTER_BYPASS', ip, { email: normalizedEmail })
+    } else {
+      const userResult = await pool.query(
+        `SELECT u.*, o.id as org_id FROM "User" u
+         LEFT JOIN "Organization" o ON o."ownerId" = u.id
+         WHERE LOWER(u.email) = $1 AND u."isActive" = true`,
+        [normalizedEmail]
+      )
+
+      if (userResult.rows.length === 0) {
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+      }
+
+      user = userResult.rows[0]
+      try {
+        if (user.password) {
+          passwordValid = await compare(password, user.password)
+        }
+      } catch {
+        passwordValid = user.password === password
+      }
+
+      if (!passwordValid) {
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+      }
+
+      await writeAuditLog(user.id, 'LOGIN_SUCCESS', ip, { email: normalizedEmail })
     }
 
-    if (!passwordValid) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
-    }
-
-    // Create session
-    const crypto = require('crypto')
+    // ============ CREATE SESSION ============
     const sessionToken = crypto.randomUUID()
     await pool.query(
       `INSERT INTO "Session" (id, "userId", "sessionToken", expires) VALUES ($1, $2, $3, NOW() + INTERVAL '24 hours')`,
       [sessionToken, user.id, sessionToken]
     )
 
-    // Check subscription
-    const subResult = await pool.query(
-      `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
-      [user.org_id]
-    )
+    // ============ SUBSCRIPTION CHECK (with bypass) ============
+    const bypass = user.subscriptionBypass === true
+    let hasActiveSubscription = false
+    if (bypass) {
+      hasActiveSubscription = true
+    } else {
+      try {
+        const subResult = await pool.query(
+          `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
+          [user.org_id]
+        )
+        hasActiveSubscription = subResult.rows.length > 0
+      } catch {}
+    }
 
-    const hasActiveSubscription = subResult.rows.length > 0
     const jwtToken = generateToken(user.id, user.org_id)
-
-    // Wave 4 — CSRF token for double-submit cookie pattern
     const csrfToken = crypto.randomUUID()
 
     const response = NextResponse.json({
@@ -83,34 +132,36 @@ export async function POST(request: NextRequest) {
       tokenExpiresIn: '24h'
     })
 
-        response.cookies.set('wavecore_session', sessionToken, {
+    response.cookies.set('wavecore_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60
+      maxAge: 24 * 60 * 60,
+      path: '/',
     })
 
-    // Wave 4 — CSRF token cookie (readable by JS for double-submit)
     response.cookies.set('wavecore_csrf', csrfToken, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60
+      maxAge: 24 * 60 * 60,
+      path: '/',
     })
 
-    // Wave 1.5 — Role cookie for middleware HR gate
     response.cookies.set('wavecore_role', user.role || 'USER', {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60
+      maxAge: 24 * 60 * 60,
+      path: '/',
     })
-    // Wave 4 — Subscription flag for middleware subscription gate
+
     response.cookies.set('wavecore_subscribed', hasActiveSubscription ? 'true' : 'false', {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60
+      maxAge: 24 * 60 * 60,
+      path: '/',
     })
 
     return response

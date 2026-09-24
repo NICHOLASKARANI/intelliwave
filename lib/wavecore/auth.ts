@@ -14,9 +14,9 @@ export interface WaveCoreSession {
   isActive: boolean
   orgActive: boolean
   subscribed: boolean
+  subscriptionBypass: boolean
 }
 
-// Parse cookies from header string
 function parseCookies(cookieHeader: string): Record<string, string> {
   const cookies: Record<string, string> = {}
   if (!cookieHeader) return cookies
@@ -27,7 +27,6 @@ function parseCookies(cookieHeader: string): Record<string, string> {
   return cookies
 }
 
-// Core session lookup by token
 export async function getSessionFromToken(sessionToken: string): Promise<WaveCoreSession | null> {
   if (!sessionToken) return null
 
@@ -38,7 +37,7 @@ export async function getSessionFromToken(sessionToken: string): Promise<WaveCor
 
     const result = await pool.query(
       `SELECT s."userId", s.expires,
-              u.name, u.email, u.role, u."isActive",
+              u.name, u.email, u.role, u."isActive", u."subscriptionBypass",
               o.id as org_id, o.name as org_name, o."isActive" as org_active
        FROM "Session" s
        JOIN "User" u ON u.id = s."userId"
@@ -50,16 +49,20 @@ export async function getSessionFromToken(sessionToken: string): Promise<WaveCor
     if (result.rows.length === 0) return null
 
     const row = result.rows[0]
-    
-    // Check subscription
+    const bypass = row.subscriptionBypass === true
+
     let subscribed = false
-    try {
-      const subResult = await pool.query(
-        `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
-        [row.org_id]
-      )
-      subscribed = subResult.rows.length > 0
-    } catch {}
+    if (bypass) {
+      subscribed = true
+    } else {
+      try {
+        const subResult = await pool.query(
+          `SELECT * FROM "Subscription" WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW() LIMIT 1`,
+          [row.org_id]
+        )
+        subscribed = subResult.rows.length > 0
+      } catch {}
+    }
 
     const session: WaveCoreSession = {
       sessionId: sessionToken,
@@ -72,6 +75,7 @@ export async function getSessionFromToken(sessionToken: string): Promise<WaveCor
       isActive: row.isActive,
       orgActive: row.org_active,
       subscribed,
+      subscriptionBypass: bypass,
     }
 
     setCache(sessionKey, session, 30)
@@ -82,7 +86,6 @@ export async function getSessionFromToken(sessionToken: string): Promise<WaveCor
   }
 }
 
-// Read session from Request object (API routes use this)
 export async function getSessionFromRequest(req: Request): Promise<WaveCoreSession | null> {
   const cookieHeader = req.headers.get('cookie') || ''
   const cookies = parseCookies(cookieHeader)
@@ -90,13 +93,8 @@ export async function getSessionFromRequest(req: Request): Promise<WaveCoreSessi
   return getSessionFromToken(sessionToken || '')
 }
 
-// Alias for getSessionFromRequest - used by APIs
 export async function requireTenant(req?: Request): Promise<WaveCoreSession | null> {
-  if (req) {
-    return getSessionFromRequest(req)
-  }
-  
-  // No request object - try next/headers (server components)
+  if (req) return getSessionFromRequest(req)
   try {
     const { cookies } = await import('next/headers')
     const cookieStore = cookies()
@@ -107,7 +105,6 @@ export async function requireTenant(req?: Request): Promise<WaveCoreSession | nu
   }
 }
 
-// For server components
 export async function getSession(): Promise<WaveCoreSession | null> {
   return requireTenant()
 }
