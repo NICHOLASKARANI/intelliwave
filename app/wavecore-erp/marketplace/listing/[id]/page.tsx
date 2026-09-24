@@ -23,6 +23,8 @@ export default function ListingDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [adding, setAdding] = useState(false)
   const [messaging, setMessaging] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const fetchListing = async () => {
     setLoading(true)
@@ -64,6 +66,36 @@ export default function ListingDetailPage() {
       if (res.ok) router.push('/wavecore-erp/marketplace/inbox')
     } finally { setMessaging(false) }
   }
+  const toggleSave = async () => {
+    setSaving(true)
+    try {
+      if (saved) {
+        const res = await fetch('/api/marketplace/saved?listingId=' + Number(id), { method: 'DELETE' })
+        if (res.ok) { setSaved(false); flash('Removed from saved') }
+      } else {
+        const res = await fetch('/api/marketplace/saved', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listingId: Number(id) }),
+        })
+        if (res.ok) { setSaved(true); flash('Saved to watchlist') }
+      }
+    } catch { setError('Failed to update saved') }
+    finally { setSaving(false) }
+  }
+
+  useEffect(() => {
+    if (!id) return
+    fetch('/api/marketplace/saved')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && d.saved) {
+          const isSaved = d.saved.some((s) => Number(s.listingId) === Number(id))
+          setSaved(isSaved)
+        }
+      })
+      .catch(() => {})
+  }, [id])
 
   if (loading) return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
@@ -230,8 +262,8 @@ export default function ListingDetailPage() {
                     {adding ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShoppingCart className="w-5 h-5" />}
                     {adding ? 'Adding...' : `Add to Cart · KES ${(Number(listing.price) * quantity).toLocaleString()}`}
                   </button>
-                  <button className="p-3.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white">
-                    <Heart className="w-5 h-5" />
+                  <button onClick={toggleSave} disabled={saving} className={"p-3.5 rounded-xl text-white transition-all " + (saved ? "bg-rose-600 hover:bg-rose-700" : "bg-neutral-800 hover:bg-neutral-700")} title={saved ? "Remove from saved" : "Save to watchlist"}>
+                    <Heart className={"w-5 h-5 " + (saved ? "fill-white" : "")} />
                   </button>
                 </div>
               </div>
