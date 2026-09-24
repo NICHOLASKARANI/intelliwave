@@ -82,7 +82,7 @@ export default function SellPage() {
           longitude: form.longitude ? Number(form.longitude) : null,
         }),
       })
-      const data = await res.json()
+      const data = res.data !== undefined ? res.data : await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       setSuccess('Listing created! Redirecting...')
       setTimeout(() => router.push('/wavecore-erp/marketplace/listing/' + data.listing.id), 1000)

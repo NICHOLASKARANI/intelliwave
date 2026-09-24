@@ -31,7 +31,7 @@ export default function ListingDetailPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/marketplace/listings?id=' + id)
-      const data = await res.json()
+      const data = res.data !== undefined ? res.data : await res.json()
       if (data.listing) setListing(data.listing)
       else setError('Listing not found')
     } catch { setError('Network error') }

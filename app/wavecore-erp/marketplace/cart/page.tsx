@@ -29,7 +29,7 @@ export default function CartPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/marketplace/cart')
-      const data = await res.json()
+      const data = res.data !== undefined ? res.data : await res.json()
       setItems(data.items || [])
       setSummary(data.summary || {})
     } catch { setError('Network error') }
@@ -89,7 +89,7 @@ export default function CartPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...checkoutForm, latitude, longitude }),
       })
-      const data = await res.json()
+      const data = res.data !== undefined ? res.data : await res.json()
       if (!res.ok) { setError(data.error || 'Checkout failed'); return }
 
       // Success → go to order detail
