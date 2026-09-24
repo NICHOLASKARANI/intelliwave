@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -31,6 +31,9 @@ export default function SellPage() {
     latitude: '', longitude: '',
   })
   const [imageUrl, setImageUrl] = useState('')
+  const [imageError, setImageError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     // Fetch warehouses from ERP
@@ -83,6 +86,85 @@ export default function SellPage() {
       setTimeout(() => router.push('/wavecore-erp/marketplace/listing/' + data.listing.id), 1000)
     } catch { setError('Network error') }
     finally { setSubmitting(false) }
+  }
+
+  // ===== IMAGE HANDLING =====
+  const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB per image
+  const MAX_IMAGES = 8
+
+  const addImageFromUrl = () => {
+    setImageError('')
+    const url = imageUrl.trim()
+    if (!url) {
+      setImageError('Type a URL or pick a file first')
+      return
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+      setImageError('URL must start with http:// or https:// or /')
+      return
+    }
+    if (form.images.length >= MAX_IMAGES) {
+      setImageError('Maximum ' + MAX_IMAGES + ' images')
+      return
+    }
+    setForm({ ...form, images: [...form.images, url] })
+    setImageUrl('')
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError('')
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    if (form.images.length + files.length > MAX_IMAGES) {
+      setImageError('Maximum ' + MAX_IMAGES + ' images total')
+      return
+    }
+    setUploading(true)
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        setImageError('Only image files allowed')
+        return
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setImageError('Each image must be under 2MB (got ' + Math.round(file.size / 1024) + 'KB)')
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string
+        if (dataUrl) {
+          setForm(prev => ({ ...prev, images: [...prev.images, dataUrl] }))
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+    setTimeout(() => setUploading(false), 500)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const openFilePicker = () => {
+    setImageError('')
+    if (form.images.length >= MAX_IMAGES) {
+      setImageError('Maximum ' + MAX_IMAGES + ' images reached')
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const dt = e.dataTransfer
+    if (!dt.files || dt.files.length === 0) return
+    const fakeEvent = { target: { files: dt.files } } as any
+    handleFileUpload(fakeEvent)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const removeImageAt = (i: number) => {
+    setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })
   }
 
   return (
@@ -170,7 +252,86 @@ export default function SellPage() {
             <div className="grid md:grid-cols-3 gap-3">
               {FULFILLMENT.map(f => {
                 const Icon = f.icon
-                return (
+                // ===== IMAGE HANDLING =====
+  const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB per image
+  const MAX_IMAGES = 8
+
+  const addImageFromUrl = () => {
+    setImageError('')
+    const url = imageUrl.trim()
+    if (!url) {
+      setImageError('Type a URL or pick a file first')
+      return
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+      setImageError('URL must start with http:// or https:// or /')
+      return
+    }
+    if (form.images.length >= MAX_IMAGES) {
+      setImageError('Maximum ' + MAX_IMAGES + ' images')
+      return
+    }
+    setForm({ ...form, images: [...form.images, url] })
+    setImageUrl('')
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError('')
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    if (form.images.length + files.length > MAX_IMAGES) {
+      setImageError('Maximum ' + MAX_IMAGES + ' images total')
+      return
+    }
+    setUploading(true)
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        setImageError('Only image files allowed')
+        return
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setImageError('Each image must be under 2MB (got ' + Math.round(file.size / 1024) + 'KB)')
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string
+        if (dataUrl) {
+          setForm(prev => ({ ...prev, images: [...prev.images, dataUrl] }))
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+    setTimeout(() => setUploading(false), 500)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const openFilePicker = () => {
+    setImageError('')
+    if (form.images.length >= MAX_IMAGES) {
+      setImageError('Maximum ' + MAX_IMAGES + ' images reached')
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const dt = e.dataTransfer
+    if (!dt.files || dt.files.length === 0) return
+    const fakeEvent = { target: { files: dt.files } } as any
+    handleFileUpload(fakeEvent)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const removeImageAt = (i: number) => {
+    setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })
+  }
+
+  return (
                   <button
                     key={f.value}
                     type="button"
@@ -219,27 +380,93 @@ export default function SellPage() {
 
           {/* Images */}
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6 space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-pink-400 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" /> Product Images
-            </h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-pink-400 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" /> Product Images
+              </h2>
+              <span className="text-xs text-neutral-500 font-bold">{form.images.length} / 8</span>
+            </div>
+
+            {/* Upload from device (primary CTA) */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={openFilePicker}
+              disabled={uploading || form.images.length >= 8}
+              className="w-full py-4 rounded-xl border-2 border-dashed border-pink-600/50 bg-pink-600/5 hover:bg-pink-600/10 hover:border-pink-500 transition-all flex items-center justify-center gap-2 text-pink-400 font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {uploading ? (
+                <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
+              ) : (
+                <><Plus className="w-5 h-5" /> Upload from device (or click to browse)</>
+              )}
+            </button>
+
+            {/* Drag-and-drop hint */}
+            <p className="text-[10px] text-center text-neutral-600">
+              JPG · PNG · WebP · Max 2MB each · Up to 8 images
+            </p>
+
+            {/* OR divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 border-t border-neutral-800" />
+              <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">or paste URL</span>
+              <div className="flex-1 border-t border-neutral-800" />
+            </div>
+
+            {/* URL input */}
             <div className="flex gap-2">
-              <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm" placeholder="Paste image URL..." />
-              <button type="button" onClick={addImage} className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold">
+              <input
+                value={imageUrl}
+                onChange={e => { setImageUrl(e.target.value); setImageError('') }}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addImageFromUrl() } }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm focus:outline-none focus:border-pink-500"
+                placeholder="https://example.com/image.jpg"
+              />
+              <button
+                type="button"
+                onClick={addImageFromUrl}
+                disabled={!imageUrl.trim()}
+                className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Add image by URL"
+              >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Inline error */}
+            {imageError && (
+              <div className="p-2.5 rounded-xl bg-red-900/30 border border-red-800 text-red-300 text-xs flex items-center gap-2">
+                <span className="text-red-400">⚠</span> {imageError}
+              </div>
+            )}
+
+            {/* Image grid */}
             {form.images.length > 0 && (
               <div className="grid grid-cols-4 gap-3">
                 {form.images.map((img, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-neutral-700 group">
                     <img src={img} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 p-1.5 rounded-lg bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => removeImageAt(i)}
+                        className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+                        title="Remove"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <span className="absolute bottom-1 left-1 px-2 py-0.5 rounded bg-black/70 backdrop-blur text-white text-[10px] font-bold">
+                      #{i + 1}
+                    </span>
                   </div>
                 ))}
               </div>
