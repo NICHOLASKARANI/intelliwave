@@ -13,7 +13,7 @@ const leadership = [
   {
     name: 'Nicholas Karani',
     title: 'CEO & Founder',
-    credentials: 'PhD, Software Engineering',
+    credentials: 'AI & Software Engineer',
     image: '/leadership/ceo-nicholas-karani.jpg',
     bio: 'Visionary software engineer and founder of IntelliWave. Nicholas leads the company\'s mission to build Africa\'s first trillion-dollar AI company. With deep expertise in enterprise software architecture and AI systems, he has grown IntelliWave from a Nairobi startup to a global technology company serving 450,000+ users across 100+ countries.',
     quote: 'We are building Africa\'s digital future. World-class technology engineered from Kenya, for the world.',
@@ -90,7 +90,7 @@ export default function AboutPage() {
           <div>
             <h2 className="text-4xl font-bold mb-6">Our Story</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Founded by PhD, Eng. Nicholas Karani, IntelliWave was born from a bold vision: 
+              Founded by AI & Software Engineer Nicholas Karani, IntelliWave was born from a bold vision: 
               to build Africa's first trillion-dollar AI company. What started as a small team 
               of passionate engineers in Nairobi has grown into a global force of 500+ AI 
               specialists serving clients across 100+ countries.
