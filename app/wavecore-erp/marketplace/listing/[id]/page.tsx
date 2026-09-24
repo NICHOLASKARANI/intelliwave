@@ -7,8 +7,9 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Loader2, ShoppingCart, Heart, MessageCircle, MapPin,
   Store, Shield, Star, Truck, CheckCircle2, AlertTriangle, Package,
-  Tag, BadgeCheck, Clock, Zap, Route, Plus, Minus,
+  Tag, BadgeCheck, Clock, Route, Plus, Minus, LogIn,
 } from 'lucide-react'
+import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
 
 export default function ListingDetailPage() {
   const params = useParams()
@@ -38,64 +39,85 @@ export default function ListingDetailPage() {
   }
   useEffect(() => { if (id) fetchListing() }, [id])
 
-  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 2500) }
-
-  const addToCart = async () => {
-    setAdding(true)
-    try {
-      const res = await fetch('/api/marketplace/cart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listingId: Number(id), quantity }),
-      })
-      const data = await res.json()
-      if (res.ok) { flash('Added to cart'); setTimeout(() => router.push('/wavecore-erp/marketplace/cart'), 800) }
-      else setError(data.error || 'Failed to add')
-    } finally { setAdding(false) }
-  }
-
-  const messageSeller = async () => {
-    setMessaging(true)
-    try {
-      const res = await fetch('/api/marketplace/conversations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listingId: Number(id), message: 'Hi, is this still available?' }),
-      })
-      const data = await res.json()
-      if (res.ok) router.push('/wavecore-erp/marketplace/inbox')
-    } finally { setMessaging(false) }
-  }
-  const toggleSave = async () => {
-    setSaving(true)
-    try {
-      if (saved) {
-        const res = await fetch('/api/marketplace/saved?listingId=' + Number(id), { method: 'DELETE' })
-        if (res.ok) { setSaved(false); flash('Removed from saved') }
-      } else {
-        const res = await fetch('/api/marketplace/saved', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ listingId: Number(id) }),
-        })
-        if (res.ok) { setSaved(true); flash('Saved to watchlist') }
-      }
-    } catch { setError('Failed to update saved') }
-    finally { setSaving(false) }
-  }
-
+  // Load saved status if logged in
   useEffect(() => {
     if (!id) return
     fetch('/api/marketplace/saved')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d && d.saved) {
-          const isSaved = d.saved.some((s) => Number(s.listingId) === Number(id))
+          const isSaved = d.saved.some((s: any) => Number(s.listingId) === Number(id))
           setSaved(isSaved)
         }
       })
       .catch(() => {})
   }, [id])
+
+  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+
+  const addToCart = async () => {
+    setAdding(true)
+    setError('')
+
+    const res = await authedFetch('/api/marketplace/cart', {
+      method: 'POST',
+      body: JSON.stringify({ listingId: Number(id), quantity }),
+    })
+
+    if (res.needsLogin) {
+      redirectToLogin()
+      return
+    }
+
+    if (res.ok) {
+      flash('Added to cart! Redirecting…')
+      setTimeout(() => router.push('/wavecore-erp/marketplace/cart'), 900)
+    } else {
+      setError(res.data?.error || 'Failed to add to cart')
+    }
+    setAdding(false)
+  }
+
+  const messageSeller = async () => {
+    setMessaging(true)
+    setError('')
+
+    const res = await authedFetch('/api/marketplace/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ listingId: Number(id), message: 'Hi, is this still available?' }),
+    })
+
+    if (res.needsLogin) {
+      redirectToLogin()
+      return
+    }
+
+    if (res.ok) {
+      router.push('/wavecore-erp/marketplace/inbox')
+    } else {
+      setError(res.data?.error || 'Failed to start conversation')
+    }
+    setMessaging(false)
+  }
+
+  const toggleSave = async () => {
+    setSaving(true)
+    setError('')
+
+    if (saved) {
+      const res = await authedFetch('/api/marketplace/saved?listingId=' + Number(id), { method: 'DELETE' })
+      if (res.needsLogin) { redirectToLogin(); setSaving(false); return }
+      if (res.ok) { setSaved(false); flash('Removed from saved') }
+    } else {
+      const res = await authedFetch('/api/marketplace/saved', {
+        method: 'POST',
+        body: JSON.stringify({ listingId: Number(id) }),
+      })
+      if (res.needsLogin) { redirectToLogin(); setSaving(false); return }
+      if (res.ok) { setSaved(true); flash('Saved to watchlist') }
+    }
+    setSaving(false)
+  }
 
   if (loading) return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
@@ -140,7 +162,6 @@ export default function ListingDetailPage() {
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Images */}
           <div>
             <div className="aspect-square bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden relative">
               {images[activeImage] ? (
@@ -159,11 +180,8 @@ export default function ListingDetailPage() {
             {images.length > 1 && (
               <div className="grid grid-cols-5 gap-2 mt-3">
                 {images.map((img: string, i: number) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveImage(i)}
-                    className={'aspect-square rounded-xl overflow-hidden border-2 transition-all ' + (activeImage === i ? 'border-cyan-500' : 'border-neutral-800 hover:border-neutral-700')}
-                  >
+                  <button key={i} onClick={() => setActiveImage(i)}
+                    className={'aspect-square rounded-xl overflow-hidden border-2 transition-all ' + (activeImage === i ? 'border-cyan-500' : 'border-neutral-800 hover:border-neutral-700')}>
                     <img src={img} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
@@ -171,7 +189,6 @@ export default function ListingDetailPage() {
             )}
           </div>
 
-          {/* Details */}
           <div className="space-y-5">
             <div>
               <div className="flex flex-wrap gap-2 mb-3">
@@ -185,7 +202,6 @@ export default function ListingDetailPage() {
               <p className="text-3xl font-bold text-amber-400">KES {Number(listing.price).toLocaleString()}</p>
             </div>
 
-            {/* Seller card */}
             <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white font-bold">
@@ -197,7 +213,7 @@ export default function ListingDetailPage() {
                     {listing.verification === 'VERIFIED' && <BadgeCheck className="w-4 h-4 text-cyan-400" />}
                   </p>
                   <div className="flex flex-wrap gap-3 text-xs text-neutral-500 mt-1">
-                    {listing.averageRating > 0 && <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {listing.averageRating} ({listing.totalReviews || 0})</span>}
+                    {listing.averageRating > 0 && <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {listing.averageRating}</span>}
                     {listing.trustScore !== undefined && <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Trust: {listing.trustScore}</span>}
                   </div>
                 </div>
@@ -207,17 +223,11 @@ export default function ListingDetailPage() {
               </div>
             </div>
 
-            {/* Fulfillment */}
             <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <Truck className="w-4 h-4 text-indigo-400" />
                 <span className="text-neutral-400">Ships in</span>
                 <span className="text-white font-bold">{listing.slaHours || 48}h</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Route className="w-4 h-4 text-cyan-400" />
-                <span className="text-neutral-400">Fulfillment</span>
-                <span className="text-white font-bold">{listing.fulfillmentType || 'SELLER_SHIP'}</span>
               </div>
               {listing.location && (
                 <div className="flex items-center gap-2 text-sm">
@@ -228,7 +238,6 @@ export default function ListingDetailPage() {
               )}
             </div>
 
-            {/* Description */}
             {listing.description && (
               <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
                 <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-2">Description</h3>
@@ -236,7 +245,6 @@ export default function ListingDetailPage() {
               </div>
             )}
 
-            {/* Quantity + CTA */}
             {inStock && (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -250,7 +258,6 @@ export default function ListingDetailPage() {
                       <Plus className="w-3 h-3 text-white" />
                     </button>
                   </div>
-                  <span className="text-xs text-neutral-500">Max {maxQty}</span>
                 </div>
 
                 <div className="flex gap-3">
@@ -260,22 +267,40 @@ export default function ListingDetailPage() {
                     className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
                   >
                     {adding ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShoppingCart className="w-5 h-5" />}
-                    {adding ? 'Adding...' : `Add to Cart · KES ${(Number(listing.price) * quantity).toLocaleString()}`}
+                    {adding ? 'Adding…' : `Add to Cart · KES ${(Number(listing.price) * quantity).toLocaleString()}`}
                   </button>
-                  <button onClick={toggleSave} disabled={saving} className={"p-3.5 rounded-xl text-white transition-all " + (saved ? "bg-rose-600 hover:bg-rose-700" : "bg-neutral-800 hover:bg-neutral-700")} title={saved ? "Remove from saved" : "Save to watchlist"}>
-                    <Heart className={"w-5 h-5 " + (saved ? "fill-white" : "")} />
+                  <button
+                    onClick={toggleSave}
+                    disabled={saving}
+                    className={'p-3.5 rounded-xl text-white transition-all ' + (saved ? 'bg-rose-600 hover:bg-rose-700' : 'bg-neutral-800 hover:bg-neutral-700')}
+                    title={saved ? 'Remove from saved' : 'Save to watchlist'}
+                  >
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Heart className={'w-5 h-5 ' + (saved ? 'fill-white' : '')} />}
                   </button>
                 </div>
+
+                <button
+                  onClick={messageSeller}
+                  disabled={messaging}
+                  className="w-full py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" /> Chat with Seller
+                </button>
               </div>
             )}
 
-            {/* Trust badges */}
             <div className="p-4 rounded-2xl bg-green-900/20 border border-green-800/50 space-y-2">
               <p className="flex items-center gap-2 text-sm text-green-200">
                 <Shield className="w-4 h-4" /> <span className="font-bold">WaveMarket Buyer Protection</span>
               </p>
               <p className="text-xs text-green-300">Full refund if item doesn't arrive, arrives damaged, or isn't as described.</p>
             </div>
+
+            {!inStock && (
+              <div className="p-4 rounded-2xl bg-amber-900/20 border border-amber-800/50 flex items-center gap-2 text-sm text-amber-200">
+                <AlertTriangle className="w-4 h-4" /> This item is currently out of stock
+              </div>
+            )}
           </div>
         </div>
       </main>

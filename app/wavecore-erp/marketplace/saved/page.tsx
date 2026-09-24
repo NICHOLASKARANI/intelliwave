@@ -1,5 +1,7 @@
 'use client'
 
+import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
+
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -33,7 +35,7 @@ export default function SavedPage() {
   const remove = async (listingId: number) => {
     setRemoving(listingId.toString())
     try {
-      const res = await fetch('/api/marketplace/saved?listingId=' + listingId, { method: 'DELETE' })
+      const res = await authedFetch('/api/marketplace/saved?listingId=' + listingId, { method: 'DELETE' })
       if (res.ok) { flash('Removed'); fetchSaved() }
     } finally { setRemoving('') }
   }

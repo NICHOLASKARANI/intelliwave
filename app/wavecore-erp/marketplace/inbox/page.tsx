@@ -1,5 +1,7 @@
 'use client'
 
+import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
+
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -52,7 +54,7 @@ export default function InboxPage() {
     if (!message.trim() || !selected) return
     setSending(true)
     try {
-      const res = await fetch('/api/marketplace/messages', {
+      const res = await authedFetch('/api/marketplace/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversationId: selected.id, content: message.trim() }),
