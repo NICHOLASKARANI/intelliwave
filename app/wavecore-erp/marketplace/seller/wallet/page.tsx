@@ -1,5 +1,7 @@
 'use client'
 
+import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
+
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -53,11 +55,11 @@ export default function WalletPage() {
     if (amount > Number(summary.availableBalance || 0)) { setError('Insufficient available balance'); return }
     setRequesting(true)
     try {
-      const res = await fetch('/api/marketplace/wallet', {
+      const res = await authedFetch('/api/marketplace/wallet', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
       })
+      if (res.needsLogin) { redirectToLogin(); setRequesting(false); return }
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       flash(data.message || 'Payout request submitted')
