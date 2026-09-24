@@ -36,7 +36,7 @@ const navigation = [
     ]
   },
   { name: "WaveCore ERP", href: "/wavecore-erp/auth/signup" },
-  { name: "Pricing", href: "/pricing" },
+  { name: "WavveMarket", href: "/marketplace" },
   { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
   { name: "About", href: "/about" },

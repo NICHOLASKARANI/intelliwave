@@ -8,7 +8,7 @@ import Link from 'next/link'
 const searchItems = [
   { icon: Code2, label: 'AI Development Services', href: '/services', category: 'Services' },
   { icon: Briefcase, label: 'Enterprise Solutions', href: '/services', category: 'Services' },
-  { icon: FileText, label: 'Pricing & Packages', href: '/pricing', category: 'Info' },
+  { icon: FileText, label: 'WavveMarket', href: '/marketplace', category: 'Shop' },
   { icon: BookOpen, label: 'Blog & Insights', href: '/blog', category: 'Content' },
   { icon: Code2, label: 'IIoT Automation', href: '/iiot-automation', category: 'Services' },
   { icon: Briefcase, label: 'Portfolio', href: '/portfolio', category: 'Info' },
