@@ -19,6 +19,7 @@ export interface AuthedFetchResult {
   status: number
   data: any
   needsLogin: boolean
+  json: () => Promise<any>
 }
 
 /**
