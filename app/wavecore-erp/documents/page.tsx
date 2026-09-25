@@ -185,6 +185,9 @@ export default function DocumentsPage() {
               <button onClick={pdf} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-bold">
                 <Download className="w-4 h-4" /> Report
               </button>
+              <Link href="/wavecore-erp/documents/workflows" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-bold">
+                <Workflow className="w-4 h-4" /> Workflows
+              </Link>
               <Link href="/wavecore-erp/documents/upload" className="flex items-center gap-2 px-5 py-2 rounded-xl bg-white text-indigo-700 text-sm font-bold shadow-lg">
                 <Upload className="w-4 h-4" /> Upload
               </Link>
