@@ -151,13 +151,13 @@ export default function DocumentDetailPage() {
     </div>
   )
 
-  const tabs = [
+  const tabs: { key: 'preview' | 'versions' | 'activity' | 'shares' | 'signatures'; label: string; icon: any; count?: number }[] = [
     { key: 'preview', label: 'Preview', icon: FileText },
     { key: 'versions', label: 'Versions', icon: History, count: versions.length },
     { key: 'activity', label: 'Activity', icon: Activity, count: activity.length },
     { key: 'shares', label: 'Shares', icon: Share2, count: shares.length },
     { key: 'signatures', label: 'Signatures', icon: PenTool, count: signatures.length },
-  ] as const
+  ]
 
   return (
     <div className="min-h-screen bg-neutral-950">
