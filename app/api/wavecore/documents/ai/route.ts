@@ -22,7 +22,7 @@ function extractiveSummarize(text: string, maxSentences = 5): string {
   // Score each sentence
   const scored = sentences.map((s, i) => {
     const words = s.toLowerCase().match(/\b[a-z]{3,}\b/g) || []
-    const score = words.reduce((sum, w) => sum + (freq[w] || 0) / maxFreq, 0) / Math.max(1, words.length)
+    const score = words.reduce((sum: number, w: string) => sum + (freq[w] || 0) / maxFreq, 0) / Math.max(1, words.length)
     const positionBoost = 1 - i / sentences.length
     return { sentence: s.trim(), score: score * 0.7 + positionBoost * 0.3, index: i }
   })
