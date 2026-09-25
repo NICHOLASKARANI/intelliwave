@@ -8,32 +8,45 @@ import { pool } from '@/lib/wavecore/db'
 // Simple heuristic summarizer that doesn't need external LLM.
 // Extracts top sentences ranked by word frequency + position.
 function extractiveSummarize(text: string, maxSentences = 5): string {
-  const sentences = text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]+/g) || [text]
+  const sentenceMatches = text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]+/g)
+  const sentences: string[] = sentenceMatches ? Array.from(sentenceMatches as RegExpMatchArray) as string[] : [text]
   if (sentences.length <= maxSentences) return sentences.join(' ').trim()
 
-  // Build frequency map (excluding stop words)
-  const stop = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','should','could','may','might','must','can','this','that','these','those','i','you','he','she','it','we','they'])
+  const stopWords: string[] = ['the','a','an','and','or','but','in','on','at','to','for','of','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','should','could','may','might','must','can','this','that','these','those','i','you','he','she','it','we','they']
+  const stopSet: Record<string, boolean> = {}
+  for (let i = 0; i < stopWords.length; i++) stopSet[stopWords[i]] = true
+
   const freq: Record<string, number> = {}
-  for (const w of text.toLowerCase().match(/\b[a-z]{3,}\b/g) || []) {
-    if (!stop.has(w)) freq[w] = (freq[w] || 0) + 1
+  const wordMatches = text.toLowerCase().match(/\b[a-z]{3,}\b/g)
+  const allWords: string[] = wordMatches ? Array.from(wordMatches as RegExpMatchArray) as string[] : []
+  for (let i = 0; i < allWords.length; i++) {
+    const w = allWords[i]
+    if (!stopSet[w]) freq[w] = (freq[w] || 0) + 1
   }
-  const maxFreq = Math.max(1, ...Object.values(freq))
+  let maxFreq = 1
+  const freqValues = Object.values(freq)
+  for (let i = 0; i < freqValues.length; i++) {
+    if (freqValues[i] > maxFreq) maxFreq = freqValues[i]
+  }
 
-  // Score each sentence
-  const scored = sentences.map((s, i) => {
-    const words = s.toLowerCase().match(/\b[a-z]{3,}\b/g) || []
-    const score = words.reduce((sum: number, w: string) => sum + (freq[w] || 0) / maxFreq, 0) / Math.max(1, words.length)
+  const scored: { sentence: string; score: number; index: number }[] = []
+  for (let i = 0; i < sentences.length; i++) {
+    const s = sentences[i]
+    const sMatches = s.toLowerCase().match(/\b[a-z]{3,}\b/g)
+    const words: string[] = sMatches ? Array.from(sMatches as RegExpMatchArray) as string[] : []
+    let sum = 0
+    for (let j = 0; j < words.length; j++) {
+      sum += (freq[words[j]] || 0) / maxFreq
+    }
+    const avg = sum / Math.max(1, words.length)
     const positionBoost = 1 - i / sentences.length
-    return { sentence: s.trim(), score: score * 0.7 + positionBoost * 0.3, index: i }
-  })
+    scored.push({ sentence: s.trim(), score: avg * 0.7 + positionBoost * 0.3, index: i })
+  }
 
-  return scored
-    .sort((a, b) => b.score - a.score)
-    .slice(0, maxSentences)
-    .sort((a, b) => a.index - b.index)
-    .map(s => s.sentence)
-    .join(' ')
-    .trim()
+  scored.sort((a, b) => b.score - a.score)
+  const top = scored.slice(0, maxSentences)
+  top.sort((a, b) => a.index - b.index)
+  return top.map(s => s.sentence).join(' ').trim()
 }
 
 // Heuristic language detector — counts common-word signatures per language
