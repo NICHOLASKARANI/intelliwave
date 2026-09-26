@@ -318,7 +318,10 @@ export default function PurchaseOrderDetailPage() {
                 <Ban className="w-4 h-4" /> Cancel
               </button>
             )}
-            <button onClick={() => window.print()} className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2">
+            <button
+              onClick={() => window.open('/api/wavecore/procurement/purchase-orders/' + id + '/export/pdf', '_blank')}
+              className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2"
+            >
               <FileDown className="w-4 h-4" /> Print / PDF
             </button>
           </div>
