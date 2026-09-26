@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Users, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Star, Shield, TrendingUp, Building2, Mail, Phone, Tag, ChevronRight,
-  Filter, ArrowLeft, RefreshCw, Ban,
+  Filter, ArrowLeft, RefreshCw, Ban, CheckSquare, Square, Check,
 } from 'lucide-react'
 
 interface Supplier {
@@ -52,6 +52,10 @@ export default function SuppliersPage() {
   // Create modal
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkWorking, setBulkWorking] = useState(false)
   const [form, setForm] = useState({
     name: '', legalName: '', email: '', phone: '',
     category: 'General', country: 'KE', currency: 'KES',
@@ -84,6 +88,9 @@ export default function SuppliersPage() {
 
   useEffect(() => { fetchSuppliers() /* eslint-disable-next-line */ }, [q, statusFilter, categoryFilter, riskFilter, offset])
 
+  // Clear selection when suppliers list changes (filters/pagination)
+  useEffect(() => { setSelectedIds(new Set()) /* eslint-disable-next-line */ }, [q, statusFilter, categoryFilter, riskFilter, offset])
+
   const createSupplier = async () => {
     if (!form.name.trim()) { setError('Name is required'); return }
     setCreating(true); setError('')
@@ -113,6 +120,78 @@ export default function SuppliersPage() {
 
   const clearFilters = () => {
     setQ(''); setStatusFilter(''); setCategoryFilter(''); setRiskFilter(''); setOffset(0)
+  }
+
+  // ---- Selection helpers ----
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === suppliers.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(suppliers.map(s => s.id)))
+    }
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
+
+  // ---- Bulk API call ----
+  const runBulk = async (action: 'ACTIVATE' | 'DEACTIVATE' | 'PREFER' | 'UNPREFER') => {
+    if (selectedIds.size === 0) return
+    const verb = action === 'ACTIVATE' ? 'Activate' : action === 'DEACTIVATE' ? 'Deactivate' : action === 'PREFER' ? 'Mark as preferred' : 'Unmark preferred'
+    if (!confirm(verb + ' ' + selectedIds.size + ' supplier(s)?')) return
+
+    setBulkWorking(true)
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/procurement/suppliers/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({ ids: Array.from(selectedIds), action }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Bulk action failed'); return }
+      flash(verb + ' ' + data.updated + ' supplier(s)')
+      clearSelection()
+      fetchSuppliers()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    } finally {
+      setBulkWorking(false)
+    }
+  }
+
+  // ---- CSV export of selected ----
+  const exportSelectedCSV = () => {
+    if (selectedIds.size === 0) return
+    const rows = suppliers.filter(s => selectedIds.has(s.id))
+    if (rows.length === 0) return
+    const headers = ['id', 'name', 'legalName', 'email', 'phone', 'category', 'country', 'currency', 'riskLevel', 'riskScore', 'status', 'isPreferred', 'isBlacklisted', 'createdAt']
+    const csvLines = [headers.join(',')]
+    for (const r of rows) {
+      csvLines.push(headers.map(h => {
+        const v = (r as any)[h]
+        if (v === null || v === undefined) return ''
+        const s = String(v).replace(/"/g, '""')
+        return /[",\n]/.test(s) ? '"' + s + '"' : s
+      }).join(','))
+    }
+    const csv = csvLines.join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'suppliers-' + new Date().toISOString().slice(0,10) + '.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+    flash('Exported ' + rows.length + ' supplier(s)')
   }
 
   const activeFilters = [statusFilter, categoryFilter, riskFilter].filter(Boolean).length + (q ? 1 : 0)
@@ -153,7 +232,14 @@ export default function SuppliersPage() {
 
         {/* Search + Filters bar */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 mb-4">
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap items-center">
+            {suppliers.length > 0 && (
+              <button onClick={toggleSelectAll} className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition" title={selectedIds.size === suppliers.length ? 'Deselect all' : 'Select all'}>
+                {selectedIds.size === suppliers.length && suppliers.length > 0
+                  ? <CheckSquare className="w-4 h-4 text-indigo-500" />
+                  : <Square className="w-4 h-4 text-neutral-400" />}
+              </button>
+            )}
             <div className="flex-1 min-w-[240px] relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input
@@ -206,9 +292,24 @@ export default function SuppliersPage() {
         ) : (
           <>
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {suppliers.map(s => (
-                <Link key={s.id} href={'/wavecore-erp/procurement/suppliers/' + s.id} className="block bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-indigo-500 hover:shadow-lg transition group">
-                  <div className="flex justify-between items-start mb-3">
+              {suppliers.map(s => {
+                const isSelected = selectedIds.has(s.id)
+                return (
+                <div
+                  key={s.id}
+                  className={'relative block bg-white dark:bg-neutral-900 rounded-2xl border p-5 hover:border-indigo-500 hover:shadow-lg transition group ' + (isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-neutral-200 dark:border-neutral-800')}
+                >
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(s.id) }}
+                    className="absolute top-4 right-4 z-10 p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    title={isSelected ? 'Deselect' : 'Select'}
+                  >
+                    {isSelected
+                      ? <CheckSquare className="w-5 h-5 text-indigo-500" />
+                      : <Square className="w-5 h-5 text-neutral-300 dark:text-neutral-600" />}
+                  </button>
+                  <Link href={'/wavecore-erp/procurement/suppliers/' + s.id} className="block">
+                  <div className="flex justify-between items-start mb-3 pr-8">
                     <div className="flex items-center gap-2 flex-wrap">
                       {s.isPreferred && <Star className="w-4 h-4 text-amber-500 fill-amber-500" />}
                       {s.isBlacklisted && <Ban className="w-4 h-4 text-red-500" />}
@@ -234,8 +335,10 @@ export default function SuppliersPage() {
                     </span>
                     <span className="text-[10px] text-neutral-400">{new Date(s.createdAt).toLocaleDateString('en-GB')}</span>
                   </div>
-                </Link>
-              ))}
+                  </Link>
+                </div>
+                )
+              })}
             </div>
 
             {/* Pagination */}
@@ -253,6 +356,38 @@ export default function SuppliersPage() {
           </>
         )}
       </main>
+
+      {/* Floating bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-neutral-900 dark:bg-neutral-800 border border-neutral-700 rounded-2xl shadow-2xl px-6 py-4 flex items-center gap-3 flex-wrap max-w-[95vw]">
+          <div className="flex items-center gap-2 pr-3 border-r border-neutral-700">
+            <CheckSquare className="w-5 h-5 text-indigo-400" />
+            <span className="text-white font-bold text-sm">{selectedIds.size} selected</span>
+          </div>
+
+          <button onClick={() => runBulk('ACTIVATE')} disabled={bulkWorking} className="px-3 py-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-300 text-xs font-bold flex items-center gap-1.5 disabled:opacity-40">
+            <Check className="w-3.5 h-3.5" /> Activate
+          </button>
+          <button onClick={() => runBulk('DEACTIVATE')} disabled={bulkWorking} className="px-3 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-300 text-xs font-bold flex items-center gap-1.5 disabled:opacity-40">
+            <Ban className="w-3.5 h-3.5" /> Deactivate
+          </button>
+          <button onClick={() => runBulk('PREFER')} disabled={bulkWorking} className="px-3 py-2 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 text-xs font-bold flex items-center gap-1.5 disabled:opacity-40">
+            <Star className="w-3.5 h-3.5" /> Prefer
+          </button>
+          <button onClick={() => runBulk('UNPREFER')} disabled={bulkWorking} className="px-3 py-2 rounded-lg bg-neutral-700/50 hover:bg-neutral-700 text-neutral-300 text-xs font-bold flex items-center gap-1.5 disabled:opacity-40">
+            <Star className="w-3.5 h-3.5" /> Unprefer
+          </button>
+          <button onClick={exportSelectedCSV} disabled={bulkWorking} className="px-3 py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-bold flex items-center gap-1.5 disabled:opacity-40">
+            <Tag className="w-3.5 h-3.5" /> Export CSV
+          </button>
+
+          {bulkWorking && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
+
+          <button onClick={clearSelection} className="ml-auto p-2 rounded-lg bg-neutral-700/50 hover:bg-neutral-700 text-neutral-400 hover:text-white" title="Clear selection">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Create Supplier modal */}
       {showCreate && (
