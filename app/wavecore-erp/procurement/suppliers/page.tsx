@@ -7,6 +7,7 @@ import {
   Users, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Star, Shield, TrendingUp, Building2, Mail, Phone, Tag, ChevronRight,
   Filter, ArrowLeft, RefreshCw, Ban, CheckSquare, Square, Check,
+  Download, FileSpreadsheet, FileText,
 } from 'lucide-react'
 
 interface Supplier {
@@ -252,6 +253,7 @@ export default function SuppliersPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-indigo-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
+            <ExportMenu q={q} status={statusFilter} category={categoryFilter} />
             <button onClick={fetchSuppliers} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
@@ -448,6 +450,50 @@ export default function SuppliersPage() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  )
+}// ---------- Export menu (CSV + PDF) ----------
+function ExportMenu({ q, status, category }: { q: string; status: string; category: string }) {
+  const [open, setOpen] = useState(false)
+
+  const buildQuery = () => {
+    const p = new URLSearchParams()
+    if (q) p.set('q', q)
+    if (status) p.set('status', status)
+    if (category) p.set('category', category)
+    return p.toString()
+  }
+
+  const downloadCSV = () => {
+    const url = '/api/wavecore/procurement/suppliers/export/csv?' + buildQuery()
+    window.open(url, '_blank')
+    setOpen(false)
+  }
+
+  const viewPDF = () => {
+    const url = '/api/wavecore/procurement/suppliers/export/pdf?' + buildQuery()
+    window.open(url, '_blank')
+    setOpen(false)
+  }
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (open ? 'bg-emerald-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
+        <Download className="w-4 h-4" /> Export
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)}></div>
+          <div className="absolute right-0 top-full mt-2 z-50 w-48 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-2xl overflow-hidden">
+            <button onClick={downloadCSV} className="w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center gap-2 text-sm">
+              <FileSpreadsheet className="w-4 h-4 text-green-500" /> Download CSV
+            </button>
+            <button onClick={viewPDF} className="w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center gap-2 text-sm border-t border-neutral-100 dark:border-neutral-700">
+              <FileText className="w-4 h-4 text-red-500" /> View PDF (Print)
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

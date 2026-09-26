@@ -8,7 +8,7 @@ import {
   Users, ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Star, Ban,
   Mail, Phone, Globe, MapPin, Building2, FileText, CreditCard,
   TrendingUp, History, Shield, Activity, Plus, X, Save, Edit3,
-  Trash2, Download, ExternalLink, Calendar, DollarSign, Package,
+  Trash2, Download, ExternalLink, Calendar, DollarSign, Package, FileDown,
   FileSpreadsheet, Receipt, Clock,
 } from 'lucide-react'
 
@@ -244,6 +244,13 @@ export default function SupplierDetailPage() {
                 <>
                   <button onClick={() => setEditing(true)} className="px-4 py-2.5 rounded-xl bg-white text-indigo-700 font-bold flex items-center gap-2 shadow-lg">
                     <Edit3 className="w-4 h-4" /> Edit
+                  </button>
+                  <button
+                    onClick={() => window.open('/api/wavecore/procurement/suppliers/' + id + '/export/pdf', '_blank')}
+                    className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2"
+                    title="Export PDF"
+                  >
+                    <FileDown className="w-4 h-4" /> Export PDF
                   </button>
                   <button onClick={softDelete} className="px-4 py-2.5 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold flex items-center gap-2">
                     <Trash2 className="w-4 h-4" /> Deactivate
