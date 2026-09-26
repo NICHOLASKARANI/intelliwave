@@ -44,6 +44,9 @@ export default function SupplierDetailPage() {
   const [subForm, setSubForm] = useState<any>({})
   const [subSaving, setSubSaving] = useState(false)
 
+  // Document preview modal
+  const [previewDoc, setPreviewDoc] = useState<any>(null)
+
   const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
 
@@ -419,21 +422,70 @@ export default function SupplierDetailPage() {
             onAdd={() => { setSubModal('document'); setSubForm({ documentType: 'TAX_CERTIFICATE', name: '', fileUrl: '', expiryDate: '' }) }}
             addLabel="Add document"
             empty="No documents yet"
-            render={d => (
-              <div key={d.id} className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                <div>
-                  <p className="font-bold text-sm flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-indigo-500" />{d.name}</p>
-                  <p className="text-xs text-neutral-500">{d.documentType} · {d.status} {d.expiryDate && '· expires ' + new Date(d.expiryDate).toLocaleDateString('en-GB')}</p>
+            render={d => {
+              const days = d.expiryDate ? Math.ceil((new Date(d.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null
+              const expiryPill =
+                days === null ? null
+                : days < 0 ? { label: 'Expired', cls: 'bg-red-900/50 text-red-300' }
+                : days < 30 ? { label: 'Expires in ' + days + 'd', cls: 'bg-red-900/50 text-red-300' }
+                : days < 90 ? { label: 'Expires in ' + days + 'd', cls: 'bg-amber-900/50 text-amber-300' }
+                : { label: 'Expires in ' + days + 'd', cls: 'bg-green-900/50 text-green-300' }
+              return (
+                <div key={d.id} className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                      <span className="truncate">{d.name}</span>
+                    </p>
+                    <p className="text-xs text-neutral-500 flex items-center gap-2 mt-1 flex-wrap">
+                      <span>{d.documentType}</span>
+                      <span>·</span>
+                      <span>{d.status}</span>
+                      {expiryPill && (
+                        <>
+                          <span>·</span>
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + expiryPill.cls}>{expiryPill.label}</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0 ml-3">
+                    <button onClick={() => setPreviewDoc(d)} className="px-3 py-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900 text-xs font-bold flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" /> Preview
+                    </button>
+                    <a href={d.fileUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-indigo-500">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
                 </div>
-                <a href={d.fileUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-indigo-500">
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            )}
+              )
+            }}
           />
         )}
 
         {tab === 'scorecards' && (
+          <div className="space-y-4">
+          {scorecards.length > 1 && (
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold">Overall Score Trend</h3>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">{scorecards.length} periods</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-neutral-900 dark:text-white">
+                    {scorecards[0].overallScore}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">Latest</p>
+                </div>
+              </div>
+              <Sparkline
+                data={scorecards.slice().reverse().map((s: any) => Number(s.overallScore) || 0)}
+                width={600}
+                height={80}
+              />
+            </div>
+          )}
           <ListSection
             title="Scorecards"
             icon={TrendingUp}
@@ -465,6 +517,7 @@ export default function SupplierDetailPage() {
               </div>
             )}
           />
+          </div>
         )}
 
         {tab === 'risks' && (
@@ -518,6 +571,36 @@ export default function SupplierDetailPage() {
         )}
       </main>
 
+      {/* Document preview modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewDoc(null)}>
+          <div onClick={e => e.stopPropagation()} className="w-full max-w-4xl bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl flex flex-col max-h-[92vh]">
+            <div className="flex justify-between items-center p-5 border-b border-neutral-200 dark:border-neutral-800">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-bold truncate flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                  {previewDoc.name}
+                </h2>
+                <p className="text-xs text-neutral-500 mt-0.5">{previewDoc.documentType} · {previewDoc.status}</p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0 ml-3">
+                <a href={previewDoc.fileUrl} download className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-indigo-500" title="Download">
+                  <Download className="w-4 h-4" />
+                </a>
+                <a href={previewDoc.fileUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-indigo-500" title="Open in new tab">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+                <button onClick={() => setPreviewDoc(null)} className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-red-500" title="Close">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-950 p-4">
+              <DocPreview url={previewDoc.fileUrl} mime={previewDoc.mimeType} name={previewDoc.name} />
+            </div>
+          </div>
+        </div>
+      )}
       {/* Sub-modal */}
       {subModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setSubModal(null)}>
@@ -624,6 +707,85 @@ export default function SupplierDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ---------- Sparkline (SVG, no dependency) ----------
+function Sparkline({ data, width = 400, height = 60 }: { data: number[]; width?: number; height?: number }) {
+  if (!data || data.length === 0) return null
+  const max = Math.max(...data, 100)
+  const min = Math.min(...data, 0)
+  const range = Math.max(1, max - min)
+  const stepX = width / Math.max(1, data.length - 1)
+
+  const points = data.map((v, i) => {
+    const x = i * stepX
+    const y = height - ((v - min) / range) * height
+    return { x, y }
+  })
+
+  const path = points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ')
+  const areaPath =
+    'M0,' + height +
+    ' ' + points.map(p => 'L' + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+    ' L' + width + ',' + height + ' Z'
+
+  const last = points[points.length - 1]
+  const color = data[data.length - 1] >= 80 ? '#22c55e' : data[data.length - 1] >= 60 ? '#f59e0b' : '#ef4444'
+
+  return (
+    <svg viewBox={'0 0 ' + width + ' ' + height} width="100%" height={height} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#sparkFill)" />
+      <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last.x} cy={last.y} r="4" fill={color} />
+    </svg>
+  )
+}
+
+// ---------- Document preview (inline) ----------
+function DocPreview({ url, mime, name }: { url: string; mime?: string; name: string }) {
+  const isImage = (mime && mime.startsWith('image/')) || /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(name)
+  const isPdf = (mime === 'application/pdf') || /\.pdf$/i.test(name)
+  const isText = (mime && mime.startsWith('text/')) || /\.(txt|csv|log|json|md)$/i.test(name)
+
+  if (isImage) {
+    return <img src={url} alt={name} className="max-w-full mx-auto rounded-lg" />
+  }
+
+  if (isPdf) {
+    return (
+      <iframe
+        src={url}
+        className="w-full h-[75vh] rounded-lg bg-white"
+        title={name}
+      />
+    )
+  }
+
+  if (isText) {
+    return (
+      <iframe
+        src={url}
+        className="w-full h-[75vh] rounded-lg bg-white"
+        title={name}
+      />
+    )
+  }
+
+  return (
+    <div className="text-center py-16">
+      <FileText className="w-16 h-16 mx-auto mb-3 text-neutral-400" />
+      <p className="text-sm text-neutral-500 mb-4">Preview not available for this file type</p>
+      <a href={url} target="_blank" rel="noreferrer" className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold inline-flex items-center gap-2">
+        <ExternalLink className="w-4 h-4" /> Open in new tab
+      </a>
     </div>
   )
 }
