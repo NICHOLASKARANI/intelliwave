@@ -53,3 +53,6 @@ public/downloads/*.apk
 # WaveCore: never commit Prisma DB dumps / backups
 prisma/_backups/*
 !prisma/_backups/procurement-p0-safe-V2.sql
+# WaveCore: local noise
+.security-backups/
+_build_p1*.log

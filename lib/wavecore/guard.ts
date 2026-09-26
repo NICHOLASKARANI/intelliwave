@@ -22,6 +22,12 @@ export type GuardAction =
   | 'HR_PII_READ'     // read sensitive PII (salary, ID, bank, KRA)
   | 'HR_PAYROLL'      // run payroll, view payslips
   | 'HR_EXPORT'       // generate PDFs / mass exports
+  // ---- Procurement module ----
+  | 'PROCUREMENT_READ'      // view suppliers, POs, requisitions, contracts, analytics
+  | 'PROCUREMENT_WRITE'     // create/update procurement records
+  | 'PROCUREMENT_APPROVE'   // approve requisitions, POs, RFQ awards
+  | 'PROCUREMENT_DELETE'    // delete procurement records
+  | 'PROCUREMENT_EXPORT'    // export procurement reports
 
 const TIER: Record<string, number> = {
   OWNER: 4,
@@ -37,6 +43,13 @@ const REQUIRED_TIER: Record<GuardAction, number> = {
   HR_PII_READ: 3,    // Tenant Admin+
   HR_PAYROLL: 4,     // OWNER only
   HR_EXPORT: 3,      // Tenant Admin+
+
+  // ---- Procurement module (same tier model) ----
+  PROCUREMENT_READ: 1,
+  PROCUREMENT_WRITE: 2,
+  PROCUREMENT_APPROVE: 3,
+  PROCUREMENT_DELETE: 4,
+  PROCUREMENT_EXPORT: 3,
 }
 
 export interface GuardResult {

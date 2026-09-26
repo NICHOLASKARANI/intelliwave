@@ -3,200 +3,317 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Users, Plus, Download, Loader2, Trash2, Search, Phone, Mail, Building2 } from 'lucide-react'
+import {
+  Users, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
+  Star, Shield, TrendingUp, Building2, Mail, Phone, Tag, ChevronRight,
+  Filter, ArrowLeft, RefreshCw, Ban,
+} from 'lucide-react'
 
 interface Supplier {
   id: string
   name: string
-  email: string
-  phone: string
-  category: string
+  legalName?: string
+  email?: string
+  phone?: string
+  category?: string
+  status?: string
+  country?: string
+  currency?: string
+  riskLevel?: string
+  riskScore?: number
+  rating?: number
+  isPreferred?: boolean
+  isBlacklisted?: boolean
   createdAt: string
 }
+
+const STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'BLACKLISTED']
+const CATEGORIES = ['General', 'IT', 'Logistics', 'Manufacturing', 'Services', 'Raw Materials', 'Office', 'Other']
+const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', category: 'General' })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  useEffect(() => {
-    fetchSuppliers()
-  }, [])
+  // Filters
+  const [q, setQ] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [riskFilter, setRiskFilter] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Pagination
+  const [total, setTotal] = useState(0)
+  const [limit] = useState(20)
+  const [offset, setOffset] = useState(0)
+
+  // Create modal
+  const [showCreate, setShowCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({
+    name: '', legalName: '', email: '', phone: '',
+    category: 'General', country: 'KE', currency: 'KES',
+    taxPin: '', paymentTerms: 30, notes: '',
+  })
+
+  const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
+  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
 
   const fetchSuppliers = async () => {
+    setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/suppliers')
+      const params = new URLSearchParams()
+      if (q) params.set('q', q)
+      if (statusFilter) params.set('status', statusFilter)
+      if (categoryFilter) params.set('category', categoryFilter)
+      params.set('limit', String(limit))
+      params.set('offset', String(offset))
+
+      const res = await fetch('/api/wavecore/procurement/suppliers?' + params.toString())
       const data = await res.json()
-      setSuppliers(data.suppliers || [])
-    } catch (error) {
-      console.error('Failed to fetch suppliers')
-    } finally {
-      setLoading(false)
-    }
+      if (!res.ok) { setError(data.error || 'Failed to load'); return }
+      let list: Supplier[] = data.suppliers || []
+      if (riskFilter) list = list.filter(s => (s.riskLevel || 'LOW') === riskFilter)
+      setSuppliers(list)
+      setTotal(data.total || 0)
+    } catch { setError('Network error') }
+    finally { setLoading(false) }
   }
 
-  const addSupplier = async (e: React.FormEvent) => {
-    e.preventDefault()
+  useEffect(() => { fetchSuppliers() /* eslint-disable-next-line */ }, [q, statusFilter, categoryFilter, riskFilter, offset])
+
+  const createSupplier = async () => {
+    if (!form.name.trim()) { setError('Name is required'); return }
+    setCreating(true); setError('')
     try {
-      const res = await fetch('/api/wavecore/suppliers', {
+      const res = await fetch('/api/wavecore/procurement/suppliers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify(form),
       })
-      if (res.ok) {
-        setFormData({ name: '', email: '', phone: '', category: 'General' })
-        setShowForm(false)
-        fetchSuppliers()
-      }
-    } catch (error) {
-      console.error('Failed to add supplier')
-    }
-  }
-
-  const deleteSupplier = async (id: string) => {
-    if (!confirm('Delete this supplier?')) return
-    try {
-      await fetch(`/api/wavecore/suppliers?id=${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Failed'); return }
+      flash('Supplier created')
+      setShowCreate(false)
+      setForm({ name: '', legalName: '', email: '', phone: '', category: 'General', country: 'KE', currency: 'KES', taxPin: '', paymentTerms: 30, notes: '' })
       fetchSuppliers()
-    } catch (error) {
-      console.error('Failed to delete supplier')
+    } finally { setCreating(false) }
+  }
+
+  const riskColor = (level?: string) => {
+    switch (level) {
+      case 'CRITICAL': return 'bg-red-900/50 text-red-300'
+      case 'HIGH': return 'bg-orange-900/50 text-orange-300'
+      case 'MEDIUM': return 'bg-amber-900/50 text-amber-300'
+      default: return 'bg-green-900/50 text-green-300'
     }
   }
 
-  const downloadPDF = () => {
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) return
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Suppliers List</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            h1 { color: #333; border-bottom: 3px solid #059669; padding-bottom: 10px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { background: #059669; color: white; padding: 12px; text-align: left; }
-            td { padding: 10px; border-bottom: 1px solid #ddd; }
-            tr:nth-child(even) { background: #f9fafb; }
-            .header { display: flex; justify-content: space-between; align-items: center; }
-            .date { color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Suppliers List</h1>
-            <div class="date">Generated: ${new Date().toLocaleString()}</div>
-          </div>
-          <table>
-            <thead>
-              <tr><th>Name</th><th>Email</th><th>Phone</th><th>Category</th></tr>
-            </thead>
-            <tbody>
-              ${suppliers.map(s => `<tr><td>${s.name}</td><td>${s.email || '-'}</td><td>${s.phone || '-'}</td><td>${s.category}</td></tr>`).join('')}
-            </tbody>
-          </table>
-          <script>window.print();</script>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
+  const clearFilters = () => {
+    setQ(''); setStatusFilter(''); setCategoryFilter(''); setRiskFilter(''); setOffset(0)
   }
 
-  const filtered = suppliers.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase())
-  )
+  const activeFilters = [statusFilter, categoryFilter, riskFilter].filter(Boolean).length + (q ? 1 : 0)
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-between px-4 h-16">
           <Link href="/wavecore-erp/procurement" className="flex items-center gap-3">
-            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={36} height={36} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Suppliers</span>
+          <span className="text-sm text-neutral-500">Procurement · Suppliers</span>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-500" /> Suppliers ({suppliers.length})
-          </h1>
-          <div className="flex gap-2">
-            <button onClick={downloadPDF} className="px-4 py-2 rounded-xl bg-blue-600 text-white flex items-center gap-2 hover:bg-blue-700">
-              <Download className="w-4 h-4" /> PDF
-            </button>
-            <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 rounded-xl bg-emerald-600 text-white flex items-center gap-2 hover:bg-emerald-700">
-              <Plus className="w-4 h-4" /> Add Supplier
+        <Link href="/wavecore-erp/procurement" className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white flex items-center gap-1 mb-4">
+          <ArrowLeft className="w-4 h-4" /> Back to Procurement
+        </Link>
+
+        <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-6 lg:p-8 mb-6">
+          <div className="flex justify-between items-start flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1 flex items-center gap-3">
+                <Users className="w-8 h-8" /> Suppliers
+              </h1>
+              <p className="text-white/80 text-sm">360° supplier management · {total} in directory</p>
+            </div>
+            <button onClick={() => setShowCreate(true)} className="px-5 py-3 rounded-xl bg-white text-indigo-700 font-bold flex items-center gap-2 shadow-lg hover:shadow-xl">
+              <Plus className="w-4 h-4" /> New Supplier
             </button>
           </div>
         </div>
 
-        {showForm && (
-          <form onSubmit={addSupplier} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
-              <input type="text" placeholder="Supplier Name" required value={formData.name} 
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="px-4 py-2 rounded-xl border" />
-              <input type="email" placeholder="Email" value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="px-4 py-2 rounded-xl border" />
-              <input type="text" placeholder="Phone" value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                className="px-4 py-2 rounded-xl border" />
-              <select value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="px-4 py-2 rounded-xl border">
-                <option>General</option><option>Raw Materials</option><option>Services</option><option>Equipment</option>
-              </select>
-            </div>
-            <button type="submit" className="mt-4 px-6 py-2 rounded-xl bg-emerald-600 text-white">Save Supplier</button>
-          </form>
-        )}
+        {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
+        {success && <div className="mb-4 p-4 rounded-xl bg-green-900/30 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2.5 rounded-xl border w-full" placeholder="Search suppliers..." />
+        {/* Search + Filters bar */}
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 mb-4">
+          <div className="flex gap-3 flex-wrap">
+            <div className="flex-1 min-w-[240px] relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                value={q}
+                onChange={e => { setQ(e.target.value); setOffset(0) }}
+                placeholder="Search by name, tax PIN, email…"
+                className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm"
+              />
+            </div>
+            <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-indigo-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
+              <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
+            </button>
+            <button onClick={fetchSuppliers} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" /> Refresh
+            </button>
+          </div>
+
+          {showFilters && (
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setOffset(0) }} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm">
+                <option value="">All statuses</option>
+                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setOffset(0) }} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm">
+                <option value="">All categories</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select value={riskFilter} onChange={e => { setRiskFilter(e.target.value); setOffset(0) }} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm">
+                <option value="">All risk levels</option>
+                {RISK_LEVELS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <button onClick={clearFilters} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center justify-center gap-2 text-neutral-600 dark:text-neutral-400">
+                <X className="w-3.5 h-3.5" /> Clear filters
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* Suppliers list */}
         {loading ? (
-          <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-muted-foreground">No suppliers yet</p>
+          <div className="text-center py-16"><Loader2 className="w-10 h-10 animate-spin mx-auto text-indigo-500" /></div>
+        ) : suppliers.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+            <Users className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-700" />
+            <p className="text-neutral-500 mb-4">{activeFilters > 0 ? 'No suppliers match your filters' : 'No suppliers yet'}</p>
+            <button onClick={() => setShowCreate(true)} className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold inline-flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Create First Supplier
+            </button>
           </div>
         ) : (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-neutral-50 dark:bg-neutral-800">
-                <tr>
-                  <th className="text-left p-4 text-sm">Name</th>
-                  <th className="text-left p-4 text-sm">Email</th>
-                  <th className="text-left p-4 text-sm">Phone</th>
-                  <th className="text-left p-4 text-sm">Category</th>
-                  <th className="text-left p-4 text-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(supplier => (
-                  <tr key={supplier.id} className="border-t">
-                    <td className="p-4 font-medium">{supplier.name}</td>
-                    <td className="p-4 flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground" />{supplier.email || '-'}</td>
-                    <td className="p-4 flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground" />{supplier.phone || '-'}</td>
-                    <td className="p-4"><span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-600">{supplier.category}</span></td>
-                    <td className="p-4"><button onClick={() => deleteSupplier(supplier.id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {suppliers.map(s => (
+                <Link key={s.id} href={'/wavecore-erp/procurement/suppliers/' + s.id} className="block bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-indigo-500 hover:shadow-lg transition group">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {s.isPreferred && <Star className="w-4 h-4 text-amber-500 fill-amber-500" />}
+                      {s.isBlacklisted && <Ban className="w-4 h-4 text-red-500" />}
+                      <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ' + riskColor(s.riskLevel)}>
+                        {s.riskLevel || 'LOW'} risk
+                      </span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-500 transition" />
+                  </div>
+
+                  <h3 className="font-bold text-lg text-neutral-900 dark:text-white mb-1 truncate">{s.name}</h3>
+                  {s.legalName && <p className="text-xs text-neutral-500 truncate mb-2">{s.legalName}</p>}
+
+                  <div className="space-y-1.5 mt-3">
+                    {s.email && <div className="flex items-center gap-2 text-xs text-neutral-500"><Mail className="w-3 h-3" />{s.email}</div>}
+                    {s.phone && <div className="flex items-center gap-2 text-xs text-neutral-500"><Phone className="w-3 h-3" />{s.phone}</div>}
+                    {s.category && <div className="flex items-center gap-2 text-xs text-neutral-500"><Tag className="w-3 h-3" />{s.category}</div>}
+                  </div>
+
+                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                    <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (s.status === 'ACTIVE' ? 'bg-green-900/30 text-green-300' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500')}>
+                      {s.status || 'ACTIVE'}
+                    </span>
+                    <span className="text-[10px] text-neutral-400">{new Date(s.createdAt).toLocaleDateString('en-GB')}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {total > limit && (
+              <div className="flex justify-between items-center mt-6 px-2">
+                <span className="text-xs text-neutral-500">
+                  Showing {offset + 1}–{Math.min(offset + limit, offset + suppliers.length)} of {total}
+                </span>
+                <div className="flex gap-2">
+                  <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))} className="px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold disabled:opacity-40">Previous</button>
+                  <button disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)} className="px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold disabled:opacity-40">Next</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
+
+      {/* Create Supplier modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setShowCreate(false)}>
+          <div onClick={e => e.stopPropagation()} className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-5 border-b border-neutral-200 dark:border-neutral-800">
+              <h2 className="text-xl font-bold flex items-center gap-2"><Building2 className="w-5 h-5 text-indigo-500" /> New Supplier</h2>
+              <button onClick={() => setShowCreate(false)} className="text-neutral-400 hover:text-red-400"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Name *</label>
+                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Legal Name</label>
+                  <input value={form.legalName} onChange={e => setForm({ ...form, legalName: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Tax PIN</label>
+                  <input value={form.taxPin} onChange={e => setForm({ ...form, taxPin: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Email</label>
+                  <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Phone</label>
+                  <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Category</label>
+                  <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Currency</label>
+                  <select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+                    {['KES', 'USD', 'EUR', 'GBP', 'ZAR', 'UGX', 'TZS'].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Notes</label>
+                <textarea rows={3} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-5 border-t border-neutral-200 dark:border-neutral-800">
+              <button onClick={() => setShowCreate(false)} className="px-5 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 font-bold">Cancel</button>
+              <button onClick={createSupplier} disabled={creating} className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-2 disabled:opacity-50">
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create Supplier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
