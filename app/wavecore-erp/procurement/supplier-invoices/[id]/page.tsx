@@ -1,5 +1,6 @@
 'use client'
 
+
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -10,6 +11,7 @@ import {
   Package2, Users, ExternalLink, Calendar, DollarSign, Trash2, Plus,
   ShieldCheck, AlertOctagon, Sparkles, RotateCw, CheckCheck,
 } from 'lucide-react'
+import ActivityFeed from '../../_components/ActivityFeed'
 
 type Tab = 'overview' | 'lines' | 'match' | 'activity' | 'related'
 
@@ -478,9 +480,7 @@ export default function SupplierInvoiceDetailPage() {
         )}
 
         {tab === 'activity' && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
-            <p className="text-center text-sm text-neutral-500 py-8">Activity log loads from the ProcurementEvent table — visible via Procurement dashboard</p>
-          </div>
+          <ActivityFeed entityId={id} />
         )}
 
         {tab === 'related' && (
