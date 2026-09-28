@@ -7,7 +7,7 @@ import {
   Users, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Star, Shield, TrendingUp, Building2, Mail, Phone, Tag, ChevronRight,
   Filter, ArrowLeft, RefreshCw, Ban, CheckSquare, Square, Check,
-  Download, FileSpreadsheet, FileText,
+  Download, FileSpreadsheet, FileText, Trash2,
 } from 'lucide-react'
 
 interface Supplier {
@@ -88,6 +88,30 @@ export default function SuppliersPage() {
   }
 
   useEffect(() => { fetchSuppliers() /* eslint-disable-next-line */ }, [q, statusFilter, categoryFilter, riskFilter, offset])
+
+  // 30-second auto-refresh so list stays close to real time
+  useEffect(() => {
+    const t = setInterval(() => { fetchSuppliers() }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, categoryFilter, offset])
+
+  const deleteSupplier = async (id: string, name: string) => {
+    if (!confirm('Delete supplier "' + name + '"? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/suppliers?id=' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      setSuccess('Supplier deleted')
+      setTimeout(() => setSuccess(''), 3000)
+      fetchSuppliers()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
 
   // Clear selection when suppliers list changes (filters/pagination)
   useEffect(() => { setSelectedIds(new Set()) /* eslint-disable-next-line */ }, [q, statusFilter, categoryFilter, riskFilter, offset])
@@ -323,6 +347,13 @@ export default function SuppliersPage() {
                   </div>
 
                   <h3 className="font-bold text-lg text-neutral-900 dark:text-white mb-1 truncate">{s.name}</h3>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); (typeof deleteSupplier !== 'undefined' ? deleteSupplier(s.id, s.name) : null) }}
+                      className="mt-1 text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1"
+                      title="Delete supplier"
+                    >
+                      <Trash2 className="w-3 h-3" /> Delete
+                    </button>
                   {s.legalName && <p className="text-xs text-neutral-500 truncate mb-2">{s.legalName}</p>}
 
                   <div className="space-y-1.5 mt-3">

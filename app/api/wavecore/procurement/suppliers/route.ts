@@ -166,3 +166,67 @@ export const POST = procurementHandler(async (request: NextRequest) => {
 
   return NextResponse.json({ supplier }, { status: 201 })
 })
+
+
+/**
+ * DELETE /api/wavecore/procurement/suppliers?id=<uuid>
+ * Cascade-deletes related rows (contacts, bank accounts, documents,
+ * scorecards, risks). Logs SUPPLIER_DELETED. Tenant-scoped.
+ *
+ * Wrapped in try/catch so missing related tables don't block deletion —
+ * this module has evolved across phases and the related tables may not
+ * all exist depending on when the schema was migrated.
+ */
+export const DELETE = procurementHandler(async (request: NextRequest) => {
+  const g = await assertProcurement(request, 'WRITE')
+  const { searchParams } = new URL(request.url)
+  const id = String(searchParams.get('id') || '').trim()
+  if (!id) return NextResponse.json({ error: 'id query parameter required' }, { status: 400 })
+
+  const found = await pool.query(
+    `SELECT id, name FROM "Supplier" WHERE id = $1 AND "organizationId" = $2`,
+    [id, g.organizationId]
+  )
+  if (found.rowCount === 0) {
+    return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })
+  }
+  const supplier = found.rows[0]
+
+  // Cascade-delete related rows (best-effort; ignore missing tables)
+  const cascadeTables = [
+    'SupplierContact',
+    'SupplierBankAccount',
+    'SupplierDocument',
+    'SupplierQualification',
+    'SupplierScorecard',
+    'SupplierRisk',
+  ]
+  for (const t of cascadeTables) {
+    try {
+      await pool.query(
+        `DELETE FROM "${t}" WHERE "supplierId" = $1 AND "organizationId" = $2`,
+        [id, g.organizationId]
+      )
+    } catch {
+      // Table doesn't exist or FK differs — skip silently
+    }
+  }
+
+  await pool.query(
+    `DELETE FROM "Supplier" WHERE id = $1 AND "organizationId" = $2`,
+    [id, g.organizationId]
+  )
+
+  await logProcurementEvent(pool, {
+    organizationId: g.organizationId,
+    eventType: 'SUPPLIER_DELETED',
+    entityType: 'Supplier',
+    entityId: id,
+    actorId: g.userId,
+    actorName: g.userName,
+    summary: 'Deleted supplier: ' + (supplier.name || id),
+    metadata: { supplierId: id, name: supplier.name },
+  })
+
+  return NextResponse.json({ ok: true, deleted: id })
+})

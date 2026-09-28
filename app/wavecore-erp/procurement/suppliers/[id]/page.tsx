@@ -97,6 +97,14 @@ export default function SupplierDetailPage() {
 
   useEffect(() => { if (id) fetchAll() /* eslint-disable-next-line */ }, [id])
 
+  // 30-second auto-refresh — keeps all tabs live without a page reload
+  useEffect(() => {
+    if (!id) return
+    const t = setInterval(() => { fetchAll() }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [id])
+
   const save = async () => {
     setSaving(true)
     try {
