@@ -8,11 +8,19 @@ import {
   Users, ArrowLeft, Loader2, AlertTriangle, CheckCircle2, Star, Ban,
   Mail, Phone, Globe, MapPin, Building2, FileText, CreditCard,
   TrendingUp, History, Shield, Activity, Plus, X, Save, Edit3,
-  Trash2, Download, ExternalLink, Calendar, DollarSign, Package, FileDown,
+  Trash2, Download, ExternalLink, Calendar, DollarSign, Package, Package2, FileSignature, FileDown,
   FileSpreadsheet, Receipt, Clock,
 } from 'lucide-react'
 
 type Tab = 'overview' | 'contacts' | 'bank' | 'documents' | 'scorecards' | 'risks' | 'activity'
+
+interface KpiStats {
+  openPOs: number
+  totalGRNs: number
+  totalContracts: number
+  totalSpend: number
+  currency: string
+}
 
 export default function SupplierDetailPage() {
   const params = useParams()
@@ -95,7 +103,34 @@ export default function SupplierDetailPage() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { if (id) fetchAll() /* eslint-disable-next-line */ }, [id])
+  useEffect(() => { if (id) { fetchAll(); loadStats() } /* eslint-disable-next-line */ }, [id])
+
+  // ---- KPI stats (no JSX yet) ----
+  const [stats, setStats] = useState<KpiStats>({ openPOs: 0, totalGRNs: 0, totalContracts: 0, totalSpend: 0, currency: 'KES' })
+
+  const loadStats = async () => {
+    try {
+      const [pos, grns, contracts, invoices] = await Promise.all([
+        fetch('/api/wavecore/procurement/purchase-orders?supplierId=' + id + '&limit=100').then(r => r.json()).catch(() => ({} as any)),
+        fetch('/api/wavecore/procurement/goods-receipts?limit=100').then(r => r.json()).catch(() => ({} as any)),
+        fetch('/api/wavecore/procurement/contracts?supplierId=' + id + '&limit=100').then(r => r.json()).catch(() => ({} as any)),
+        fetch('/api/wavecore/procurement/supplier-invoices?supplierId=' + id + '&limit=100').then(r => r.json()).catch(() => ({} as any)),
+      ])
+      const poList = pos.purchaseOrders || []
+      const grnList = grns.goodsReceipts || []
+      const ctList = contracts.contracts || []
+      const invList = invoices.supplierInvoices || []
+      const openPOs = poList.filter((p: any) => ['APPROVED','SENT','ACKNOWLEDGED','PARTIALLY_RECEIVED'].includes(p.status)).length
+      const totalSpend = invList.reduce((s: number, i: any) => s + Number(i.total || 0), 0)
+      setStats({
+        openPOs,
+        totalGRNs: grnList.length,
+        totalContracts: ctList.length,
+        totalSpend,
+        currency: invList[0]?.currency || 'KES',
+      })
+    } catch { /* ignore */ }
+  }
 
   // 30-second auto-refresh — keeps all tabs live without a page reload
   useEffect(() => {
@@ -308,6 +343,37 @@ export default function SupplierDetailPage() {
 
         {/* Tab content */}
         {tab === 'overview' && (
+          <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <button onClick={() => router.push('/wavecore-erp/procurement/orders')} className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-pink-500 transition">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-5 h-5 text-pink-500" />
+                <span className="text-xs uppercase tracking-wide text-neutral-500 font-bold">Open POs</span>
+              </div>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.openPOs}</p>
+            </button>
+            <button onClick={() => router.push('/wavecore-erp/procurement/goods-receipts')} className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-emerald-500 transition">
+              <div className="flex items-center gap-2 mb-2">
+                <Package2 className="w-5 h-5 text-emerald-500" />
+                <span className="text-xs uppercase tracking-wide text-neutral-500 font-bold">GRNs</span>
+              </div>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.totalGRNs}</p>
+            </button>
+            <button onClick={() => router.push('/wavecore-erp/procurement/contracts')} className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-blue-500 transition">
+              <div className="flex items-center gap-2 mb-2">
+                <FileSignature className="w-5 h-5 text-blue-500" />
+                <span className="text-xs uppercase tracking-wide text-neutral-500 font-bold">Contracts</span>
+              </div>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.totalContracts}</p>
+            </button>
+            <button onClick={() => router.push('/wavecore-erp/procurement/supplier-invoices')} className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-indigo-500 transition">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-5 h-5 text-indigo-500" />
+                <span className="text-xs uppercase tracking-wide text-neutral-500 font-bold">Total spend</span>
+              </div>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.currency} {Number(stats.totalSpend || 0).toLocaleString()}</p>
+            </button>
+          </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
               <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-4">Company Details</h3>
@@ -383,6 +449,7 @@ export default function SupplierDetailPage() {
               )}
             </div>
           </div>
+          </>
         )}
 
         {tab === 'contacts' && (
