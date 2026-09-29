@@ -66,3 +66,43 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
 
   return NextResponse.json({ bankAccount: r.rows[0] }, { status: 201 })
 })
+
+
+/**
+ * DELETE /api/wavecore/procurement/suppliers/[id]/bank-account?id=<uuid>
+ * Cascades based on resource type. Org-scoped.
+ */
+export const DELETE = procurementHandler(async (request: NextRequest) => {
+  const g = await assertProcurement(request, 'WRITE')
+  const { searchParams } = new URL(request.url)
+  const rowId = String(searchParams.get('id') || '').trim()
+  const supplierId = String(searchParams.get('supplierId') || '').trim()
+  if (!rowId) return NextResponse.json({ error: 'id query parameter required' }, { status: 400 })
+  if (!supplierId) return NextResponse.json({ error: 'supplierId query parameter required' }, { status: 400 })
+
+  const found = await pool.query(
+    `SELECT id FROM "SupplierBankAccount" WHERE id = $1 AND "supplierId" = $2 AND "organizationId" = $3`,
+    [rowId, supplierId, g.organizationId]
+  )
+  if (found.rowCount === 0) {
+    return NextResponse.json({ error: 'Row not found' }, { status: 404 })
+  }
+
+  await pool.query(
+    `DELETE FROM "SupplierBankAccount" WHERE id = $1 AND "supplierId" = $2 AND "organizationId" = $3`,
+    [rowId, supplierId, g.organizationId]
+  )
+
+  await logProcurementEvent(pool, {
+    organizationId: g.organizationId,
+    eventType: 'SUPPLIER_BANK_ACCOUNT_DELETED',
+    entityType: 'Supplier',
+    entityId: supplierId,
+    actorId: g.userId,
+    actorName: g.userName,
+    summary: 'Deleted bank-account row ' + rowId,
+    metadata: { supplierId, rowId },
+  })
+
+  return NextResponse.json({ ok: true, deleted: rowId })
+})
