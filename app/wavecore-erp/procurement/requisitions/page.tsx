@@ -49,6 +49,7 @@ const TYPES = ['STANDARD','CAPEX','OPEX','SERVICE','INVENTORY','EMERGENCY']
 const UOM = ['UNIT','BOX','KG','LITER','METER','SET','PAIR','HOUR','DAY']
 
 export default function RequisitionsPage() {
+  const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
   const [requisitions, setRequisitions] = useState<Requisition[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -73,7 +74,6 @@ export default function RequisitionsPage() {
   // Wizard
   const [showWizard, setShowWizard] = useState(false)
 
-  const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
   const fetchRequisitions = async () => {
@@ -108,6 +108,30 @@ export default function RequisitionsPage() {
   }
 
   useEffect(() => { fetchRequisitions() /* eslint-disable-next-line */ }, [q, statusFilter, priorityFilter, categoryFilter, mine, offset])
+
+  // 30-second auto-refresh — keeps the list live
+  useEffect(() => {
+    const t = setInterval(() => { fetchRequisitions() }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, priorityFilter, categoryFilter, mine, offset])
+
+  const deleteRequisition = async (id: string, number: string) => {
+    if (!confirm('Delete requisition ' + number + '? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/requisitions?id=' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      setSuccess('Requisition deleted')
+      setTimeout(() => setSuccess(''), 3000)
+      fetchRequisitions()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
   useEffect(() => { fetchCounts() }, [])
 
   const priorityColor = (p: string) => {
@@ -292,6 +316,13 @@ export default function RequisitionsPage() {
                         <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-1">{r.pendingApprovals} pending</p>
                       )}
                     </div>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteRequisition(r.id, r.requisitionNumber) }}
+                      className="mt-2 text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+                      title="Delete requisition"
+                    >
+                      <Trash2 className="w-3 h-3" /> Delete
+                    </button>
                   </div>
                 </Link>
               ))}
@@ -324,6 +355,8 @@ export default function RequisitionsPage() {
 // Create Wizard
 // ============================================================
 function CreateWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
+
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -348,8 +381,6 @@ function CreateWizard({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const [lines, setLines] = useState<LineItem[]>([
     { description: '', quantity: 1, unitPrice: 0, taxRate: 0, unitOfMeasure: 'UNIT' },
   ])
-
-  const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
 
   const addLine = () => setLines(prev => [...prev, { description: '', quantity: 1, unitPrice: 0, taxRate: 0, unitOfMeasure: 'UNIT' }])
   const removeLine = (i: number) => setLines(prev => prev.filter((_, idx) => idx !== i))

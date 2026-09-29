@@ -253,3 +253,61 @@ export const POST = procurementHandler(async (request: NextRequest) => {
     lines: insertedLines,
   }, { status: 201 })
 })
+
+
+/**
+ * DELETE /api/wavecore/procurement/requisitions?id=<uuid>
+ * Cascades to RequisitionLine + RequisitionApproval. Logs event.
+ * Tenant-scoped. Only allowed when status ∈ { DRAFT, CANCELLED, REJECTED }.
+ */
+export const DELETE = procurementHandler(async (request: NextRequest) => {
+  const g = await assertProcurement(request, 'WRITE')
+  const { searchParams } = new URL(request.url)
+  const id = String(searchParams.get('id') || '').trim()
+  if (!id) return NextResponse.json({ error: 'id query parameter required' }, { status: 400 })
+
+  const found = await pool.query(
+    `SELECT id, "requisitionNumber", title, status
+     FROM "PurchaseRequisition"
+     WHERE id = $1 AND "organizationId" = $2`,
+    [id, g.organizationId]
+  )
+  if (found.rowCount === 0) {
+    return NextResponse.json({ error: 'Requisition not found' }, { status: 404 })
+  }
+  const req = found.rows[0]
+
+  // Only safe to delete when not in-flight
+  const allowed = ['DRAFT', 'CANCELLED', 'REJECTED']
+  if (!allowed.includes(req.status)) {
+    return NextResponse.json({
+      error: 'Requisition in status ' + req.status + ' cannot be deleted. Cancel it first.',
+    }, { status: 409 })
+  }
+
+  // Cascade — each wrapped so a missing table doesn't block the delete
+  const cascades = ['PurchaseRequisitionLine', 'RequisitionLine', 'PurchaseRequisitionApproval', 'RequisitionApproval']
+  for (const t of cascades) {
+    try {
+      await pool.query(`DELETE FROM "${t}" WHERE "requisitionId" = $1 AND "organizationId" = $2`, [id, g.organizationId])
+    } catch { /* table may not exist or have different FK */ }
+  }
+
+  await pool.query(
+    `DELETE FROM "PurchaseRequisition" WHERE id = $1 AND "organizationId" = $2`,
+    [id, g.organizationId]
+  )
+
+  await logProcurementEvent(pool, {
+    organizationId: g.organizationId,
+    eventType: 'REQUISITION_DELETED',
+    entityType: 'PurchaseRequisition',
+    entityId: id,
+    actorId: g.userId,
+    actorName: g.userName,
+    summary: 'Deleted requisition ' + req.requisitionNumber + ': ' + req.title,
+    metadata: { requisitionNumber: req.requisitionNumber, previousStatus: req.status },
+  })
+
+  return NextResponse.json({ ok: true, deleted: id })
+})
