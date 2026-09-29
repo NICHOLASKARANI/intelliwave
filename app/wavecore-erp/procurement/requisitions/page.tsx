@@ -111,7 +111,7 @@ export default function RequisitionsPage() {
 
   // 30-second auto-refresh — keeps the list live
   useEffect(() => {
-    const t = setInterval(() => { fetchRequisitions() }, 30000)
+    const t = setInterval(() => { fetchRequisitions(); fetchCounts() }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
   }, [q, statusFilter, priorityFilter, categoryFilter, mine, offset])
@@ -203,26 +203,42 @@ export default function RequisitionsPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+          <button
+            onClick={() => { setStatusFilter('SUBMITTED'); setOffset(0) }}
+            className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-amber-500 transition"
+            title="Show requisitions awaiting approval"
+          >
             <Inbox className="w-5 h-5 text-amber-500 mb-2" />
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.pending || 0}</p>
             <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">My pending approvals</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+          </button>
+          <button
+            onClick={() => { setStatusFilter('SUBMITTED'); setOffset(0) }}
+            className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-red-500 transition"
+            title="Show overdue requisitions"
+          >
             <AlertCircle className="w-5 h-5 text-red-500 mb-2" />
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.overdue || 0}</p>
             <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">Overdue</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+          </button>
+          <button
+            onClick={() => { setStatusFilter('SUBMITTED'); setOffset(0) }}
+            className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-blue-500 transition"
+            title="Show requisitions awaiting approval"
+          >
             <Zap className="w-5 h-5 text-blue-500 mb-2" />
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.totalRequisitionsAwaiting || 0}</p>
             <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">Awaiting approval</p>
-          </div>
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+          </button>
+          <button
+            onClick={() => { setStatusFilter('APPROVED'); setOffset(0) }}
+            className="text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 hover:border-green-500 transition"
+            title="Show approved requisitions"
+          >
             <CheckCircle2 className="w-5 h-5 text-green-500 mb-2" />
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.totalRequisitionsApprovedThisMonth || 0}</p>
             <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">Approved this month</p>
-          </div>
+          </button>
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
