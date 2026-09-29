@@ -56,6 +56,24 @@ export default function SupplierDetailPage() {
   const [previewDoc, setPreviewDoc] = useState<any>(null)
 
   const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
+
+  // ---- Delete helper for sub-resource rows ----
+  const deleteRow = async (endpoint: string, rowId: string, label: string) => {
+    if (!confirm('Delete this ' + label + '? This cannot be undone.')) return
+    try {
+      const res = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      setSuccess(label + ' deleted')
+      setTimeout(() => setSuccess(''), 3000)
+      fetchAll()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
 
   const fetchAll = async () => {
@@ -460,6 +478,7 @@ export default function SupplierDetailPage() {
             onAdd={() => { setSubModal('contact'); setSubForm({ name: '', role: '', email: '', phone: '', isPrimary: false }) }}
             addLabel="Add contact"
             empty="No contacts yet"
+            onDelete={(c: any) => deleteRow('/api/wavecore/procurement/suppliers/' + id + '/contacts/' + c.id, c.id, 'contact')}
             render={c => (
               <div key={c.id} className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
                 <div>
@@ -482,6 +501,7 @@ export default function SupplierDetailPage() {
             onAdd={() => { setSubModal('bank'); setSubForm({ bankName: '', accountName: '', accountNumber: '', branchCode: '', swiftCode: '', currency: 'KES', isPrimary: false }) }}
             addLabel="Add bank account"
             empty="No bank accounts yet"
+            onDelete={(b: any) => deleteRow('/api/wavecore/procurement/suppliers/' + id + '/bank-accounts?id=' + b.id + '&supplierId=' + id, b.id, 'bank account')}
             render={b => (
               <div key={b.id} className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
                 <div>
@@ -504,6 +524,7 @@ export default function SupplierDetailPage() {
             onAdd={() => { setSubModal('document'); setSubForm({ documentType: 'TAX_CERTIFICATE', name: '', fileUrl: '', expiryDate: '' }) }}
             addLabel="Add document"
             empty="No documents yet"
+            onDelete={(d: any) => deleteRow('/api/wavecore/procurement/suppliers/' + id + '/documents?id=' + d.id + '&supplierId=' + id, d.id, 'document')}
             render={d => {
               const days = d.expiryDate ? Math.ceil((new Date(d.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null
               const expiryPill =
@@ -581,6 +602,7 @@ export default function SupplierDetailPage() {
             }}
             addLabel="Add scorecard"
             empty="No scorecards yet"
+            onDelete={(s: any) => deleteRow('/api/wavecore/procurement/suppliers/' + id + '/scorecards?id=' + s.id + '&supplierId=' + id, s.id, 'scorecard')}
             render={s => (
               <div key={s.id} className="p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
                 <div className="flex justify-between items-center mb-2">
@@ -610,6 +632,7 @@ export default function SupplierDetailPage() {
             onAdd={() => { setSubModal('risk'); setSubForm({ riskType: 'DELIVERY', severity: 'MEDIUM', title: '', description: '' }) }}
             addLabel="Flag risk"
             empty="No risks flagged"
+            onDelete={(r: any) => deleteRow('/api/wavecore/procurement/suppliers/' + id + '/risks?id=' + r.id + '&supplierId=' + id, r.id, 'risk')}
             render={r => (
               <div key={r.id} className="p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
                 <div className="flex justify-between items-start gap-3">
@@ -917,7 +940,7 @@ function ScoreCell({ label, value }: any) {
   )
 }
 
-function ListSection({ title, icon: Icon, items, onAdd, addLabel, empty, render }: any) {
+function ListSection({ title, icon: Icon, items, onAdd, addLabel, empty, render, onDelete }: any) {
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
       <div className="flex justify-between items-center p-5 border-b border-neutral-200 dark:border-neutral-800">
@@ -929,7 +952,22 @@ function ListSection({ title, icon: Icon, items, onAdd, addLabel, empty, render 
       {items.length === 0 ? (
         <p className="text-center text-sm text-neutral-500 py-12">{empty}</p>
       ) : (
-        <div>{items.map((it: any) => render(it))}</div>
+        <div>
+          {items.map((it: any) => (
+            <div key={it.id} className="relative">
+              {render(it)}
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(it)}
+                  className="absolute top-4 right-4 p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-900/20 transition"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
