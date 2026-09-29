@@ -59,6 +59,14 @@ export default function RequisitionDetailPage() {
   }
   useEffect(() => { if (id) fetchAll() /* eslint-disable-next-line */ }, [id])
 
+  // 30-second auto-refresh — keeps all tabs live
+  useEffect(() => {
+    if (!id) return
+    const t = setInterval(() => { fetchAll() }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [id])
+
   const submitReq = async () => {
     if (!confirm('Submit this requisition for approval?')) return
     setWorking(true)
