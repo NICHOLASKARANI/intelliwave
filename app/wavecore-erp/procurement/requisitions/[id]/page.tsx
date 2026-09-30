@@ -8,7 +8,7 @@ import {
   ClipboardList, ArrowLeft, Loader2, AlertTriangle, CheckCircle2,
   Send, Trash2, FileDown, Check, XCircle, UserCog,
   Clock, CheckCheck, User, Calendar, Package, DollarSign,
-  FileText, Activity, History, AlertCircle, X, Plus, Save,
+  FileText, Activity, History, AlertCircle, X, Plus, Save, Paperclip, Upload,
 } from 'lucide-react'
 
 type Tab = 'overview' | 'lines' | 'approvals' | 'activity' | 'attachments'
@@ -40,6 +40,10 @@ export default function RequisitionDetailPage() {
   const [delegateNote, setDelegateNote] = useState('')
   const [newLine, setNewLine] = useState<any>({ description: '', quantity: 1, unitPrice: 0, taxRate: 0, unitOfMeasure: 'UNIT' })
   const [working, setWorking] = useState(false)
+  const [attachmentList, setAttachmentList] = useState<any[]>([])
+  const [attachmentUploading, setAttachmentUploading] = useState(false)
+  const [attachmentCategory, setAttachmentCategory] = useState('OTHER')
+  const [attachmentNotes, setAttachmentNotes] = useState('')
 
   const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
@@ -54,6 +58,7 @@ export default function RequisitionDetailPage() {
       setLines(data.lines || [])
       setApprovals(data.approvals || [])
       setActivity(data.activity || [])
+      setAttachmentList(data.attachments || [])
     } catch { setError('Network error') }
     finally { setLoading(false) }
   }
@@ -66,6 +71,59 @@ export default function RequisitionDetailPage() {
     return () => clearInterval(t)
     // eslint-disable-next-line
   }, [id])
+
+  // ---- Attachments ----
+  const uploadAttachment = async (file: File) => {
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { setError('File too large (max 5 MB)'); return }
+    setAttachmentUploading(true)
+    setError('')
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const b64 = String(reader.result || '').split(',')[1] || ''
+        const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/attachments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || 'application/octet-stream',
+            category: attachmentCategory,
+            notes: attachmentNotes || undefined,
+            fileData: b64,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) { setError(data.error || 'Upload failed'); setAttachmentUploading(false); return }
+        setSuccess('Attachment uploaded')
+        setTimeout(() => setSuccess(''), 2500)
+        setAttachmentNotes('')
+        fetchAll()
+        setAttachmentUploading(false)
+      }
+      reader.onerror = () => { setError('Failed to read file'); setAttachmentUploading(false) }
+      reader.readAsDataURL(file)
+    } catch (e) {
+      setError('Upload error: ' + (e as Error).message)
+      setAttachmentUploading(false)
+    }
+  }
+
+  const deleteAttachment = async (attachmentId: string, fileName: string) => {
+    if (!confirm('Delete attachment "' + fileName + '"')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/attachments/' + attachmentId, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      if (res.ok) {
+        setSuccess('Attachment deleted')
+        setTimeout(() => setSuccess(''), 2500)
+        fetchAll()
+      }
+    } catch (e) { setError('Delete error: ' + (e as Error).message) }
+  }
 
   const submitReq = async () => {
     if (!confirm('Submit this requisition for approval?')) return
@@ -464,9 +522,89 @@ export default function RequisitionDetailPage() {
         )}
 
         {tab === 'attachments' && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-12 text-center">
-            <ClipboardList className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-700" />
-            <p className="text-neutral-500 text-sm">Attachment uploads will come in a future phase</p>
+          <div className="space-y-4">
+            {/* Upload card */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
+              <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+                <Paperclip className="w-4 h-4 text-emerald-500" /> Add Attachment
+              </h3>
+              <div className="grid md:grid-cols-3 gap-3 mb-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Category</label>
+                  <select value={attachmentCategory} onChange={e => setAttachmentCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm">
+                    <option value="QUOTATION">Quotation</option>
+                    <option value="SPECIFICATION">Specification / Scope</option>
+                    <option value="COMPLIANCE">Compliance</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Notes (optional)</label>
+                  <input value={attachmentNotes} onChange={e => setAttachmentNotes(e.target.value)} placeholder="e.g. Supplier A quote received by email" className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" />
+                </div>
+              </div>
+              <label className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer">
+                {attachmentUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {attachmentUploading ? 'Uploading…' : 'Choose file & upload'}
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files && e.target.files[0]
+                    if (f) uploadAttachment(f)
+                    e.currentTarget.value = ''
+                  }}
+                />
+              </label>
+              <span className="ml-3 text-xs text-neutral-500">Max 5 MB · PDF, image, or office doc</span>
+            </div>
+
+            {/* List */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+              <div className="p-5 border-b border-neutral-200 dark:border-neutral-800">
+                <h3 className="text-sm font-bold flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-emerald-500" /> Attachments ({attachmentList.length})
+                </h3>
+              </div>
+              {attachmentList.length === 0 ? (
+                <p className="text-center text-sm text-neutral-500 py-12">No attachments yet</p>
+              ) : (
+                <div>
+                  {attachmentList.map((a: any) => (
+                    <div key={a.id} className="p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex-1 min-w-[200px]">
+                        <p className="font-medium text-sm">{a.fileName}</p>
+                        <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-500 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px] font-bold">{a.category || 'OTHER'}</span>
+                          <span>{Math.round((a.fileSize || 0) / 1024)} KB</span>
+                          {a.uploadedByName && <span>by {a.uploadedByName}</span>}
+                          <span>{new Date(a.createdAt).toLocaleString('en-GB')}</span>
+                        </div>
+                        {a.notes && <p className="text-xs text-neutral-500 mt-1">{a.notes}</p>}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={'/api/wavecore/procurement/requisitions/' + id + '/attachments/' + a.id}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-900/20"
+                          title="Download"
+                        >
+                          <FileDown className="w-4 h-4" />
+                        </a>
+                        <button
+                          onClick={() => deleteAttachment(a.id, a.fileName)}
+                          className="p-2 rounded-lg text-red-400 hover:bg-red-900/20"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
