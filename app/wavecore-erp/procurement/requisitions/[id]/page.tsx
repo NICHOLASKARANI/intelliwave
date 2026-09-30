@@ -298,9 +298,14 @@ export default function RequisitionDetailPage() {
                 </button>
               </>
             )}
-            <button onClick={() => window.print()} className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2">
+            <a
+              href={'/api/wavecore/procurement/requisitions/' + id + '/export/pdf'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2"
+            >
               <FileDown className="w-4 h-4" /> Print / PDF
-            </button>
+            </a>
           </div>
         </div>
 
