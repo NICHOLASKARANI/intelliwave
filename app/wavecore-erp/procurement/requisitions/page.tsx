@@ -74,6 +74,30 @@ export default function RequisitionsPage() {
   // Wizard
   const [showWizard, setShowWizard] = useState(false)
 
+  // ---- Table sorting ----
+  const [sortBy, setSortBy] = useState<'createdAt'|'neededBy'|'totalAmount'|'priority'|'requisitionNumber'>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc')
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) setSortDir(sortDir === "asc" ? "desc" : "asc")
+    else { setSortBy(key as any); setSortDir("desc") }
+  }
+
+  const sortedRequisitions = [...requisitions].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1
+    const val = (x: any) => {
+      if (sortBy === "createdAt")   return new Date(x.createdAt).getTime()
+      if (sortBy === "neededBy")    return x.neededBy ? new Date(x.neededBy).getTime() : 0
+      if (sortBy === "totalAmount") return Number(x.totalAmount || 0)
+      if (sortBy === "priority") { const order: any = { URGENT: 4, HIGH: 3, NORMAL: 2, LOW: 1 }; return order[x.priority] || 0 }
+      return String(x[sortBy] || "")
+    }
+    const av = val(a); const bv = val(b)
+    if (av < bv) return -1 * dir
+    if (av > bv) return 1 * dir
+    return 0
+  })
+
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
   const fetchRequisitions = async () => {
@@ -302,46 +326,81 @@ export default function RequisitionsPage() {
         ) : (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-              {requisitions.map(r => (
-                <Link key={r.id} href={'/wavecore-erp/procurement/requisitions/' + r.id} className="block p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[240px]">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{r.requisitionNumber}</span>
-                        <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + priorityColor(r.priority)}>{r.priority}</span>
-                        <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(r.status)}>{r.status}</span>
-                        {r.isEmergency && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-900/50 text-red-300">EMERGENCY</span>}
-                        {r.status === 'SUBMITTED' && r.totalApprovalSteps > 0 && (
-                          <span className="text-[10px] text-neutral-500">step {r.currentApprovalStep}/{r.totalApprovalSteps}</span>
-                        )}
-                      </div>
-                      <p className="font-bold text-neutral-900 dark:text-white text-sm truncate">{r.title}</p>
-                      {r.description && <p className="text-xs text-neutral-500 truncate mt-0.5">{r.description}</p>}
-                      <div className="flex items-center gap-3 mt-2 text-[11px] text-neutral-500 flex-wrap">
-                        {r.requestedByName && <span className="flex items-center gap-1"><User className="w-3 h-3" />{r.requestedByName}</span>}
-                        <span className="flex items-center gap-1"><Package className="w-3 h-3" />{r.linesCount} line{r.linesCount !== 1 ? 's' : ''}</span>
-                        {r.neededBy && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />by {new Date(r.neededBy).toLocaleDateString('en-GB')}</span>}
-                        <span>{new Date(r.createdAt).toLocaleDateString('en-GB')}</span>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                        {r.currency} {Number(r.totalAmount || 0).toLocaleString()}
-                      </p>
-                      {r.pendingApprovals > 0 && (
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-1">{r.pendingApprovals} pending</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteRequisition(r.id, r.requisitionNumber) }}
-                      className="mt-2 text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
-                      title="Delete requisition"
-                    >
-                      <Trash2 className="w-3 h-3" /> Delete
-                    </button>
-                  </div>
-                </Link>
-              ))}
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('requisitionNumber')}>Number</th>
+                    <th className="px-4 py-3">Title / Category</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('priority')}>Priority</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Requester</th>
+                    <th className="px-4 py-3 text-right">Lines</th>
+                    <th className="px-4 py-3 text-right cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('totalAmount')}>Amount</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('neededBy')}>Needed by</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRequisitions.map((r: any) => {
+                    const dueDays = r.neededBy ? Math.ceil((new Date(r.neededBy).getTime() - Date.now()) / 86400000) : null
+                    const dueClass = dueDays == null ? '' : dueDays < 0 ? 'text-red-500 font-bold' : dueDays <= 3 ? 'text-orange-500 font-bold' : dueDays <= 14 ? 'text-amber-500' : 'text-neutral-500'
+                    const dueLabel = dueDays == null ? '—' : dueDays < 0 ? 'OVERDUE ' + Math.abs(dueDays) + 'd' : dueDays === 0 ? 'Today' : 'in ' + dueDays + 'd'
+                    return (
+                      <tr key={r.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                        <td className="px-4 py-3 align-top">
+                          <Link href={'/wavecore-erp/procurement/requisitions/' + r.id} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                            {r.requisitionNumber}
+                          </Link>
+                          {r.isEmergency && <span className="ml-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-900/50 text-red-300">EMRG</span>}
+                        </td>
+                        <td className="px-4 py-3 align-top max-w-[260px]">
+                          <Link href={'/wavecore-erp/procurement/requisitions/' + r.id} className="block">
+                            <p className="font-medium text-neutral-900 dark:text-white truncate">{r.title}</p>
+                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-neutral-500">
+                              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">{r.category}</span>
+                              {r.type && r.type !== 'STANDARD' && <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">{r.type}</span>}
+                            </div>
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + priorityColor(r.priority)}>{r.priority}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(r.status)}>{r.status.replace('_', ' ')}</span>
+                          {r.status === 'SUBMITTED' && r.totalApprovalSteps > 0 && (
+                            <p className="text-[10px] text-neutral-500 mt-1">step {r.currentApprovalStep}/{r.totalApprovalSteps}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top text-neutral-600 dark:text-neutral-400 text-xs">
+                          {r.requestedByName || '—'}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right text-xs">
+                          {r.linesCount}
+                          {r.pendingApprovals > 0 && <p className="text-[10px] text-amber-500 mt-0.5">{r.pendingApprovals} pending</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <p className="font-bold text-neutral-900 dark:text-white">{r.currency} {Number(r.totalAmount || 0).toLocaleString()}</p>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'text-[11px] ' + dueClass}>{dueLabel}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Link href={'/wavecore-erp/procurement/requisitions/' + r.id} className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-900/20" title="Open">
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteRequisition(r.id, r.requisitionNumber) }} className="p-1.5 rounded-lg text-red-400 hover:bg-red-900/20" title="Delete">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              </div>
             </div>
 
             {total > limit && (
