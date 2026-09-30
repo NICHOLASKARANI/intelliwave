@@ -132,8 +132,8 @@ export default function SecurityPage() {
           <p className="text-muted-foreground mb-4">
             If you discover a security vulnerability, please email us immediately.
           </p>
-          <a href="mailto:intelliwavehr@gmail.com" className="text-primary font-bold hover:underline">
-            intelliwavehr@gmail.com
+          <a href="mailto:support@intelliwavve.com" className="text-primary font-bold hover:underline">
+            support@intelliwavve.com
           </a>
         </div>
       </div>

@@ -29,7 +29,7 @@ export default function SupportPage() {
           {[
             { icon: MessageSquare, title: 'Live Chat', desc: 'Chat with us instantly', action: 'Start Chat', color: 'text-blue-500' },
             { icon: Phone, title: 'WhatsApp', desc: '+254 714 694 493', action: 'Message Now', color: 'text-green-500' },
-            { icon: Mail, title: 'Email', desc: 'intelliwavehr@gmail.com', action: 'Send Email', color: 'text-purple-500' },
+            { icon: Mail, title: 'Email', desc: 'support@intelliwavve.com', action: 'Send Email', color: 'text-purple-500' },
             { icon: Clock, title: 'Response Time', desc: 'Under 2 hours', action: 'Get Help', color: 'text-orange-500' },
           ].map((item) => {
             const Icon = item.icon

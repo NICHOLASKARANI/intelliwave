@@ -131,7 +131,7 @@ export default function CookiesPage() {
             <h2 className="text-2xl font-bold mb-4">Contact</h2>
             <div className="text-muted-foreground space-y-2">
               <p><strong>Questions about cookies?</strong></p>
-              <p><strong>Email:</strong> intelliwavehr@gmail.com</p>
+              <p><strong>Email:</strong> support@intelliwavve.com</p>
               <p><strong>Address:</strong> Nairobi CBD, Superior Centre, 1st Floor, Kenyatta Avenue, Kenya</p>
             </div>
           </section>

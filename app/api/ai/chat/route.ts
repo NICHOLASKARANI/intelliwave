@@ -21,7 +21,7 @@ All projects include free support (3-12 months) and enterprise-grade security.`,
   
   contact: `You can reach us through:
 • WhatsApp: +254 714 694 493
-• Email: intelliwavehr@gmail.com
+• Email: support@intelliwavve.com
 • Office: Nairobi CBD, Superior Centre, Shop F11, 1st Floor, Kenyatta Avenue
 • Website: https://intelliwave.com/contact`,
   

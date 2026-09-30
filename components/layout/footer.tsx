@@ -2,12 +2,16 @@ import Link from "next/link"
 import Image from "next/image"
 import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react"
 import { SocialIcons } from '@/components/ui/social-icons'
-import { 
-  SafaricomLogo, KCBLogo, EquityLogo, KQLogo, 
-  NationLogo, BritamLogo, AKULogo, CopiaLogo,
-  AWSLogo, AzureLogo, GCPSLogo, VercelLogo, 
-  StripeLogo, MPesaLogo, DockerLogo, K8sLogo 
-} from '@/components/ui/real-logos'
+// Logo paths served from /public/images/partners/
+const PARTNER_LOGOS = {
+  safaricom:       { name: 'Safaricom',         path: '/images/partners/safaricom.png' },
+  cooperativeBank: { name: 'Co-operative Bank', path: '/images/partners/cooperative-bank.png' },
+  gzen:            { name: 'GZen Tech Hub',     path: '/images/partners/gzen.png' },
+  vercel:          { name: 'Vercel',            path: '/images/partners/vercel.png' },
+  vultr:           { name: 'Vultr',             path: '/images/partners/vultr.png' },
+  aws:             { name: 'AWS',               path: '/images/partners/aws.png' },
+  microsoft:       { name: 'Microsoft',         path: '/images/partners/microsoft.png' },
+}
 
 const footerNavigation = {
   products: [
@@ -47,25 +51,16 @@ const footerNavigation = {
 }
 
 const clientLogosList = [
-  { name: 'Safaricom', Logo: SafaricomLogo },
-  { name: 'KCB Group', Logo: KCBLogo },
-  { name: 'Equity Group', Logo: EquityLogo },
-  { name: 'Kenya Airways', Logo: KQLogo },
-  { name: 'Nation Media Group', Logo: NationLogo },
-  { name: 'Britam Holdings', Logo: BritamLogo },
-  { name: 'Aga Khan University', Logo: AKULogo },
-  { name: 'Copia Global', Logo: CopiaLogo },
+  PARTNER_LOGOS.safaricom,
+  PARTNER_LOGOS.cooperativeBank,
+  PARTNER_LOGOS.gzen,
 ]
 
 const techLogosList = [
-  { name: 'AWS', Logo: AWSLogo },
-  { name: 'Microsoft Azure', Logo: AzureLogo },
-  { name: 'Google Cloud', Logo: GCPSLogo },
-  { name: 'Vercel', Logo: VercelLogo },
-  { name: 'Stripe', Logo: StripeLogo },
-  { name: 'M-Pesa', Logo: MPesaLogo },
-  { name: 'Docker', Logo: DockerLogo },
-  { name: 'Kubernetes', Logo: K8sLogo },
+  PARTNER_LOGOS.vercel,
+  PARTNER_LOGOS.vultr,
+  PARTNER_LOGOS.aws,
+  PARTNER_LOGOS.microsoft,
 ]
 
 export function Footer() {
@@ -99,8 +94,8 @@ export function Footer() {
               <a href="https://wa.me/254714694493" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-green-400 transition-colors group">
                 <Phone className="w-4 h-4 text-green-500" /><span>+254 714 694 493</span><ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
-              <a href="mailto:intelliwavehr@gmail.com" className="flex items-center gap-2 hover:text-blue-400 transition-colors group">
-                <Mail className="w-4 h-4 text-blue-400" /><span>intelliwavehr@gmail.com</span><ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <a href="mailto:support@intelliwavve.com" className="flex items-center gap-2 hover:text-blue-400 transition-colors group">
+                <Mail className="w-4 h-4 text-blue-400" /><span>support@intelliwavve.com</span><ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
               <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /><div><p>Nairobi CBD, Superior Centre</p><p>1st Floor, Kenyatta Avenue</p></div></div>
             </div>
@@ -125,7 +120,7 @@ export function Footer() {
         <div className="py-8 border-t border-b border-gray-800 mb-8">
           <p className="text-xs font-semibold text-gray-500 mb-6 uppercase tracking-widest text-center">Trusted by Industry Leaders</p>
           <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10">
-            {clientLogosList.map((client) => { const LogoComponent = client.Logo; return <div key={client.name} title={client.name}><LogoComponent /></div> })}
+            {clientLogosList.map((client) => (<div key={client.name} title={client.name} className="flex items-center justify-center h-10 px-2"><Image src={client.path} alt={client.name} width={120} height={40} className="max-h-10 w-auto object-contain" /></div>))}
           </div>
         </div>
 
@@ -133,7 +128,7 @@ export function Footer() {
         <div className="py-6 mb-8">
           <p className="text-xs font-semibold text-gray-500 mb-6 uppercase tracking-widest text-center">Technology Partners</p>
           <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10">
-            {techLogosList.map((tech) => { const LogoComponent = tech.Logo; return <div key={tech.name} title={tech.name}><LogoComponent /></div> })}
+            {techLogosList.map((tech) => (<div key={tech.name} title={tech.name} className="flex items-center justify-center h-10 px-2"><Image src={tech.path} alt={tech.name} width={120} height={40} className="max-h-10 w-auto object-contain" /></div>))}
           </div>
         </div>
 

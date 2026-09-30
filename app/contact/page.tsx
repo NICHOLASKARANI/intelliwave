@@ -85,7 +85,7 @@ export default function ContactPage() {
               {[
                 { icon: MapPin, label: 'Our Office', value: 'Nairobi CBD, Superior Centre\nShop F11, 1st Floor\nKenyatta Avenue, Kenya', href: null },
                 { icon: Phone, label: 'WhatsApp', value: '+254 714 694 493', href: 'https://wa.me/254714694493', color: 'text-green-500' },
-                { icon: Mail, label: 'Email', value: 'intelliwavehr@gmail.com', href: 'mailto:intelliwavehr@gmail.com' },
+                { icon: Mail, label: 'Email', value: 'support@intelliwavve.com', href: 'mailto:support@intelliwavve.com' },
                 { icon: Clock, label: 'Business Hours', value: 'Mon-Fri: 8AM-6PM\nSat: 9AM-1PM\nSun: Closed', href: null },
               ].map((item) => {
                 const Icon = item.icon
@@ -140,7 +140,7 @@ export default function ContactPage() {
               {status === 'success' && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="p-4 rounded-xl bg-green-50 dark:bg-green-950 border border-green-200 text-green-700 text-sm">
-                  <CheckCircle className="w-4 h-4 inline mr-2" /> Message sent to intelliwavehr@gmail.com. We'll respond within 24 hours.
+                  <CheckCircle className="w-4 h-4 inline mr-2" /> Message sent to support@intelliwavve.com. We'll respond within 24 hours.
                 </motion.div>
               )}
               {status === 'error' && (

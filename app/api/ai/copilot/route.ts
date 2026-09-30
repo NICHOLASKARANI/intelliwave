@@ -98,7 +98,7 @@ function generateLocalResponse(message: string): string {
     return 'Our pricing starts from KSh 100,000. Visit /pricing for details. Pay via M-Pesa Till 4760783.'
   }
   if (msg.includes('contact') || msg.includes('email')) {
-    return 'Contact us: intelliwavehr@gmail.com | WhatsApp: +254 714 694 493'
+    return 'Contact us: support@intelliwavve.com | WhatsApp: +254 714 694 493'
   }
   return 'I can help with AI engineering, software development, cybersecurity, cloud solutions, and more. What do you need?'
 }

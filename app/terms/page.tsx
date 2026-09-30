@@ -125,7 +125,7 @@ export default function TermsPage() {
             <div className="text-muted-foreground space-y-2">
               <p><strong>Intelliwave Ltd</strong></p>
               <p>Nairobi CBD, Superior Centre, 1st Floor, Kenyatta Avenue, Kenya</p>
-              <p><strong>Email:</strong> intelliwavehr@gmail.com</p>
+              <p><strong>Email:</strong> support@intelliwavve.com</p>
               <p><strong>WhatsApp:</strong> +254 714 694 493</p>
             </div>
           </section>
