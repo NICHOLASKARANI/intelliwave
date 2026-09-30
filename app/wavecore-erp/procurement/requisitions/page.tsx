@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -430,6 +431,12 @@ export default function RequisitionsPage() {
 // Create Wizard
 // ============================================================
 function CreateWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const router = useRouter()
+
+  const finishAndGoToApprovals = () => {
+    onCreated()
+    try { router.push('/wavecore-erp/procurement/approvals/inbox') } catch { /* noop */ }
+  }
   const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
 
   const [step, setStep] = useState(1)
@@ -512,7 +519,7 @@ function CreateWizard({ onClose, onCreated }: { onClose: () => void; onCreated: 
           return
         }
       }
-      onCreated()
+      finishAndGoToApprovals()
     } catch (e) {
       setError('Network error: ' + (e as Error).message)
     } finally {

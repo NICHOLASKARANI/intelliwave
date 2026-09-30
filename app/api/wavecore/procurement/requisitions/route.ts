@@ -277,8 +277,15 @@ export const DELETE = procurementHandler(async (request: NextRequest) => {
   }
   const req = found.rows[0]
 
-  // Only safe to delete when not in-flight
-  const allowed = ['DRAFT', 'CANCELLED', 'REJECTED']
+  // Safe-to-delete statuses:
+  //   DRAFT       — not submitted yet
+  //   PENDING     — submitted, no approver decision yet
+  //   SUBMITTED   — same as PENDING (alias)
+  //   CANCELLED   — already dead
+  //   REJECTED    — already dead
+  // Blocked:
+  //   APPROVED / CONVERTED / ORDERED — downstream PO exists → must be cancelled through PO flow
+  const allowed = ['DRAFT', 'PENDING', 'SUBMITTED', 'CANCELLED', 'REJECTED']
   if (!allowed.includes(req.status)) {
     return NextResponse.json({
       error: 'Requisition in status ' + req.status + ' cannot be deleted. Cancel it first.',
