@@ -8,6 +8,7 @@ import {
   Package, ArrowLeft, Loader2, CheckCircle2, Truck, MapPin, CreditCard,
   Clock, AlertTriangle, Store, Tag, RefreshCw, X, Trash2, Printer,
 } from 'lucide-react'
+import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
 
 const BUYER_ACTIONS: Record<string, { label: string; nextStatus: string; color: string }[]> = {
   PENDING: [{ label: 'Cancel Order', nextStatus: 'CANCELLED', color: 'bg-red-600' }],
@@ -55,27 +56,49 @@ export default function OrderDetailPage() {
   const updateStatus = async (newStatus: string) => {
     if (!confirm(`Change status to ${newStatus}?`)) return
     setActing(true)
+    setError('')
     try {
-      const res = await fetch('/api/marketplace/orders', {
+      const res = await authedFetch('/api/marketplace/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: order.id, status: newStatus }),
       })
-      if (res.ok) { flash('Status updated to ' + newStatus); fetchOrder() }
+      if (res.ok) {
+        flash('Status updated to ' + newStatus)
+        fetchOrder()
+      } else if (res.needsLogin) {
+        redirectToLogin()
+      } else {
+        const msg = (res.data && res.data.error) || ('Update failed (' + res.status + ')')
+        setError(msg)
+      }
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
     } finally { setActing(false) }
   }
 
   const markPaid = async () => {
     setActing(true)
+    setError('')
     try {
       const reference = prompt('Payment reference (M-Pesa receipt #):')
       if (!reference) { setActing(false); return }
-      const res = await fetch('/api/marketplace/orders', {
+      const res = await authedFetch('/api/marketplace/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: order.id, paymentStatus: 'PAID', paymentReference: reference }),
       })
-      if (res.ok) { flash('Payment confirmed'); fetchOrder() }
+      if (res.ok) {
+        flash('Payment confirmed')
+        fetchOrder()
+      } else if (res.needsLogin) {
+        redirectToLogin()
+      } else {
+        const msg = (res.data && res.data.error) || ('Update failed (' + res.status + ')')
+        setError(msg)
+      }
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
     } finally { setActing(false) }
   }
 

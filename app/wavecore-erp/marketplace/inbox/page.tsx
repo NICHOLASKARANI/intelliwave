@@ -33,6 +33,7 @@ export default function InboxPage() {
   }
   useEffect(() => { fetchConversations() }, [])
 
+
   const loadMessages = async (conversationId: string) => {
     setLoadingMessages(true)
     try {
@@ -48,6 +49,16 @@ export default function InboxPage() {
     setMessages([])
     loadMessages(c.id)
   }
+
+  // 30-second auto-refresh — conversations + selected thread stay live
+  useEffect(() => {
+    const t = setInterval(() => {
+      fetchConversations()
+      if (selected && selected.id) loadMessages(selected.id)
+    }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [selected])
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
