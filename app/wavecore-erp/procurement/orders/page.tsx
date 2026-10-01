@@ -100,10 +100,33 @@ export default function PurchaseOrdersPage() {
   const [showWizard, setShowWizard] = useState(false)
 
   const csrf = () => document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
+
+  // ---- Table sorting ----
+  const [sortBy, setSortBy] = useState<'createdAt'|'number'|'total'|'status'|'supplierName'>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc')
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) setSortDir(sortDir === "asc" ? "desc" : "asc")
+    else { setSortBy(key as any); setSortDir("desc") }
+  }
+
+  const sortedOrders = [...orders].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1
+    const val = (x: any) => {
+      if (sortBy === "createdAt") return new Date(x.createdAt).getTime()
+      if (sortBy === "total")     return Number(x.total || x.amount || 0)
+      if (sortBy === "supplierName") return String(x.supplierName || "").toLowerCase()
+      return String(x[sortBy] || "")
+    }
+    const av = val(a); const bv = val(b)
+    if (av < bv) return -1 * dir
+    if (av > bv) return 1 * dir
+    return 0
+  })
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  const fetchOrders = async () => {
-    setLoading(true)
+  const fetchOrders = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (q) p.set('q', q)
@@ -120,6 +143,13 @@ export default function PurchaseOrdersPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchOrders() /* eslint-disable-next-line */ }, [q, statusFilter, offset])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchOrders({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, offset])
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -209,7 +239,7 @@ export default function PurchaseOrdersPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-rose-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
-            <button onClick={fetchOrders} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <button onClick={() => fetchOrders()} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>
@@ -241,36 +271,68 @@ export default function PurchaseOrdersPage() {
         ) : (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-              {orders.map(o => (
-                <Link key={o.id} href={'/wavecore-erp/procurement/orders/' + o.id} className="block p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[260px]">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400">{o.number}</span>
-                        <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(o.status)}>{STATUS_LABELS[o.status] || o.status}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-400">{o.type}</span>
-                        {o.requisitionId && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-900/50 text-indigo-300">from req</span>}
-                      </div>
-                      <p className="font-bold text-neutral-900 dark:text-white text-sm truncate flex items-center gap-2">
-                        <Users className="w-3.5 h-3.5 text-neutral-400" /> {o.supplierName || 'Unknown supplier'}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-500 flex-wrap">
-                        <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{o.linesCount} line{o.linesCount !== 1 ? 's' : ''}</span>
-                        {o.deliveryDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />delivery {new Date(o.deliveryDate).toLocaleDateString('en-GB')}</span>}
-                        <span>{new Date(o.createdAt).toLocaleDateString('en-GB')}</span>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                        {o.currency} {Number(o.total || o.amount || 0).toLocaleString()}
-                      </p>
-                      {o.fullyReceivedLines > 0 && o.fullyReceivedLines < o.linesCount && (
-                        <p className="text-[10px] text-orange-500 font-bold mt-1">{o.fullyReceivedLines}/{o.linesCount} received</p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 cursor-pointer hover:text-rose-600" onClick={() => toggleSort('number')}>Number</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-rose-600" onClick={() => toggleSort('supplierName')}>Supplier</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-rose-600" onClick={() => toggleSort('status')}>Status</th>
+                    <th className="px-4 py-3 text-right">Lines</th>
+                    <th className="px-4 py-3 text-right cursor-pointer hover:text-rose-600" onClick={() => toggleSort('total')}>Amount</th>
+                    <th className="px-4 py-3">Delivery</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedOrders.map((o: any) => {
+                    const dueDays = o.deliveryDate ? Math.ceil((new Date(o.deliveryDate).getTime() - Date.now()) / 86400000) : null
+                    const dueClass = dueDays == null ? '' : dueDays < 0 ? 'text-red-500 font-bold' : dueDays <= 3 ? 'text-orange-500 font-bold' : dueDays <= 14 ? 'text-amber-500' : 'text-neutral-500'
+                    const dueLabel = o.deliveryDate ? new Date(o.deliveryDate).toLocaleDateString('en-GB') : '—'
+                    return (
+                      <tr key={o.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                        <td className="px-4 py-3 align-top">
+                          <Link href={'/wavecore-erp/procurement/orders/' + o.id} className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline">
+                            {o.number}
+                          </Link>
+                          {o.requisitionId && <span className="ml-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-900/50 text-indigo-300">from req</span>}
+                        </td>
+                        <td className="px-4 py-3 align-top max-w-[220px]">
+                          <Link href={'/wavecore-erp/procurement/orders/' + o.id} className="block">
+                            <p className="font-medium text-neutral-900 dark:text-white truncate">{o.supplierName || 'Unknown supplier'}</p>
+                            {o.notes && <p className="text-[10px] text-neutral-500 truncate">{o.notes}</p>}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-400">{o.type || 'STANDARD'}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(o.status)}>{STATUS_LABELS[o.status] || o.status}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top text-right text-xs">
+                          {o.linesCount}
+                          {o.fullyReceivedLines > 0 && o.fullyReceivedLines < o.linesCount && <p className="text-[10px] text-orange-500 mt-0.5">{o.fullyReceivedLines}/{o.linesCount} rcvd</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <p className="font-bold text-neutral-900 dark:text-white">{o.currency} {Number(o.total || o.amount || 0).toLocaleString()}</p>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'text-[11px] ' + dueClass}>{dueLabel}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Link href={'/wavecore-erp/procurement/orders/' + o.id} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-900/20" title="Open">
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              </div>
             </div>
 
             {total > limit && (
