@@ -7,7 +7,7 @@ import {
   Receipt, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, ClipboardList, Package, Package2,
   Truck, ChevronLeft, ChevronRight, Save, Send, FileText, Layers,
-  Calendar, DollarSign, Users, ShieldCheck, AlertOctagon, Sparkles, ArrowRight,
+  Calendar, DollarSign, Users, ShieldCheck, AlertOctagon, Sparkles, ArrowRight, Trash2,
 } from 'lucide-react'
 
 interface Invoice {
@@ -135,6 +135,21 @@ export default function SupplierInvoicesPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchInvoices() /* eslint-disable-next-line */ }, [q, statusFilter, matchFilter, offset])
+  const deleteInvoice = async (id: string, invoiceNumber: string) => {
+    if (!confirm('Delete supplier invoice ' + invoiceNumber + '? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/supplier-invoices/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      flash('Supplier invoice deleted')
+      fetchInvoices()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
 
   // 30-second silent auto-refresh
   useEffect(() => {
@@ -331,6 +346,7 @@ export default function SupplierInvoicesPage() {
                             <Link href={'/wavecore-erp/procurement/supplier-invoices/' + inv.id} className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-900/20" title="Open">
                               <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteInvoice(inv.id, inv.invoiceNumber) }} className="p-1.5 rounded-lg text-red-400 hover:bg-red-900/20" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </td>
                       </tr>
