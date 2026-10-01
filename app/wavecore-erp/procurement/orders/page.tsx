@@ -144,6 +144,23 @@ export default function PurchaseOrdersPage() {
   }
   useEffect(() => { fetchOrders() /* eslint-disable-next-line */ }, [q, statusFilter, offset])
 
+
+  const deleteOrder = async (id: string, number: string) => {
+    if (!confirm('Delete purchase order ' + number + '? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/purchase-orders/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      flash('Purchase order deleted')
+      fetchOrders()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
+
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchOrders({ silent: true }) }, 30000)
@@ -325,6 +342,7 @@ export default function PurchaseOrdersPage() {
                             <Link href={'/wavecore-erp/procurement/orders/' + o.id} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-900/20" title="Open">
                               <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteOrder(o.id, o.number) }} className="p-1.5 rounded-lg text-red-400 hover:bg-red-900/20" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </td>
                       </tr>
