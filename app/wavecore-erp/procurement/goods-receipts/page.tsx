@@ -7,7 +7,7 @@ import {
   Package, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, ClipboardList, Inbox, Send, Clock,
   Truck, CheckCheck, Layers, ChevronLeft, ChevronRight, Save,
-  Warehouse, FileText, Users, Calendar, Package2,
+  Warehouse, FileText, Users, Calendar, Package2, ArrowRight,
 } from 'lucide-react'
 
 interface GRN {
@@ -94,8 +94,30 @@ export default function GoodsReceiptsPage() {
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  const fetchGRNs = async () => {
-    setLoading(true)
+  // ---- Table sorting ----
+  const [sortBy, setSortBy] = useState<'createdAt'|'grnNumber'|'status'|'poNumber'|'totalReceived'>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc')
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) setSortDir(sortDir === "asc" ? "desc" : "asc")
+    else { setSortBy(key as any); setSortDir("desc") }
+  }
+
+  const sortedGRNs = [...grns].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1
+    const val = (x: any) => {
+      if (sortBy === "createdAt") return new Date(x.createdAt).getTime()
+      if (sortBy === "totalReceived") return Number(x.totalReceived || 0)
+      return String(x[sortBy] || "").toLowerCase()
+    }
+    const av = val(a); const bv = val(b)
+    if (av < bv) return -1 * dir
+    if (av > bv) return 1 * dir
+    return 0
+  })
+
+  const fetchGRNs = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (q) p.set('q', q)
@@ -112,6 +134,13 @@ export default function GoodsReceiptsPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchGRNs() /* eslint-disable-next-line */ }, [q, statusFilter, offset])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchGRNs({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, offset])
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -175,10 +204,10 @@ export default function GoodsReceiptsPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={FileText} label="Drafts" value={drafts} color="text-neutral-500" />
-          <Kpi icon={Clock} label="Submitted" value={submitted} color="text-blue-500" />
-          <Kpi icon={Truck} label="Inspected" value={inspected} color="text-amber-500" />
-          <Kpi icon={CheckCheck} label="Accepted" value={accepted} color="text-green-500" />
+          <Kpi icon={FileText} label="Drafts" value={drafts} color="text-neutral-500" onClick={() => { setStatusFilter('DRAFT'); setOffset(0) }} />
+          <Kpi icon={Clock} label="Submitted" value={submitted} color="text-blue-500" onClick={() => { setStatusFilter('SUBMITTED'); setOffset(0) }} />
+          <Kpi icon={Truck} label="Inspected" value={inspected} color="text-amber-500" onClick={() => { setStatusFilter('INSPECTED'); setOffset(0) }} />
+          <Kpi icon={CheckCheck} label="Accepted" value={accepted} color="text-green-500" onClick={() => { setStatusFilter('ACCEPTED'); setOffset(0) }} />
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
@@ -194,7 +223,7 @@ export default function GoodsReceiptsPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-emerald-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
-            <button onClick={fetchGRNs} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <button onClick={() => fetchGRNs()} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>
@@ -226,34 +255,63 @@ export default function GoodsReceiptsPage() {
         ) : (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-              {grns.map(g => (
-                <Link key={g.id} href={'/wavecore-erp/procurement/goods-receipts/' + g.id} className="block p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[260px]">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{g.grnNumber}</span>
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('grnNumber')}>GRN#</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('poNumber')}>PO / Supplier</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('status')}>Status</th>
+                    <th className="px-4 py-3">Delivery note</th>
+                    <th className="px-4 py-3 text-right">Lines</th>
+                    <th className="px-4 py-3 text-right cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('totalReceived')}>Value</th>
+                    <th className="px-4 py-3">Received</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedGRNs.map((g: any) => (
+                    <tr key={g.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                      <td className="px-4 py-3 align-top">
+                        <Link href={'/wavecore-erp/procurement/goods-receipts/' + g.id} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                          {g.grnNumber}
+                        </Link>
+                        {g.hasVariance && <span className="ml-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-900/50 text-amber-300">VAR</span>}
+                      </td>
+                      <td className="px-4 py-3 align-top max-w-[260px]">
+                        <Link href={'/wavecore-erp/procurement/goods-receipts/' + g.id} className="block">
+                          <p className="text-xs font-bold text-rose-600 dark:text-rose-400">{g.poNumber || '—'}</p>
+                          <p className="font-medium text-neutral-900 dark:text-white truncate text-xs">{g.supplierName || 'Unknown supplier'}</p>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 align-top">
                         <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(g.status)}>{STATUS_LABELS[g.status] || g.status}</span>
-                        {g.hasVariance && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-900/50 text-amber-300">variance</span>}
-                      </div>
-                      <p className="font-bold text-neutral-900 dark:text-white text-sm truncate flex items-center gap-2">
-                        <Package className="w-3.5 h-3.5 text-neutral-400" /> PO {g.poNumber || '—'} · {g.supplierName || 'Unknown supplier'}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-500 flex-wrap">
-                        <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{g.linesCount} line{g.linesCount !== 1 ? 's' : ''}</span>
-                        {g.deliveryNoteNumber && <span className="flex items-center gap-1"><FileText className="w-3 h-3" />DN {g.deliveryNoteNumber}</span>}
-                        {g.receivedAt && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />received {new Date(g.receivedAt).toLocaleDateString('en-GB')}</span>}
-                        {g.receivedByName && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{g.receivedByName}</span>}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                        {g.currency} {Number(g.totalReceived || 0).toLocaleString()}
-                      </p>
-                      <p className="text-[10px] text-neutral-500">{new Date(g.createdAt).toLocaleDateString('en-GB')}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                      </td>
+                      <td className="px-4 py-3 align-top text-xs text-neutral-500">
+                        {g.deliveryNoteNumber || '—'}
+                      </td>
+                      <td className="px-4 py-3 align-top text-right text-xs">
+                        {g.linesCount}
+                      </td>
+                      <td className="px-4 py-3 align-top text-right">
+                        <p className="font-bold text-neutral-900 dark:text-white">{g.currency} {Number(g.totalReceived || 0).toLocaleString()}</p>
+                      </td>
+                      <td className="px-4 py-3 align-top text-xs text-neutral-500">
+                        {g.receivedAt ? new Date(g.receivedAt).toLocaleDateString('en-GB') : '—'}
+                        {g.receivedByName && <p className="text-[10px] text-neutral-400">{g.receivedByName}</p>}
+                      </td>
+                      <td className="px-4 py-3 align-top text-right">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Link href={'/wavecore-erp/procurement/goods-receipts/' + g.id} className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-900/20" title="Open">
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
             </div>
 
             {total > limit && (
@@ -279,14 +337,24 @@ export default function GoodsReceiptsPage() {
 // ============================================================
 // KPI tile
 // ============================================================
-function Kpi({ icon: Icon, label, value, color }: any) {
-  return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+function Kpi({ icon: Icon, label, value, color, onClick, title }: any) {
+  const cls = 'text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 w-full ' +
+              (onClick ? 'hover:border-emerald-500 transition cursor-pointer' : '')
+  const content = (
+    <>
       <Icon className={'w-5 h-5 mb-2 ' + color} />
       <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
-    </div>
+    </>
   )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} title={title || label}>
+        {content}
+      </button>
+    )
+  }
+  return <div className={cls}>{content}</div>
 }
 
 // ============================================================
