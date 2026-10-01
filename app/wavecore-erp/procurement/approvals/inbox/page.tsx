@@ -45,6 +45,13 @@ export default function ApprovalInboxPage() {
   }
   useEffect(() => { fetchAll() }, [])
 
+  // 30-second auto-refresh — keeps inbox + history + counts live
+  useEffect(() => {
+    const t = setInterval(() => { fetchAll() }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
   const approve = async (approvalId: string) => {
     setWorking(true)
     try {
@@ -133,10 +140,38 @@ export default function ApprovalInboxPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={Clock} label="Pending" value={counts.pending || 0} color="text-amber-500" />
-          <Kpi icon={AlertCircle} label="Overdue" value={counts.overdue || 0} color="text-red-500" />
-          <Kpi icon={CheckCircle2} label="Approved today" value={counts.approvedToday || 0} color="text-green-500" />
-          <Kpi icon={XCircle} label="Rejected today" value={counts.rejectedToday || 0} color="text-rose-500" />
+          <Kpi
+            icon={Clock}
+            label="Pending"
+            value={counts.pending || 0}
+            color="text-amber-500"
+            onClick={() => { setTab('inbox') }}
+            title="Show my pending approvals"
+          />
+          <Kpi
+            icon={AlertCircle}
+            label="Overdue"
+            value={counts.overdue || 0}
+            color="text-red-500"
+            onClick={() => { setTab('inbox') }}
+            title="Show my pending approvals (overdue first)"
+          />
+          <Kpi
+            icon={CheckCircle2}
+            label="Approved today"
+            value={counts.approvedToday || 0}
+            color="text-green-500"
+            onClick={() => { setTab('history') }}
+            title="Show my approval history"
+          />
+          <Kpi
+            icon={XCircle}
+            label="Rejected today"
+            value={counts.rejectedToday || 0}
+            color="text-rose-500"
+            onClick={() => { setTab('history') }}
+            title="Show my approval history"
+          />
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
@@ -270,12 +305,22 @@ export default function ApprovalInboxPage() {
   )
 }
 
-function Kpi({ icon: Icon, label, value, color }: any) {
-  return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+function Kpi({ icon: Icon, label, value, color, onClick, title }: any) {
+  const cls = 'text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 w-full ' +
+              (onClick ? 'hover:border-amber-500 transition cursor-pointer' : '')
+  const content = (
+    <>
       <Icon className={'w-5 h-5 mb-2 ' + color} />
       <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
-    </div>
+    </>
   )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} title={title || label}>
+        {content}
+      </button>
+    )
+  }
+  return <div className={cls}>{content}</div>
 }
