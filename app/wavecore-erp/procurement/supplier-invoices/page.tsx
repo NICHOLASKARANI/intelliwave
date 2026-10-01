@@ -7,7 +7,7 @@ import {
   Receipt, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, ClipboardList, Package, Package2,
   Truck, ChevronLeft, ChevronRight, Save, Send, FileText, Layers,
-  Calendar, DollarSign, Users, ShieldCheck, AlertOctagon, Sparkles,
+  Calendar, DollarSign, Users, ShieldCheck, AlertOctagon, Sparkles, ArrowRight,
 } from 'lucide-react'
 
 interface Invoice {
@@ -94,8 +94,30 @@ export default function SupplierInvoicesPage() {
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  const fetchInvoices = async () => {
-    setLoading(true)
+  // ---- Table sorting ----
+  const [sortBy, setSortBy] = useState<'createdAt'|'invoiceNumber'|'status'|'matchStatus'|'total'>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc')
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) setSortDir(sortDir === "asc" ? "desc" : "asc")
+    else { setSortBy(key as any); setSortDir("desc") }
+  }
+
+  const sortedInvoices = [...invoices].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1
+    const val = (x: any) => {
+      if (sortBy === "createdAt") return new Date(x.createdAt).getTime()
+      if (sortBy === "total") return Number(x.total || 0)
+      return String(x[sortBy] || "").toLowerCase()
+    }
+    const av = val(a); const bv = val(b)
+    if (av < bv) return -1 * dir
+    if (av > bv) return 1 * dir
+    return 0
+  })
+
+  const fetchInvoices = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (q) p.set('q', q)
@@ -113,6 +135,13 @@ export default function SupplierInvoicesPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchInvoices() /* eslint-disable-next-line */ }, [q, statusFilter, matchFilter, offset])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchInvoices({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, matchFilter, offset])
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -189,10 +218,10 @@ export default function SupplierInvoicesPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={FileText} label="Drafts" value={drafts} color="text-neutral-500" />
-          <Kpi icon={Send} label="Submitted" value={submitted} color="text-amber-500" />
-          <Kpi icon={ShieldCheck} label="Matched" value={matched} color="text-green-500" />
-          <Kpi icon={AlertOctagon} label="Exceptions" value={exceptions} color="text-red-500" />
+          <Kpi icon={FileText} label="Drafts" value={drafts} color="text-neutral-500" onClick={() => { setStatusFilter('DRAFT'); setOffset(0) }} />
+          <Kpi icon={Send} label="Submitted" value={submitted} color="text-amber-500" onClick={() => { setStatusFilter('SUBMITTED'); setOffset(0) }} />
+          <Kpi icon={ShieldCheck} label="Matched" value={matched} color="text-green-500" onClick={() => { setMatchFilter('AUTO_MATCHED'); setOffset(0) }} />
+          <Kpi icon={AlertOctagon} label="Exceptions" value={exceptions} color="text-red-500" onClick={() => { setMatchFilter('EXCEPTION'); setOffset(0) }} />
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
@@ -208,7 +237,7 @@ export default function SupplierInvoicesPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-indigo-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
-            <button onClick={fetchInvoices} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <button onClick={() => fetchInvoices()} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>
@@ -244,35 +273,72 @@ export default function SupplierInvoicesPage() {
         ) : (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-              {invoices.map(inv => (
-                <Link key={inv.id} href={'/wavecore-erp/procurement/supplier-invoices/' + inv.id} className="block p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[260px]">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{inv.invoiceNumber}</span>
-                        <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(inv.status)}>{STATUS_LABELS[inv.status] || inv.status}</span>
-                        <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + matchColor(inv.matchStatus)}>{MATCH_LABELS[inv.matchStatus] || inv.matchStatus}</span>
-                        {inv.supplierInvoiceRef && <span className="text-[10px] text-neutral-500">ref {inv.supplierInvoiceRef}</span>}
-                      </div>
-                      <p className="font-bold text-neutral-900 dark:text-white text-sm truncate flex items-center gap-2">
-                        <Users className="w-3.5 h-3.5 text-neutral-400" /> {inv.supplierName || 'Unknown supplier'}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-500 flex-wrap">
-                        {inv.poNumber && <span className="flex items-center gap-1"><Package className="w-3 h-3" />PO {inv.poNumber}</span>}
-                        {inv.grnNumber && <span className="flex items-center gap-1"><Package2 className="w-3 h-3" />GRN {inv.grnNumber}</span>}
-                        <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{inv.linesCount} line{inv.linesCount !== 1 ? 's' : ''}</span>
-                        {inv.invoiceDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(inv.invoiceDate).toLocaleDateString('en-GB')}</span>}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                        {inv.currency} {Number(inv.total || 0).toLocaleString()}
-                      </p>
-                      {inv.dueDate && <p className="text-[10px] text-neutral-500 mt-1">due {new Date(inv.dueDate).toLocaleDateString('en-GB')}</p>}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 cursor-pointer hover:text-indigo-600" onClick={() => toggleSort('invoiceNumber')}>Invoice#</th>
+                    <th className="px-4 py-3">Supplier</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-indigo-600" onClick={() => toggleSort('status')}>Status</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-indigo-600" onClick={() => toggleSort('matchStatus')}>Match</th>
+                    <th className="px-4 py-3">PO / GRN</th>
+                    <th className="px-4 py-3 text-right">Lines</th>
+                    <th className="px-4 py-3 text-right cursor-pointer hover:text-indigo-600" onClick={() => toggleSort('total')}>Amount</th>
+                    <th className="px-4 py-3">Invoice date</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedInvoices.map((inv: any) => {
+                    const dueDays = inv.dueDate ? Math.ceil((new Date(inv.dueDate).getTime() - Date.now()) / 86400000) : null
+                    const dueClass = dueDays == null ? '' : dueDays < 0 ? 'text-red-500 font-bold' : dueDays <= 3 ? 'text-orange-500 font-bold' : dueDays <= 14 ? 'text-amber-500' : 'text-neutral-500'
+                    return (
+                      <tr key={inv.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                        <td className="px-4 py-3 align-top">
+                          <Link href={'/wavecore-erp/procurement/supplier-invoices/' + inv.id} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                            {inv.invoiceNumber}
+                          </Link>
+                          {inv.supplierInvoiceRef && <p className="text-[10px] text-neutral-500">ref {inv.supplierInvoiceRef}</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top max-w-[220px]">
+                          <Link href={'/wavecore-erp/procurement/supplier-invoices/' + inv.id} className="block">
+                            <p className="font-medium text-neutral-900 dark:text-white truncate text-xs">{inv.supplierName || 'Unknown supplier'}</p>
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(inv.status)}>{STATUS_LABELS[inv.status] || inv.status}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + matchColor(inv.matchStatus)}>{MATCH_LABELS[inv.matchStatus] || inv.matchStatus}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top text-xs text-neutral-500">
+                          {inv.poNumber && <p className="font-bold text-rose-600 dark:text-rose-400">PO {inv.poNumber}</p>}
+                          {inv.grnNumber && <p>GRN {inv.grnNumber}</p>}
+                          {!inv.poNumber && !inv.grnNumber && '—'}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right text-xs">
+                          {inv.linesCount}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <p className="font-bold text-neutral-900 dark:text-white">{inv.currency} {Number(inv.total || 0).toLocaleString()}</p>
+                          {inv.dueDate && <p className={'text-[10px] mt-0.5 ' + dueClass}>{dueDays != null && dueDays < 0 ? 'overdue ' + Math.abs(dueDays) + 'd' : dueDays === 0 ? 'due today' : dueDays != null ? 'due in ' + dueDays + 'd' : ''}</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top text-xs text-neutral-500">
+                          {inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('en-GB') : '—'}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Link href={'/wavecore-erp/procurement/supplier-invoices/' + inv.id} className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-900/20" title="Open">
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              </div>
             </div>
 
             {total > limit && (
@@ -298,14 +364,24 @@ export default function SupplierInvoicesPage() {
   )
 }
 
-function Kpi({ icon: Icon, label, value, color }: any) {
-  return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+function Kpi({ icon: Icon, label, value, color, onClick, title }: any) {
+  const cls = 'text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 w-full ' +
+              (onClick ? 'hover:border-indigo-500 transition cursor-pointer' : '')
+  const content = (
+    <>
       <Icon className={'w-5 h-5 mb-2 ' + color} />
       <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
-    </div>
+    </>
   )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} title={title || label}>
+        {content}
+      </button>
+    )
+  }
+  return <div className={cls}>{content}</div>
 }
 
 function InvoiceWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
