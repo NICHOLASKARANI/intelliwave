@@ -117,8 +117,18 @@ export const DELETE = procurementHandler(async (request: NextRequest, ctx: { par
     [id, g.organizationId]
   )
   if (existing.rowCount === 0) return NextResponse.json({ error: 'Purchase order not found' }, { status: 404 })
-  if (existing.rows[0].status !== 'DRAFT') {
-    return NextResponse.json({ error: 'Only DRAFT POs can be deleted' }, { status: 409 })
+  // Deletable statuses:
+  //   DRAFT       — never sent out, safe
+  //   CANCELLED   — already dead
+  //   REJECTED    — never approved
+  // Blocked:
+  //   SUBMITTED / APPROVED / SENT / ACKNOWLEDGED / RECEIVED / INVOICED / MATCHED / CLOSED
+  //   → downstream GRNs, invoices, and payment runs exist. Cancel first.
+  const deletable = ['DRAFT', 'CANCELLED', 'REJECTED']
+  if (!deletable.includes(existing.rows[0].status)) {
+    return NextResponse.json({
+      error: 'Cannot delete PO in status ' + existing.rows[0].status + '. Cancel it first.',
+    }, { status: 409 })
   }
 
   await pool.query(`DELETE FROM "PurchaseOrderItem" WHERE "purchaseOrderId" = $1`, [id])
