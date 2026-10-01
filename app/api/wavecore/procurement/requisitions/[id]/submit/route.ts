@@ -64,15 +64,29 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
 
   const crypto = require('crypto')
 
-  // 5a. No matching rules -> auto-approve
+  // 5a. No matching rules -> create a single default approval step
+  //     (for the APPROVER role). This ensures every submission reaches
+  //     the Approval Inbox instead of silently auto-approving.
   if (matching.length === 0) {
+    const crypto2 = require('crypto')
+    const defaultApprovalId = crypto2.randomUUID()
+    const defaultSla = 48
+
+    await pool.query(
+      `INSERT INTO "PurchaseRequisitionApproval"
+         (id, "organizationId", "requisitionId", "stepNumber", "approverId", "approverRole",
+          status, "slaHours", "dueAt", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,1,NULL,'APPROVER',
+               'PENDING',$4, NOW() + ($5 || ' hours')::interval, NOW(),NOW())`,
+      [defaultApprovalId, g.organizationId, id, defaultSla, String(defaultSla)]
+    )
+
     await pool.query(
       `UPDATE "PurchaseRequisition"
-       SET status = 'APPROVED',
+       SET status = 'SUBMITTED',
            "submittedAt" = NOW(),
-           "approvedAt" = NOW(),
-           "totalApprovalSteps" = 0,
-           "currentApprovalStep" = 0,
+           "totalApprovalSteps" = 1,
+           "currentApprovalStep" = 1,
            "updatedAt" = NOW()
        WHERE id = $1 AND "organizationId" = $2`,
       [id, g.organizationId]
@@ -80,19 +94,19 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
 
     await logProcurementEvent(pool, {
       organizationId: g.organizationId,
-      eventType: 'REQUISITION_AUTO_APPROVED',
+      eventType: 'REQUISITION_SUBMITTED',
       entityType: 'PurchaseRequisition',
       entityId: id,
       actorId: g.userId,
       actorName: g.userName,
-      summary: 'Auto-approved (no matching approval rules) — ' + req.requisitionNumber,
-      metadata: { amount, matchedRules: 0 },
+      summary: 'Submitted ' + req.requisitionNumber + ' for approval (default APPROVER step)',
+      metadata: { amount, totalSteps: 1, defaultStep: true },
     })
 
     return NextResponse.json({
-      status: 'APPROVED',
-      message: 'Auto-approved: no matching approval rules',
-      steps: 0,
+      status: 'SUBMITTED',
+      message: 'Submitted for approval (default APPROVER step)',
+      steps: 1,
     })
   }
 
