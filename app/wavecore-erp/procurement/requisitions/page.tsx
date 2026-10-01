@@ -101,8 +101,8 @@ export default function RequisitionsPage() {
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  const fetchRequisitions = async () => {
-    setLoading(true)
+  const fetchRequisitions = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (q) p.set('q', q)
@@ -136,7 +136,7 @@ export default function RequisitionsPage() {
 
   // 30-second auto-refresh — keeps the list live
   useEffect(() => {
-    const t = setInterval(() => { fetchRequisitions(); fetchCounts() }, 30000)
+    const t = setInterval(() => { fetchRequisitions({ silent: true }); fetchCounts() }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
   }, [q, statusFilter, priorityFilter, categoryFilter, mine, offset])
@@ -216,7 +216,7 @@ export default function RequisitionsPage() {
               <Link href="/wavecore-erp/procurement/approvals/inbox" className="px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2">
                 <Inbox className="w-4 h-4" /> Approval Inbox
               </Link>
-              <Link href="/wavecore-erp/procurement/approval-rules" className="px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2">
+              <Link href="/wavecore-erp/procurement/settings" className="px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold flex items-center gap-2">
                 <Settings className="w-4 h-4" /> Rules
               </Link>
               <button onClick={() => setShowWizard(true)} className="px-5 py-3 rounded-xl bg-white text-emerald-700 font-bold flex items-center gap-2 shadow-lg">
@@ -287,7 +287,7 @@ export default function RequisitionsPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-emerald-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
-            <button onClick={fetchRequisitions} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <button onClick={() => fetchRequisitions()} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>

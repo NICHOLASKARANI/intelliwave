@@ -20,7 +20,7 @@ export const GET = procurementHandler(async (request: NextRequest) => {
     'a."organizationId" = $1',
     'a."decidedAt" IS NOT NULL',
     'a."decidedAt" >= NOW() - INTERVAL \'90 days\'',
-    '(a."approverUserId" = $2 OR a."delegatedTo" = $2)',
+    '(a."approverId" = $2 OR a."delegatedTo" = $2)',
   ]
   const params: any[] = [g.organizationId, g.userId]
 
