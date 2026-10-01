@@ -64,21 +64,33 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
 
   const crypto = require('crypto')
 
-  // 5a. No matching rules -> create a single default approval step
-  //     (for the APPROVER role). This ensures every submission reaches
-  //     the Approval Inbox instead of silently auto-approving.
+  // 5a. No matching rules -> create a single default approval step.
+  //     approverId is NOT NULL, so we resolve a real user:
+  //       1. Any user in this org with role APPROVER/TENANT_ADMIN/OWNER
+  //       2. Fall back to the submitter (self-approve)
   if (matching.length === 0) {
     const crypto2 = require('crypto')
     const defaultApprovalId = crypto2.randomUUID()
     const defaultSla = 48
 
+    // Find a real approver user
+    const approverRes = await pool.query(
+      `SELECT id FROM "User"
+       WHERE "organizationId" = $1
+         AND UPPER(COALESCE(role, '')) IN ('APPROVER','TENANT_ADMIN','OWNER','ADMIN')
+       ORDER BY "createdAt" ASC
+       LIMIT 1`,
+      [g.organizationId]
+    )
+    const resolvedApproverId = approverRes.rows[0]?.id || g.userId
+
     await pool.query(
       `INSERT INTO "PurchaseRequisitionApproval"
          (id, "organizationId", "requisitionId", "stepNumber", "approverId", "approverRole",
           status, "slaHours", "dueAt", "createdAt", "updatedAt")
-       VALUES ($1,$2,$3,1,NULL,'APPROVER',
-               'PENDING',$4, NOW() + ($5 || ' hours')::interval, NOW(),NOW())`,
-      [defaultApprovalId, g.organizationId, id, defaultSla, String(defaultSla)]
+       VALUES ($1,$2,$3,1,$4,'APPROVER',
+               'PENDING',$5, NOW() + ($6 || ' hours')::interval, NOW(),NOW())`,
+      [defaultApprovalId, g.organizationId, id, resolvedApproverId, defaultSla, String(defaultSla)]
     )
 
     await pool.query(
@@ -100,7 +112,7 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
       actorId: g.userId,
       actorName: g.userName,
       summary: 'Submitted ' + req.requisitionNumber + ' for approval (default APPROVER step)',
-      metadata: { amount, totalSteps: 1, defaultStep: true },
+      metadata: { amount, totalSteps: 1, defaultStep: true, approverId: resolvedApproverId },
     })
 
     return NextResponse.json({
