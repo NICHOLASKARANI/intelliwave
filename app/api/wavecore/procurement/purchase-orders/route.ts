@@ -107,6 +107,8 @@ export const GET = procurementHandler(async (request: NextRequest) => {
  * }
  */
 export const POST = procurementHandler(async (request: NextRequest) => {
+  try {
+    // (wrapped by error boundary)
   const g = await assertProcurement(request, 'WRITE')
 
   let body: any
@@ -279,4 +281,12 @@ export const POST = procurementHandler(async (request: NextRequest) => {
     purchaseOrder: po,
     lines: insertedLines,
   }, { status: 201 })
+  } catch (err: any) {
+    console.error("[po-create] RAW ERROR:", err?.message || err, err?.stack || "")
+    return NextResponse.json({
+      error: "PO create failed: " + (err?.message || String(err)),
+      detail: err?.detail || null,
+      code: err?.code || null,
+    }, { status: 500 })
+  }
 })
