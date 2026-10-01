@@ -7,7 +7,7 @@ import {
   Package, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, ClipboardList, Inbox, Send, Clock,
   Truck, CheckCheck, Layers, ChevronLeft, ChevronRight, Save,
-  Warehouse, FileText, Users, Calendar, Package2, ArrowRight,
+  Warehouse, FileText, Users, Calendar, Package2, ArrowRight, Trash2,
 } from 'lucide-react'
 
 interface GRN {
@@ -134,6 +134,21 @@ export default function GoodsReceiptsPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchGRNs() /* eslint-disable-next-line */ }, [q, statusFilter, offset])
+  const deleteGRN = async (id: string, number: string) => {
+    if (!confirm('Delete goods receipt ' + number + '? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/goods-receipts/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      flash('Goods receipt deleted')
+      fetchGRNs()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
 
   // 30-second silent auto-refresh
   useEffect(() => {
@@ -305,6 +320,7 @@ export default function GoodsReceiptsPage() {
                           <Link href={'/wavecore-erp/procurement/goods-receipts/' + g.id} className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-900/20" title="Open">
                             <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteGRN(g.id, g.grnNumber) }} className="p-1.5 rounded-lg text-red-400 hover:bg-red-900/20" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </td>
                     </tr>
