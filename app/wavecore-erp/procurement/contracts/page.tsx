@@ -7,7 +7,7 @@ import {
   FileSignature, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, ClipboardList, Package, Users,
   ChevronLeft, ChevronRight, Save, Calendar, DollarSign, AlertCircle,
-  Layers, Sparkles, Clock, FileText, Landmark,
+  Layers, Sparkles, Clock, FileText, Landmark, ArrowRight,
 } from 'lucide-react'
 
 interface Contract {
@@ -80,8 +80,31 @@ export default function ContractsPage() {
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  const fetchContracts = async () => {
-    setLoading(true)
+  // ---- Table sorting ----
+  const [sortBy, setSortBy] = useState<'createdAt'|'contractNumber'|'status'|'endDate'|'value'|'type'>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc')
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) setSortDir(sortDir === "asc" ? "desc" : "asc")
+    else { setSortBy(key as any); setSortDir("desc") }
+  }
+
+  const sortedContracts = [...contracts].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1
+    const val = (x: any) => {
+      if (sortBy === "createdAt") return new Date(x.createdAt).getTime()
+      if (sortBy === "endDate") return x.endDate ? new Date(x.endDate).getTime() : 0
+      if (sortBy === "value") return Number(x.value || 0)
+      return String(x[sortBy] || "").toLowerCase()
+    }
+    const av = val(a); const bv = val(b)
+    if (av < bv) return -1 * dir
+    if (av > bv) return 1 * dir
+    return 0
+  })
+
+  const fetchContracts = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (q) p.set('q', q)
@@ -99,6 +122,13 @@ export default function ContractsPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchContracts() /* eslint-disable-next-line */ }, [q, statusFilter, typeFilter, offset])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchContracts({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, typeFilter, offset])
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -171,9 +201,9 @@ export default function ContractsPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={FileText} label="Active" value={active} color="text-green-500" />
-          <Kpi icon={Sparkles} label="Drafts" value={drafts} color="text-neutral-500" />
-          <Kpi icon={AlertCircle} label="Expiring ≤60d" value={expiring} color="text-amber-500" />
+          <Kpi icon={FileText} label="Active" value={active} color="text-green-500" onClick={() => { setStatusFilter('ACTIVE'); setOffset(0) }} />
+          <Kpi icon={Sparkles} label="Drafts" value={drafts} color="text-neutral-500" onClick={() => { setStatusFilter('DRAFT'); setOffset(0) }} />
+          <Kpi icon={AlertCircle} label="Expiring ≤60d" value={expiring} color="text-amber-500" onClick={() => { setStatusFilter('ACTIVE'); setOffset(0) }} />
           <Kpi icon={Landmark} label="Total value" value={'KES ' + totalValue.toLocaleString()} color="text-blue-500" small />
         </div>
 
@@ -190,7 +220,7 @@ export default function ContractsPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-blue-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
-            <button onClick={fetchContracts} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <button onClick={() => fetchContracts()} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>
@@ -226,38 +256,75 @@ export default function ContractsPage() {
         ) : (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-              {contracts.map(c => {
-                const d = daysToExpiry(c.endDate)
-                const warning = c.status === 'ACTIVE' && d != null && d >= 0 && d <= 60
-                return (
-                  <Link key={c.id} href={'/wavecore-erp/procurement/contracts/' + c.id} className="block p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div className="flex-1 min-w-[260px]">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{c.contractNumber}</span>
-                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(c.status)}>{STATUS_LABELS[c.status] || c.status}</span>
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 cursor-pointer hover:text-blue-600" onClick={() => toggleSort('contractNumber')}>Contract#</th>
+                    <th className="px-4 py-3">Title / Supplier</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-blue-600" onClick={() => toggleSort('type')}>Type</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-blue-600" onClick={() => toggleSort('status')}>Status</th>
+                    <th className="px-4 py-3">Dates</th>
+                    <th className="px-4 py-3 text-right cursor-pointer hover:text-blue-600" onClick={() => toggleSort('value')}>Value</th>
+                    <th className="px-4 py-3 text-right">Lines / Ms</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-blue-600" onClick={() => toggleSort('endDate')}>Expiry</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedContracts.map((c: any) => {
+                    const d = daysToExpiry(c.endDate)
+                    const warning = c.status === 'ACTIVE' && d != null && d >= 0 && d <= 60
+                    const expiryClass = d == null ? '' : d < 0 ? 'text-red-500 font-bold' : d <= 60 ? 'text-amber-500 font-bold' : 'text-neutral-500'
+                    const expiryLabel = d == null ? '—' : d < 0 ? 'expired ' + Math.abs(d) + 'd ago' : 'in ' + d + 'd'
+                    return (
+                      <tr key={c.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                        <td className="px-4 py-3 align-top">
+                          <Link href={'/wavecore-erp/procurement/contracts/' + c.id} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                            {c.contractNumber}
+                          </Link>
+                          {c.autoRenew && <p className="text-[10px] text-cyan-500 mt-0.5">auto-renew</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top max-w-[260px]">
+                          <Link href={'/wavecore-erp/procurement/contracts/' + c.id} className="block">
+                            <p className="font-medium text-neutral-900 dark:text-white truncate text-xs">{c.title}</p>
+                            {c.supplierName && <p className="text-[10px] text-neutral-500 truncate">{c.supplierName}</p>}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 align-top">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-400">{c.type}</span>
-                          {warning && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-900/50 text-amber-300">expires in {d}d</span>}
-                          {c.autoRenew && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-900/50 text-cyan-300">auto-renew</span>}
-                        </div>
-                        <p className="font-bold text-neutral-900 dark:text-white text-sm truncate">{c.title}</p>
-                        <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-500 flex-wrap">
-                          {c.supplierName && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{c.supplierName}</span>}
-                          {c.startDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />from {new Date(c.startDate).toLocaleDateString('en-GB')}</span>}
-                          {c.endDate && <span>to {new Date(c.endDate).toLocaleDateString('en-GB')}</span>}
-                          {c.linesCount > 0 && <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{c.linesCount} line{c.linesCount !== 1 ? 's' : ''}</span>}
-                          {c.milestonesCount > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{c.milestonesCount} milestone{c.milestonesCount !== 1 ? 's' : ''}</span>}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                          {c.currency} {Number(c.value || 0).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(c.status)}>{STATUS_LABELS[c.status] || c.status}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top text-[11px] text-neutral-500">
+                          {c.startDate && <p>from {new Date(c.startDate).toLocaleDateString('en-GB')}</p>}
+                          {c.endDate && <p>to {new Date(c.endDate).toLocaleDateString('en-GB')}</p>}
+                          {!c.startDate && !c.endDate && '—'}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <p className="font-bold text-neutral-900 dark:text-white">{c.currency} {Number(c.value || 0).toLocaleString()}</p>
+                        </td>
+                        <td className="px-4 py-3 align-top text-right text-xs text-neutral-500">
+                          {c.linesCount} / {c.milestonesCount}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'text-[11px] ' + expiryClass}>{expiryLabel}</span>
+                          {warning && <p className="text-[10px] text-amber-500 mt-0.5">expiring soon</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Link href={'/wavecore-erp/procurement/contracts/' + c.id} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-900/20" title="Open">
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              </div>
             </div>
 
             {total > limit && (
@@ -280,14 +347,24 @@ export default function ContractsPage() {
   )
 }
 
-function Kpi({ icon: Icon, label, value, color, small }: any) {
-  return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+function Kpi({ icon: Icon, label, value, color, small, onClick, title }: any) {
+  const cls = 'text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 w-full ' +
+              (onClick ? 'hover:border-blue-500 transition cursor-pointer' : '')
+  const content = (
+    <>
       <Icon className={'w-5 h-5 mb-2 ' + color} />
       <p className={'font-bold text-neutral-900 dark:text-white ' + (small ? 'text-lg' : 'text-2xl')}>{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
-    </div>
+    </>
   )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} title={title || label}>
+        {content}
+      </button>
+    )
+  }
+  return <div className={cls}>{content}</div>
 }
 
 function ContractWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
