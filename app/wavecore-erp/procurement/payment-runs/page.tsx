@@ -7,7 +7,7 @@ import {
   Wallet, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, Receipt, FileText, Layers, Calendar,
   ChevronLeft, ChevronRight, Save, Send, Clock, TrendingUp, CheckCheck,
-  DollarSign, Building2, Hash, Users, ArrowRight,
+  DollarSign, Building2, Hash, Users, ArrowRight, Trash2,
 } from 'lucide-react'
 
 interface PaymentRun {
@@ -113,6 +113,21 @@ export default function PaymentRunsPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchRuns() /* eslint-disable-next-line */ }, [q, statusFilter, methodFilter, offset])
+  const deleteRun = async (id: string, runNumber: string) => {
+    if (!confirm('Delete payment run ' + runNumber + '? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/payment-runs/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      flash('Payment run deleted')
+      fetchRuns()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
 
   // 30-second silent auto-refresh
   useEffect(() => {
@@ -286,6 +301,7 @@ export default function PaymentRunsPage() {
                           <Link href={'/wavecore-erp/procurement/payment-runs/' + r.id} className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-900/20" title="Open">
                             <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteRun(r.id, r.runNumber) }} className="p-1.5 rounded-lg text-red-400 hover:bg-red-900/20" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </td>
                     </tr>
