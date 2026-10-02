@@ -7,7 +7,7 @@ import {
   ClipboardList, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, Users, Layers, Calendar, Clock,
   ChevronLeft, ChevronRight, Save, FileSignature, Package, FileText,
-  Sparkles, TrendingUp, Award, Hash, MapPin, DollarSign,
+  Sparkles, TrendingUp, Award, Hash, MapPin, DollarSign, ArrowRight,
 } from 'lucide-react'
 
 interface RFQ {
@@ -81,8 +81,30 @@ export default function RFQsPage() {
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  const fetchRFQs = async () => {
-    setLoading(true)
+  // ---- Table sorting ----
+  const [sortBy, setSortBy] = useState<'createdAt'|'rfqNumber'|'status'|'type'|'closingDate'>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc')
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) setSortDir(sortDir === "asc" ? "desc" : "asc")
+    else { setSortBy(key as any); setSortDir("desc") }
+  }
+
+  const sortedRfqs = [...rfqs].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1
+    const val = (x: any) => {
+      if (sortBy === "createdAt") return new Date(x.createdAt).getTime()
+      if (sortBy === "closingDate") return x.closingDate ? new Date(x.closingDate).getTime() : 0
+      return String(x[sortBy] || "").toLowerCase()
+    }
+    const av = val(a); const bv = val(b)
+    if (av < bv) return -1 * dir
+    if (av > bv) return 1 * dir
+    return 0
+  })
+
+  const fetchRFQs = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (q) p.set('q', q)
@@ -100,6 +122,13 @@ export default function RFQsPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchRFQs() /* eslint-disable-next-line */ }, [q, statusFilter, typeFilter, offset])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchRFQs({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, typeFilter, offset])
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -171,10 +200,10 @@ export default function RFQsPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={Sparkles} label="Drafts" value={drafts} color="text-neutral-500" />
-          <Kpi icon={TrendingUp} label="Published" value={published} color="text-blue-500" />
-          <Kpi icon={Clock} label="Closing ≤7d" value={closingSoon} color="text-amber-500" />
-          <Kpi icon={Award} label="Awarded" value={awarded} color="text-green-500" />
+          <Kpi icon={Sparkles} label="Drafts" value={drafts} color="text-neutral-500" onClick={() => { setStatusFilter('DRAFT'); setOffset(0) }} />
+          <Kpi icon={TrendingUp} label="Published" value={published} color="text-blue-500" onClick={() => { setStatusFilter('PUBLISHED'); setOffset(0) }} />
+          <Kpi icon={Clock} label="Closing ≤7d" value={closingSoon} color="text-amber-500" onClick={() => { setStatusFilter('PUBLISHED'); setOffset(0) }} />
+          <Kpi icon={Award} label="Awarded" value={awarded} color="text-green-500" onClick={() => { setStatusFilter('AWARDED'); setOffset(0) }} />
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
@@ -190,7 +219,7 @@ export default function RFQsPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-purple-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
-            <button onClick={fetchRFQs} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <button onClick={() => fetchRFQs()} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>
@@ -226,37 +255,73 @@ export default function RFQsPage() {
         ) : (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-              {rfqs.map(r => {
-                const dLeft = daysUntil(r.closingDate)
-                const closingWarn = r.status === 'PUBLISHED' && dLeft != null && dLeft >= 0 && dLeft <= 7
-                return (
-                  <Link key={r.id} href={'/wavecore-erp/procurement/rfqs/' + r.id} className="block p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div className="flex-1 min-w-[260px]">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-xs font-bold text-purple-600 dark:text-purple-400">{r.rfqNumber || '—'}</span>
-                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(r.status)}>{STATUS_LABELS[r.status] || r.status}</span>
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 cursor-pointer hover:text-purple-600" onClick={() => toggleSort('rfqNumber')}>RFQ#</th>
+                    <th className="px-4 py-3">Title / Category</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-purple-600" onClick={() => toggleSort('type')}>Type</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-purple-600" onClick={() => toggleSort('status')}>Status</th>
+                    <th className="px-4 py-3 text-right">Lines</th>
+                    <th className="px-4 py-3 text-right">Invited</th>
+                    <th className="px-4 py-3 text-right">Quotes</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-purple-600" onClick={() => toggleSort('closingDate')}>Closing</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRfqs.map((r: any) => {
+                    const dLeft = daysUntil(r.closingDate)
+                    const closingWarn = r.status === 'PUBLISHED' && dLeft != null && dLeft >= 0 && dLeft <= 7
+                    const closingClass = dLeft == null ? '' : dLeft < 0 ? 'text-red-500 font-bold' : dLeft <= 7 ? 'text-amber-500 font-bold' : 'text-neutral-500'
+                    const closingLabel = r.closingDate ? (dLeft != null ? (dLeft < 0 ? 'closed ' + Math.abs(dLeft) + 'd ago' : dLeft === 0 ? 'today' : 'in ' + dLeft + 'd') : '—') : '—'
+                    return (
+                      <tr key={r.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                        <td className="px-4 py-3 align-top">
+                          <Link href={'/wavecore-erp/procurement/rfqs/' + r.id} className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline">
+                            {r.rfqNumber || '—'}
+                          </Link>
+                          {closingWarn && <p className="text-[10px] text-amber-500 mt-0.5">closes soon</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top max-w-[260px]">
+                          <Link href={'/wavecore-erp/procurement/rfqs/' + r.id} className="block">
+                            <p className="font-medium text-neutral-900 dark:text-white truncate text-xs">{r.title}</p>
+                            {r.category && <p className="text-[10px] text-neutral-500 truncate">{r.category}</p>}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 align-top">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-400">{r.type}</span>
-                          {r.category && <span className="text-[10px] text-neutral-500">{r.category}</span>}
-                          {closingWarn && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-900/50 text-amber-300">closes in {dLeft}d</span>}
-                        </div>
-                        <p className="font-bold text-neutral-900 dark:text-white text-sm truncate">{r.title}</p>
-                        <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-500 flex-wrap">
-                          {r.closingDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />closes {new Date(r.closingDate).toLocaleDateString('en-GB')}</span>}
-                          <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{r.linesCount} line{r.linesCount !== 1 ? 's' : ''}</span>
-                          <span className="flex items-center gap-1"><Users className="w-3 h-3" />{r.invitesCount} invited</span>
-                          <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" />{r.quotesCount} quote{r.quotesCount !== 1 ? 's' : ''}</span>
-                          {r.deliveryLocation && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.deliveryLocation}</span>}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-bold text-neutral-500">{r.currency}</p>
-                        <p className="text-[10px] text-neutral-500 mt-1">{new Date(r.createdAt).toLocaleDateString('en-GB')}</p>
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(r.status)}>{STATUS_LABELS[r.status] || r.status}</span>
+                        </td>
+                        <td className="px-4 py-3 align-top text-right text-xs">
+                          {r.linesCount}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right text-xs">
+                          {r.invitesCount}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right text-xs">
+                          {r.quotesCount}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={'text-[11px] ' + closingClass}>{closingLabel}</span>
+                          {r.deliveryLocation && <p className="text-[10px] text-neutral-500 mt-0.5 flex items-center gap-1"><MapPin className="w-3 h-3" />{r.deliveryLocation}</p>}
+                        </td>
+                        <td className="px-4 py-3 align-top text-right">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Link href={'/wavecore-erp/procurement/rfqs/' + r.id} className="p-1.5 rounded-lg text-purple-500 hover:bg-purple-900/20" title="Open">
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              </div>
             </div>
 
             {total > limit && (
@@ -279,14 +344,24 @@ export default function RFQsPage() {
   )
 }
 
-function Kpi({ icon: Icon, label, value, color }: any) {
-  return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+function Kpi({ icon: Icon, label, value, color, onClick, title }: any) {
+  const cls = 'text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 w-full ' +
+              (onClick ? 'hover:border-purple-500 transition cursor-pointer' : '')
+  const content = (
+    <>
       <Icon className={'w-5 h-5 mb-2 ' + color} />
       <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
-    </div>
+    </>
   )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} title={title || label}>
+        {content}
+      </button>
+    )
+  }
+  return <div className={cls}>{content}</div>
 }
 
 function RFQWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
