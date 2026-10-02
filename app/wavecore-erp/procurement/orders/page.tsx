@@ -237,10 +237,38 @@ export default function PurchaseOrdersPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={FileText} label="Drafts" value={drafts} color="text-neutral-500" />
-          <Kpi icon={Clock} label="Awaiting approval" value={awaiting} color="text-amber-500" />
-          <Kpi icon={Send} label="Sent to supplier" value={sent} color="text-blue-500" />
-          <Kpi icon={CheckCheck} label="Acknowledged" value={acknowledged} color="text-cyan-500" />
+          <Kpi
+            icon={FileText}
+            label="Drafts"
+            value={drafts}
+            color="text-neutral-500"
+            onClick={() => { setStatusFilter('DRAFT'); setOffset(0) }}
+            title="Show draft POs"
+          />
+          <Kpi
+            icon={Clock}
+            label="Awaiting approval"
+            value={awaiting}
+            color="text-amber-500"
+            onClick={() => { setStatusFilter('SUBMITTED'); setOffset(0) }}
+            title="Show POs awaiting approval"
+          />
+          <Kpi
+            icon={Send}
+            label="Sent to supplier"
+            value={sent}
+            color="text-blue-500"
+            onClick={() => { setStatusFilter('SENT'); setOffset(0) }}
+            title="Show POs sent to supplier"
+          />
+          <Kpi
+            icon={CheckCheck}
+            label="Acknowledged"
+            value={acknowledged}
+            color="text-cyan-500"
+            onClick={() => { setStatusFilter('ACKNOWLEDGED'); setOffset(0) }}
+            title="Show acknowledged POs"
+          />
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
@@ -376,14 +404,24 @@ export default function PurchaseOrdersPage() {
 // ============================================================
 // KPI tile
 // ============================================================
-function Kpi({ icon: Icon, label, value, color }: any) {
-  return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+function Kpi({ icon: Icon, label, value, color, onClick, title }: any) {
+  const cls = 'text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 w-full ' +
+              (onClick ? 'hover:border-rose-500 transition cursor-pointer' : '')
+  const content = (
+    <>
       <Icon className={'w-5 h-5 mb-2 ' + color} />
       <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
-    </div>
+    </>
   )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} title={title || label}>
+        {content}
+      </button>
+    )
+  }
+  return <div className={cls}>{content}</div>
 }
 
 // ============================================================
