@@ -115,8 +115,17 @@ export const DELETE = procurementHandler(async (request: NextRequest, ctx: { par
     [id, g.organizationId]
   )
   if (cur.rowCount === 0) return NextResponse.json({ error: 'Payment run not found' }, { status: 404 })
-  if (cur.rows[0].status !== 'DRAFT') {
-    return NextResponse.json({ error: 'Only DRAFT runs can be deleted' }, { status: 409 })
+  // Deletable statuses:
+  //   DRAFT     - never submitted
+  //   FAILED    - execution attempted, bank rejected
+  //   CANCELLED - already cancelled
+  // Blocked (payment record must not vanish mid-flight or after settlement):
+  //   PENDING_APPROVAL, APPROVED, EXECUTING, EXECUTED
+  const deletable = ['DRAFT', 'FAILED', 'CANCELLED']
+  if (!deletable.includes(cur.rows[0].status)) {
+    return NextResponse.json({
+      error: 'Cannot delete payment run in status ' + cur.rows[0].status + '. Cancel it first.',
+    }, { status: 409 })
   }
 
   await pool.query(`DELETE FROM "PaymentRunLine" WHERE "paymentRunId" = $1 AND "organizationId" = $2`, [id, g.organizationId])
