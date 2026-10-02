@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Package, Search, Trash2, Loader2, Printer, DollarSign } from 'lucide-react'
+import { Plus, Package, Search, Trash2, Loader2, Printer, DollarSign, ExternalLink } from 'lucide-react'
 
 interface SalesOrder {
   id: string
@@ -12,6 +12,8 @@ interface SalesOrder {
   amount: number
   status: string
   createdAt: string
+  items_count?: number
+  quotation_number?: string
 }
 
 export default function OrdersPage() {
@@ -114,10 +116,22 @@ export default function OrdersPage() {
               <div key={order.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-mono font-bold">{order.number || 'N/A'}</p>
+                    <Link href={'/wavecore-erp/crm/orders/' + order.id} className="font-mono font-bold text-red-600 dark:text-red-400 hover:underline">
+                      {order.number || 'N/A'}
+                    </Link>
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor(order.status)}`}>
                       {order.status}
                     </span>
+                    {order.items_count > 0 && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
+                        {order.items_count} item{order.items_count === 1 ? '' : 's'}
+                      </span>
+                    )}
+                    {order.quotation_number && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                        from {order.quotation_number}
+                      </span>
+                    )}
                   </div>
                   <p className="text-lg font-bold text-red-600 flex items-center gap-1 mt-1">
                     <DollarSign className="w-4 h-4" /> KSh {Number(order.total || order.amount || 0).toLocaleString()}
@@ -128,6 +142,10 @@ export default function OrdersPage() {
                     className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
                     <Printer className="w-4 h-4" />
                   </button>
+                  <Link href={'/wavecore-erp/crm/orders/' + order.id} title="Open"
+                    className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                   <button onClick={() => deleteOrder(order.id)} title="Delete"
                     className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
                     {deleting === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
