@@ -91,6 +91,8 @@ export default function SupplierInvoicesPage() {
   const [offset, setOffset] = useState(0)
 
   const [showWizard, setShowWizard] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [approving, setApproving] = useState(false)
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
@@ -116,6 +118,44 @@ export default function SupplierInvoicesPage() {
     return 0
   })
 
+  const APPROVABLE_STATUSES = ['SUBMITTED', 'MATCHED', 'PARTIAL_MATCH', 'MISMATCH']
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const approveSelected = async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    if (!confirm('Approve ' + ids.length + ' invoice(s)? This cannot be undone.')) return
+
+    setApproving(true)
+    try {
+      const res = await fetch('/api/wavecore/procurement/supplier-invoices/bulk-approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
+        body: JSON.stringify({ ids }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Bulk approve failed'); return }
+      const okCount = data.approved || 0
+      const skipCount = data.skipped || 0
+      flash(okCount + ' invoice' + (okCount === 1 ? '' : 's') + ' approved' + (skipCount > 0 ? ' · ' + skipCount + ' skipped' : ''))
+      clearSelection()
+      fetchInvoices()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    } finally {
+      setApproving(false)
+    }
+  }
   const fetchInvoices = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
@@ -242,6 +282,31 @@ export default function SupplierInvoicesPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/30 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
+        {selectedIds.size > 0 && (
+          <div className="mb-3 p-4 rounded-2xl bg-emerald-900/20 border border-emerald-800 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-emerald-300">
+              <CheckCircle2 className="w-5 h-5" />
+              {selectedIds.size} invoice{selectedIds.size === 1 ? '' : 's'} selected
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={clearSelection}
+                disabled={approving}
+                className="px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold disabled:opacity-40"
+              >
+                Clear
+              </button>
+              <button
+                onClick={approveSelected}
+                disabled={approving}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-2 disabled:opacity-40"
+              >
+                {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Approve selected
+              </button>
+            </div>
+          </div>
+        )}
         {/* Toolbar */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 mb-4">
           <div className="flex gap-3 flex-wrap items-center">
@@ -292,6 +357,22 @@ export default function SupplierInvoicesPage() {
               <table className="w-full text-sm">
                 <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
                   <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all approvable on this page"
+                        checked={
+                          sortedInvoices.filter((i: any) => APPROVABLE_STATUSES.includes(i.status)).length > 0 &&
+                          sortedInvoices.filter((i: any) => APPROVABLE_STATUSES.includes(i.status)).every((i: any) => selectedIds.has(i.id))
+                        }
+                        onChange={(e) => {
+                          const approvable = sortedInvoices.filter((i: any) => APPROVABLE_STATUSES.includes(i.status))
+                          if (e.target.checked) setSelectedIds(new Set(approvable.map((i: any) => i.id)))
+                          else clearSelection()
+                        }}
+                        className="w-4 h-4 rounded cursor-pointer accent-emerald-500"
+                      />
+                    </th>
                     <th className="px-4 py-3 cursor-pointer hover:text-indigo-600" onClick={() => toggleSort('invoiceNumber')}>Invoice#</th>
                     <th className="px-4 py-3">Supplier</th>
                     <th className="px-4 py-3 cursor-pointer hover:text-indigo-600" onClick={() => toggleSort('status')}>Status</th>
@@ -309,6 +390,19 @@ export default function SupplierInvoicesPage() {
                     const dueClass = dueDays == null ? '' : dueDays < 0 ? 'text-red-500 font-bold' : dueDays <= 3 ? 'text-orange-500 font-bold' : dueDays <= 14 ? 'text-amber-500' : 'text-neutral-500'
                     return (
                       <tr key={inv.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                        <td className="px-4 py-3 align-top w-10">
+                          {APPROVABLE_STATUSES.includes(inv.status) ? (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(inv.id)}
+                              onChange={() => toggleSelect(inv.id)}
+                              className="w-4 h-4 rounded cursor-pointer accent-emerald-500"
+                              aria-label={'Select invoice ' + inv.invoiceNumber}
+                            />
+                          ) : (
+                            <span className="text-neutral-600 text-xs" title={'Status ' + inv.status + ' is not approvable'}>—</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 align-top">
                           <Link href={'/wavecore-erp/procurement/supplier-invoices/' + inv.id} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
                             {inv.invoiceNumber}
