@@ -45,7 +45,7 @@ export default function CreateActivityPage() {
     try {
       const res = await fetch('/api/wavecore/crm/activities', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
         body: JSON.stringify(formData)
       })
 

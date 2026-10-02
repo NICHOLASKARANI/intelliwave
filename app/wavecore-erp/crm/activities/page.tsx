@@ -3,14 +3,17 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Activity, Search, Trash2, Loader2, Printer, Phone, Mail, Users, MessageSquare } from 'lucide-react'
+import { Plus, Activity, Search, Trash2, Loader2, Printer, Phone, Mail, Users, MessageSquare, ExternalLink, Clock, Calendar } from 'lucide-react'
 
 interface Activity {
   id: string
   type: string
   subject: string
-  description: string
-  priority: string
+  description?: string
+  priority?: string
+  dueDate?: string
+  completed?: boolean
+  customerName?: string
   createdAt: string
 }
 
@@ -126,8 +129,21 @@ export default function ActivitiesPage() {
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-bold">{activity.subject}</p>
-                      <p className="text-sm text-muted-foreground">{activity.type} | {activity.priority} | {new Date(activity.createdAt).toLocaleDateString()}</p>
+                      <Link href={'/wavecore-erp/crm/activities/' + activity.id} className="font-bold hover:text-blue-600 hover:underline">
+                        {activity.subject}
+                      </Link>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                        <span>{activity.type}</span>
+                        {activity.priority && <span>· {activity.priority}</span>}
+                        {activity.customerName && <span>· {activity.customerName}</span>}
+                        {activity.dueDate && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> due {new Date(activity.dueDate).toLocaleDateString('en-GB')}
+                          </span>
+                        )}
+                        <span className="text-neutral-400">· {new Date(activity.createdAt).toLocaleDateString('en-GB')}</span>
+                        {activity.completed && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-900/40 text-green-300">done</span>}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -135,6 +151,10 @@ export default function ActivitiesPage() {
                       className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
                       <Printer className="w-4 h-4" />
                     </button>
+                    <Link href={'/wavecore-erp/crm/activities/' + activity.id} title="Open"
+                      className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
                     <button onClick={() => deleteActivity(activity.id)} title="Delete"
                       className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
                       {deleting === activity.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
