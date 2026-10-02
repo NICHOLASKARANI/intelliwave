@@ -46,6 +46,7 @@ const MODULES: { href: string; label: string; icon: any; color: string; desc: st
   { href: '/wavecore-erp/procurement/rfqs',              label: 'RFQs',             icon: TrendingUp,     color: 'from-fuchsia-600 to-pink-700',     desc: 'Quotes & bid analysis' },
   { href: '/wavecore-erp/procurement/payment-runs',      label: 'Payment Runs',     icon: Wallet,         color: 'from-green-600 to-emerald-700',    desc: 'Batch pay approved invoices' },
   { href: '/wavecore-erp/procurement/match', label: 'Match Dashboard', icon: Award, color: 'from-amber-600 to-yellow-700', desc: '3-way match gaps & exceptions' },
+  { href: '/wavecore-erp/procurement/aging', label: 'Aging Report', icon: Calendar, color: 'from-rose-600 to-red-700', desc: 'Invoice aging & AP priorities' },
 ]
 
 export default function ProcurementDashboardPage() {
