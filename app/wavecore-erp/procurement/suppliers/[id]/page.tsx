@@ -9,8 +9,7 @@ import {
   Mail, Phone, Globe, MapPin, Building2, FileText, CreditCard,
   TrendingUp, History, Shield, Activity, Plus, X, Save, Edit3,
   Trash2, Download, ExternalLink, Calendar, DollarSign, Package, Package2, FileSignature, FileDown,
-  FileSpreadsheet, Receipt, Clock,
-} from 'lucide-react'
+  FileSpreadsheet, Receipt, Clock, BarChart3, Truck, XCircle} from 'lucide-react'
 
 type Tab = 'overview' | 'contacts' | 'bank' | 'documents' | 'scorecards' | 'risks' | 'activity'
 
@@ -37,6 +36,7 @@ export default function SupplierDetailPage() {
   const [bankAccounts, setBankAccounts] = useState<any[]>([])
   const [documents, setDocuments] = useState<any[]>([])
   const [scorecards, setScorecards] = useState<any[]>([])
+  const [computed, setComputed] = useState<any>(null)
   const [risks, setRisks] = useState<any[]>([])
   const [purchaseOrders, setPurchaseOrders] = useState<any[]>([])
   const [quotations, setQuotations] = useState<any[]>([])
@@ -87,6 +87,11 @@ export default function SupplierDetailPage() {
       setBankAccounts(data.bankAccounts || [])
       setDocuments(data.documents || [])
       setScorecards(data.scorecards || [])
+      // Computed scorecard — separate read-only endpoint
+      fetch('/api/wavecore/procurement/suppliers/' + id + '/computed-scorecard', { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setComputed(d) })
+        .catch(() => {})
       setRisks(data.risks || [])
       setPurchaseOrders(data.purchaseOrders || [])
       setQuotations(data.quotations || [])
@@ -566,6 +571,75 @@ export default function SupplierDetailPage() {
           />
         )}
 
+        {tab === 'scorecards' && computed && (
+          <div className="mb-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-indigo-500" />
+                <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold">Computed performance</h3>
+                <span className="text-[10px] text-neutral-400">last {computed.window?.months || 12} months</span>
+              </div>
+              <p className="text-[10px] text-neutral-400">
+                Read-only · from PO, GRN, Invoice data
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <ComputedKpi
+                icon={Truck}
+                label="On-time delivery"
+                value={computed.onTimeDeliveryPct}
+                suffix="%"
+                sub={computed.onTimeSampleSize + ' GRN' + (computed.onTimeSampleSize === 1 ? '' : 's')}
+                good={computed.onTimeDeliveryPct != null && computed.onTimeDeliveryPct >= 90}
+                warn={computed.onTimeDeliveryPct != null && computed.onTimeDeliveryPct >= 70 && computed.onTimeDeliveryPct < 90}
+              />
+              <ComputedKpi
+                icon={Clock}
+                label="Avg lead time"
+                value={computed.avgLeadTimeDays}
+                suffix="d"
+                sub={computed.leadTimeSampleSize + ' sample' + (computed.leadTimeSampleSize === 1 ? '' : 's')}
+              />
+              <ComputedKpi
+                icon={CheckCircle2}
+                label="Invoice accuracy"
+                value={computed.invoiceAccuracyPct}
+                suffix="%"
+                sub={computed.invoiceLineSampleSize + ' line' + (computed.invoiceLineSampleSize === 1 ? '' : 's')}
+                good={computed.invoiceAccuracyPct != null && computed.invoiceAccuracyPct >= 90}
+                warn={computed.invoiceAccuracyPct != null && computed.invoiceAccuracyPct >= 70 && computed.invoiceAccuracyPct < 90}
+              />
+              <ComputedKpi
+                icon={XCircle}
+                label="Rejection rate"
+                value={computed.rejectionRatePct}
+                suffix="%"
+                sub={computed.rejectionLineSampleSize + ' line' + (computed.rejectionLineSampleSize === 1 ? '' : 's')}
+                good={computed.rejectionRatePct != null && computed.rejectionRatePct <= 2}
+                warn={computed.rejectionRatePct != null && computed.rejectionRatePct > 2 && computed.rejectionRatePct <= 5}
+                invert
+              />
+              <ComputedKpi
+                icon={DollarSign}
+                label="Price variance"
+                value={computed.priceVariancePct}
+                suffix="%"
+                sub={computed.priceVarianceSampleSize + ' line' + (computed.priceVarianceSampleSize === 1 ? '' : 's')}
+                good={Math.abs(computed.priceVariancePct || 0) <= 2}
+                warn={Math.abs(computed.priceVariancePct || 0) > 2 && Math.abs(computed.priceVariancePct || 0) <= 5}
+                invert
+              />
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+              <StatCell label="POs" value={computed.totalPoCount} />
+              <StatCell label="GRNs" value={computed.totalGrnCount} />
+              <StatCell label="Invoices" value={computed.totalInvoiceCount} />
+              <StatCell label="Lifetime spend" value={'KES ' + Number(computed.lifetimeSpend || 0).toLocaleString()} />
+            </div>
+          </div>
+        )}
         {tab === 'scorecards' && (
           <div className="space-y-4">
           {scorecards.length > 1 && (
@@ -969,6 +1043,36 @@ function ListSection({ title, icon: Icon, items, onAdd, addLabel, empty, render,
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ============================================================
+// Computed scorecard helpers
+// ============================================================
+function ComputedKpi({ icon: Icon, label, value, suffix, sub, good, warn, invert }: any) {
+  const isNull = value == null
+  const display = isNull ? '—' : (typeof value === 'number' ? value : value)
+  const tone = isNull
+    ? 'text-neutral-400'
+    : good ? 'text-emerald-500'
+    : warn ? 'text-amber-500'
+    : 'text-red-500'
+  return (
+    <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800">
+      <Icon className={'w-4 h-4 mb-2 ' + tone} />
+      <p className={'text-lg font-bold ' + tone}>{display}{!isNull && suffix ? suffix : ''}</p>
+      <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
+      {sub && <p className="text-[10px] text-neutral-400 mt-0.5">{sub}</p>}
+    </div>
+  )
+}
+
+function StatCell({ label, value }: any) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
+      <p className="text-sm font-bold text-neutral-900 dark:text-white">{value}</p>
     </div>
   )
 }
