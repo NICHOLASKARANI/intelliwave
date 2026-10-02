@@ -7,7 +7,7 @@ import {
   Wallet, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, Receipt, FileText, Layers, Calendar,
   ChevronLeft, ChevronRight, Save, Send, Clock, TrendingUp, CheckCheck,
-  DollarSign, Building2, Hash, Users,
+  DollarSign, Building2, Hash, Users, ArrowRight,
 } from 'lucide-react'
 
 interface PaymentRun {
@@ -71,8 +71,31 @@ export default function PaymentRunsPage() {
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  const fetchRuns = async () => {
-    setLoading(true)
+  // ---- Table sorting ----
+  const [sortBy, setSortBy] = useState<'createdAt'|'runNumber'|'status'|'method'|'paymentDate'|'totalAmount'>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc')
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) setSortDir(sortDir === "asc" ? "desc" : "asc")
+    else { setSortBy(key as any); setSortDir("desc") }
+  }
+
+  const sortedRuns = [...runs].sort((a: any, b: any) => {
+    const dir = sortDir === "asc" ? 1 : -1
+    const val = (x: any) => {
+      if (sortBy === "createdAt") return new Date(x.createdAt).getTime()
+      if (sortBy === "paymentDate") return x.paymentDate ? new Date(x.paymentDate).getTime() : 0
+      if (sortBy === "totalAmount") return Number(x.totalAmount || 0)
+      return String(x[sortBy] || "").toLowerCase()
+    }
+    const av = val(a); const bv = val(b)
+    if (av < bv) return -1 * dir
+    if (av > bv) return 1 * dir
+    return 0
+  })
+
+  const fetchRuns = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (q) p.set('q', q)
@@ -90,6 +113,13 @@ export default function PaymentRunsPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchRuns() /* eslint-disable-next-line */ }, [q, statusFilter, methodFilter, offset])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchRuns({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [q, statusFilter, methodFilter, offset])
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -151,10 +181,10 @@ export default function PaymentRunsPage() {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={FileText} label="Drafts" value={drafts} color="text-neutral-500" />
-          <Kpi icon={Clock} label="Pending approval" value={pending} color="text-amber-500" />
-          <Kpi icon={CheckCircle2} label="Approved" value={approved} color="text-blue-500" />
-          <Kpi icon={CheckCheck} label="Executed" value={executed} color="text-green-500" />
+          <Kpi icon={FileText} label="Drafts" value={drafts} color="text-neutral-500" onClick={() => { setStatusFilter('DRAFT'); setOffset(0) }} />
+          <Kpi icon={Clock} label="Pending approval" value={pending} color="text-amber-500" onClick={() => { setStatusFilter('PENDING_APPROVAL'); setOffset(0) }} />
+          <Kpi icon={CheckCircle2} label="Approved" value={approved} color="text-blue-500" onClick={() => { setStatusFilter('APPROVED'); setOffset(0) }} />
+          <Kpi icon={CheckCheck} label="Executed" value={executed} color="text-green-500" onClick={() => { setStatusFilter('EXECUTED'); setOffset(0) }} />
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
@@ -170,7 +200,7 @@ export default function PaymentRunsPage() {
             <button onClick={() => setShowFilters(!showFilters)} className={'px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ' + (showFilters ? 'bg-emerald-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300')}>
               <Filter className="w-4 h-4" /> Filters {activeFilters > 0 && <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{activeFilters}</span>}
             </button>
-            <button onClick={fetchRuns} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <button onClick={() => fetchRuns()} className="px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>
@@ -206,33 +236,63 @@ export default function PaymentRunsPage() {
         ) : (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-              {runs.map(r => (
-                <Link key={r.id} href={'/wavecore-erp/procurement/payment-runs/' + r.id} className="block p-4 border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[260px]">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{r.runNumber}</span>
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('runNumber')}>Run#</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('status')}>Status</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('method')}>Method</th>
+                    <th className="px-4 py-3 text-right">Invoices</th>
+                    <th className="px-4 py-3 text-right cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('totalAmount')}>Amount</th>
+                    <th className="px-4 py-3 cursor-pointer hover:text-emerald-600" onClick={() => toggleSort('paymentDate')}>Payment date</th>
+                    <th className="px-4 py-3">Cutoff</th>
+                    <th className="px-4 py-3">Approved by</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRuns.map((r: any) => (
+                    <tr key={r.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition">
+                      <td className="px-4 py-3 align-top">
+                        <Link href={'/wavecore-erp/procurement/payment-runs/' + r.id} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                          {r.runNumber}
+                        </Link>
+                        {r.failureReason && <p className="text-[10px] text-red-400 mt-0.5 truncate max-w-[180px]">{r.failureReason}</p>}
+                      </td>
+                      <td className="px-4 py-3 align-top">
                         <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + statusColor(r.status)}>{STATUS_LABELS[r.status] || r.status}</span>
+                      </td>
+                      <td className="px-4 py-3 align-top">
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-400">{METHOD_LABELS[r.method] || r.method}</span>
-                        {r.failureReason && <span className="text-[10px] text-red-400">· {r.failureReason.slice(0, 40)}</span>}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-500 flex-wrap">
-                        {r.paymentDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />pay {new Date(r.paymentDate).toLocaleDateString('en-GB')}</span>}
-                        {r.cutoffDate && <span>cutoff {new Date(r.cutoffDate).toLocaleDateString('en-GB')}</span>}
-                        <span className="flex items-center gap-1"><Receipt className="w-3 h-3" />{r.invoiceCount} invoice{r.invoiceCount !== 1 ? 's' : ''}</span>
-                        {r.approvedByName && <span className="flex items-center gap-1"><CheckCheck className="w-3 h-3" />approved by {r.approvedByName}</span>}
-                        {r.executedAt && <span>executed {new Date(r.executedAt).toLocaleDateString('en-GB')}</span>}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                        {r.currency} {Number(r.totalAmount || 0).toLocaleString()}
-                      </p>
-                      <p className="text-[10px] text-neutral-500 mt-1">{new Date(r.createdAt).toLocaleDateString('en-GB')}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                      </td>
+                      <td className="px-4 py-3 align-top text-right text-xs">
+                        {r.invoiceCount}
+                      </td>
+                      <td className="px-4 py-3 align-top text-right">
+                        <p className="font-bold text-neutral-900 dark:text-white">{r.currency} {Number(r.totalAmount || 0).toLocaleString()}</p>
+                      </td>
+                      <td className="px-4 py-3 align-top text-xs text-neutral-500">
+                        {r.paymentDate ? new Date(r.paymentDate).toLocaleDateString('en-GB') : '—'}
+                      </td>
+                      <td className="px-4 py-3 align-top text-xs text-neutral-500">
+                        {r.cutoffDate ? new Date(r.cutoffDate).toLocaleDateString('en-GB') : '—'}
+                      </td>
+                      <td className="px-4 py-3 align-top text-xs text-neutral-500">
+                        {r.approvedByName || '—'}
+                      </td>
+                      <td className="px-4 py-3 align-top text-right">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Link href={'/wavecore-erp/procurement/payment-runs/' + r.id} className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-900/20" title="Open">
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
             </div>
 
             {total > limit && (
@@ -255,14 +315,24 @@ export default function PaymentRunsPage() {
   )
 }
 
-function Kpi({ icon: Icon, label, value, color }: any) {
-  return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
+function Kpi({ icon: Icon, label, value, color, onClick, title }: any) {
+  const cls = 'text-left bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 w-full ' +
+              (onClick ? 'hover:border-emerald-500 transition cursor-pointer' : '')
+  const content = (
+    <>
       <Icon className={'w-5 h-5 mb-2 ' + color} />
       <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{label}</p>
-    </div>
+    </>
   )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} title={title || label}>
+        {content}
+      </button>
+    )
+  }
+  return <div className={cls}>{content}</div>
 }
 
 function RunWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
