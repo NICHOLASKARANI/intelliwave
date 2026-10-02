@@ -135,8 +135,18 @@ export const DELETE = procurementHandler(async (request: NextRequest, ctx: { par
     [id, g.organizationId]
   )
   if (cur.rowCount === 0) return NextResponse.json({ error: 'Contract not found' }, { status: 404 })
-  if (cur.rows[0].status !== 'DRAFT') {
-    return NextResponse.json({ error: 'Only DRAFT contracts can be deleted' }, { status: 409 })
+  // Deletable statuses:
+  //   DRAFT      — never activated
+  //   CANCELLED  — already dead
+  //   EXPIRED    — ended
+  //   TERMINATED — ended by agreement
+  // Blocked:
+  //   ACTIVE / SUSPENDED — must be terminated first
+  const deletable = ['DRAFT', 'CANCELLED', 'EXPIRED', 'TERMINATED']
+  if (!deletable.includes(cur.rows[0].status)) {
+    return NextResponse.json({
+      error: 'Cannot delete contract in status ' + cur.rows[0].status + '. Terminate it first.',
+    }, { status: 409 })
   }
 
   await pool.query(`DELETE FROM "SupplierContractLine" WHERE "contractId" = $1 AND "organizationId" = $2`, [id, g.organizationId])
