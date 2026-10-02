@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Target, Search, Trash2, Loader2, Printer, TrendingUp, DollarSign } from 'lucide-react'
+import { Plus, Target, Search, Trash2, Loader2, Printer, TrendingUp, DollarSign, ExternalLink } from 'lucide-react'
 
 interface Opportunity {
   id: string
@@ -14,6 +14,8 @@ interface Opportunity {
   stage: string
   status: string
   createdAt: string
+  probability?: number
+  expectedCloseDate?: string
 }
 
 export default function OpportunitiesPage() {
@@ -122,7 +124,9 @@ export default function OpportunitiesPage() {
               <div key={opp.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-bold">{opp.name || opp.title || 'N/A'}</p>
+                    <Link href={'/wavecore-erp/crm/opportunities/' + opp.id} className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                      {opp.name || opp.title || 'N/A'}
+                    </Link>
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${stageColor(opp.stage)}`}>
                       {opp.stage || opp.status}
                     </span>
@@ -136,6 +140,10 @@ export default function OpportunitiesPage() {
                     className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
                     <Printer className="w-4 h-4" />
                   </button>
+                  <Link href={'/wavecore-erp/crm/opportunities/' + opp.id} title="Open"
+                    className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                   <button onClick={() => deleteOpportunity(opp.id)} title="Delete"
                     className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
                     {deleting === opp.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}

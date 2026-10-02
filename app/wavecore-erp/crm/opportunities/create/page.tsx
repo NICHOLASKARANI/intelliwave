@@ -15,6 +15,8 @@ export default function CreateOpportunityPage() {
   const [customers, setCustomers] = useState<any[]>([])
   const [customerId, setCustomerId] = useState('')
   const [customerName, setCustomerName] = useState('')
+  const [expectedCloseDate, setExpectedCloseDate] = useState('')
+  const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -57,7 +59,15 @@ export default function CreateOpportunityPage() {
       const res = await fetch('/api/wavecore/crm/opportunities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, amount: parseFloat(amount), stage, probability: parseInt(probability), customerId: finalCustomerId }),
+        body: JSON.stringify({
+          name,
+          amount: parseFloat(amount),
+          stage,
+          probability: parseInt(probability),
+          customerId: finalCustomerId,
+          expectedCloseDate: expectedCloseDate || undefined,
+          notes: notes || undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to create opportunity'); return }
@@ -102,6 +112,12 @@ export default function CreateOpportunityPage() {
           </div>
           <div><label className="block text-sm font-medium mb-2">Probability (%)</label>
             <input type="number" value={probability} onChange={(e) => setProbability(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" min="0" max="100" />
+          </div>
+          <div><label className="block text-sm font-medium mb-2">Expected close date</label>
+            <input type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" />
+          </div>
+          <div><label className="block text-sm font-medium mb-2">Notes</label>
+            <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Any details about this opportunity..." />
           </div>
           <div><label className="block text-sm font-medium mb-2">Select Customer</label>
             <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">
