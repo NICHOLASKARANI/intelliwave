@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, FileText, Search, Trash2, Loader2, Printer, DollarSign } from 'lucide-react'
+import { Plus, FileText, Search, Trash2, Loader2, Printer, DollarSign, ExternalLink } from 'lucide-react'
 
 interface Quotation {
   id: string
@@ -12,6 +12,7 @@ interface Quotation {
   amount: number
   status: string
   createdAt: string
+  items_count?: number
 }
 
 export default function QuotationsPage() {
@@ -114,10 +115,17 @@ export default function QuotationsPage() {
               <div key={quote.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-mono font-bold">{quote.number || 'N/A'}</p>
+                    <Link href={'/wavecore-erp/crm/quotations/' + quote.id} className="font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline">
+                      {quote.number || 'N/A'}
+                    </Link>
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor(quote.status)}`}>
                       {quote.status}
                     </span>
+                    {quote.items_count > 0 && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
+                        {quote.items_count} item{quote.items_count === 1 ? '' : 's'}
+                      </span>
+                    )}
                   </div>
                   <p className="text-lg font-bold text-amber-600 flex items-center gap-1 mt-1">
                     <DollarSign className="w-4 h-4" /> KSh {Number(quote.total || quote.amount || 0).toLocaleString()}
@@ -128,6 +136,10 @@ export default function QuotationsPage() {
                     className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
                     <Printer className="w-4 h-4" />
                   </button>
+                  <Link href={'/wavecore-erp/crm/quotations/' + quote.id} title="Open"
+                    className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                   <button onClick={() => deleteQuotation(quote.id)} title="Delete"
                     className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
                     {deleting === quote.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
