@@ -7,7 +7,7 @@ import {
   FileSignature, Search, Plus, Loader2, X, AlertTriangle, CheckCircle2,
   Filter, ArrowLeft, RefreshCw, ClipboardList, Package, Users,
   ChevronLeft, ChevronRight, Save, Calendar, DollarSign, AlertCircle,
-  Layers, Sparkles, Clock, FileText, Landmark, ArrowRight,
+  Layers, Sparkles, Clock, FileText, Landmark, ArrowRight, Trash2,
 } from 'lucide-react'
 
 interface Contract {
@@ -122,6 +122,21 @@ export default function ContractsPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { fetchContracts() /* eslint-disable-next-line */ }, [q, statusFilter, typeFilter, offset])
+  const deleteContract = async (id: string, contractNumber: string) => {
+    if (!confirm('Delete contract ' + contractNumber + '? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/procurement/contracts/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Delete failed'); return }
+      flash('Contract deleted')
+      fetchContracts()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    }
+  }
 
   // 30-second silent auto-refresh
   useEffect(() => {
@@ -317,6 +332,7 @@ export default function ContractsPage() {
                             <Link href={'/wavecore-erp/procurement/contracts/' + c.id} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-900/20" title="Open">
                               <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
+                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteContract(c.id, c.contractNumber) }} className="p-1.5 rounded-lg text-red-400 hover:bg-red-900/20" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </td>
                       </tr>
