@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Clock, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
-  CheckCircle2, XCircle, AlertTriangle, UserCheck, TrendingUp, FileEdit, Sparkles, PlayCircle, StopCircle,
+  CheckCircle2, XCircle, AlertTriangle, UserCheck, TrendingUp, FileEdit, Sparkles, PlayCircle, StopCircle, ExternalLink,
 } from 'lucide-react'
 
 const STATUSES = ['PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'REMOTE']
@@ -281,7 +281,7 @@ export default function AttendancePage() {
                     return (
                       <tr key={r.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
                         <td className="p-3 text-xs text-neutral-400">{r.date ? new Date(r.date).toLocaleDateString('en-GB') : '—'}</td>
-                        <td className="p-3 text-white font-medium">{r.employeeName}</td>
+                        <td className="p-3"><Link href={'/wavecore-erp/hr/attendance/' + r.id} className="text-white font-medium hover:text-green-400">{r.employeeName}</Link></td>
                         <td className="p-3 font-mono text-xs text-neutral-400">{r.empCode || '—'}</td>
                         <td className="p-3 text-xs text-neutral-400">{r.department || '—'}</td>
                         <td className="p-3 text-center text-neutral-300">{inStr}</td>
@@ -290,6 +290,9 @@ export default function AttendancePage() {
                         <td className="p-3"><span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + statusStyle(r.status)}>{r.status}</span></td>
                         <td className="p-3">
                           <div className="flex gap-1 justify-center">
+                            <Link href={'/wavecore-erp/hr/attendance/' + r.id} className="p-1.5 rounded-lg bg-green-900/50 text-green-300 hover:bg-green-800" title="View detail">
+                              <ExternalLink className="w-4 h-4" />
+                            </Link>
                             <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800" title="Edit"><FileEdit className="w-4 h-4" /></button>
                             <button onClick={() => del(r.id, r.employeeName)} disabled={deleting === r.id} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
                               {deleting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
