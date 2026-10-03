@@ -29,8 +29,8 @@ export default function PayrollPage() {
     endDate: new Date().toISOString().slice(0, 10), status: 'DRAFT',
   })
 
-  const fetchAll = async (periodId?: string) => {
-    setLoading(true)
+  const fetchAll = async (periodId?: string, opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const url = periodId
         ? '/api/wavecore/hr/payroll?periodId=' + periodId
@@ -42,9 +42,16 @@ export default function PayrollPage() {
       setItems(data.items || data.payroll || [])
       setSummary(data.summary || {})
     } catch { setError('Network error') }
-    finally { setLoading(false) }
+    finally { if (!opts?.silent) setLoading(false) }
   }
   useEffect(() => { fetchAll() }, [])
+
+  // 30-second silent auto-refresh — keeps the KPI cards live
+  useEffect(() => {
+    const t = setInterval(() => { fetchAll(activePeriod?.id, { silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
