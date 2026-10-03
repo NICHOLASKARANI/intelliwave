@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Wallet, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
-  CheckCircle2, DollarSign, Users, TrendingUp, PlayCircle, Sparkles, FileEdit, AlertTriangle, FileDown, Settings2, RotateCcw, Save,
+  CheckCircle2, DollarSign, Users, TrendingUp, PlayCircle, Sparkles, FileEdit, AlertTriangle, FileDown, Settings2, RotateCcw, Save, Files,
 } from 'lucide-react'
 
 export default function PayrollPage() {
@@ -246,6 +246,16 @@ export default function PayrollPage() {
             </button>
             <button onClick={pdf} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <Printer className="w-4 h-4" /> Report
+            </button>
+            <button
+              onClick={() => {
+                if (!activePeriod) { setError('No active period'); return }
+                window.open('/api/wavecore/hr/payroll/payslips-batch/pdf?periodId=' + activePeriod.id, '_blank')
+              }}
+              disabled={!activePeriod}
+              className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2 disabled:opacity-50"
+            >
+              <Files className="w-4 h-4" /> Batch Payslips
             </button>
             <button onClick={toggleStatutory} className={'px-4 py-3 rounded-xl font-bold flex items-center gap-2 ' + (showStatutory ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white')}>
               <Settings2 className="w-4 h-4" /> Statutory
