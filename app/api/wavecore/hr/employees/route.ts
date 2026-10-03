@@ -6,6 +6,31 @@ import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 import { validateEmployeeInput, validationErrorResponse } from '@/lib/wavecore/validate'
 
+// ============================================================
+// Idempotent schema fix — ensures the Employee table has the
+// extended columns the INSERT tries to write. ADD COLUMN IF NOT
+// EXISTS is a no-op when the column already exists.
+// ============================================================
+let _employeeSchemaEnsured = false
+async function ensureEmployeeSchema() {
+  if (_employeeSchemaEnsured) return
+  const cols: [string, string][] = [
+    ['preferredName',       'TEXT'],
+    ['jobTitle',            'TEXT'],
+    ['jobFamily',           'TEXT'],
+    ['grade',               'TEXT'],
+    ['division',            'TEXT'],
+    ['branch',              'TEXT'],
+    ['costCenter',          'TEXT'],
+    ['reportingManagerId',  'TEXT'],
+    ['photoUrl',            'TEXT'],
+  ]
+  for (const [name, type] of cols) {
+    await pool.query('ALTER TABLE "Employee" ADD COLUMN IF NOT EXISTS "' + name + '" ' + type).catch(() => {})
+  }
+  _employeeSchemaEnsured = true
+}
+
 // Auto-generate next Employee code like EMP-0001
 async function nextEmployeeCode(orgId: string): Promise<string> {
   const res = await pool.query(
@@ -25,6 +50,7 @@ export async function GET(request: NextRequest) {
     const guard = await guardHR(request, 'HR_PII_READ')
     if (guard.deny) return guard.response!
     // ==================
+    await ensureEmployeeSchema()
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const status = searchParams.get('status')
@@ -107,6 +133,7 @@ export async function POST(request: NextRequest) {
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
     // ==================
+    await ensureEmployeeSchema()
     const body = await request.json()
 
     // === INPUT VALIDATION ===

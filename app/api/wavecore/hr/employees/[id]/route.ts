@@ -6,6 +6,26 @@ import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 import { validateEmployeeInput, validationErrorResponse } from '@/lib/wavecore/validate'
 
+let _employeeSchemaEnsured = false
+async function ensureEmployeeSchema() {
+  if (_employeeSchemaEnsured) return
+  const cols: [string, string][] = [
+    ['preferredName',       'TEXT'],
+    ['jobTitle',            'TEXT'],
+    ['jobFamily',           'TEXT'],
+    ['grade',               'TEXT'],
+    ['division',            'TEXT'],
+    ['branch',              'TEXT'],
+    ['costCenter',          'TEXT'],
+    ['reportingManagerId',  'TEXT'],
+    ['photoUrl',            'TEXT'],
+  ]
+  for (const [name, type] of cols) {
+    await pool.query('ALTER TABLE "Employee" ADD COLUMN IF NOT EXISTS "' + name + '" ' + type).catch(() => {})
+  }
+  _employeeSchemaEnsured = true
+}
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireTenant(request)
