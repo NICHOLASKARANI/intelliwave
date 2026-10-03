@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Users, Search, Trash2, Loader2, Printer, Mail, Phone } from 'lucide-react'
+import { Plus, Users, Search, Trash2, Loader2, Printer, Mail, Phone, ExternalLink } from 'lucide-react'
 
 interface Customer {
   id: string
@@ -104,7 +104,7 @@ export default function CustomersPage() {
             {filtered.map(customer => (
               <div key={customer.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
-                  <p className="font-bold">{customer.name}</p>
+                  <Link href={'/wavecore-erp/crm/customers/' + customer.id} className="font-bold text-blue-600 dark:text-blue-400 hover:underline">{customer.name}</Link>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {customer.email || 'N/A'}</span>
                     <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {customer.phone || 'N/A'}</span>
@@ -115,6 +115,10 @@ export default function CustomersPage() {
                     className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
                     <Printer className="w-4 h-4" />
                   </button>
+                  <Link href={'/wavecore-erp/crm/customers/' + customer.id} title="Open"
+                    className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                   <button onClick={() => deleteCustomer(customer.id)} title="Delete"
                     className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
                     {deleting === customer.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
