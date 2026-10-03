@@ -62,6 +62,7 @@ export default function AttendancePage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({
     employeeId: '', date: new Date().toISOString().slice(0, 10),
     checkIn: '', checkOut: '', status: 'PRESENT', notes: '',
@@ -114,7 +115,7 @@ export default function AttendancePage() {
     if (!confirm('Delete attendance record for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/attendance/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/attendance/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

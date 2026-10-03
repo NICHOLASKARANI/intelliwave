@@ -65,6 +65,7 @@ export default function PerformancePage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({
     employeeId: '', reviewPeriod: '', reviewType: 'ANNUAL',
     score: '', selfScore: '', managerScore: '', goalsAchieved: '', goalsTotal: '',
@@ -108,7 +109,7 @@ export default function PerformancePage() {
     if (!confirm('Delete performance review for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/performance/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/performance/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

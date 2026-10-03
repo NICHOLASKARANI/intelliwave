@@ -60,6 +60,7 @@ export default function OnboardingPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({
     employeeName: '', employeeId: '', startDate: new Date().toISOString().slice(0, 10),
     targetCompletionDate: '', currentStep: '1', totalSteps: '8', status: 'IN_PROGRESS', notes: '',
@@ -103,7 +104,7 @@ export default function OnboardingPage() {
     if (!confirm('Delete onboarding checklist for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/onboarding/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/onboarding/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

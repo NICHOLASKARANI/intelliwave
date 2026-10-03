@@ -43,6 +43,7 @@ export default function DepartmentsPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({ name: '', code: '', head: '', costCenter: '', location: '', budgetAmount: '', description: '' })
 
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
@@ -80,7 +81,7 @@ export default function DepartmentsPage() {
     if (!confirm('Delete department "' + name + '"? This cannot be undone.')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/departments/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/departments/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       flash('Department deleted'); fetchAll()

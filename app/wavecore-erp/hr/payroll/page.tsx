@@ -47,6 +47,7 @@ export default function PayrollPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
 
   const runPayroll = async () => {
     if (!activePeriod) { setError('No active period — create one first'); return }
@@ -90,7 +91,7 @@ export default function PayrollPage() {
     if (!confirm('Delete payslip for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/payroll/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/payroll/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Payslip deleted'); fetchAll(activePeriod?.id) }
     } finally { setDeleting('') }
   }
@@ -99,7 +100,7 @@ export default function PayrollPage() {
     if (!activePeriod) return
     if (!confirm('Delete the entire period "' + activePeriod.name + '" and all its payslips?\n\nThis cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/hr/payroll?periodId=' + activePeriod.id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/payroll?periodId=' + activePeriod.id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Period deleted'); fetchAll() }
     } catch {}
   }

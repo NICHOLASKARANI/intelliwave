@@ -59,6 +59,7 @@ export default function RecruitmentPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({ title: '', location: '', employmentType: 'FULL_TIME', salaryRange: '', description: '', requirements: '', status: 'OPEN', priority: 'NORMAL', closingDate: '' })
 
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
@@ -93,7 +94,7 @@ export default function RecruitmentPage() {
     if (!confirm('Delete job "' + title + '" and all its applicants?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/recruitment/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/recruitment/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Job deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

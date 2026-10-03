@@ -55,6 +55,7 @@ export default function TrainingPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({
     title: '', category: '', provider: '', trainer: '', description: '',
     startDate: '', endDate: '', durationHours: '', costPerAttendee: '',
@@ -98,7 +99,7 @@ export default function TrainingPage() {
     if (!confirm('Delete "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/training/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/training/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

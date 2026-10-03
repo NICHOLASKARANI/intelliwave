@@ -62,6 +62,7 @@ export default function LeavesPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({
     employeeId: '', leaveTypeId: '', startDate: new Date().toISOString().slice(0, 10),
     endDate: new Date().toISOString().slice(0, 10), days: '', reason: '', status: 'PENDING',
@@ -128,7 +129,7 @@ export default function LeavesPage() {
     if (!confirm('Delete leave request for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/leaves/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/leaves/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

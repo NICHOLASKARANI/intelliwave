@@ -53,6 +53,7 @@ export default function BenefitsPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({
     name: '', category: '', provider: '', description: '', eligibility: '',
     employerContribution: '', employeeContribution: '', enrolledCount: '', status: 'ACTIVE',
@@ -97,7 +98,7 @@ export default function BenefitsPage() {
     if (!confirm('Delete benefit program "' + name + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/benefits/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/benefits/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
