@@ -5,6 +5,26 @@ import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 
+let _perfSchemaEnsured = false
+async function ensurePerformanceSchema() {
+  if (_perfSchemaEnsured) return
+  const cols: [string, string][] = [
+    ['reviewPeriod',   'TEXT'],
+    ['reviewType',     'TEXT'],
+    ['score',          'DOUBLE PRECISION DEFAULT 0'],
+    ['managerScore',   'DOUBLE PRECISION DEFAULT 0'],
+    ['selfScore',      'DOUBLE PRECISION DEFAULT 0'],
+    ['goalsTotal',     'INTEGER DEFAULT 0'],
+    ['goalsAchieved',  'INTEGER DEFAULT 0'],
+    ['comments',       'TEXT'],
+    ['status',         'TEXT DEFAULT \'DRAFT\''],
+  ]
+  for (const [name, type] of cols) {
+    await pool.query('ALTER TABLE "PerformanceReview" ADD COLUMN IF NOT EXISTS "' + name + '" ' + type).catch(() => {})
+  }
+  _perfSchemaEnsured = true
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -13,6 +33,7 @@ export async function GET(request: NextRequest) {
     // === RBAC GUARD (wave 2) ===
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
+    await ensurePerformanceSchema()
     // ============================
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
@@ -86,6 +107,7 @@ export async function POST(request: NextRequest) {
     // === RBAC GUARD (wave 2) ===
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
+    await ensurePerformanceSchema()
     // ============================
     const body = await request.json()
     if (!body.employeeId) return NextResponse.json({ error: 'Employee required' }, { status: 400 })

@@ -6,6 +6,14 @@ import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 import { validateLeaveInput, validationErrorResponse } from '@/lib/wavecore/validate'
 
+let _leaveSchemaEnsured = false
+async function ensureLeaveSchema() {
+  if (_leaveSchemaEnsured) return
+  await pool.query('ALTER TABLE "LeaveRequest" ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP(3)').catch(() => {})
+  await pool.query('ALTER TABLE "LeaveRequest" ADD COLUMN IF NOT EXISTS "rejectionReason" TEXT').catch(() => {})
+  _leaveSchemaEnsured = true
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -14,6 +22,7 @@ export async function GET(request: NextRequest) {
     // === RBAC GUARD (wave 2) ===
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
+    await ensureLeaveSchema()
     // ============================
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
@@ -91,6 +100,7 @@ export async function POST(request: NextRequest) {
     // === RBAC GUARD (wave 2) ===
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
+    await ensureLeaveSchema()
     // ============================
     const body = await request.json()
 
