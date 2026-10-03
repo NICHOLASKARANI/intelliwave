@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Wallet, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
-  CheckCircle2, DollarSign, Users, TrendingUp, PlayCircle, Sparkles, FileEdit, AlertTriangle, FileDown,
+  CheckCircle2, DollarSign, Users, TrendingUp, PlayCircle, Sparkles, FileEdit, AlertTriangle, FileDown, Settings2, RotateCcw, Save,
 } from 'lucide-react'
 
 export default function PayrollPage() {
@@ -24,6 +24,10 @@ export default function PayrollPage() {
   const [running, setRunning] = useState(false)
 
   const [showCreatePeriod, setShowCreatePeriod] = useState(false)
+  const [showStatutory, setShowStatutory] = useState(false)
+  const [statutoryBands, setStatutoryBands] = useState<any[]>([])
+  const [statutoryLoading, setStatutoryLoading] = useState(false)
+  const [statutorySaving, setStatutorySaving] = useState(false)
   const [periodForm, setPeriodForm] = useState({
     name: '', startDate: new Date().toISOString().slice(0, 10),
     endDate: new Date().toISOString().slice(0, 10), status: 'DRAFT',
@@ -92,6 +96,68 @@ export default function PayrollPage() {
       setPeriodForm({ name: '', startDate: new Date().toISOString().slice(0, 10), endDate: new Date().toISOString().slice(0, 10), status: 'DRAFT' })
       fetchAll(data.period?.id)
     } catch { setError('Network error') }
+  }
+
+  const loadStatutory = async () => {
+    setStatutoryLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/hr/statutory', { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok) setStatutoryBands(data.bands || [])
+    } catch {}
+    finally { setStatutoryLoading(false) }
+  }
+
+  const saveStatutory = async () => {
+    setStatutorySaving(true)
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/hr/statutory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({
+          bands: statutoryBands.map(b => ({
+            code: b.code,
+            label: b.label,
+            bandMin: Number(b.bandMin || 0),
+            bandMax: b.bandMax === '' || b.bandMax === null || b.bandMax === undefined ? null : Number(b.bandMax),
+            rate: Number(b.rate || 0),
+            fixedAmount: Number(b.fixedAmount || 0),
+            sortOrder: Number(b.sortOrder || 0),
+          })),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Save failed'); return }
+      flash('Statutory bands saved')
+      loadStatutory()
+    } catch { setError('Network error') }
+    finally { setStatutorySaving(false) }
+  }
+
+  const resetStatutory = async () => {
+    if (!confirm('Reset statutory bands to Kenya 2026 defaults? Your custom edits will be lost.')) return
+    setStatutorySaving(true)
+    try {
+      const res = await fetch('/api/wavecore/hr/statutory', {
+        method: 'PUT',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || 'Reset failed'); return }
+      flash('Bands reset to defaults')
+      loadStatutory()
+    } catch { setError('Network error') }
+    finally { setStatutorySaving(false) }
+  }
+
+  const updateBand = (idx: number, field: string, value: any) => {
+    setStatutoryBands(prev => prev.map((b, i) => i === idx ? { ...b, [field]: value } : b))
+  }
+
+  const toggleStatutory = () => {
+    const next = !showStatutory
+    setShowStatutory(next)
+    if (next && statutoryBands.length === 0) loadStatutory()
   }
 
   const delItem = async (id: string, name: string) => {
@@ -181,6 +247,9 @@ export default function PayrollPage() {
             <button onClick={pdf} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <Printer className="w-4 h-4" /> Report
             </button>
+            <button onClick={toggleStatutory} className={'px-4 py-3 rounded-xl font-bold flex items-center gap-2 ' + (showStatutory ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white')}>
+              <Settings2 className="w-4 h-4" /> Statutory
+            </button>
             <button onClick={runPayroll} disabled={running || !activePeriod} className="px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-purple-900/40 disabled:opacity-50">
               {running ? <Loader2 className="w-5 h-5 animate-spin" /> : <PlayCircle className="w-5 h-5" />}
               Run Payroll
@@ -234,6 +303,79 @@ export default function PayrollPage() {
           </div>
         )}
 
+        {showStatutory && (
+          <div className="bg-neutral-900 rounded-2xl border border-purple-800 mb-4 overflow-hidden">
+            <div className="p-5 border-b border-neutral-800 flex justify-between items-center flex-wrap gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Settings2 className="w-5 h-5 text-purple-400" /> Statutory Bands
+                </h2>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Configure PAYE bands, NSSF tiers, SHIF and Housing Levy rates. Changes apply the next time you run payroll.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={resetStatutory} disabled={statutorySaving} className="px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold flex items-center gap-1 disabled:opacity-40">
+                  <RotateCcw className="w-3.5 h-3.5" /> Reset to defaults
+                </button>
+                <button onClick={saveStatutory} disabled={statutorySaving} className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold flex items-center gap-1 disabled:opacity-40">
+                  {statutorySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save
+                </button>
+              </div>
+            </div>
+
+            {statutoryLoading ? (
+              <div className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-500" /></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-neutral-800">
+                    <tr>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Code</th>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Label</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Band Min</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Band Max</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Rate</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Fixed (KES)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {statutoryBands.map((b, i) => (
+                      <tr key={b.code} className="border-t border-neutral-800 hover:bg-neutral-800/30">
+                        <td className="p-3 font-mono text-xs text-purple-300">{b.code}</td>
+                        <td className="p-3 text-xs text-neutral-300">{b.label}</td>
+                        <td className="p-2 text-right">
+                          <input type="number" value={b.bandMin ?? ''} onChange={e => updateBand(i, 'bandMin', e.target.value)}
+                            className="w-24 px-2 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-xs text-right" />
+                        </td>
+                        <td className="p-2 text-right">
+                          <input type="number" value={b.bandMax ?? ''} placeholder="∞" onChange={e => updateBand(i, 'bandMax', e.target.value)}
+                            className="w-24 px-2 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-xs text-right" />
+                        </td>
+                        <td className="p-2 text-right">
+                          <input type="number" step="0.0001" value={b.rate ?? ''} onChange={e => updateBand(i, 'rate', e.target.value)}
+                            className="w-20 px-2 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-xs text-right" />
+                          <span className="text-[10px] text-neutral-500 ml-1">{b.code === 'SHIF_RATE' || b.code === 'HOUSING_LEVY_RATE' || (b.code || '').startsWith('PAYE_BAND') || (b.code || '').startsWith('NSSF_TIER') ? (Number(b.rate || 0) * 100).toFixed(2) + '%' : ''}</span>
+                        </td>
+                        <td className="p-2 text-right">
+                          <input type="number" value={b.fixedAmount ?? ''} onChange={e => updateBand(i, 'fixedAmount', e.target.value)}
+                            className="w-24 px-2 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-xs text-right" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="p-4 bg-neutral-800/30 border-t border-neutral-800 text-[11px] text-neutral-400">
+              <p><strong className="text-neutral-300">Rates</strong> are decimals (e.g. 0.10 = 10%, 0.0275 = 2.75%).</p>
+              <p><strong className="text-neutral-300">Band Max</strong> left blank = no upper limit (top band).</p>
+              <p><strong className="text-neutral-300">Fixed</strong> is used for reliefs (Personal Relief = 2,400 / month) and NSSF ceiling.</p>
+            </div>
+          </div>
+        )}
         <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 mb-4">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[220px]">
@@ -245,7 +387,7 @@ export default function PayrollPage() {
           </div>
         </div>
 
-        {loading ? (
+        {!showStatutory && (loading ? (
           <div className="text-center py-16"><Loader2 className="w-10 h-10 animate-spin mx-auto text-purple-500" /></div>
         ) : !activePeriod ? (
           <div className="text-center py-16 bg-neutral-900 rounded-2xl border border-neutral-800">
@@ -312,7 +454,7 @@ export default function PayrollPage() {
               </table>
             </div>
           </div>
-        )}
+        ))}
       </main>
 
       {showCreatePeriod && (
