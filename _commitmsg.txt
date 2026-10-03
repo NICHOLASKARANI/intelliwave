@@ -1,24 +1,23 @@
-feat(hr): leave types API + management panel; remove broken stub
+feat(hr): leave balance engine + auto-deduct on approve
 
-Removed:
-- app/api/wavecore/hr/leave/route.ts — a dead stub. Its INSERT
-  referenced columns that do not exist on LeaveRequest
-  ("employeeName" and "type"), so it would have failed 100% of the
-  time. Nothing in the codebase called it (verified by grep).
+Server side:
 
-New:
-- GET /api/wavecore/hr/leave-types — returns this org's leave types
-  and seeds 7 common defaults on first load (Annual, Sick, Maternity,
-  Paternity, Compassionate, Study, Unpaid).
-- POST /api/wavecore/hr/leave-types — create.
-- GET/PATCH/DELETE /api/wavecore/hr/leave-types/[id] — the DELETE
-  refuses if the type is in use by any leave request or balance.
+- New GET /api/wavecore/hr/leave-balances?employeeId=&year=
+  Returns balances, seeding missing rows from LeaveType.daysPerYear.
+- leaves POST now checks the employee's remaining balance before
+  inserting. If insufficient, returns 409 with a clear message
+  (requested / remaining / leave type).
+- leaves/[id] PATCH now runs inside a transaction and adjusts
+  LeaveBalance on any status change:
+    PENDING -> APPROVED        usedDays += days
+    APPROVED -> REJECTED       usedDays -= days (refund)
+    APPROVED -> CANCELLED      usedDays -= days (refund)
+    APPROVED -> PENDING        usedDays -= days (refund)
+    APPROVED -> APPROVED (edit days) adjusts by the delta
+  Uses GREATEST(0, ...) so usedDays / remainingDays never go below 0.
+- leaves/[id] DELETE refunds balance first if the record was APPROVED,
+  then deletes — inside the same transaction.
+- Also cleans up an accidentally-committed _commitmsg.txt from the
+  previous commit.
 
-UI (leaves page):
-- New "Leave Types" toolbar toggle next to Report.
-- Toggling shows a panel with all types in a table (name, description,
-  days/year, paid, approval required, delete).
-- Inline add form on top of the panel: name, days/year, paid checkbox,
-  Add Type button.
-
-No schema change. No other page touched. next build clean.
+No schema change. next build clean.

@@ -142,6 +142,47 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // === LEAVE BALANCE CHECK ===
+    const year = start.getFullYear()
+    const ltMeta = await pool.query(
+      `SELECT "daysPerYear", name FROM "LeaveType" WHERE id = $1 AND "organizationId" = $2`,
+      [leaveTypeId, session.organizationId]
+    )
+    const daysPerYear = Number(ltMeta.rows[0]?.daysPerYear || 0)
+    const leaveTypeName = ltMeta.rows[0]?.name || 'Leave'
+
+    if (daysPerYear > 0) {
+      const balRes = await pool.query(
+        `SELECT id, "totalDays", "usedDays", "remainingDays"
+         FROM "LeaveBalance"
+         WHERE "organizationId" = $1 AND "employeeId" = $2 AND "leaveTypeId" = $3 AND year = $4`,
+        [session.organizationId, body.employeeId, leaveTypeId, year]
+      )
+      let remaining = 0
+      if (balRes.rowCount > 0) {
+        remaining = Number(balRes.rows[0].remainingDays || 0)
+      } else {
+        // Seed a fresh balance row
+        await pool.query(
+          `INSERT INTO "LeaveBalance"
+             (id, "totalDays", "usedDays", "remainingDays", year, "employeeId", "leaveTypeId", "organizationId", "createdAt", "updatedAt")
+           VALUES (gen_random_uuid()::text, $1, 0, $1, $2, $3, $4, $5, NOW(), NOW())
+           ON CONFLICT DO NOTHING`,
+          [daysPerYear, year, body.employeeId, leaveTypeId, session.organizationId]
+        ).catch(() => {})
+        remaining = daysPerYear
+      }
+      if (days > remaining) {
+        return NextResponse.json({
+          error: `Insufficient ${leaveTypeName} balance: requested ${days} day(s), only ${remaining} remaining this year.`,
+          remaining,
+          requested: days,
+          leaveType: leaveTypeName,
+        }, { status: 409 })
+      }
+    }
+    // === END BALANCE CHECK ===
+
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
