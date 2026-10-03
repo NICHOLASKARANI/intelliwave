@@ -9,6 +9,7 @@ import {
   CheckCircle, Clock, AlertCircle, Star
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import CrmGlobalSearch from '@/components/wavecore/CrmGlobalSearch'
 
 interface DashboardStats {
   customers: number
@@ -105,11 +106,14 @@ export default function CRMPage() {
             </Link>
             <span className="text-sm text-muted-foreground">CRM & Sales</span>
           </div>
-          <Link href="/wavecore-erp/crm/customers/create">
-            <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-              <Plus className="w-4 h-4" /> Add Customer
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <CrmGlobalSearch className="w-72 hidden sm:block" />
+            <Link href="/wavecore-erp/crm/customers/create">
+              <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                <Plus className="w-4 h-4" /> Add Customer
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
