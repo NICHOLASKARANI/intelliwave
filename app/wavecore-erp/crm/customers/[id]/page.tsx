@@ -8,7 +8,7 @@ import {
   ArrowLeft, Loader2, AlertTriangle, Users, Printer, Trash2,
   User, Mail, Phone, Building2, Calendar, DollarSign, Save, X, Edit3,
   FileText, Package, TrendingUp, Activity as ActivityIcon, Target,
-  Receipt, CheckCircle2, CreditCard,
+  Receipt, CheckCircle2, CreditCard, Tag, Plus, X as XIcon,
 } from 'lucide-react'
 
 type Tab =
@@ -36,6 +36,7 @@ interface Customer {
   type?: string
   status?: string
   source?: string
+  tags?: string[]
   createdAt: string
 }
 
@@ -56,6 +57,8 @@ export default function CustomerDetailPage() {
   const [editing, setEditing] = useState(false)
   const [tab, setTab] = useState<Tab>('overview')
   const [form, setForm] = useState<any>({})
+  const [tagInput, setTagInput] = useState('')
+  const [tagsSaving, setTagsSaving] = useState(false)
 
   const csrf = () => (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
@@ -116,6 +119,40 @@ export default function CustomerDetailPage() {
     } finally {
       setWorking(false)
     }
+  }
+
+  const saveTags = async (next: string[]) => {
+    if (!customer) return
+    setTagsSaving(true)
+    try {
+      const res = await fetch('/api/wavecore/crm/customers/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({ tags: next }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Tag update failed'); return }
+      setCustomer({ ...customer, tags: next })
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    } finally {
+      setTagsSaving(false)
+    }
+  }
+
+  const addTag = async () => {
+    const t = tagInput.trim()
+    if (!t || !customer) return
+    const current = customer.tags || []
+    if (current.includes(t)) { setTagInput(''); return }
+    await saveTags([...current, t])
+    setTagInput('')
+  }
+
+  const removeTag = async (t: string) => {
+    if (!customer) return
+    const next = (customer.tags || []).filter(x => x !== t)
+    await saveTags(next)
   }
 
   const deleteCustomer = async () => {
@@ -259,6 +296,15 @@ export default function CustomerDetailPage() {
               <p className="text-white/80 text-sm">
                 {customer.company || 'No company'} · {customer.city || 'No city'} · Customer since {fmtDate(customer.createdAt)}
               </p>
+              {(customer.tags && customer.tags.length > 0) && (
+                <div className="flex gap-1.5 mt-3 flex-wrap">
+                  {customer.tags.map(t => (
+                    <span key={t} className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/20 text-white backdrop-blur">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="text-right text-sm">
               <p>Balance: <strong>{fmtMoney(stats.balance)}</strong></p>
@@ -391,6 +437,50 @@ export default function CustomerDetailPage() {
                     <Row label="Address" value={customer.address} />
                     <Row label="City" value={customer.city} />
                     <Row label="Country" value={customer.country} />
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
+                  <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-4 flex items-center gap-2">
+                    <Tag className="w-4 h-4" /> Tags
+                  </h3>
+                  <div className="flex items-center gap-2 flex-wrap mb-3">
+                    {(customer.tags || []).length === 0 && (
+                      <p className="text-sm text-neutral-500 italic">No tags yet</p>
+                    )}
+                    {(customer.tags || []).map(t => (
+                      <span key={t} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                        {t}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(t)}
+                          disabled={tagsSaving}
+                          className="hover:text-red-500 disabled:opacity-40"
+                          title="Remove tag"
+                        >
+                          <XIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+                      placeholder="Add a tag (VIP, partner, reseller…)"
+                      className="flex-1 px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={addTag}
+                      disabled={tagsSaving || !tagInput.trim()}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-1 disabled:opacity-40"
+                    >
+                      {tagsSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                      Add
+                    </button>
                   </div>
                 </div>
 

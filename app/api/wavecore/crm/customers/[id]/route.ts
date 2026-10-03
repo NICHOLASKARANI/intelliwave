@@ -18,6 +18,10 @@ export async function GET(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const orgId = session.organizationId
 
+    // Idempotent — safe to run every request. Adds a "tags" column
+    // (TEXT[]-like JSON) without a Prisma migration.
+    await pool.query(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "tags" TEXT`).catch(() => {})
+
     const cRes = await pool.query(
       `SELECT * FROM "Customer" WHERE id = $1 AND "organizationId" = $2`,
       [params.id, orgId]
@@ -101,8 +105,13 @@ export async function GET(
       .filter((o: any) => !['CLOSED_WON','CLOSED_LOST'].includes(o.stage))
       .reduce((s: number, o: any) => s + Number(o.amount || 0), 0)
 
+    // Parse tags from JSON string to array for the client
+    let parsedTags: string[] = []
+    try { parsedTags = customer.tags ? JSON.parse(customer.tags) : [] } catch { parsedTags = [] }
+    const customerOut = { ...customer, tags: parsedTags }
+
     return NextResponse.json({
-      customer,
+      customer: customerOut,
       contacts: contactsRes.rows,
       opportunities: opportunitiesRes.rows,
       quotations: quotationsRes.rows,
@@ -154,13 +163,20 @@ export async function PATCH(
     const body = await request.json().catch(() => null)
     if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 
-    const allowed = ['name','email','phone','company','address','city','country','taxId','website','notes','type','status','source']
+    const allowed = ['name','email','phone','company','address','city','country','taxId','website','notes','type','status','source','tags']
     const sets: string[] = []
     const values: any[] = []
     for (const k of allowed) {
       if (k in body) {
         let v = body[k]
         if (k === 'name' && !String(v || '').trim()) continue
+        if (k === 'tags') {
+          // Accept either an array or a JSON string.
+          if (Array.isArray(v)) v = JSON.stringify(v)
+          else if (typeof v === 'string' && v.trim().length > 0) {
+            try { v = JSON.stringify(JSON.parse(v)) } catch { v = JSON.stringify([v]) }
+          } else v = null
+        }
         values.push(v === '' ? null : v)
         sets.push(`"${k}" = $${values.length}`)
       }
