@@ -29,13 +29,71 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       try { return (await pool.query(q, p)).rows } catch { return [] }
     }
 
-    const [leaves, reviews, documents, payrolls, onboarding] = await Promise.all([
-      safe(`SELECT id, "startDate", "endDate", days, status, reason FROM "LeaveRequest" WHERE "organizationId" = $1 AND "employeeId" = $2 ORDER BY "startDate" DESC LIMIT 20`, [session.organizationId, params.id]),
-      safe(`SELECT id, "reviewPeriod", score, status FROM "PerformanceReview" WHERE "organizationId" = $1 AND "employeeId" = $2 ORDER BY "reviewDate" DESC LIMIT 10`, [session.organizationId, params.id]),
-      safe(`SELECT id, "documentType", "fileName", "expiryDate" FROM "EmployeeDocument" WHERE "organizationId" = $1 AND "employeeId" = $2 LIMIT 50`, [session.organizationId, params.id]),
-      safe(`SELECT id, "grossPay", "netPay", "periodId" FROM "PayrollItem" WHERE "organizationId" = $1 AND "employeeId" = $2 ORDER BY "createdAt" DESC LIMIT 12`, [session.organizationId, params.id]),
-      safe(`SELECT id, status, "currentStep", "totalSteps" FROM "OnboardingChecklist" WHERE "organizationId" = $1 AND "employeeId" = $2 LIMIT 5`, [session.organizationId, params.id]),
+    const [leaves, reviews, documents, payrolls, trainings, balances] = await Promise.all([
+      // Leave requests with the linked leave type name
+      safe(
+        `SELECT l.id, l."startDate", l."endDate", l.days, l.status, l.reason, lt.name AS "leaveTypeName"
+         FROM "LeaveRequest" l
+         LEFT JOIN "LeaveType" lt ON lt.id = l."leaveTypeId"
+         WHERE l."organizationId" = $1 AND l."employeeId" = $2
+         ORDER BY l."startDate" DESC LIMIT 20`,
+        [session.organizationId, params.id]
+      ),
+      // Performance reviews — schema is: reviewDate, rating, strengths, improvements, goals
+      safe(
+        `SELECT id, "reviewDate", rating, strengths, improvements, goals
+         FROM "PerformanceReview"
+         WHERE "organizationId" = $1 AND "employeeId" = $2
+         ORDER BY "reviewDate" DESC LIMIT 10`,
+        [session.organizationId, params.id]
+      ),
+      // Employee documents — schema is: name, type, url
+      safe(
+        `SELECT id, name, type, url, "createdAt"
+         FROM "EmployeeDocument"
+         WHERE "organizationId" = $1 AND "employeeId" = $2
+         ORDER BY "createdAt" DESC LIMIT 50`,
+        [session.organizationId, params.id]
+      ),
+      // Payroll items — join period name; use correct column "payrollPeriodId"
+      safe(
+        `SELECT pi.id, pi."grossPay", pi."netPay", pi.paye, pi.nssf, pi.shif, pi."housingLevy",
+                pi."payrollPeriodId", p.name AS "periodName", p."startDate" AS "periodStart", p."endDate" AS "periodEnd"
+         FROM "PayrollItem" pi
+         LEFT JOIN "PayrollPeriod" p ON p.id = pi."payrollPeriodId"
+         WHERE pi."organizationId" = $1 AND pi."employeeId" = $2
+         ORDER BY pi."createdAt" DESC LIMIT 12`,
+        [session.organizationId, params.id]
+      ),
+      // Training enrollments — TrainingEnrollment joined to Training
+      safe(
+        `SELECT te.id, te.status, te."completionDate", t.title, t.type, t."startDate", t."endDate", t.provider
+         FROM "TrainingEnrollment" te
+         LEFT JOIN "Training" t ON t.id = te."trainingId"
+         WHERE te."organizationId" = $1 AND te."employeeId" = $2
+         ORDER BY te."createdAt" DESC LIMIT 20`,
+        [session.organizationId, params.id]
+      ),
+      // Leave balances for current year
+      safe(
+        `SELECT lb.id, lb."totalDays", lb."usedDays", lb."remainingDays", lb.year,
+                lt.name AS "leaveTypeName"
+         FROM "LeaveBalance" lb
+         LEFT JOIN "LeaveType" lt ON lt.id = lb."leaveTypeId"
+         WHERE lb."organizationId" = $1 AND lb."employeeId" = $2
+         ORDER BY lt.name ASC`,
+        [session.organizationId, params.id]
+      ),
     ])
+
+    // Recent attendance (last 30 records)
+    const attendance = await safe(
+      `SELECT id, date, "checkIn", "checkOut", status, notes
+       FROM "Attendance"
+       WHERE "organizationId" = $1 AND "employeeId" = $2
+       ORDER BY date DESC LIMIT 30`,
+      [session.organizationId, params.id]
+    )
 
     return NextResponse.json({
       employee: emp,
@@ -43,7 +101,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       reviews,
       documents,
       payrolls,
-      onboarding,
+      trainings,
+      balances,
+      attendance,
     })
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 })

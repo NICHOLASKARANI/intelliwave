@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Users, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
   CheckCircle2, UserPlus, Briefcase, TrendingUp, DollarSign, FileEdit, Sparkles,
-  Mail, Phone, MapPin, Building2, Calendar, Star, FileText, Wallet, CreditCard, FileDown,
+  Mail, Phone, MapPin, Building2, Calendar, Star, FileText, Wallet, CreditCard, FileDown, ExternalLink,
 } from 'lucide-react'
 
 const STATUSES = ['ACTIVE', 'PROBATION', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED']
@@ -372,7 +372,7 @@ export default function EmployeesPage() {
                     <tr key={e.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
                       <td className="p-3 font-mono text-xs text-neutral-400">{e.employeeId || '—'}</td>
                       <td className="p-3">
-                        <button onClick={() => openDetail(e.id)} className="text-white font-medium hover:text-blue-400">{e.firstName} {e.lastName}</button>
+                        <Link href={'/wavecore-erp/hr/employees/' + e.id} className="text-white font-medium hover:text-blue-400">{e.firstName} {e.lastName}</Link>
                       </td>
                       <td className="p-3 text-xs text-neutral-400">{e.email || '—'}</td>
                       <td className="p-3 text-xs text-neutral-400">{e.phone || '—'}</td>
@@ -382,6 +382,7 @@ export default function EmployeesPage() {
                       <td className="p-3"><span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + statusStyle(e.status)}>{e.status}</span></td>
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">
+                          <Link href={'/wavecore-erp/hr/employees/' + e.id} className="p-1.5 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="Open 360"><ExternalLink className="w-4 h-4" /></Link>
                           <button onClick={() => openEdit(e)} className="p-1.5 rounded-lg bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800" title="Edit"><FileEdit className="w-4 h-4" /></button>
                           <a
                             href={'/api/wavecore/hr/employees/' + e.id + '/pdf'}
