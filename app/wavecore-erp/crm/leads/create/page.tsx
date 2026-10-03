@@ -1,11 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Save, AlertCircle, AlertTriangle, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+interface DupMatch {
+  id: string
+  name: string
+  email?: string
+  phone?: string
+  company?: string
+  status?: string
+  match_type: string
+}
 
 export default function AddLeadPage() {
   const [name, setName] = useState('')
@@ -15,7 +25,28 @@ export default function AddLeadPage() {
   const [source, setSource] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [dups, setDups] = useState<DupMatch[]>([])
+  const [dismissed, setDismissed] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    if (dismissed) return
+    const t = setTimeout(async () => {
+      const params = new URLSearchParams()
+      if (email.trim()) params.set('email', email.trim())
+      if (phone.trim()) params.set('phone', phone.trim())
+      if (name.trim().length >= 3) params.set('name', name.trim())
+      if ([...params.keys()].length === 0) { setDups([]); return }
+      try {
+        const res = await fetch('/api/wavecore/crm/leads/check-duplicate?' + params.toString(), { cache: 'no-store' })
+        const data = await res.json()
+        setDups(data.matches || [])
+      } catch {
+        setDups([])
+      }
+    }, 500)
+    return () => clearTimeout(t)
+  }, [email, phone, name, dismissed])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,6 +89,43 @@ export default function AddLeadPage() {
         <h1 className="text-2xl font-bold mb-6">Add Lead</h1>
 
         {error && <div className="p-4 mb-6 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+
+        {dups.length > 0 && !dismissed && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800">
+            <div className="flex items-start gap-2 mb-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-amber-800 dark:text-amber-200">
+                  Possible duplicate{dups.length > 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                  We found {dups.length} similar lead{dups.length > 1 ? 's' : ''} already in your CRM.
+                </p>
+              </div>
+              <button type="button" onClick={() => setDismissed(true)} className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:underline">
+                Ignore
+              </button>
+            </div>
+            <div className="space-y-2">
+              {dups.map(d => (
+                <Link
+                  key={d.id}
+                  href={'/wavecore-erp/crm/leads/' + d.id}
+                  className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-neutral-900 border border-amber-200 dark:border-amber-900 hover:border-amber-400 transition"
+                >
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm truncate">{d.name}{d.status ? ' · ' + d.status : ''}</p>
+                    <p className="text-xs text-neutral-500 truncate">
+                      {d.email || d.phone || d.company || 'no contact info'}
+                      <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-600">match: {d.match_type}</span>
+                    </p>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 bg-white dark:bg-neutral-900 rounded-2xl border p-6">
           <div>
