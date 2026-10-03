@@ -27,7 +27,7 @@ export default function AddLeadPage() {
     try {
       const res = await fetch('/api/wavecore/crm/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
         body: JSON.stringify({ name, email: email || null, phone: phone || null, company: company || null, source: source || null }),
       })
       const data = await res.json()

@@ -3,15 +3,18 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Users, Search, Trash2, Loader2, Printer, Mail, Phone, Filter } from 'lucide-react'
+import { Plus, Users, Search, Trash2, Loader2, Printer, Mail, Phone, Filter, ExternalLink, Building2 } from 'lucide-react'
 
 interface Lead {
   id: string
   name: string
-  email: string
-  phone: string
+  email?: string
+  phone?: string
+  company?: string
   status: string
-  source: string
+  priority?: string
+  source?: string
+  customerId?: string
   createdAt: string
 }
 
@@ -115,13 +118,27 @@ export default function LeadsPage() {
             {filtered.map(lead => (
               <div key={lead.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold">{lead.name || 'N/A'}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Link href={'/wavecore-erp/crm/leads/' + lead.id} className="font-bold text-purple-600 dark:text-purple-400 hover:underline">
+                      {lead.name || 'N/A'}
+                    </Link>
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor(lead.status)}`}>
                       {lead.status}
                     </span>
+                    {lead.priority && (
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                        lead.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
+                        lead.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                        lead.priority === 'LOW' ? 'bg-neutral-100 text-neutral-600' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>{lead.priority}</span>
+                    )}
+                    {lead.customerId && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">converted</span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
+                    {lead.company && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {lead.company}</span>}
                     <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {lead.email || 'N/A'}</span>
                     <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {lead.phone || 'N/A'}</span>
                   </div>
@@ -132,6 +149,10 @@ export default function LeadsPage() {
                     className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
                     <Printer className="w-4 h-4" />
                   </button>
+                  <Link href={'/wavecore-erp/crm/leads/' + lead.id} title="Open"
+                    className="p-2 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                   <button onClick={() => deleteLead(lead.id)} title="Delete"
                     className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
                     {deleting === lead.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
