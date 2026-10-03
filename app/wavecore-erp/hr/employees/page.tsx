@@ -60,18 +60,26 @@ export default function EmployeesPage() {
   }
   const [form, setForm] = useState<any>(blank)
 
-  const fetchAll = async () => {
-    setLoading(true)
+  const fetchAll = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/employees')
+      const res = await fetch('/api/wavecore/hr/employees', { cache: 'no-store' })
       const data = await res.json()
       setEmployees(data.employees || [])
       setSummary(data.summary || {})
       setByDepartment(data.byDepartment || [])
-    } catch { setError('Network error') }
-    finally { setLoading(false) }
+    } catch { if (!opts?.silent) setError('Network error') }
+    finally { if (!opts?.silent) setLoading(false) }
   }
-  useEffect(() => { fetchAll() }, [])
+
+  useEffect(() => { fetchAll() /* eslint-disable-next-line */ }, [])
+
+  // 30-second silent auto-refresh — keeps the KPI cards + summary live
+  useEffect(() => {
+    const t = setInterval(() => { fetchAll({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
@@ -263,10 +271,10 @@ export default function EmployeesPage() {
             <h1 className="text-3xl font-bold flex items-center gap-2 text-white">
               <Users className="w-7 h-7 text-blue-400" /> Employees
             </h1>
-            <p className="text-sm text-neutral-400 mt-1">Employee 360 · Full CRUD · Payroll-linked</p>
+            <p className="text-sm text-neutral-400 mt-1">Employee 360 · Full CRUD · Payroll-linked · <span className="text-emerald-500">live</span></p>
           </div>
           <div className="flex gap-3">
-            <button onClick={fetchAll} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
+            <button onClick={() => fetchAll()} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <Loader2 className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
             </button>
             <button onClick={pdf} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
@@ -294,9 +302,23 @@ export default function EmployeesPage() {
           <button onClick={() => setActiveKpi('ON_LEAVE')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'ON_LEAVE' ? 'ring-4 ring-yellow-300' : '')}>
             <Calendar className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.onLeave || 0}</p><p className="text-xs opacity-90">On Leave</p>
           </button>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-fuchsia-800 text-white shadow-lg">
-            <Building2 className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.departments || 0}</p><p className="text-xs opacity-90">Departments</p>
-          </div>
+          <button onClick={() => {
+            // Cycle through: ALL -> first department -> next -> ... -> ALL
+            if (filterDept === 'ALL') {
+              if (byDepartment.length > 0) setFilterDept(byDepartment[0].name)
+            } else {
+              const idx = byDepartment.findIndex(d => d.name === filterDept)
+              if (idx >= 0 && idx < byDepartment.length - 1) {
+                setFilterDept(byDepartment[idx + 1].name)
+              } else {
+                setFilterDept('ALL')
+              }
+            }
+          }} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-fuchsia-800 text-white shadow-lg transition-all hover:scale-105 ' + (filterDept !== 'ALL' ? 'ring-4 ring-purple-300' : '')}>
+            <Building2 className="w-5 h-5 mb-2" />
+            <p className="text-2xl font-bold">{summary.departments || 0}</p>
+            <p className="text-xs opacity-90">{filterDept === 'ALL' ? 'Departments' : 'Filter: ' + filterDept}</p>
+          </button>
           <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-cyan-600 to-teal-800 text-white shadow-lg">
             <DollarSign className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{(summary.monthlyPayroll || 0).toLocaleString()}</p><p className="text-xs opacity-90">Payroll/mo 🔒</p>
           </div>
