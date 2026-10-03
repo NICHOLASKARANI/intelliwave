@@ -42,6 +42,11 @@ export default function LeavesPage() {
   const [leaveTypes, setLeaveTypes] = useState<any[]>([])
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false)
   const [newType, setNewType] = useState({ name: '', description: '', daysPerYear: 21, isPaid: true, requiresApproval: true })
+  const [showBalances, setShowBalances] = useState(false)
+  const [balances, setBalances] = useState<any[]>([])
+  const [balancesLoading, setBalancesLoading] = useState(false)
+  const [balanceYear, setBalanceYear] = useState(new Date().getFullYear())
+  const [myBalances, setMyBalances] = useState<any[]>([])
 
   const [form, setForm] = useState({
     employeeId: '', leaveTypeId: '', startDate: new Date().toISOString().slice(0, 10),
@@ -125,7 +130,34 @@ export default function LeavesPage() {
     if (next && leaveTypes.length === 0) loadLeaveTypes()
   }
 
-  const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
+  const loadBalances = async (yearArg?: number) => {
+    setBalancesLoading(true)
+    try {
+      const yr = yearArg || balanceYear
+      const res = await fetch('/api/wavecore/hr/leave-balances?year=' + yr, { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok) setBalances(data.balances || [])
+    } catch {}
+    finally { setBalancesLoading(false) }
+  }
+
+  const toggleBalances = () => {
+    const next = !showBalances
+    setShowBalances(next)
+    if (next && balances.length === 0) loadBalances()
+  }
+
+  // Load this specific employee's balances when modal opens or employee changes
+  const loadMyBalances = async (employeeId: string) => {
+    if (!employeeId) { setMyBalances([]); return }
+    try {
+      const res = await fetch('/api/wavecore/hr/leave-balances?employeeId=' + employeeId + '&year=' + new Date().getFullYear(), { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok) setMyBalances(data.balances || [])
+    } catch { setMyBalances([]) }
+  }
+
+  const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true); setMyBalances([]) }
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -251,6 +283,9 @@ export default function LeavesPage() {
             </button>
             <button onClick={toggleLeaveTypes} className={'px-4 py-3 rounded-xl font-bold flex items-center gap-2 ' + (showLeaveTypes ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white')}>
               <Settings2 className="w-4 h-4" /> Leave Types
+            </button>
+            <button onClick={toggleBalances} className={'px-4 py-3 rounded-xl font-bold flex items-center gap-2 ' + (showBalances ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white')}>
+              <Calendar className="w-4 h-4" /> Balances
             </button>
             <button onClick={openCreate} className="px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-amber-900/40">
               <Plus className="w-5 h-5" /> New Request
@@ -444,6 +479,74 @@ export default function LeavesPage() {
             )}
           </div>
         )}
+
+        {showBalances && (
+          <div className="bg-neutral-900 rounded-2xl border border-green-800 mb-4 overflow-hidden">
+            <div className="p-5 border-b border-neutral-800 flex justify-between items-center flex-wrap gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-green-400" /> Leave Balances
+                </h2>
+                <p className="text-xs text-neutral-400 mt-1">Employee entitlements for {balanceYear}. Balances auto-deduct when a leave request is approved.</p>
+              </div>
+              <div className="flex gap-2 items-center">
+                <select value={balanceYear} onChange={e => { const y = parseInt(e.target.value); setBalanceYear(y); loadBalances(y) }}
+                  className="px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-xs">
+                  {[new Date().getFullYear(), new Date().getFullYear() - 1, new Date().getFullYear() + 1].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+                <button onClick={() => loadBalances()} className="px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold">
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {balancesLoading ? (
+              <div className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-green-500" /></div>
+            ) : balances.length === 0 ? (
+              <div className="p-10 text-center text-neutral-500 text-sm">No balances yet</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-neutral-800">
+                    <tr>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Employee</th>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Leave Type</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Total</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Used</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Remaining</th>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400 w-[160px]">Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {balances.map((b: any) => {
+                      const total = Number(b.totalDays || 0)
+                      const used = Number(b.usedDays || 0)
+                      const remaining = Number(b.remainingDays || 0)
+                      const pct = total > 0 ? (remaining / total) * 100 : 0
+                      const barColor = pct >= 50 ? 'bg-green-500' : pct >= 20 ? 'bg-amber-500' : 'bg-red-500'
+                      return (
+                        <tr key={b.id} className="border-t border-neutral-800 hover:bg-neutral-800/30">
+                          <td className="p-3 text-white text-sm">{b.firstName} {b.lastName}<br /><span className="font-mono text-[10px] text-neutral-500">{b.empCode || ''}</span></td>
+                          <td className="p-3 text-xs text-neutral-300">{b.leaveTypeName}</td>
+                          <td className="p-3 text-right text-white text-sm">{total}</td>
+                          <td className="p-3 text-right text-neutral-400 text-sm">{used}</td>
+                          <td className={'p-3 text-right font-bold text-sm ' + (pct >= 50 ? 'text-green-400' : pct >= 20 ? 'text-amber-400' : 'text-red-400')}>{remaining}</td>
+                          <td className="p-3">
+                            <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
+                              <div className={'h-full rounded-full ' + barColor} style={{ width: Math.max(2, pct) + '%' }} />
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {showCreate && (
@@ -458,12 +561,33 @@ export default function LeavesPage() {
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Employee *</label>
-                <select value={form.employeeId} onChange={e => setForm({ ...form, employeeId: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
+                <select value={form.employeeId} onChange={e => { setForm({ ...form, employeeId: e.target.value }); loadMyBalances(e.target.value) }} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
                   <option value="">Select employee...</option>
                   {employees.map((emp: any) => (
                     <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName} ({emp.employeeId || 'no code'})</option>
                   ))}
                 </select>
+                {form.employeeId && myBalances.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {myBalances.map((b: any) => {
+                      const used = Number(b.usedDays || 0)
+                      const total = Number(b.totalDays || 0)
+                      const remaining = Number(b.remainingDays || 0)
+                      const pct = total > 0 ? (remaining / total) * 100 : 0
+                      const tone = pct >= 50 ? 'bg-green-900/40 text-green-300 border border-green-700' :
+                                   pct >= 20 ? 'bg-amber-900/40 text-amber-300 border border-amber-700' :
+                                   'bg-red-900/40 text-red-300 border border-red-700'
+                      return (
+                        <span key={b.id} className={'px-2.5 py-1 rounded-full text-[10px] font-bold ' + tone}>
+                          {b.leaveTypeName}: {remaining} / {total} days left ({used} used)
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+                {form.employeeId && myBalances.length === 0 && (
+                  <p className="mt-2 text-[11px] text-neutral-500">No leave balances yet for this employee — they'll be created on first request.</p>
+                )}
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Start Date *</label>
