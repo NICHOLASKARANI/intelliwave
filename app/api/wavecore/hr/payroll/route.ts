@@ -270,12 +270,17 @@ export async function POST(request: NextRequest) {
     // ACTION 1: Create a new payroll period
     if (action === 'create-period') {
       if (!body.name) return NextResponse.json({ error: 'Period name required' }, { status: 400 })
+      if (!body.startDate) return NextResponse.json({ error: 'Start date is required' }, { status: 400 })
+      if (!body.endDate) return NextResponse.json({ error: 'End date is required' }, { status: 400 })
+
       const id = crypto.randomUUID()
+      // Runtime columns the payroll UI expects on PayrollPeriod
+      await pool.query('ALTER TABLE "PayrollPeriod" ADD COLUMN IF NOT EXISTS "paymentDate" TIMESTAMP(3)').catch(() => {})
       const res = await pool.query(
-        `INSERT INTO "PayrollPeriod" (id, name, status, "startDate", "endDate", "organizationId", "createdAt", "updatedAt")
-         VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
+        `INSERT INTO "PayrollPeriod" (id, name, status, "startDate", "endDate", "paymentDate", "organizationId", "createdAt", "updatedAt")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())
          RETURNING *`,
-        [id, body.name, body.status || 'DRAFT', body.startDate || null, body.endDate || null, orgId]
+        [id, body.name, body.status || 'DRAFT', body.startDate, body.endDate, body.paymentDate || null, orgId]
       )
       return NextResponse.json({ period: res.rows[0] }, { status: 201 })
     }
@@ -330,7 +335,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
   } catch (error) {
-    console.error('Payroll POST error:', error)
+    console.error('Payroll POST error:', error); console.error('Payroll POST error details:', (error as any)?.message, (error as any)?.detail, (error as any)?.code)
     console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

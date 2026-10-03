@@ -131,6 +131,6 @@ export async function POST(request: NextRequest) {
     )
     return NextResponse.json({ review: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+    console.error('[HR-ERROR]', error); console.error('[HR-ERROR-DETAIL]', (error as any)?.message, (error as any)?.detail, (error as any)?.code); return NextResponse.json({ error: 'Something went wrong. Please try again.', detail: (error as any)?.message }, { status: 500 })
   }
 }

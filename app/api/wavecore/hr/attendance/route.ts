@@ -120,6 +120,23 @@ export async function POST(request: NextRequest) {
     if (guard.deny) return guard.response!
     // ============================
     const body = await request.json()
+    // Normalise time-only checkIn/checkOut (HH:MM or HH:MM:SS) to full ISO
+    if (body.date) {
+      const baseDate = String(body.date).slice(0, 10)
+      const combine = (t: any) => {
+        if (!t) return null
+        const s = String(t).trim()
+        if (!s) return null
+        if (s.includes('T') || s.length > 10) return s
+        if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
+          const normalized = s.length === 5 ? s + ':00' : s
+          return baseDate + 'T' + normalized
+        }
+        return s
+      }
+      body.checkIn = combine(body.checkIn)
+      body.checkOut = combine(body.checkOut)
+    }
 
     // === INPUT VALIDATION ===
     const validation = validateAttendanceInput(body, true)
