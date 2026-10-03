@@ -73,6 +73,7 @@ export default function EmployeesPage() {
   useEffect(() => { fetchAll() }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const resetForm = () => setForm({ ...blank })
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
   const openEdit = (e: any) => {
@@ -97,7 +98,7 @@ export default function EmployeesPage() {
       const url = editing ? '/api/wavecore/hr/employees/' + editing.id : '/api/wavecore/hr/employees'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
@@ -112,7 +113,7 @@ export default function EmployeesPage() {
     setDeleting(id)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/hr/employees/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/hr/employees/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       flash('Employee deleted'); fetchAll()

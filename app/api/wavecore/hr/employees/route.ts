@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // === RBAC GUARD ===
-    const guard = await guardHR(request, 'HR_PII_READ')
+    const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
     // ==================
     const body = await request.json()
