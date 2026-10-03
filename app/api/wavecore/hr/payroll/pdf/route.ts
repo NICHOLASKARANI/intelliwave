@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         `SELECT pi.*, e."firstName", e."lastName", e."employeeId" AS "empCode", e.department, e."jobTitle"
          FROM "PayrollItem" pi
          LEFT JOIN "Employee" e ON e.id = pi."employeeId" AND e."organizationId" = pi."organizationId"
-         WHERE pi."organizationId" = $1 AND pi."periodId" = $2
+         WHERE pi."organizationId" = $1 AND pi."payrollPeriodId" = $2
          ORDER BY e."firstName" ASC LIMIT 500`,
         [orgId, activePeriod.id]
       )

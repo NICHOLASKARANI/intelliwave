@@ -224,7 +224,7 @@ export async function GET(request: NextRequest) {
     const missingRes = await pool.query(
       `SELECT COUNT(*) AS cnt FROM "Employee"
        WHERE "organizationId" = $1 AND status = 'ACTIVE'
-         AND id NOT IN (SELECT "employeeId" FROM "PayrollItem" WHERE "organizationId" = $1 AND "periodId" = $2)`,
+         AND id NOT IN (SELECT "employeeId" FROM "PayrollItem" WHERE "organizationId" = $1 AND "payrollPeriodId" = $2)`,
       [orgId, activePeriod?.id || '']
     )
     const unpaidCount = Number(missingRes.rows[0]?.cnt || 0)

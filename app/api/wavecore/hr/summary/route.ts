@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       safe(`SELECT id, status, days, "startDate", "endDate", "employeeId" FROM "LeaveRequest" WHERE "organizationId" = $1 LIMIT 2000`, [orgId]),
       safe(`SELECT id, name FROM "LeaveType" WHERE "organizationId" = $1 LIMIT 100`, [orgId]),
       safe(`SELECT id, name, status, "startDate", "endDate" FROM "PayrollPeriod" WHERE "organizationId" = $1 LIMIT 100`, [orgId]),
-      safe(`SELECT id, "grossPay", "netPay", "periodId", "employeeId" FROM "PayrollItem" WHERE "organizationId" = $1 LIMIT 5000`, [orgId]),
+      safe(`SELECT id, "grossPay", "netPay", "payrollPeriodId", "employeeId" FROM "PayrollItem" WHERE "organizationId" = $1 LIMIT 5000`, [orgId]),
       safe(`SELECT id, title, status, "postedDate", "closingDate" FROM "JobPosting" WHERE "organizationId" = $1 LIMIT 500`, [orgId]),
       safe(`SELECT id, stage, "jobPostingId" FROM "Applicant" WHERE "organizationId" = $1 LIMIT 2000`, [orgId]),
       safe(`SELECT id, "employeeId", score, status FROM "PerformanceReview" WHERE "organizationId" = $1 LIMIT 2000`, [orgId]),
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     // ============ KPI 12-14: PAYROLL ============
     const currentMonthPayrollItems = payrollItems.filter(p => {
-      const period = payrollPeriods.find(pp => pp.id === p.periodId)
+      const period = payrollPeriods.find(pp => pp.id === p.payrollPeriodId)
       return period && period.startDate && new Date(period.startDate) >= monthStart
     })
     const totalPayrollThisMonth = currentMonthPayrollItems.reduce((s, p) => s + Number(p.netPay || 0), 0)
