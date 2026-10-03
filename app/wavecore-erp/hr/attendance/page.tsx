@@ -108,7 +108,7 @@ export default function AttendancePage() {
       const url = editing ? '/api/wavecore/hr/attendance/' + editing.id : '/api/wavecore/hr/attendance'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
@@ -133,7 +133,7 @@ export default function AttendancePage() {
     try {
       const res = await fetch('/api/wavecore/hr/attendance', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           employeeId: empId,
           date: now.toISOString().slice(0, 10),

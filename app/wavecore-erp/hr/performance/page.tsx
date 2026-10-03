@@ -102,7 +102,7 @@ export default function PerformancePage() {
       const url = editing ? '/api/wavecore/hr/performance/' + editing.id : '/api/wavecore/hr/performance'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()

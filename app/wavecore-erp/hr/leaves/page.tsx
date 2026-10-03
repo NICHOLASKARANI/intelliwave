@@ -178,7 +178,7 @@ export default function LeavesPage() {
       const url = editing ? '/api/wavecore/hr/leaves/' + editing.id : '/api/wavecore/hr/leaves'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
@@ -193,7 +193,7 @@ export default function LeavesPage() {
     try {
       const res = await fetch('/api/wavecore/hr/leaves/' + id, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ status: 'APPROVED' }),
       })
       if (res.ok) { flash('Leave approved'); fetchAll() }
@@ -207,7 +207,7 @@ export default function LeavesPage() {
     try {
       const res = await fetch('/api/wavecore/hr/leaves/' + id, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ status: 'REJECTED', rejectionReason: reason || 'No reason given' }),
       })
       if (res.ok) { flash('Leave rejected'); fetchAll() }

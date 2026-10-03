@@ -68,7 +68,7 @@ export default function PayrollPage() {
     try {
       const res = await fetch('/api/wavecore/hr/payroll', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action: 'run', periodId: activePeriod.id }),
       })
       const data = await res.json()
@@ -86,7 +86,7 @@ export default function PayrollPage() {
     try {
       const res = await fetch('/api/wavecore/hr/payroll', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action: 'create-period', ...periodForm }),
       })
       const data = await res.json()

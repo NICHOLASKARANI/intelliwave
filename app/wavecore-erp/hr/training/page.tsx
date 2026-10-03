@@ -92,7 +92,7 @@ export default function TrainingPage() {
       const url = editing ? '/api/wavecore/hr/training/' + editing.id : '/api/wavecore/hr/training'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()

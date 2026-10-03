@@ -97,7 +97,7 @@ export default function OnboardingPage() {
       const url = editing ? '/api/wavecore/hr/onboarding/' + editing.id : '/api/wavecore/hr/onboarding'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
@@ -122,7 +122,7 @@ export default function OnboardingPage() {
     try {
       const res = await fetch('/api/wavecore/hr/onboarding/' + c.id, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ currentStep: next, status: newStatus }),
       })
       if (res.ok) { flash(`Advanced to step ${next}${newStatus === 'COMPLETED' ? ' — COMPLETED!' : ''}`); fetchAll() }

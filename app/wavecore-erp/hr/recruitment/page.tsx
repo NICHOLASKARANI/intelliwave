@@ -87,7 +87,7 @@ export default function RecruitmentPage() {
       const url = editing ? '/api/wavecore/hr/recruitment/' + editing.id : '/api/wavecore/hr/recruitment'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
       })
       const data = await res.json()

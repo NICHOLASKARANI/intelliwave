@@ -91,7 +91,7 @@ export default function BenefitsPage() {
       const url = editing ? '/api/wavecore/hr/benefits/' + editing.id : '/api/wavecore/hr/benefits'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
