@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Users, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
   CheckCircle2, UserPlus, Briefcase, TrendingUp, DollarSign, FileEdit, Sparkles,
-  Mail, Phone, MapPin, Building2, Calendar, Star, FileText, Wallet, CreditCard,
+  Mail, Phone, MapPin, Building2, Calendar, Star, FileText, Wallet, CreditCard, FileDown,
 } from 'lucide-react'
 
 const STATUSES = ['ACTIVE', 'PROBATION', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED']
@@ -282,6 +282,15 @@ export default function EmployeesPage() {
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">
                           <button onClick={() => openEdit(e)} className="p-1.5 rounded-lg bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800" title="Edit"><FileEdit className="w-4 h-4" /></button>
+                          <a
+                            href={'/api/wavecore/hr/employees/' + e.id + '/pdf'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800"
+                            title="Full profile PDF"
+                          >
+                            <FileDown className="w-4 h-4" />
+                          </a>
                           <button onClick={() => del(e.id, e.firstName + ' ' + e.lastName)} disabled={deleting === e.id} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
                             {deleting === e.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </button>
