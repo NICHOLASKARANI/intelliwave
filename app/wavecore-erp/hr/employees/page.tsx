@@ -43,6 +43,7 @@ export default function EmployeesPage() {
   const [deleting, setDeleting] = useState('')
   const [detail, setDetail] = useState<any>(null)
   const [detailTab, setDetailTab] = useState<'personal'|'employment'|'salary'|'docs'>('personal')
+  const [fieldErrors, setFieldErrors] = useState<Record<string,string>>({})
 
   const blank = {
     firstName: '', lastName: '', preferredName: '', employeeId: '',
@@ -74,7 +75,7 @@ export default function EmployeesPage() {
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
-  const resetForm = () => setForm({ ...blank })
+  const resetForm = () => { setForm({ ...blank }); setFieldErrors({}); setError('') }
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
   const openEdit = (e: any) => {
     setForm({
@@ -88,23 +89,101 @@ export default function EmployeesPage() {
     setEditing(e); setShowCreate(true)
   }
 
+  // Client-side validation — mirrors lib/wavecore/validate.ts rules exactly.
+  const validateForm = (): Record<string,string> => {
+    const errs: Record<string,string> = {}
+    if (!form.firstName || !String(form.firstName).trim()) errs.firstName = 'First name is required'
+    if (!form.lastName || !String(form.lastName).trim()) errs.lastName = 'Last name is required'
+
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+    const phoneRe = /^(\+254|0)[17]\d{8}$/
+    const pinRe = /^[A-Z]\d{9}[A-Z]$/
+    const idRe = /^\d+$/
+
+    const email = (form.email || '').trim()
+    if (email && !emailRe.test(email)) errs.email = 'Invalid email format'
+
+    const phone = (form.phone || '').trim().replace(/\s+/g, '')
+    if (phone && !phoneRe.test(phone)) errs.phone = 'Must be Kenyan mobile: +254… or 0… (e.g. 0712345678)'
+
+    const idNumber = (form.idNumber || '').trim()
+    if (idNumber) {
+      if (!idRe.test(idNumber) || idNumber.length < 7 || idNumber.length > 10) {
+        errs.idNumber = 'Must be 7–10 digits, numbers only'
+      }
+    }
+
+    const taxPin = (form.taxPin || '').trim().toUpperCase()
+    if (taxPin && !pinRe.test(taxPin)) {
+      errs.taxPin = 'Must be KRA PIN: letter + 9 digits + letter (e.g. A123456789Z)'
+    }
+
+    const nssf = (form.nssfNumber || '').trim()
+    if (nssf && !/^[A-Za-z0-9]{6,15}$/.test(nssf)) {
+      errs.nssfNumber = 'Must be 6–15 alphanumeric (letters/numbers only)'
+    }
+
+    const nhif = (form.nhifNumber || '').trim()
+    if (nhif && !/^\d{6,15}$/.test(nhif)) {
+      errs.nhifNumber = 'Must be 6–15 digits, numbers only'
+    }
+
+    const sal = Number(form.salary)
+    if (form.salary !== '' && form.salary !== null && form.salary !== undefined) {
+      if (isNaN(sal) || !isFinite(sal) || sal < 0 || sal > 100_000_000) {
+        errs.salary = 'Must be between 0 and 100,000,000'
+      }
+    }
+
+    return errs
+  }
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!form.firstName.trim() || !form.lastName.trim()) { setError('First and last name required'); return }
+    setFieldErrors({})
 
-    const payload = { ...form, salary: Number(form.salary || 0) }
+    const errs = validateForm()
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
+      setError('Please fix the highlighted fields')
+      return
+    }
+
+    // Normalise: trim strings, uppercase PIN, null out empties so the API
+    // doesn't store "" values.
+    const normalised: any = { ...form, salary: Number(form.salary || 0) }
+    for (const k of Object.keys(normalised)) {
+      if (typeof normalised[k] === 'string') {
+        const v = normalised[k].trim()
+        normalised[k] = v === '' ? null : v
+      }
+    }
+    normalised.firstName = String(form.firstName).trim()
+    normalised.lastName = String(form.lastName).trim()
+    if (normalised.taxPin) normalised.taxPin = String(normalised.taxPin).toUpperCase()
+
     try {
       const url = editing ? '/api/wavecore/hr/employees/' + editing.id : '/api/wavecore/hr/employees'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalised),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Failed'); return }
+      if (!res.ok) {
+        // Server returned field-level messages — show them inline too.
+        if (data.fields && typeof data.fields === 'object') {
+          setFieldErrors(data.fields)
+          const list = Object.values(data.fields).join(' · ')
+          setError((data.error || 'Validation failed') + ': ' + list)
+        } else {
+          setError(data.error || 'Failed')
+        }
+        return
+      }
       flash(editing ? 'Employee updated' : 'Employee created')
-      setShowCreate(false); setEditing(null); resetForm(); fetchAll()
+      setShowCreate(false); setEditing(null); resetForm(); setFieldErrors({}); fetchAll()
     } catch { setError('Network error') }
   }
 
@@ -332,9 +411,9 @@ export default function EmployeesPage() {
                   <div><label className="text-xs text-neutral-400 font-bold">Employee Code (auto if blank)</label>
                     <input value={form.employeeId} onChange={e => setForm({ ...form, employeeId: e.target.value })} placeholder="EMP-0001" className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
                   <div><label className="text-xs text-neutral-400 font-bold">Email</label>
-                    <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
+                    <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />{fieldErrors.email && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.email}</p>}</div>
                   <div><label className="text-xs text-neutral-400 font-bold">Phone</label>
-                    <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
+                    <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="0712345678 or +254712345678" className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />{fieldErrors.phone && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.phone}</p>}</div>
                   <div><label className="text-xs text-neutral-400 font-bold">Date of Birth</label>
                     <input type="date" value={form.dateOfBirth} onChange={e => setForm({ ...form, dateOfBirth: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
                   <div><label className="text-xs text-neutral-400 font-bold">Gender</label>
@@ -384,7 +463,7 @@ export default function EmployeesPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div><label className="text-xs text-neutral-400 font-bold">Annual Salary</label>
-                    <input type="number" min="0" value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
+                    <input type="number" min="0" value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />{fieldErrors.salary && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.salary}</p>}</div>
                   <div><label className="text-xs text-neutral-400 font-bold">Currency</label>
                     <select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm">
                       <option value="KES">KES</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option>
@@ -403,13 +482,13 @@ export default function EmployeesPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div><label className="text-xs text-neutral-400 font-bold">ID Number</label>
-                    <input value={form.idNumber} onChange={e => setForm({ ...form, idNumber: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
+                    <input value={form.idNumber} onChange={e => setForm({ ...form, idNumber: e.target.value })} placeholder="7-10 digits" className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />{fieldErrors.idNumber && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.idNumber}</p>}</div>
                   <div><label className="text-xs text-neutral-400 font-bold">KRA PIN</label>
-                    <input value={form.taxPin} onChange={e => setForm({ ...form, taxPin: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
+                    <input value={form.taxPin} onChange={e => setForm({ ...form, taxPin: e.target.value })} placeholder="A123456789Z" className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />{fieldErrors.taxPin && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.taxPin}</p>}</div>
                   <div><label className="text-xs text-neutral-400 font-bold">NSSF Number</label>
-                    <input value={form.nssfNumber} onChange={e => setForm({ ...form, nssfNumber: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
+                    <input value={form.nssfNumber} onChange={e => setForm({ ...form, nssfNumber: e.target.value })} placeholder="6-15 alphanumeric" className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />{fieldErrors.nssfNumber && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.nssfNumber}</p>}</div>
                   <div><label className="text-xs text-neutral-400 font-bold">SHIF/NHIF Number</label>
-                    <input value={form.nhifNumber} onChange={e => setForm({ ...form, nhifNumber: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" /></div>
+                    <input value={form.nhifNumber} onChange={e => setForm({ ...form, nhifNumber: e.target.value })} placeholder="6-15 digits" className="mt-1 w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm" />{fieldErrors.nhifNumber && <p className="mt-1 text-[11px] text-red-400">{fieldErrors.nhifNumber}</p>}</div>
                 </div>
               </div>
 
