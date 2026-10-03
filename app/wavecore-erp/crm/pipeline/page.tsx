@@ -6,6 +6,7 @@ import Link from 'next/link'
 import {
   Loader2, TrendingUp, CheckCircle2, AlertTriangle, Printer, BarChart3,
   LayoutGrid, DollarSign, GripVertical, RefreshCw, ExternalLink,
+  AlertCircle, Calendar,
 } from 'lucide-react'
 
 // ============================================================
@@ -29,6 +30,9 @@ interface Opp {
   customer_name?: string
   customerName?: string
   expectedCloseDate?: string
+  daysSinceTouch?: number
+  stale?: boolean
+  nextActivity?: { id: string; subject: string; dueDate?: string; type: string } | null
 }
 
 const fmtMoney = (n: any) => 'KSh ' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -51,10 +55,29 @@ export default function PipelinePage() {
     if (!opts?.silent) setLoading(true)
     else setRefreshing(true)
     try {
-      const res = await fetch('/api/wavecore/crm/opportunities', { cache: 'no-store' })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Failed to load'); return }
-      setOpps(data.opportunities || [])
+      const [oppsRes, alertsRes] = await Promise.all([
+        fetch('/api/wavecore/crm/opportunities', { cache: 'no-store' }),
+        fetch('/api/wavecore/crm/alerts/stale-deals?days=14', { cache: 'no-store' }),
+      ])
+      const data = await oppsRes.json()
+      if (!oppsRes.ok) { setError(data.error || 'Failed to load'); return }
+
+      // Merge stale + next-activity info
+      let alerts: any = { stale: [] }
+      try { alerts = await alertsRes.json() } catch {}
+      const staleById = new Map<string, any>()
+      for (const s of (alerts.stale || [])) staleById.set(s.id, s)
+
+      const merged = (data.opportunities || []).map((o: any) => {
+        const s = staleById.get(o.id)
+        return {
+          ...o,
+          stale: !!s,
+          daysSinceTouch: s?.daysSinceTouch,
+          nextActivity: s?.nextActivity || null,
+        }
+      })
+      setOpps(merged)
     } catch {
       setError('Network error')
     } finally {
@@ -201,12 +224,18 @@ export default function PipelinePage() {
       <main className="max-w-[1600px] mx-auto p-4 lg:p-6">
 
         {/* KPI strip */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
           <KpiTile label="Total pipeline" value={fmtMoney(totalValue)} sub={opps.length + ' deals'} color="text-blue-500" />
           <KpiTile label="Open deals" value={String(openOpps.length)} sub={fmtMoney(openOpps.reduce((s,o)=>s+Number(o.amount||0),0))} color="text-amber-500" />
           <KpiTile label="Weighted forecast" value={fmtMoney(weighted)} sub="amount × probability" color="text-purple-500" />
           <KpiTile label="Won" value={String(wonOpps.length)} sub={fmtMoney(wonOpps.reduce((s,o)=>s+Number(o.amount||0),0))} color="text-emerald-500" />
           <KpiTile label="Win rate" value={winRate + '%'} sub={lostOpps.length + ' lost'} color="text-rose-500" />
+          <KpiTile
+            label="Stale deals"
+            value={String(opps.filter((o: any) => o.stale).length)}
+            sub="no activity in 14 days"
+            color={opps.filter((o: any) => o.stale).length > 0 ? 'text-red-500' : 'text-emerald-500'}
+          />
         </div>
 
         {error && (
@@ -286,7 +315,11 @@ export default function PipelinePage() {
                           >
                             {o.name}
                           </Link>
-                          <GripVertical className="w-3 h-3 text-neutral-300 group-hover:text-neutral-500 flex-shrink-0" />
+                          {o.stale ? (
+                            <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                          ) : (
+                            <GripVertical className="w-3 h-3 text-neutral-300 group-hover:text-neutral-500 flex-shrink-0" />
+                          )}
                         </div>
                         {o.customer_name && (
                           <p className="text-[10px] text-neutral-500 truncate">{o.customer_name}</p>
@@ -298,6 +331,19 @@ export default function PipelinePage() {
                           <span>{o.probability || 0}%</span>
                           {o.expectedCloseDate && <span>{fmtDate(o.expectedCloseDate)}</span>}
                         </div>
+                        {o.stale && (
+                          <div className="mt-1.5 pt-1.5 border-t border-neutral-100 dark:border-neutral-700 flex items-center gap-1 text-[10px] font-bold text-red-500">
+                            <AlertCircle className="w-3 h-3" />
+                            Stale · {o.daysSinceTouch != null ? o.daysSinceTouch + 'd idle' : 'no activity'}
+                          </div>
+                        )}
+                        {o.nextActivity && (
+                          <div className="mt-1 pt-1 border-t border-neutral-100 dark:border-neutral-700 flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <Calendar className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{o.nextActivity.subject}</span>
+                            {o.nextActivity.dueDate && <span className="text-neutral-400 flex-shrink-0">· {fmtDate(o.nextActivity.dueDate)}</span>}
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
