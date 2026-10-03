@@ -69,6 +69,51 @@ const PRIORITIES = ['LOW','MEDIUM','HIGH','URGENT']
 const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB') : '—'
 const fmtMoney = (n: any) => 'KSh ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+// ============================================================
+// Lead scoring — same rules as the list page so badges match.
+// ============================================================
+function scoreLead(lead: { company?: string; source?: string; priority?: string; status?: string }): number {
+  let score = 0
+
+  const company = (lead.company || '').toLowerCase()
+  if (company) {
+    if (company.includes('bank') || company.includes('hospital') || company.includes('government')) score += 30
+    else if (company.includes('tech') || company.includes('startup')) score += 20
+    else if (company.includes('ltd') || company.includes('limited') || company.includes('inc') || company.includes('llc')) score += 15
+    else score += 10
+  }
+
+  const source = (lead.source || '').toLowerCase()
+  if (source.includes('referral')) score += 25
+  else if (source.includes('linkedin')) score += 20
+  else if (source.includes('website')) score += 15
+  else if (source.includes('event')) score += 15
+  else if (source.includes('cold')) score += 5
+  else score += 10
+
+  const priority = (lead.priority || 'MEDIUM').toUpperCase()
+  if (priority === 'URGENT') score += 30
+  else if (priority === 'HIGH') score += 20
+  else if (priority === 'MEDIUM') score += 10
+
+  const status = (lead.status || 'NEW').toUpperCase()
+  if (status === 'QUALIFIED') score += 25
+  else if (status === 'PROPOSAL') score += 20
+  else if (status === 'NEGOTIATION') score += 15
+  else if (status === 'CONTACTED') score += 10
+  else if (status === 'WON') score += 25
+  else if (status === 'LOST') score -= 20
+  else score += 5
+
+  return Math.max(0, Math.min(100, score))
+}
+
+function scoreBadge(score: number): { icon: string; label: string; className: string } {
+  if (score >= 70) return { icon: '🔥', label: 'Hot',  className: 'bg-red-900/50 text-red-300' }
+  if (score >= 40) return { icon: '⚡', label: 'Warm', className: 'bg-amber-900/50 text-amber-300' }
+  return { icon: '❄', label: 'Cold', className: 'bg-blue-900/50 text-blue-300' }
+}
+
 export default function LeadDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -275,6 +320,19 @@ export default function LeadDetailPage() {
             <span className={'ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ' + (STATUS_COLORS[lead.status] || 'bg-neutral-800 text-neutral-300')}>
               {lead.status}
             </span>
+            {(() => {
+              const s = scoreLead(lead)
+              const b = scoreBadge(s)
+              return (
+                <span
+                  className={'px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ' + b.className}
+                  title={'Lead score: ' + s + '/100 — ' + b.label}
+                >
+                  <span>{b.icon}</span>
+                  <span>{b.label} {s}</span>
+                </span>
+              )
+            })()}
             {isConverted && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-900/50 text-emerald-300">
                 converted
@@ -468,8 +526,22 @@ export default function LeadDetailPage() {
                   <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (PRIORITY_COLORS[lead.priority || 'MEDIUM'] || '')}>{lead.priority || 'MEDIUM'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-500">Score</span>
-                  <span>{lead.score || 0}</span>
+                  <span className="text-neutral-500">Lead score</span>
+                  <span className="flex items-center gap-2">
+                    {(() => {
+                      const s = scoreLead(lead)
+                      const b = scoreBadge(s)
+                      return (
+                        <>
+                          <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ' + b.className}>
+                            <span>{b.icon}</span>
+                            <span>{b.label}</span>
+                          </span>
+                          <span className="font-bold">{s}/100</span>
+                        </>
+                      )
+                    })()}
+                  </span>
                 </div>
               </div>
             </div>

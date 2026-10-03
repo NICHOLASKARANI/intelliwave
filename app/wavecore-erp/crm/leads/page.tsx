@@ -14,10 +14,60 @@ interface Lead {
   status: string
   priority?: string
   source?: string
+  score?: number
   customerId?: string
   createdAt: string
 }
 
+// ============================================================
+// Lead scoring — rule-based, mirrors /api/ai/lead-score logic.
+// Deterministic so the badge is stable across renders.
+// ============================================================
+function scoreLead(lead: { company?: string; source?: string; priority?: string; status?: string }): number {
+  let score = 0
+
+  // Company signal
+  const company = (lead.company || '').toLowerCase()
+  if (company) {
+    if (company.includes('bank') || company.includes('hospital') || company.includes('government')) score += 30
+    else if (company.includes('tech') || company.includes('startup')) score += 20
+    else if (company.includes('ltd') || company.includes('limited') || company.includes('inc') || company.includes('llc')) score += 15
+    else score += 10
+  }
+
+  // Source signal
+  const source = (lead.source || '').toLowerCase()
+  if (source.includes('referral')) score += 25
+  else if (source.includes('linkedin')) score += 20
+  else if (source.includes('website')) score += 15
+  else if (source.includes('event')) score += 15
+  else if (source.includes('cold')) score += 5
+  else score += 10
+
+  // Priority signal
+  const priority = (lead.priority || 'MEDIUM').toUpperCase()
+  if (priority === 'URGENT') score += 30
+  else if (priority === 'HIGH') score += 20
+  else if (priority === 'MEDIUM') score += 10
+
+  // Status signal
+  const status = (lead.status || 'NEW').toUpperCase()
+  if (status === 'QUALIFIED') score += 25
+  else if (status === 'PROPOSAL') score += 20
+  else if (status === 'NEGOTIATION') score += 15
+  else if (status === 'CONTACTED') score += 10
+  else if (status === 'WON') score += 25
+  else if (status === 'LOST') score -= 20
+  else score += 5
+
+  return Math.max(0, Math.min(100, score))
+}
+
+function scoreBadge(score: number): { icon: string; label: string; className: string } {
+  if (score >= 70) return { icon: '🔥', label: 'Hot',  className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' }
+  if (score >= 40) return { icon: '⚡', label: 'Warm', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' }
+  return { icon: '❄', label: 'Cold', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' }
+}
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
@@ -136,6 +186,19 @@ export default function LeadsPage() {
                     {lead.customerId && (
                       <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">converted</span>
                     )}
+                    {(() => {
+                      const s = scoreLead(lead)
+                      const b = scoreBadge(s)
+                      return (
+                        <span
+                          className={'px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 ' + b.className}
+                          title={'Lead score: ' + s + '/100 — ' + b.label}
+                        >
+                          <span>{b.icon}</span>
+                          <span>{b.label} {s}</span>
+                        </span>
+                      )
+                    })()}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
                     {lead.company && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {lead.company}</span>}
