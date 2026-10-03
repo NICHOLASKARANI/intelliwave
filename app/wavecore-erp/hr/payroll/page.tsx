@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Wallet, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
-  CheckCircle2, DollarSign, Users, TrendingUp, PlayCircle, Sparkles, FileEdit, AlertTriangle,
+  CheckCircle2, DollarSign, Users, TrendingUp, PlayCircle, Sparkles, FileEdit, AlertTriangle, FileDown,
 } from 'lucide-react'
 
 export default function PayrollPage() {
@@ -292,6 +292,15 @@ export default function PayrollPage() {
                       <td className="p-3 text-right text-green-400 font-bold">{Number(r.netPay || 0).toLocaleString()}</td>
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">
+                          <a
+                            href={'/api/wavecore/hr/payroll/payslip/' + r.id + '/pdf'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-purple-900/50 text-purple-300 hover:bg-purple-800"
+                            title="Download payslip"
+                          >
+                            <FileDown className="w-4 h-4" />
+                          </a>
                           <button onClick={() => delItem(r.id, r.employeeName)} disabled={deleting === r.id} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
                             {deleting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </button>
