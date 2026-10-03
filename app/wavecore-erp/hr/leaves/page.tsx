@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Calendar, Plus, Loader2, Search, Printer, Trash2, X, ArrowUpDown,
-  CheckCircle2, XCircle, Clock, AlertTriangle, FileEdit, Sparkles, ThumbsUp, ThumbsDown,
+  CheckCircle2, XCircle, Clock, AlertTriangle, FileEdit, Sparkles, ThumbsUp, ThumbsDown, Settings2, Save,
 } from 'lucide-react'
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
@@ -38,6 +38,10 @@ export default function LeavesPage() {
   const [editing, setEditing] = useState<any>(null)
   const [deleting, setDeleting] = useState('')
   const [actioning, setActioning] = useState('')
+  const [showLeaveTypes, setShowLeaveTypes] = useState(false)
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([])
+  const [leaveTypesLoading, setLeaveTypesLoading] = useState(false)
+  const [newType, setNewType] = useState({ name: '', description: '', daysPerYear: 21, isPaid: true, requiresApproval: true })
 
   const [form, setForm] = useState({
     employeeId: '', leaveTypeId: '', startDate: new Date().toISOString().slice(0, 10),
@@ -74,6 +78,52 @@ export default function LeavesPage() {
     employeeId: '', leaveTypeId: '', startDate: new Date().toISOString().slice(0, 10),
     endDate: new Date().toISOString().slice(0, 10), days: '', reason: '', status: 'PENDING',
   })
+
+  const loadLeaveTypes = async () => {
+    setLeaveTypesLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/hr/leave-types', { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok) setLeaveTypes(data.leaveTypes || [])
+    } catch {}
+    finally { setLeaveTypesLoading(false) }
+  }
+
+  const createLeaveType = async () => {
+    if (!newType.name.trim()) { setError('Leave type name required'); return }
+    try {
+      const res = await fetch('/api/wavecore/hr/leave-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify(newType),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Failed to add leave type'); return }
+      flash('Leave type added')
+      setNewType({ name: '', description: '', daysPerYear: 21, isPaid: true, requiresApproval: true })
+      loadLeaveTypes()
+    } catch { setError('Network error') }
+  }
+
+  const deleteLeaveType = async (id: string, name: string) => {
+    if (!confirm('Delete leave type "' + name + '"? This cannot be undone.')) return
+    try {
+      const res = await fetch('/api/wavecore/hr/leave-types/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Failed to delete'); return }
+      flash('Leave type deleted')
+      loadLeaveTypes()
+    } catch { setError('Network error') }
+  }
+
+  const toggleLeaveTypes = () => {
+    const next = !showLeaveTypes
+    setShowLeaveTypes(next)
+    if (next && leaveTypes.length === 0) loadLeaveTypes()
+  }
 
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
 
@@ -199,6 +249,9 @@ export default function LeavesPage() {
             <button onClick={pdf} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <Printer className="w-4 h-4" /> Report
             </button>
+            <button onClick={toggleLeaveTypes} className={'px-4 py-3 rounded-xl font-bold flex items-center gap-2 ' + (showLeaveTypes ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white')}>
+              <Settings2 className="w-4 h-4" /> Leave Types
+            </button>
             <button onClick={openCreate} className="px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-amber-900/40">
               <Plus className="w-5 h-5" /> New Request
             </button>
@@ -304,6 +357,91 @@ export default function LeavesPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {showLeaveTypes && (
+          <div className="bg-neutral-900 rounded-2xl border border-amber-800 mb-4 overflow-hidden">
+            <div className="p-5 border-b border-neutral-800">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-amber-400" /> Leave Types
+              </h2>
+              <p className="text-xs text-neutral-400 mt-1">
+                Define the leave categories your organization offers. Days per year drives entitlements and balance tracking.
+              </p>
+            </div>
+
+            {/* Add form */}
+            <div className="p-5 border-b border-neutral-800 bg-neutral-800/30">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                <div className="md:col-span-2">
+                  <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Name *</label>
+                  <input value={newType.name} onChange={e => setNewType({ ...newType, name: e.target.value })}
+                    placeholder="e.g. Annual Leave"
+                    className="mt-1 w-full px-3 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Days / Year</label>
+                  <input type="number" min="0" value={newType.daysPerYear} onChange={e => setNewType({ ...newType, daysPerYear: parseInt(e.target.value) || 0 })}
+                    className="mt-1 w-full px-3 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Paid</label>
+                  <label className="flex items-center gap-2 text-sm text-neutral-300">
+                    <input type="checkbox" checked={newType.isPaid} onChange={e => setNewType({ ...newType, isPaid: e.target.checked })} className="w-4 h-4" />
+                    Paid leave
+                  </label>
+                </div>
+                <button onClick={createLeaveType} className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold flex items-center justify-center gap-2">
+                  <Plus className="w-4 h-4" /> Add Type
+                </button>
+              </div>
+            </div>
+
+            {leaveTypesLoading ? (
+              <div className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-amber-500" /></div>
+            ) : leaveTypes.length === 0 ? (
+              <div className="p-10 text-center text-neutral-500 text-sm">No leave types yet</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-neutral-800">
+                    <tr>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Name</th>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Description</th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-neutral-400">Days / Year</th>
+                      <th className="text-center p-3 text-xs uppercase tracking-wide text-neutral-400">Paid</th>
+                      <th className="text-center p-3 text-xs uppercase tracking-wide text-neutral-400">Approval</th>
+                      <th className="text-center p-3 text-xs uppercase tracking-wide text-neutral-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaveTypes.map(t => (
+                      <tr key={t.id} className="border-t border-neutral-800 hover:bg-neutral-800/30">
+                        <td className="p-3 text-white font-medium text-sm">{t.name}</td>
+                        <td className="p-3 text-xs text-neutral-400">{t.description || '—'}</td>
+                        <td className="p-3 text-right text-white text-sm">{t.daysPerYear}</td>
+                        <td className="p-3 text-center">
+                          {t.isPaid ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-900/40 text-green-300">Paid</span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-400">Unpaid</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center text-xs text-neutral-400">{t.requiresApproval ? 'Required' : 'Auto'}</td>
+                        <td className="p-3">
+                          <div className="flex justify-center">
+                            <button onClick={() => deleteLeaveType(t.id, t.name)} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </main>

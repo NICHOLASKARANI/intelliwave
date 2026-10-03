@@ -1,0 +1,24 @@
+feat(hr): leave types API + management panel; remove broken stub
+
+Removed:
+- app/api/wavecore/hr/leave/route.ts — a dead stub. Its INSERT
+  referenced columns that do not exist on LeaveRequest
+  ("employeeName" and "type"), so it would have failed 100% of the
+  time. Nothing in the codebase called it (verified by grep).
+
+New:
+- GET /api/wavecore/hr/leave-types — returns this org's leave types
+  and seeds 7 common defaults on first load (Annual, Sick, Maternity,
+  Paternity, Compassionate, Study, Unpaid).
+- POST /api/wavecore/hr/leave-types — create.
+- GET/PATCH/DELETE /api/wavecore/hr/leave-types/[id] — the DELETE
+  refuses if the type is in use by any leave request or balance.
+
+UI (leaves page):
+- New "Leave Types" toolbar toggle next to Report.
+- Toggling shows a panel with all types in a table (name, description,
+  days/year, paid, approval required, delete).
+- Inline add form on top of the panel: name, days/year, paid checkbox,
+  Add Type button.
+
+No schema change. No other page touched. next build clean.
