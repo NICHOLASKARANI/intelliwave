@@ -6,6 +6,24 @@ import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 
 // ============================================================
+// Idempotent schema fix - ensures PayrollItem has the statutory
+// breakdown columns the calculator + PDF expect. ADD COLUMN IF NOT
+// EXISTS is a no-op when the column already exists.
+// ============================================================
+let _payrollSchemaEnsured = false
+async function ensurePayrollItemSchema() {
+  if (_payrollSchemaEnsured) return
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "grossPay" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "netPay" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "paye" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "nssf" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "shif" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "housingLevy" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  _payrollSchemaEnsured = true
+}
+
+
+// ============================================================
 // KENYAN STATUTORY PAYROLL CALCULATOR (configurable)
 // ============================================================
 // These values reflect 2024/2025 Kenya tax rules. Update here
@@ -66,6 +84,7 @@ export async function GET(request: NextRequest) {
     const guard = await guardHR(request, 'HR_PAYROLL')
     if (guard.deny) return guard.response!
     // ==================
+    await ensurePayrollItemSchema()
     const orgId = session.organizationId
 
     const { searchParams } = new URL(request.url)
@@ -151,6 +170,7 @@ export async function POST(request: NextRequest) {
     const guard = await guardHR(request, 'HR_PAYROLL')
     if (guard.deny) return guard.response!
     // ==================
+    await ensurePayrollItemSchema()
     const orgId = session.organizationId
     const body = await request.json()
     const action = body.action || 'run'

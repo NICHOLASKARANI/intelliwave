@@ -4,6 +4,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+async function ensurePayrollItemSchema() {
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "grossPay" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "netPay" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "paye" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "nssf" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "shif" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+  await pool.query('ALTER TABLE "PayrollItem" ADD COLUMN IF NOT EXISTS "housingLevy" DOUBLE PRECISION DEFAULT 0').catch(() => {})
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +22,7 @@ export async function GET(request: NextRequest) {
     const guard = await guardHR(request, 'HR_EXPORT')
     if (guard.deny) return guard.response!
     // ==================
+    await ensurePayrollItemSchema()
     const orgId = session.organizationId
 
     const { searchParams } = new URL(request.url)
