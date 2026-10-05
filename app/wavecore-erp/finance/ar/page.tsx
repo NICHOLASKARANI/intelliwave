@@ -1,113 +1,235 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, DollarSign, Users, FileText, Plus, Search, Download, Filter } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowLeft, DollarSign, Download, Loader2, Plus, RefreshCw } from 'lucide-react'
 
-interface Receivable {
+interface Invoice {
   id: string
   number: string
-  customer_name: string
+  customerName: string
   total: number
-  balance_due: number
-  status: string
+  paidAmount: number
+  balanceDue: number
   dueDate: string
+  status: string
+  daysOverdue: number | null
+  bucket: string
 }
 
-export default function ARPage() {
-  const [receivables, setReceivables] = useState<Receivable[]>([])
-  const [loading, setLoading] = useState(true)
-  const [total, setTotal] = useState(0)
+type BucketKey = 'all' | 'current' | 'd0_30' | 'd31_60' | 'd61_90' | 'd90plus'
 
+const BUCKETS: { key: BucketKey; label: string }[] = [
+  { key: 'all',     label: 'All outstanding' },
+  { key: 'current', label: 'Current' },
+  { key: 'd0_30',   label: '0–30' },
+  { key: 'd31_60',  label: '31–60' },
+  { key: 'd61_90',  label: '61–90' },
+  { key: 'd90plus', label: '90+' },
+]
+
+export default function ARPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [totals, setTotals] = useState<any>({})
+  const [byCustomer, setByCustomer] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [bucket, setBucket] = useState<BucketKey>('all')
+
+  const load = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true); else setRefreshing(true)
+    try {
+      const res = await fetch('/api/wavecore/finance/ar/aging', { cache: 'no-store' })
+      const data = await res.json()
+      setInvoices(data.invoices || [])
+      setTotals(data.totals || {})
+      setByCustomer(data.byCustomer || [])
+    } catch {}
+    finally { setLoading(false); setRefreshing(false) }
+  }
+
+  useEffect(() => { load() /* eslint-disable-next-line */ }, [])
   useEffect(() => {
-    async function fetchAR() {
-      try {
-        const res = await fetch('/api/wavecore/gl/accounts-receivable')
-        if (res.ok) {
-          const data = await res.json()
-          setReceivables(data.receivables || [])
-          setTotal((data.receivables || []).reduce((sum: number, r: Receivable) => sum + (r.balance_due || 0), 0))
-        }
-      } catch {} finally {
-        setLoading(false)
-      }
-    }
-    fetchAR()
+    const t = setInterval(() => { load({ silent: true }) }, 30000)
+    return () => clearInterval(t)
   }, [])
 
-  const formatKES = (amount: number) => `KSh ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}`
+  const filtered = useMemo(() => {
+    if (bucket === 'all') return invoices
+    return invoices.filter(i => i.bucket === bucket)
+  }, [invoices, bucket])
+
+  const fmt = (n: number, cur = 'KES') => cur + ' ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const amountFor = (k: BucketKey) => k === 'all' ? (totals.total || 0) : (totals[k] || 0)
+  const countFor  = (k: BucketKey) => k === 'all' ? (totals.count || 0) : (totals[k + 'Count'] || 0)
+
+  const handleExport = () => {
+    let csv = 'Invoice#,Customer,Due date,Status,Total,Paid,Balance due,Days overdue,Bucket\n'
+    filtered.forEach(i => {
+      csv += `${i.number},"${i.customerName || ''}",${i.dueDate || ''},${i.status},${i.total},${i.paidAmount},${i.balanceDue},${i.daysOverdue ?? ''},${i.bucket}\n`
+    })
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'ar-aging.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-4">
             <Link href="/wavecore-erp" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-indigo-200">
-                <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="object-cover" />
-              </div>
-              <span className="font-bold text-lg">WaveCore</span>
+              <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+              <span className="font-bold">WaveCore</span>
             </Link>
-            <span className="text-sm">Accounts Receivable</span>
+            <span className="text-sm text-neutral-500">Accounts Receivable</span>
           </div>
+          <Link href="/wavecore-erp/finance" className="flex items-center gap-2 text-sm text-neutral-500">
+            <ArrowLeft className="w-4 h-4" /> Finance
+          </Link>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 lg:p-8">
-        <div className="flex items-center justify-between mb-8">
+      <main className="max-w-6xl mx-auto p-4 lg:p-8">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Accounts Receivable</h1>
-            <p className="text-muted-foreground mt-1">Money owed to you by customers</p>
+            <h1 className="text-2xl font-bold">Accounts Receivable — Aging</h1>
+            <p className="text-sm text-neutral-500 mt-1">What customers owe you, net of payments, by days overdue.</p>
           </div>
-          <Link href="/wavecore-erp/finance/invoices">
-            <Button className="gap-2"><Plus className="w-4 h-4" /> New Invoice</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/wavecore-erp/finance/invoices" className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-2">
+              <Plus className="w-4 h-4" /> New Invoice
+            </Link>
+            <button onClick={handleExport} disabled={filtered.length === 0} className="px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold flex items-center gap-2 disabled:opacity-40">
+              <Download className="w-4 h-4" /> CSV
+            </button>
+            <button onClick={() => load({ silent: true })} disabled={refreshing} className="px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold flex items-center gap-2 disabled:opacity-40">
+              <RefreshCw className={'w-4 h-4 ' + (refreshing ? 'animate-spin' : '')} /> Refresh
+            </button>
+          </div>
         </div>
 
-        {/* Total */}
-        <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 mb-8">
-          <p className="text-sm text-muted-foreground">Total Outstanding</p>
-          <p className="text-3xl font-bold">{formatKES(total)}</p>
+        <div className="flex flex-wrap gap-2 mb-6">
+          {BUCKETS.map(b => {
+            const active = bucket === b.key
+            const amount = amountFor(b.key)
+            const count = countFor(b.key)
+            const tone = b.key === 'current' ? 'border-blue-300' :
+                         b.key === 'd0_30' ? 'border-amber-300' :
+                         b.key === 'd31_60' ? 'border-orange-300' :
+                         b.key === 'd61_90' ? 'border-red-300' :
+                         b.key === 'd90plus' ? 'border-red-500' :
+                         'border-neutral-300'
+            return (
+              <button
+                key={b.key}
+                onClick={() => setBucket(b.key)}
+                className={
+                  'min-w-[150px] text-left px-4 py-3 rounded-2xl border-2 transition ' +
+                  (active ? 'bg-white dark:bg-neutral-900 ' + tone + ' ring-1 ring-black/5' : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:border-neutral-400')
+                }
+              >
+                <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{b.label}</p>
+                <p className="text-lg font-bold mt-1">{Number(amount).toLocaleString('en-KE')}</p>
+                <p className="text-[10px] text-neutral-500">{count} invoice{count === 1 ? '' : 's'}</p>
+              </button>
+            )
+          })}
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          </div>
-        ) : receivables.length > 0 ? (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-neutral-50 dark:bg-neutral-800">
-                  <th className="text-left p-4">Invoice #</th>
-                  <th className="text-left p-4">Customer</th>
-                  <th className="text-right p-4">Total</th>
-                  <th className="text-right p-4">Balance Due</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Due Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receivables.map((r) => (
-                  <tr key={r.id} className="border-b hover:bg-neutral-50 dark:hover:bg-neutral-800">
-                    <td className="p-4 font-medium">{r.number}</td>
-                    <td className="p-4">{r.customer_name}</td>
-                    <td className="p-4 text-right">{formatKES(r.total)}</td>
-                    <td className="p-4 text-right font-bold text-orange-500">{formatKES(r.balance_due)}</td>
-                    <td className="p-4"><span className="px-2 py-1 text-xs rounded-full bg-orange-50 text-orange-600">{r.status}</span></td>
-                    <td className="p-4">{new Date(r.dueDate).toLocaleDateString()}</td>
+          <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
+        ) : filtered.length > 0 ? (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3">Invoice#</th>
+                    <th className="px-4 py-3">Customer</th>
+                    <th className="px-4 py-3">Due</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Total</th>
+                    <th className="px-4 py-3 text-right">Paid</th>
+                    <th className="px-4 py-3 text-right">Balance</th>
+                    <th className="px-4 py-3 text-right">Age</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map(i => {
+                    const ageClass = i.daysOverdue == null ? 'text-neutral-500'
+                      : i.daysOverdue > 90 ? 'text-red-500 font-bold'
+                      : i.daysOverdue > 60 ? 'text-orange-500 font-bold'
+                      : i.daysOverdue > 30 ? 'text-amber-500 font-bold'
+                      : i.daysOverdue > 0 ? 'text-amber-400'
+                      : 'text-cyan-500'
+                    const ageLabel = i.daysOverdue == null ? '—'
+                      : i.daysOverdue < 0 ? 'in ' + Math.abs(i.daysOverdue) + 'd'
+                      : i.daysOverdue === 0 ? 'due today'
+                      : i.daysOverdue + 'd'
+                    return (
+                      <tr key={i.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
+                        <td className="px-4 py-2 font-mono text-xs">{i.number}</td>
+                        <td className="px-4 py-2">{i.customerName}</td>
+                        <td className="px-4 py-2 text-xs text-neutral-500">{i.dueDate ? new Date(i.dueDate).toLocaleDateString('en-GB') : '—'}</td>
+                        <td className="px-4 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">{i.status}</span></td>
+                        <td className="px-4 py-2 text-right">{fmt(i.total)}</td>
+                        <td className="px-4 py-2 text-right text-green-600">{fmt(i.paidAmount)}</td>
+                        <td className="px-4 py-2 text-right font-bold">{fmt(i.balanceDue)}</td>
+                        <td className={'px-4 py-2 text-right text-xs ' + ageClass}>{ageLabel}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No receivables yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Create invoices to see money owed to you</p>
+          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+            <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30 text-neutral-400" />
+            <p className="font-medium">No outstanding receivables</p>
+            <p className="text-sm text-neutral-500 mt-1">Create invoices to see money owed to you.</p>
+          </div>
+        )}
+
+        {byCustomer.length > 0 && (
+          <div className="mt-6 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+            <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold">Aging by customer</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3">Customer</th>
+                    <th className="px-4 py-3 text-right">Current</th>
+                    <th className="px-4 py-3 text-right">0-30</th>
+                    <th className="px-4 py-3 text-right">31-60</th>
+                    <th className="px-4 py-3 text-right">61-90</th>
+                    <th className="px-4 py-3 text-right">90+</th>
+                    <th className="px-4 py-3 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {byCustomer.map((s: any) => (
+                    <tr key={s.customerName} className="border-t border-neutral-100 dark:border-neutral-800">
+                      <td className="px-4 py-2 font-medium">{s.customerName}</td>
+                      <td className="px-4 py-2 text-right">{Number(s.current).toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right text-amber-500">{Number(s.d0_30).toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right text-orange-500">{Number(s.d31_60).toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right text-red-500">{Number(s.d61_90).toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right text-red-600 font-bold">{Number(s.d90plus).toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right font-bold">{Number(s.total).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
