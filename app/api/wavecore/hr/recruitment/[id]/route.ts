@@ -64,9 +64,33 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
     // ============================
-    await pool.query(`DELETE FROM "Applicant" WHERE "jobPostingId" = $1 AND "organizationId" = $2`, [params.id, session.organizationId])
-    const result = await pool.query(`DELETE FROM "JobPosting" WHERE id = $1 AND "organizationId" = $2`, [params.id, session.organizationId])
+
+    // The "Applicant" table may not exist in every install. Delete its
+    // rows first — but never let a missing table block the job delete.
+    await pool.query(
+      `DELETE FROM "Applicant" WHERE "jobPostingId" = $1 AND "organizationId" = $2`,
+      [params.id, session.organizationId]
+    ).catch(() => {})
+
+    // Any related row in "JobApplication" (Prisma relation) if present.
+    await pool.query(
+      `DELETE FROM "JobApplication" WHERE "jobId" = $1`,
+      [params.id]
+    ).catch(() => {})
+
+    const result = await pool.query(
+      `DELETE FROM "JobPosting" WHERE id = $1 AND "organizationId" = $2`,
+      [params.id, session.organizationId]
+    )
     if (result.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ success: true })
-  } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }) }
+  } catch (error) {
+    const e: any = error
+    console.error('[HR-RECRUIT-DELETE]', e?.message, e?.detail, e?.code)
+    return NextResponse.json({
+      error: 'Failed to delete job',
+      detail: e?.message,
+      code: e?.code,
+    }, { status: 500 })
+  }
 }

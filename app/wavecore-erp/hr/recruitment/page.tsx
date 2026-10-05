@@ -100,10 +100,24 @@ export default function RecruitmentPage() {
   const del = async (id: string, title: string) => {
     if (!confirm('Delete job "' + title + '" and all its applicants?')) return
     setDeleting(id)
+    setError('')
     try {
-      const res = await fetch('/api/wavecore/hr/recruitment/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
-      if (res.ok) { flash('Job deleted'); fetchAll() }
-    } finally { setDeleting('') }
+      const res = await fetch('/api/wavecore/hr/recruitment/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError((data.detail ? data.error + ' — ' + data.detail : data.error) || 'Delete failed')
+        return
+      }
+      flash('Job deleted')
+      fetchAll()
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    } finally {
+      setDeleting('')
+    }
   }
 
   const openDetail = async (id: string) => {
