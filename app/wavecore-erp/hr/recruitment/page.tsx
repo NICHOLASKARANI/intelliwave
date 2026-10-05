@@ -91,7 +91,7 @@ export default function RecruitmentPage() {
         body: JSON.stringify(form),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Failed'); return }
+      if (!res.ok) { setError((data.detail ? data.error + ' — ' + data.detail : data.error) || 'Failed'); return }
       flash(editing ? 'Job updated' : 'Job posted')
       setShowCreate(false); setEditing(null); resetForm(); fetchAll()
     } catch { setError('Network error') }
@@ -276,6 +276,8 @@ export default function RecruitmentPage() {
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">
                           <button onClick={() => openEdit(j)} className="p-1.5 rounded-lg bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800" title="Edit"><FileEdit className="w-4 h-4" /></button>
+                          <button onClick={() => del(j.id, j.title)} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => del(j.id, j.title)} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete"><Trash2 className="w-4 h-4" /></button>
                           <button onClick={() => del(j.id, j.title)} disabled={deleting === j.id} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
                             {deleting === j.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </button>

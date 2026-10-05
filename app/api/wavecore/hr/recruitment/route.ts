@@ -5,6 +5,32 @@ import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 
+let _jobSchemaEnsured = false
+async function ensureJobPostingSchema() {
+  if (_jobSchemaEnsured) return
+  const cols: [string, string][] = [
+    ['departmentId',     'TEXT'],
+    ['positionId',       'TEXT'],
+    ['employmentType',   'TEXT'],
+    ['location',         'TEXT'],
+    ['salaryRange',      'TEXT'],
+    ['description',      'TEXT'],
+    ['requirements',     'TEXT'],
+    ['status',           'TEXT DEFAULT \'OPEN\''],
+    ['priority',         'TEXT DEFAULT \'NORMAL\''],
+    ['hiringManagerId',  'TEXT'],
+    ['postedDate',       'TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP'],
+    ['closingDate',      'TIMESTAMP(3)'],
+    ['organizationId',   'TEXT'],
+    ['createdAt',        'TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP'],
+    ['updatedAt',        'TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP'],
+  ]
+  for (const [name, type] of cols) {
+    await pool.query('ALTER TABLE "JobPosting" ADD COLUMN IF NOT EXISTS "' + name + '" ' + type).catch(() => {})
+  }
+  _jobSchemaEnsured = true
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -13,6 +39,7 @@ export async function GET(request: NextRequest) {
     // === RBAC GUARD (wave 2) ===
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
+    await ensureJobPostingSchema()
     // ============================
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
@@ -79,6 +106,7 @@ export async function POST(request: NextRequest) {
     // === RBAC GUARD (wave 2) ===
     const guard = await guardHR(request, 'HR_WRITE')
     if (guard.deny) return guard.response!
+    await ensureJobPostingSchema()
     // ============================
     const body = await request.json()
     if (!body.title || !body.title.trim()) return NextResponse.json({ error: 'Job title required' }, { status: 400 })
@@ -100,6 +128,6 @@ export async function POST(request: NextRequest) {
     )
     return NextResponse.json({ job: result.rows[0] }, { status: 201 })
   } catch (error) {
-    console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+    const e: any = error; console.error('[HR-RECRUIT-DETAIL]', e?.message, e?.detail, e?.code, e?.column); return NextResponse.json({ error: 'Something went wrong. Please try again.', detail: e?.message, column: e?.column, code: e?.code }, { status: 500 })
   }
 }
