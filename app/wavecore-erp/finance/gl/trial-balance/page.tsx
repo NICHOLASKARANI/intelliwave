@@ -3,50 +3,48 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Download, Loader2, BarChart3 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowLeft, Download, Loader2, BarChart3, CheckCircle2, AlertTriangle } from 'lucide-react'
 
-interface AccountBalance {
-  id: string
+interface TBRow {
+  accountId: string
   code: string
   name: string
   type: string
-  total_debit: number
-  total_credit: number
-  balance: number
+  debit: number
+  credit: number
 }
 
 export default function TrialBalancePage() {
-  const [accounts, setAccounts] = useState<AccountBalance[]>([])
-  const [loading, setLoading] = useState(true)
+  const [rows, setRows] = useState<TBRow[]>([])
   const [totalDebit, setTotalDebit] = useState(0)
   const [totalCredit, setTotalCredit] = useState(0)
+  const [balanced, setBalanced] = useState(true)
+  const [difference, setDifference] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [asOf, setAsOf] = useState('')
 
-  useEffect(() => {
-    async function fetchTrialBalance() {
-      try {
-        const res = await fetch('/api/wavecore/gl/trial-balance')
-        if (res.ok) {
-          const data = await res.json()
-          const accountList = data.accounts || []
-          setAccounts(accountList)
-          setTotalDebit(accountList.reduce((sum: number, a: any) => sum + parseFloat(a.total_debit || '0'), 0))
-          setTotalCredit(accountList.reduce((sum: number, a: any) => sum + parseFloat(a.total_credit || '0'), 0))
-        }
-      } catch {} finally {
-        setLoading(false)
-      }
-    }
-    fetchTrialBalance()
-  }, [])
+  const load = async () => {
+    setLoading(true)
+    try {
+      const url = '/api/wavecore/finance/gl/trial-balance-real' + (asOf ? '?asOf=' + asOf : '')
+      const res = await fetch(url, { cache: 'no-store' })
+      const data = await res.json()
+      setRows(data.rows || [])
+      setTotalDebit(Number(data.totalDebit || 0))
+      setTotalCredit(Number(data.totalCredit || 0))
+      setBalanced(Boolean(data.balanced))
+      setDifference(Number(data.difference || 0))
+    } catch {} finally { setLoading(false) }
+  }
 
-  const formatKES = (amount: number) => `KSh ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}`
-  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01
+  useEffect(() => { load() /* eslint-disable-next-line */ }, [asOf])
+
+  const formatKES = (n: number) => 'KSh ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   const handleExport = () => {
     let csv = 'Code,Account Name,Type,Debit,Credit\n'
-    accounts.forEach(a => {
-      csv += `${a.code},"${a.name}",${a.type},${a.total_debit},${a.total_credit}\n`
+    rows.forEach(r => {
+      csv += `${r.code},"${r.name}",${r.type},${r.debit},${r.credit}\n`
     })
     csv += `TOTAL,,,${totalDebit},${totalCredit}`
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -58,80 +56,104 @@ export default function TrialBalancePage() {
     URL.revokeObjectURL(url)
   }
 
+  const nonZeroRows = rows.filter(r => r.debit !== 0 || r.credit !== 0)
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-4">
             <Link href="/wavecore-erp" className="flex items-center gap-3">
               <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
               <span className="font-bold">WaveCore</span>
             </Link>
-            <span className="text-sm">Trial Balance</span>
+            <span className="text-sm text-neutral-500">Trial Balance</span>
           </div>
-          <Link href="/wavecore-erp/finance" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/wavecore-erp/finance" className="flex items-center gap-2 text-sm text-neutral-500">
             <ArrowLeft className="w-4 h-4" /> Finance
           </Link>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Trial Balance</h1>
-          {accounts.length > 0 && (
-            <Button variant="outline" onClick={handleExport} className="gap-2">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">Trial Balance</h1>
+            <p className="text-sm text-neutral-500 mt-1">Real balances derived from POSTED journal entries.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide text-neutral-500 font-bold">As of</label>
+              <input
+                type="date"
+                value={asOf}
+                onChange={(e) => setAsOf(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm"
+              />
+            </div>
+            <button onClick={handleExport} disabled={rows.length === 0} className="mt-4 px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold flex items-center gap-2 disabled:opacity-40">
               <Download className="w-4 h-4" /> Export CSV
-            </Button>
-          )}
+            </button>
+          </div>
         </div>
 
-        {/* Balance Indicator */}
-        <div className={`p-4 rounded-2xl border mb-6 ${isBalanced ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="flex items-center justify-between">
+        {/* Balance indicator */}
+        <div className={`p-4 rounded-2xl border mb-6 flex items-center justify-between ${balanced ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800' : 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800'}`}>
+          <div className="flex items-center gap-3">
+            {balanced ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <AlertTriangle className="w-5 h-5 text-red-600" />}
             <div>
-              <p className="text-sm font-medium">Total Debits: {formatKES(totalDebit)}</p>
-              <p className="text-sm font-medium">Total Credits: {formatKES(totalCredit)}</p>
+              <p className="text-sm font-bold">Total Debits: {formatKES(totalDebit)}</p>
+              <p className="text-sm font-bold">Total Credits: {formatKES(totalCredit)}</p>
             </div>
-            <p className={`font-bold ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
-              {isBalanced ? '✓ Balanced' : '⚠ Not Balanced'}
-            </p>
           </div>
+          <p className={`font-bold ${balanced ? 'text-green-600' : 'text-red-600'}`}>
+            {balanced ? 'Balanced' : 'Out by ' + formatKES(difference)}
+          </p>
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" />
-          </div>
-        ) : accounts.length > 0 ? (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-neutral-50 dark:bg-neutral-800">
-                  <th className="text-left p-4">Code</th>
-                  <th className="text-left p-4">Account</th>
-                  <th className="text-left p-4">Type</th>
-                  <th className="text-right p-4">Debit</th>
-                  <th className="text-right p-4">Credit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {accounts.map(acc => (
-                  <tr key={acc.id} className="border-b hover:bg-neutral-50 dark:hover:bg-neutral-800">
-                    <td className="p-4 font-mono">{acc.code}</td>
-                    <td className="p-4">{acc.name}</td>
-                    <td className="p-4"><span className="px-2 py-1 text-xs bg-neutral-100 rounded-full">{acc.type}</span></td>
-                    <td className="p-4 text-right">{formatKES(acc.total_debit)}</td>
-                    <td className="p-4 text-right">{formatKES(acc.total_credit)}</td>
+          <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
+        ) : nonZeroRows.length > 0 ? (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                  <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
+                    <th className="px-4 py-3">Code</th>
+                    <th className="px-4 py-3">Account</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3 text-right">Debit</th>
+                    <th className="px-4 py-3 text-right">Credit</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {nonZeroRows.map(r => (
+                    <tr key={r.accountId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
+                      <td className="px-4 py-2 font-mono text-xs">{r.code}</td>
+                      <td className="px-4 py-2">{r.name}</td>
+                      <td className="px-4 py-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">{r.type}</span>
+                      </td>
+                      <td className="px-4 py-2 text-right">{r.debit ? formatKES(r.debit) : '—'}</td>
+                      <td className="px-4 py-2 text-right">{r.credit ? formatKES(r.credit) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-neutral-50 dark:bg-neutral-800/30">
+                  <tr className="font-bold">
+                    <td colSpan={3} className="px-4 py-3 text-right">Totals</td>
+                    <td className="px-4 py-3 text-right">{formatKES(totalDebit)}</td>
+                    <td className="px-4 py-3 text-right">{formatKES(totalCredit)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No data yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Post journal entries to see your trial balance</p>
+          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30 text-neutral-400" />
+            <p className="font-medium">No journal activity yet</p>
+            <p className="text-sm text-neutral-500 mt-1">Create and POST journal entries to see your trial balance.</p>
           </div>
         )}
       </main>
