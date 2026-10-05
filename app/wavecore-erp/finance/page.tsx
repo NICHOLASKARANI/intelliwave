@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { 
   ArrowLeft, Plus, Search, Filter, Download, Upload,
-  FileText, Calculator, Building2, CreditCard, Receipt,
+  FileText, Calculator, Building2, CreditCard, Receipt, Percent,
   ChevronDown, TrendingUp, DollarSign, LayoutDashboard,
   ChevronRight
 } from 'lucide-react'
@@ -44,6 +44,8 @@ const quickLinks = [
   { icon: Building2, label: 'Bank Reconciliation', desc: 'Match bank statements', href: '/wavecore-erp/finance/reconciliation' },
   { icon: Calculator, label: 'Budget', desc: 'Plan and track budgets', href: '/wavecore-erp/finance/budgets' },
   { icon: TrendingUp, label: 'Reports', desc: 'Financial statements & reports', href: '/wavecore-erp/finance/reports' },
+  { icon: Percent, label: 'VAT Return', desc: 'Output / input VAT & net payable', href: '/wavecore-erp/finance/reports/vat' },
+  { icon: TrendingUp, label: 'Cash Flow', desc: 'Operating / Investing / Financing', href: '/wavecore-erp/finance/reports/cash-flow' },
 ]
 
 export default function FinancePage() {
