@@ -82,7 +82,26 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       `DELETE FROM "JobPosting" WHERE id = $1 AND "organizationId" = $2`,
       [params.id, session.organizationId]
     )
-    if (result.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (result.rowCount === 0) {
+      // Diagnose: does the row exist at all?
+      const diag = await pool.query(
+        `SELECT id, "organizationId" FROM "JobPosting" WHERE id = $1`,
+        [params.id]
+      ).catch(() => ({ rows: [] }))
+      console.error('[HR-RECRUIT-DELETE-MISS]', {
+        id: params.id,
+        sessionOrg: session.organizationId,
+        rowExists: diag.rows.length > 0,
+        rowOrg: diag.rows[0]?.organizationId || null,
+      })
+      return NextResponse.json({
+        error: 'Job not found in your organization',
+        detail: diag.rows.length === 0
+          ? 'Job row does not exist (ID not found).'
+          : 'Job exists but belongs to a different organization.',
+        id: params.id,
+      }, { status: 404 })
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
     const e: any = error

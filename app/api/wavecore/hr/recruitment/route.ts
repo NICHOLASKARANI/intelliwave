@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       inInterview: (stageTotalMap['INTERVIEW'] || 0) + (stageTotalMap['ASSESSMENT'] || 0),
     }
 
-    return NextResponse.json({ jobs, summary, applicantsByStage })
+    return NextResponse.json({ jobs: enriched, summary, applicantsByStage })
   } catch (error) {
     console.error('Recruitment GET error:', error)
     return NextResponse.json({ jobs: [], summary: {}, applicantsByStage: [], error: 'Something went wrong. Please try again.' })

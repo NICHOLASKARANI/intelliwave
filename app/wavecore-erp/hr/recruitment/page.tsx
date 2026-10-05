@@ -416,18 +416,22 @@ export default function RecruitmentPage() {
                   <p className="text-sm text-neutral-200">{detail.job?.hiringManagerId || '—'}</p>
                 </div>
               </div>
-              {detail.job?.description && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-2">Description</h3>
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-2">Description</h3>
+                {detail.job?.description ? (
                   <p className="text-sm text-neutral-300 whitespace-pre-wrap">{detail.job.description}</p>
-                </div>
-              )}
-              {detail.job?.requirements && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-2">Requirements</h3>
+                ) : (
+                  <p className="text-sm text-neutral-500 italic">No description provided.</p>
+                )}
+              </div>
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-2">Requirements</h3>
+                {detail.job?.requirements ? (
                   <p className="text-sm text-neutral-300 whitespace-pre-wrap">{detail.job.requirements}</p>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-neutral-500 italic">No requirements provided.</p>
+                )}
+              </div>
               <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-3">Applicants ({detail.applicants?.length || 0})</h3>
               {detail.applicants?.length > 0 ? (
                 <div className="bg-neutral-800 rounded-xl overflow-hidden">
