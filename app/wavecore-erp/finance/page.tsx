@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { 
   ArrowLeft, Plus, Search, Filter, Download, Upload,
-  FileText, Calculator, Building2, CreditCard, Receipt, Percent, Lock, PiggyBank,
+  FileText, Calculator, Building2, CreditCard, Receipt, Percent, Lock, PiggyBank, Box,
   ChevronDown, TrendingUp, DollarSign, LayoutDashboard,
   ChevronRight
 } from 'lucide-react'
@@ -48,6 +48,7 @@ const quickLinks = [
   { icon: TrendingUp, label: 'Cash Flow', desc: 'Operating / Investing / Financing', href: '/wavecore-erp/finance/reports/cash-flow' },
   { icon: Lock, label: 'Fiscal Periods', desc: 'Close & lock accounting periods', href: '/wavecore-erp/finance/fiscal-periods' },
   { icon: PiggyBank, label: 'Opening Balances', desc: 'Enter starting balances per account', href: '/wavecore-erp/finance/opening-balances' },
+  { icon: Box, label: 'Fixed Assets', desc: 'Register & depreciation schedule', href: '/wavecore-erp/finance/assets' },
 ]
 
 export default function FinancePage() {
