@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, FileText, Printer, Trash2, Loader2, Search, Banknote } from 'lucide-react'
+import { Plus, FileText, Printer, Trash2, Loader2, Search, Banknote, Check } from 'lucide-react'
 
 interface Reconciliation {
   id: string
@@ -132,7 +132,7 @@ export default function ReconciliationPage() {
             {reconciliations.map(rec => (
               <div key={rec.id} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 flex justify-between items-center">
                 <div>
-                  <p className="font-bold">{rec.bankName || 'Bank Account'} - {rec.name || rec.accountNumber || 'N/A'}</p>
+                  <Link href={'/wavecore-erp/finance/reconciliation/' + rec.id} className="font-bold text-purple-600 dark:text-purple-400 hover:underline">{rec.bankName || 'Bank Account'} - {rec.name || rec.accountNumber || 'N/A'}</Link>
                   <p className="text-sm text-muted-foreground">
                     Statement: KSh {Number(rec.statementBalance || 0).toLocaleString()} | Book: KSh {Number(rec.bookBalance || 0).toLocaleString()}
                   </p>
@@ -141,6 +141,7 @@ export default function ReconciliationPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  <Link href={'/wavecore-erp/finance/reconciliation/' + rec.id} className="p-2 rounded-lg bg-purple-50 text-purple-600" title="Open matching"><Check className="w-4 h-4" /></Link>
                   <button onClick={() => downloadPdf(rec.id)} className="p-2 rounded-lg bg-blue-50 text-blue-600">
                     <Printer className="w-4 h-4" />
                   </button>
