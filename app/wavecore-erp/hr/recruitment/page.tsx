@@ -364,10 +364,54 @@ export default function RecruitmentPage() {
               <button onClick={() => setDetail(null)} className="text-neutral-400 hover:text-cyan-400"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Department / Position</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.departmentId || '—'} {detail.job?.positionId ? '/ ' + detail.job.positionId : ''}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Employment Type</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.employmentType || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Location</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.location || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Salary Range</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.salaryRange || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Priority</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.priority || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Status</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.status || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Posted</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.postedDate ? new Date(detail.job.postedDate).toLocaleDateString('en-GB') : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Closing Date</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.closingDate ? new Date(detail.job.closingDate).toLocaleDateString('en-GB') : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Hiring Manager</p>
+                  <p className="text-sm text-neutral-200">{detail.job?.hiringManagerId || '—'}</p>
+                </div>
+              </div>
               {detail.job?.description && (
                 <div className="mb-4">
                   <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-2">Description</h3>
                   <p className="text-sm text-neutral-300 whitespace-pre-wrap">{detail.job.description}</p>
+                </div>
+              )}
+              {detail.job?.requirements && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-2">Requirements</h3>
+                  <p className="text-sm text-neutral-300 whitespace-pre-wrap">{detail.job.requirements}</p>
                 </div>
               )}
               <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-3">Applicants ({detail.applicants?.length || 0})</h3>
