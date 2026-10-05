@@ -53,6 +53,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Debits must equal credits' }, { status: 400 })
     }
 
+    // Closed-period check — refuse POSTED entries inside a locked period
+    const entryDate = new Date(body.date || new Date().toISOString().split('T')[0])
+    const entryStatus = body.status || 'POSTED'
+    if (entryStatus === 'POSTED') {
+      const closedCheck = await pool.query(
+        `SELECT p.name, p."isClosed"
+         FROM "FiscalPeriod" p
+         JOIN "FiscalYear" y ON y.id = p."fiscalYearId"
+         WHERE y."organizationId" = $1
+           AND p."isClosed" = TRUE
+           AND $2::date >= p."startDate"
+           AND $2::date < p."endDate"
+         LIMIT 1`,
+        [session.organizationId, entryDate]
+      )
+      if (closedCheck.rowCount > 0) {
+        return NextResponse.json({
+          error: 'Cannot post journal entry: ' + closedCheck.rows[0].name + ' is closed.',
+          closedPeriod: closedCheck.rows[0].name,
+        }, { status: 409 })
+      }
+    }
+
     // Create journal entry using CORRECT columns
     const result = await pool.query(
       `INSERT INTO "JournalEntry" (id, number, date, reference, description, status, amount, "organizationId", "createdAt", "updatedAt")
