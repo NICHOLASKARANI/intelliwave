@@ -191,12 +191,12 @@ export default function RecruitmentPage() {
           <button onClick={() => setActiveKpi('HAS_APPLICANTS')} className={'p-4 rounded-2xl text-left bg-gradient-to-br from-indigo-600 to-purple-800 text-white shadow-lg transition-all hover:scale-105 ' + (activeKpi === 'HAS_APPLICANTS' ? 'ring-4 ring-indigo-300' : '')}>
             <Users className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalApplicants || 0}</p><p className="text-xs opacity-90">Applicants</p>
           </button>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-amber-600 to-orange-800 text-white shadow-lg">
+          <button onClick={() => setActiveKpi('IN_INTERVIEW')} className="p-4 rounded-2xl text-left bg-gradient-to-br from-amber-600 to-orange-800 text-white shadow-lg transition-all hover:scale-105">
             <Clock className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.inInterview || 0}</p><p className="text-xs opacity-90">In Interview</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-fuchsia-600 to-pink-800 text-white shadow-lg">
+          </button>
+          <button onClick={() => setActiveKpi('AVG_JOBS')} className="p-4 rounded-2xl text-left bg-gradient-to-br from-fuchsia-600 to-pink-800 text-white shadow-lg transition-all hover:scale-105">
             <TrendingUp className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.avgApplicantsPerJob || 0}</p><p className="text-xs opacity-90">Avg / Job</p>
-          </div>
+          </button>
         </div>
 
         {pipeline.length > 0 && (
@@ -276,8 +276,6 @@ export default function RecruitmentPage() {
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">
                           <button onClick={() => openEdit(j)} className="p-1.5 rounded-lg bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800" title="Edit"><FileEdit className="w-4 h-4" /></button>
-                          <button onClick={() => del(j.id, j.title)} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                          <button onClick={() => del(j.id, j.title)} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete"><Trash2 className="w-4 h-4" /></button>
                           <button onClick={() => del(j.id, j.title)} disabled={deleting === j.id} className="p-1.5 rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800" title="Delete">
                             {deleting === j.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </button>
