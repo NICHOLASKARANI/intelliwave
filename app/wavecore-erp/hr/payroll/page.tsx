@@ -18,6 +18,7 @@ export default function PayrollPage() {
   const [success, setSuccess] = useState('')
 
   const [search, setSearch] = useState('')
+  const [tableFilter, setTableFilter] = useState<'ALL'|'PAYE_GT_0'|'NSSF_GT_0'|'SHIF_GT_0'|'NET_GT_0'>('ALL')
   const [sortBy, setSortBy] = useState('employeeName')
   const [sortDir, setSortDir] = useState<'asc'|'desc'>('asc')
   const [deleting, setDeleting] = useState('')
@@ -94,6 +95,7 @@ export default function PayrollPage() {
       flash('Payroll period created')
       setShowCreatePeriod(false)
       setPeriodForm({ name: '', startDate: new Date().toISOString().slice(0, 10), endDate: new Date().toISOString().slice(0, 10), status: 'DRAFT' })
+      if (data.period) setActivePeriod(data.period)
       fetchAll(data.period?.id)
     } catch { setError('Network error') }
   }
@@ -185,6 +187,10 @@ export default function PayrollPage() {
 
   const filtered = useMemo(() => {
     let list = [...items]
+    if (tableFilter === 'PAYE_GT_0') list = list.filter(r => Number(r.paye || 0) > 0)
+    else if (tableFilter === 'NSSF_GT_0') list = list.filter(r => Number(r.nssf || 0) > 0)
+    else if (tableFilter === 'SHIF_GT_0') list = list.filter(r => Number(r.shif || 0) > 0)
+    else if (tableFilter === 'NET_GT_0') list = list.filter(r => Number(r.netPay || 0) > 0)
     if (search) {
       const s = search.toLowerCase()
       list = list.filter(r =>
@@ -200,7 +206,7 @@ export default function PayrollPage() {
       return 0
     })
     return list
-  }, [items, search, sortBy, sortDir])
+  }, [items, search, sortBy, sortDir, tableFilter])
 
   const toggleSort = (f: string) => {
     if (sortBy === f) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -298,24 +304,42 @@ export default function PayrollPage() {
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-lg">
+          <button
+            onClick={() => setTableFilter('ALL')}
+            className={'p-4 rounded-2xl text-left bg-gradient-to-br from-purple-600 to-violet-800 text-white shadow-lg transition-all hover:scale-105 ' + (tableFilter === 'ALL' ? 'ring-4 ring-purple-300' : '')}
+          >
             <Wallet className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalPayslips || 0}</p><p className="text-xs opacity-90">Payslips</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-indigo-600 to-blue-800 text-white shadow-lg">
+          </button>
+          <button
+            onClick={() => setTableFilter('NET_GT_0')}
+            className={'p-4 rounded-2xl text-left bg-gradient-to-br from-indigo-600 to-blue-800 text-white shadow-lg transition-all hover:scale-105 ' + (tableFilter === 'NET_GT_0' ? 'ring-4 ring-indigo-300' : '')}
+          >
             <DollarSign className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalGross || 0}</p><p className="text-xs opacity-90">Gross</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg">
+          </button>
+          <button
+            onClick={() => setTableFilter('PAYE_GT_0')}
+            className={'p-4 rounded-2xl text-left bg-gradient-to-br from-red-600 to-rose-800 text-white shadow-lg transition-all hover:scale-105 ' + (tableFilter === 'PAYE_GT_0' ? 'ring-4 ring-red-300' : '')}
+          >
             <TrendingUp className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalPaye || 0}</p><p className="text-xs opacity-90">PAYE</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-orange-600 to-amber-800 text-white shadow-lg">
+          </button>
+          <button
+            onClick={() => setTableFilter('NSSF_GT_0')}
+            className={'p-4 rounded-2xl text-left bg-gradient-to-br from-orange-600 to-amber-800 text-white shadow-lg transition-all hover:scale-105 ' + (tableFilter === 'NSSF_GT_0' ? 'ring-4 ring-orange-300' : '')}
+          >
             <TrendingUp className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalNssf || 0}</p><p className="text-xs opacity-90">NSSF</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-cyan-600 to-teal-800 text-white shadow-lg">
+          </button>
+          <button
+            onClick={() => setTableFilter('SHIF_GT_0')}
+            className={'p-4 rounded-2xl text-left bg-gradient-to-br from-cyan-600 to-teal-800 text-white shadow-lg transition-all hover:scale-105 ' + (tableFilter === 'SHIF_GT_0' ? 'ring-4 ring-cyan-300' : '')}
+          >
             <TrendingUp className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalShif || 0}</p><p className="text-xs opacity-90">SHIF</p>
-          </div>
-          <div className="p-4 rounded-2xl text-left bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg">
+          </button>
+          <button
+            onClick={() => setTableFilter('NET_GT_0')}
+            className={'p-4 rounded-2xl text-left bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg transition-all hover:scale-105 ' + (tableFilter === 'NET_GT_0' ? 'ring-4 ring-green-300' : '')}
+          >
             <CheckCircle2 className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalNet || 0}</p><p className="text-xs opacity-90">Net Pay</p>
-          </div>
+          </button>
         </div>
 
         {summary.unpaidEmployees > 0 && activePeriod && (
