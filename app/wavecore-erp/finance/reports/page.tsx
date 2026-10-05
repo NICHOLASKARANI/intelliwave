@@ -34,8 +34,8 @@ export default function FinancialReportsPage() {
   const [incomeStatement, setIncomeStatement] = useState<IncomeStatement | null>(null)
   const [trialBalance, setTrialBalance] = useState<TrialBalance | null>(null)
 
-  const fetchReport = async (type: string) => {
-    setLoading(true)
+  const fetchReport = async (type: string, opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     setActiveReport(type)
     
@@ -56,13 +56,21 @@ export default function FinancialReportsPage() {
     } catch (err) {
       setError('Failed to load report')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchReport('balance-sheet')
   }, [])
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => {
+      fetchReport(activeReport, { silent: true })
+    }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [activeReport])
 
   const printReport = () => {
     window.print()
