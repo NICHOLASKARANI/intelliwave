@@ -118,14 +118,17 @@ export async function POST(request: NextRequest) {
     const result = await pool.query(
       `INSERT INTO "PerformanceReview"
         (id, "employeeId", "reviewerId", "reviewPeriod", "reviewType", score, "selfScore", "managerScore",
-         "goalsAchieved", "goalsTotal", strengths, improvements, comments, status, "reviewDate", "organizationId", "createdAt", "updatedAt")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW(),$15,NOW(),NOW())
+         "goalsAchieved", "goalsTotal", strengths, improvements, comments, goals, status, "reviewDate", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),$16,NOW(),NOW())
        RETURNING *`,
       [
-        id, body.employeeId, body.reviewerId || null, body.reviewPeriod, body.reviewType || 'ANNUAL',
+        id, body.employeeId,
+        body.reviewerId || session.userId,
+        body.reviewPeriod, body.reviewType || 'ANNUAL',
         Number(body.score || 0), Number(body.selfScore || 0), Number(body.managerScore || 0),
         Number(body.goalsAchieved || 0), Number(body.goalsTotal || 0),
         body.strengths || null, body.improvements || null, body.comments || null,
+        body.goals || null,
         body.status || 'DRAFT', session.organizationId,
       ]
     )
