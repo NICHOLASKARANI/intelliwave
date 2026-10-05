@@ -274,14 +274,31 @@ export async function POST(request: NextRequest) {
       if (!body.endDate) return NextResponse.json({ error: 'End date is required' }, { status: 400 })
 
       const id = crypto.randomUUID()
-      // Runtime columns the payroll UI expects on PayrollPeriod
+
+      // Best-effort: ensure optional runtime columns exist, but never
+      // depend on them for the INSERT below.
       await pool.query('ALTER TABLE "PayrollPeriod" ADD COLUMN IF NOT EXISTS "paymentDate" TIMESTAMP(3)').catch(() => {})
+
+      // Normalise status to the allowed enum values
+      const ALLOWED = ['DRAFT','PROCESSED','APPROVED','PAID']
+      const safeStatus = ALLOWED.includes(body.status) ? body.status : 'DRAFT'
+
       const res = await pool.query(
-        `INSERT INTO "PayrollPeriod" (id, name, status, "startDate", "endDate", "paymentDate", "organizationId", "createdAt", "updatedAt")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())
+        `INSERT INTO "PayrollPeriod"
+           (id, name, status, "startDate", "endDate", "organizationId", "createdAt", "updatedAt")
+         VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
          RETURNING *`,
-        [id, body.name, body.status || 'DRAFT', body.startDate, body.endDate, body.paymentDate || null, orgId]
+        [id, body.name, safeStatus, body.startDate, body.endDate, orgId]
       )
+
+      // Non-fatal: if paymentDate exists and was given, update it after
+      if (body.paymentDate) {
+        await pool.query(
+          'UPDATE "PayrollPeriod" SET "paymentDate" = $1 WHERE id = $2 AND "organizationId" = $3',
+          [body.paymentDate, id, orgId]
+        ).catch(() => {})
+      }
+
       return NextResponse.json({ period: res.rows[0] }, { status: 201 })
     }
 
@@ -335,8 +352,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
   } catch (error) {
-    console.error('Payroll POST error:', error); console.error('Payroll POST error details:', (error as any)?.message, (error as any)?.detail, (error as any)?.code)
-    console.error('[HR-ERROR]', error); return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+    const e: any = error
+    console.error('[HR-PAYROLL-DETAIL]', e?.message, e?.detail, e?.code, e?.column, e?.constraint)
+    return NextResponse.json({
+      error: 'Something went wrong. Please try again.',
+      detail: e?.message,
+      column: e?.column,
+      constraint: e?.constraint,
+      code: e?.code,
+    }, { status: 500 })
   }
 }
 
