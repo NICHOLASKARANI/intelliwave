@@ -275,29 +275,26 @@ export async function POST(request: NextRequest) {
 
       const id = crypto.randomUUID()
 
-      // Best-effort: ensure optional runtime columns exist, but never
-      // depend on them for the INSERT below.
+      // Best-effort: ensure runtime columns exist.
       await pool.query('ALTER TABLE "PayrollPeriod" ADD COLUMN IF NOT EXISTS "paymentDate" TIMESTAMP(3)').catch(() => {})
+      // Some installs have paymentDate as NOT NULL from the original schema.
+      // Relax it so the INSERT below (which may not include it) still works.
+      await pool.query('ALTER TABLE "PayrollPeriod" ALTER COLUMN "paymentDate" DROP NOT NULL').catch(() => {})
 
       // Normalise status to the allowed enum values
       const ALLOWED = ['DRAFT','PROCESSED','APPROVED','PAID']
       const safeStatus = ALLOWED.includes(body.status) ? body.status : 'DRAFT'
 
+      // Compute a sensible default paymentDate = the period end date
+      const defaultPaymentDate = body.paymentDate || body.endDate
+
       const res = await pool.query(
         `INSERT INTO "PayrollPeriod"
-           (id, name, status, "startDate", "endDate", "organizationId", "createdAt", "updatedAt")
-         VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
+           (id, name, status, "startDate", "endDate", "paymentDate", "organizationId", "createdAt", "updatedAt")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())
          RETURNING *`,
-        [id, body.name, safeStatus, body.startDate, body.endDate, orgId]
+        [id, body.name, safeStatus, body.startDate, body.endDate, defaultPaymentDate, orgId]
       )
-
-      // Non-fatal: if paymentDate exists and was given, update it after
-      if (body.paymentDate) {
-        await pool.query(
-          'UPDATE "PayrollPeriod" SET "paymentDate" = $1 WHERE id = $2 AND "organizationId" = $3',
-          [body.paymentDate, id, orgId]
-        ).catch(() => {})
-      }
 
       return NextResponse.json({ period: res.rows[0] }, { status: 201 })
     }
