@@ -23,6 +23,7 @@ function downloadJournalPdf(id: string) {
 
   export default function JournalEntriesPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
 
   async function fetchEntries() {
@@ -49,7 +50,7 @@ function downloadJournalPdf(id: string) {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this journal entry? This cannot be undone.')) return
     try {
-      const res = await fetch(`/api/wavecore/gl/journal-entries/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/gl/journal-entries/${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) {
         fetchEntries()
       } else {

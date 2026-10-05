@@ -50,15 +50,15 @@ export default function BudgetsPage() {
 
   const csrf = () => (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
 
-  const fetchBudgets = async () => {
-    setLoading(true)
+  const fetchBudgets = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/finance/budgets', { cache: 'no-store' })
       const data = await res.json()
       setBudgets(data.budgets || [])
     } catch { setError('Failed to load') }
-    finally { setLoading(false) }
+    finally { if (!opts?.silent) setLoading(false) }
   }
 
   const fetchVariance = async (year?: number) => {
@@ -76,6 +76,13 @@ export default function BudgetsPage() {
   }
 
   useEffect(() => { fetchBudgets() /* eslint-disable-next-line */ }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchBudgets({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
 
   useEffect(() => {
     if (tab === 'variance') fetchVariance(fiscalYear)

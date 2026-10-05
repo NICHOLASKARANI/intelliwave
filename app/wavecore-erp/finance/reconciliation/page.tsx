@@ -19,6 +19,7 @@ interface Reconciliation {
 
 export default function ReconciliationPage() {
   const [reconciliations, setReconciliations] = useState<Reconciliation[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -28,8 +29,15 @@ export default function ReconciliationPage() {
     fetchReconciliations()
   }, [])
 
-  const fetchReconciliations = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchReconciliations({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchReconciliations = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/bank-reconciliation')
@@ -48,7 +56,7 @@ export default function ReconciliationPage() {
     try {
       const res = await fetch('/api/wavecore/bank-reconciliation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData)
       })
       if (res.ok) {
@@ -67,7 +75,7 @@ export default function ReconciliationPage() {
   const deleteReconciliation = async (id: string) => {
     if (!confirm('Delete this reconciliation?')) return
     try {
-      await fetch(`/api/wavecore/bank-reconciliation?id=${id}`, { method: 'DELETE' })
+      await fetch(`/api/wavecore/bank-reconciliation?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       fetchReconciliations()
     } catch (err) {
       setError('Delete failed')

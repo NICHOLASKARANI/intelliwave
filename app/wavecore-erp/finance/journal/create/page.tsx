@@ -23,6 +23,7 @@ interface JournalLine {
 
 export default function CreateJournalEntryPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [reference, setReference] = useState('')
   const [description, setDescription] = useState('')
@@ -55,7 +56,7 @@ export default function CreateJournalEntryPage() {
   const handleQuickSetup = async () => {
     setQuickSetupLoading(true)
     try {
-      const res = await fetch('/api/wavecore/gl/chart-of-accounts/quick-setup', { method: 'POST' })
+      const res = await fetch('/api/wavecore/gl/chart-of-accounts/quick-setup', { method: 'POST' , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         await fetchAccounts()
@@ -105,7 +106,7 @@ export default function CreateJournalEntryPage() {
     try {
       const res = await fetch('/api/wavecore/gl/journal-entries', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           date, reference: reference || null, description,
           items: lines.map(l => ({ accountId: l.accountId, description: l.description || null, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0 })),

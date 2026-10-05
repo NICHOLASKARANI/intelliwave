@@ -17,6 +17,7 @@ interface Payment {
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -25,8 +26,15 @@ export default function PaymentsPage() {
     fetchPayments()
   }, [])
 
-  const fetchPayments = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchPayments({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchPayments = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/finance/payments')
       const data = await res.json()
@@ -41,7 +49,7 @@ export default function PaymentsPage() {
   const deletePayment = async (id: string) => {
     if (!confirm('Delete this payment?')) return
     try {
-      const res = await fetch(`/api/wavecore/finance/payments?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/finance/payments?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchPayments()
     } catch (err) {
       setError('Delete failed')

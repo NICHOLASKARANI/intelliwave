@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 
 export default function AddBankAccountPage() {
   const [name, setName] = useState('')
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [accountNumber, setAccountNumber] = useState('')
   const [bankName, setBankName] = useState('')
   const [currency, setCurrency] = useState('KES')
@@ -31,7 +32,7 @@ export default function AddBankAccountPage() {
     try {
       const res = await fetch('/api/wavecore/bank-accounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           name,
           accountNumber,

@@ -15,6 +15,7 @@ interface LineItem {
 
 export default function CreateInvoicePage() {
   const [customerName, setCustomerName] = useState('')
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -49,7 +50,7 @@ export default function CreateInvoicePage() {
       // Step 1: Create customer (or get existing)
       const customerRes = await fetch('/api/wavecore/crm/customers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           name: customerName,
           email: customerEmail || null,
@@ -81,7 +82,7 @@ export default function CreateInvoicePage() {
       // Step 2: Create invoice
       const invoiceRes = await fetch('/api/wavecore/finance/invoices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           customerId,
           date,

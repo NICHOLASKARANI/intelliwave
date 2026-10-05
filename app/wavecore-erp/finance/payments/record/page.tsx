@@ -17,6 +17,7 @@ interface Invoice {
 
 export default function RecordPaymentPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [invoiceId, setInvoiceId] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -55,7 +56,7 @@ export default function RecordPaymentPage() {
     try {
       const res = await fetch('/api/wavecore/finance/payments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ invoiceId, amount: parseFloat(amount), date, method, reference: reference || null }),
       })
       const data = await res.json()

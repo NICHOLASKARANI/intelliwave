@@ -17,6 +17,7 @@ interface Account {
 
 export default function ChartOfAccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [quickSetupLoading, setQuickSetupLoading] = useState(false)
 

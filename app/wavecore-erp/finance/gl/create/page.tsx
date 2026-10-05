@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 
 export default function CreateAccountPage() {
   const [code, setCode] = useState('')
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [name, setName] = useState('')
   const [type, setType] = useState('')
   const [description, setDescription] = useState('')
@@ -32,7 +33,7 @@ export default function CreateAccountPage() {
     try {
       const res = await fetch('/api/wavecore/gl/chart-of-accounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ code, name, type, description: description || null }),
       })
       const data = await res.json()

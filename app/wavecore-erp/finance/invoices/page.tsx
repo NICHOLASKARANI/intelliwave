@@ -22,6 +22,7 @@ interface Invoice {
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -33,8 +34,15 @@ export default function InvoicesPage() {
     fetchInvoices()
   }, [])
 
-  const fetchInvoices = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchInvoices({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchInvoices = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/finance/invoices')
@@ -51,7 +59,7 @@ export default function InvoicesPage() {
     if (!confirm('Delete this invoice permanently?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/finance/invoices?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/finance/invoices?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) {
         fetchInvoices()
       }
@@ -66,7 +74,7 @@ export default function InvoicesPage() {
     try {
       await fetch('/api/wavecore/finance/invoices', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ id, status })
       })
       fetchInvoices()
