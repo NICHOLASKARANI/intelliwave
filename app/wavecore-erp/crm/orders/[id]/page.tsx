@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Loader2, AlertTriangle, Package, Printer, Trash2,
   User, Mail, Phone, Building2, Calendar, DollarSign, FileText,
+  Receipt, CheckCircle2, X, ExternalLink,
 } from 'lucide-react'
 
 interface Order {
@@ -60,6 +61,10 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [items, setItems] = useState<Line[]>([])
   const [working, setWorking] = useState(false)
+  // CRM-3 — invoice conversion state
+  const [converting, setConverting] = useState(false)
+  const [conversionResult, setConversionResult] = useState<{ id: string; number: string; total: number; alreadyExisted: boolean } | null>(null)
+  const [showConvertModal, setShowConvertModal] = useState(false)
 
   const csrf = () => (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
 
@@ -99,6 +104,32 @@ export default function OrderDetailPage() {
       setError('Network error: ' + (e as Error).message)
     } finally {
       setWorking(false)
+    }
+  }
+
+  // CRM-3 — create (or fetch existing) CustomerInvoice for this order
+  const convertToInvoice = async () => {
+    if (!order) return
+    setConverting(true)
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/crm/orders/' + id + '/convert-to-invoice', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Conversion failed'); return }
+      setConversionResult({
+        id: data.invoice.id,
+        number: data.invoice.number,
+        total: data.invoice.total,
+        alreadyExisted: !!data.alreadyExisted,
+      })
+      setShowConvertModal(true)
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    } finally {
+      setConverting(false)
     }
   }
 
@@ -158,6 +189,15 @@ export default function OrderDetailPage() {
             >
               <Printer className="w-4 h-4" /> Print / PDF
             </a>
+            <button
+              onClick={convertToInvoice}
+              disabled={converting || working || order.status === 'CANCELLED'}
+              title={order.status === 'CANCELLED' ? 'Cancelled orders cannot be invoiced' : 'Create (or view) the linked Customer Invoice'}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-40"
+            >
+              {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+              {conversionResult ? 'View Invoice' : 'Create Invoice'}
+            </button>
             <button
               onClick={deleteOrder}
               disabled={working}
@@ -302,6 +342,46 @@ export default function OrderDetailPage() {
               <FileText className="w-4 h-4" /> Notes
             </h3>
             <p className="text-sm whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">{order.notes}</p>
+          </div>
+        )}
+
+        {showConvertModal && conversionResult && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowConvertModal(false)}>
+            <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 max-w-md w-full">
+              <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+                <h3 className="font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  {conversionResult.alreadyExisted ? 'Invoice already exists' : 'Invoice created'}
+                </h3>
+                <button onClick={() => setShowConvertModal(false)} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6 space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-y-2">
+                  <span className="text-neutral-500">Invoice #</span>
+                  <span className="text-right font-mono font-bold">{conversionResult.number}</span>
+                  <span className="text-neutral-500">Status</span>
+                  <span className="text-right"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-900/40 text-amber-300">DRAFT</span></span>
+                  <span className="text-neutral-500">Total</span>
+                  <span className="text-right font-bold">{fmtMoney(conversionResult.total)}</span>
+                </div>
+                <p className="text-xs text-neutral-500 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                  The invoice is a draft in Finance — review and send it from there.
+                </p>
+              </div>
+              <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-end gap-2">
+                <button onClick={() => setShowConvertModal(false)} className="px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 font-bold text-sm">
+                  Close
+                </button>
+                <Link
+                  href={'/wavecore-erp/finance/invoices/' + conversionResult.id}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" /> Open in Finance
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 
