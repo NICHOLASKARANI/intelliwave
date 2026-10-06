@@ -48,13 +48,22 @@ export default function CustomersPage() {
   }
 
   const deleteCustomer = async (id: string) => {
-    if (!confirm('Delete this customer?')) return
+    if (!confirm('Delete this customer? This removes their invoices, quotes, orders and payments too.')) return
     setDeleting(id)
+    setError('')
     try {
-      const res = await fetch(`/api/wavecore/crm/customers?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
-      if (res.ok) fetchCustomers()
+      const res = await fetch(`/api/wavecore/crm/customers?id=${id}`, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || `Delete failed (HTTP ${res.status})`)
+        return
+      }
+      await fetchCustomers()
     } catch (err) {
-      setError('Delete failed')
+      setError('Network error: ' + (err as Error).message)
     } finally {
       setDeleting('')
     }

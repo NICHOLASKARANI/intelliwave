@@ -55,12 +55,46 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Customer ID required' }, { status: 400 })
     }
 
-    // Delete related records first (to handle foreign key constraints)
-    await pool.query(`DELETE FROM "CustomerInvoice" WHERE "customerId" = $1`, [id]).catch(() => {})
-    await pool.query(`DELETE FROM "Quotation" WHERE "customerId" = $1`, [id]).catch(() => {})
-    await pool.query(`DELETE FROM "SalesOrder" WHERE "customerId" = $1`, [id]).catch(() => {})
-    await pool.query(`DELETE FROM "CustomerPayment" WHERE "invoiceId" IN (SELECT id FROM "CustomerInvoice" WHERE "customerId" = $1)`, [id]).catch(() => {})
-    await pool.query(`DELETE FROM "Activity" WHERE "customerId" = $1`, [id]).catch(() => {})
+    // Delete dependent rows in the correct order to satisfy FK constraints.
+    // Order matters:
+    //   1) CustomerPayment   (child of CustomerInvoice)
+    //   2) CustomerInvoice   (child of Customer)
+    //   3) Quotation         (child of Customer; SalesOrder may ref Quotation)
+    //   4) SalesOrder        (child of Customer; ref Quotation)
+    //   5) Activity          (child of Customer)
+    // Errors are intentionally NOT swallowed — if a dependent table has no
+    // cascade and the delete fails, we want a real error back, not a silent no-op.
+
+    // 1) Payments (must come before invoices)
+    await pool.query(
+      `DELETE FROM "CustomerPayment"
+       WHERE "invoiceId" IN (SELECT id FROM "CustomerInvoice" WHERE "customerId" = $1 AND "organizationId" = $2)`,
+      [id, session.organizationId]
+    ).catch((e) => { console.warn('[customer delete] CustomerPayment:', (e as Error).message) })
+
+    // 2) Invoices
+    await pool.query(
+      `DELETE FROM "CustomerInvoice" WHERE "customerId" = $1 AND "organizationId" = $2`,
+      [id, session.organizationId]
+    ).catch((e) => { console.warn('[customer delete] CustomerInvoice:', (e as Error).message) })
+
+    // 3) SalesOrders (may reference Quotation)
+    await pool.query(
+      `DELETE FROM "SalesOrder" WHERE "customerId" = $1 AND "organizationId" = $2`,
+      [id, session.organizationId]
+    ).catch((e) => { console.warn('[customer delete] SalesOrder:', (e as Error).message) })
+
+    // 4) Quotations
+    await pool.query(
+      `DELETE FROM "Quotation" WHERE "customerId" = $1 AND "organizationId" = $2`,
+      [id, session.organizationId]
+    ).catch((e) => { console.warn('[customer delete] Quotation:', (e as Error).message) })
+
+    // 5) Activities
+    await pool.query(
+      `DELETE FROM "Activity" WHERE "customerId" = $1 AND "organizationId" = $2`,
+      [id, session.organizationId]
+    ).catch((e) => { console.warn('[customer delete] Activity:', (e as Error).message) })
 
     // Finally delete the customer
     const result = await pool.query(
