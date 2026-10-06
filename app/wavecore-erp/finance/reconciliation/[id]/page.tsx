@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
   ArrowLeft, Loader2, AlertTriangle, Banknote, RefreshCw, Check, X,
-  CheckCircle2, Link2, Unlink,
+  CheckCircle2, Link2, Unlink, Landmark, Upload, Save,
 } from 'lucide-react'
 
 interface Txn {
@@ -53,6 +53,13 @@ export default function ReconciliationDetailPage() {
   const [suggestions, setSuggestions] = useState<Record<string, any[]>>({})
   const [selectedTxn, setSelectedTxn] = useState<string | null>(null)
   const [selectedJournal, setSelectedJournal] = useState<string | null>(null)
+  // FIN-12 — Post adjustment state
+  const [showAdjModal, setShowAdjModal] = useState(false)
+  const [coaAccounts, setCoaAccounts] = useState<any[]>([])
+  const [adjForm, setAdjForm] = useState({
+    bankAccountId: '', offsetAccountId: '',
+    date: new Date().toISOString().slice(0, 10),
+  })
 
   const csrf = () => (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3000) }
@@ -72,6 +79,15 @@ export default function ReconciliationDetailPage() {
   }
 
   useEffect(() => { if (id) load() /* eslint-disable-next-line */ }, [id])
+  // FIN-12 — pull CoA accounts lazily the first time the modal opens
+  useEffect(() => {
+    if (!showAdjModal || coaAccounts.length > 0) return
+    fetch('/api/wavecore/gl/chart-of-accounts', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => setCoaAccounts(d.accounts || []))
+      .catch(() => {})
+    // eslint-disable-next-line
+  }, [showAdjModal])
 
   const matchedCount = transactions.filter(t => t.matched).length
   const unmatchedCount = transactions.filter(t => !t.matched).length
@@ -115,6 +131,53 @@ export default function ReconciliationDetailPage() {
       })
       if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || 'Unmatch failed'); return }
       flash('Unmatched')
+      load()
+    } catch (e) { setError('Network error: ' + (e as Error).message) }
+    finally { setWorking(false) }
+  }
+
+  // FIN-12 — compute difference and post a single balancing journal
+  const difference = rec ? Number(rec.statementBalance || 0) - Number(rec.closingBalance || 0) : 0
+  const adjustNeeded = Math.abs(difference) >= 0.01
+
+  const openAdjModal = () => {
+    // Pre-select the first ASSET account for the bank side, first EXPENSE for the offset
+    const bankDefault = coaAccounts.find((a: any) => String(a.type).toUpperCase() === 'ASSET')?.id || ''
+    const offsetDefault = coaAccounts.find((a: any) => String(a.type).toUpperCase() === 'EXPENSE')?.id || ''
+    setAdjForm(f => ({ ...f, bankAccountId: f.bankAccountId || bankDefault, offsetAccountId: f.offsetAccountId || offsetDefault }))
+    setShowAdjModal(true)
+  }
+
+  const postAdjustment = async () => {
+    if (!adjForm.bankAccountId || !adjForm.offsetAccountId) { setError('Select both accounts'); return }
+    if (adjForm.bankAccountId === adjForm.offsetAccountId) { setError('The two accounts must be different'); return }
+    setWorking(true); setError('')
+    try {
+      const res = await fetch('/api/wavecore/bank-reconciliation/' + id + '/adjustment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify(adjForm),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Adjustment failed'); return }
+      flash('Posted ' + data.entry.number + ' — ' + fmt(data.entry.amount))
+      setShowAdjModal(false)
+      load()
+    } catch (e) { setError('Network error: ' + (e as Error).message) }
+    finally { setWorking(false) }
+  }
+
+  const removeAdjustment = async () => {
+    if (!confirm('Remove the posted adjustment for this reconciliation?')) return
+    setWorking(true)
+    try {
+      const res = await fetch('/api/wavecore/bank-reconciliation/' + id + '/adjustment', {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      if (!res.ok) { setError('Remove failed'); return }
+      flash('Adjustment removed')
+      setShowAdjModal(false)
       load()
     } catch (e) { setError('Network error: ' + (e as Error).message) }
     finally { setWorking(false) }
@@ -170,9 +233,19 @@ export default function ReconciliationDetailPage() {
               {rec.status}
             </span>
           </div>
-          <button onClick={load} disabled={loading} className="px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold flex items-center gap-2 disabled:opacity-40">
-            <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={load} disabled={loading} className="px-4 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm font-bold flex items-center gap-2 disabled:opacity-40">
+              <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
+            </button>
+            <button
+              onClick={openAdjModal}
+              disabled={!adjustNeeded || loading}
+              title={adjustNeeded ? 'Post a balancing journal entry' : 'Already balanced'}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-40"
+            >
+              <Landmark className="w-4 h-4" /> Post adjustment
+            </button>
+          </div>
         </div>
       </header>
 
@@ -340,6 +413,108 @@ export default function ReconciliationDetailPage() {
                 {working ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Match
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* FIN-12 — Post adjustment modal */}
+        {showAdjModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowAdjModal(false)}>
+            <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 max-w-lg w-full">
+              <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold flex items-center gap-2"><Landmark className="w-5 h-5 text-purple-500" /> Post adjustment</h3>
+                  <p className="text-xs text-neutral-500 mt-0.5">Creates one journal entry to close the difference.</p>
+                </div>
+                <button onClick={() => setShowAdjModal(false)} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Preview */}
+                <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-800">
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">Statement</p>
+                      <p className="font-bold">{fmt(rec?.statementBalance || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">Book</p>
+                      <p className="font-bold">{fmt(rec?.closingBalance || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">Difference</p>
+                      <p className={'font-bold ' + (difference > 0 ? 'text-green-600' : 'text-red-600')}>{fmt(difference)}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-3">
+                    {difference > 0
+                      ? <>Entry will be <strong>Dr bank account / Cr offset account</strong> for {fmt(Math.abs(difference))}.</>
+                      : <>Entry will be <strong>Dr offset account / Cr bank account</strong> for {fmt(Math.abs(difference))}.</>}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1">Bank GL account</label>
+                  <select
+                    value={adjForm.bankAccountId}
+                    onChange={e => setAdjForm({ ...adjForm, bankAccountId: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm"
+                  >
+                    <option value="">— select —</option>
+                    {coaAccounts.map((a: any) => (
+                      <option key={a.id} value={a.id}>{a.code} · {a.name} ({a.type})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1">Offset account (bank charges / suspense)</label>
+                  <select
+                    value={adjForm.offsetAccountId}
+                    onChange={e => setAdjForm({ ...adjForm, offsetAccountId: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm"
+                  >
+                    <option value="">— select —</option>
+                    {coaAccounts.map((a: any) => (
+                      <option key={a.id} value={a.id}>{a.code} · {a.name} ({a.type})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={adjForm.date}
+                    onChange={e => setAdjForm({ ...adjForm, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between gap-2 bg-neutral-50 dark:bg-neutral-800/30">
+                <button
+                  onClick={removeAdjustment}
+                  disabled={working}
+                  className="px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-bold disabled:opacity-40"
+                  title="Remove any previously posted adjustment for this reconciliation"
+                >
+                  <Unlink className="w-3.5 h-3.5 inline mr-1" /> Remove posted
+                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowAdjModal(false)} className="px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 font-bold text-sm">Cancel</button>
+                  <button
+                    onClick={postAdjustment}
+                    disabled={working || !adjForm.bankAccountId || !adjForm.offsetAccountId}
+                    className="px-6 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm flex items-center gap-2 disabled:opacity-40"
+                  >
+                    {working ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Post entry
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
