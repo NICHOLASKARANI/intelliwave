@@ -13,6 +13,7 @@ const opportunitySchema = z.object({
   customerId: z.string().optional(),
   expectedCloseDate: z.string().optional(),
   notes: z.string().optional(),
+  assignedToId: z.string().optional().nullable(),
 })
 
 export async function GET(request: NextRequest) {
@@ -57,8 +58,8 @@ export async function POST(request: NextRequest) {
 
     const result = await pool.query(
       `INSERT INTO "Opportunity"
-         (id, name, amount, stage, probability, "customerId", "expectedCloseDate", notes, "organizationId", "createdAt", "updatedAt")
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+         (id, name, amount, stage, probability, "customerId", "expectedCloseDate", notes, "assignedToId", "organizationId", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
        RETURNING *`,
       [
         validated.name,
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
         validated.customerId || null,
         validated.expectedCloseDate ? new Date(validated.expectedCloseDate) : null,
         validated.notes || null,
+        validated.assignedToId || null,
         session.organizationId,
       ]
     )

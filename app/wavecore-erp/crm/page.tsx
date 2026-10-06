@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Users, Target, FileText, ShoppingCart, Activity, Plus, 
   TrendingUp, DollarSign, Phone, Mail, ArrowRight, Loader2,
-  CheckCircle, Clock, AlertCircle, Star
+  CheckCircle, Clock, AlertCircle, Star, Trophy
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import CrmGlobalSearch from '@/components/wavecore/CrmGlobalSearch'
@@ -96,6 +96,7 @@ export default function CRMPage() {
     { label: 'Add Customer', href: '/wavecore-erp/crm/customers/create', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
     { label: 'Add Lead', href: '/wavecore-erp/crm/leads/create', icon: Target, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950' },
     { label: 'Forecast', href: '/wavecore-erp/crm/forecast', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+    { label: 'Reports', href: '/wavecore-erp/crm/reports', icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950' },
     { label: 'New Quotation', href: '/wavecore-erp/crm/quotations/create', icon: FileText, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950' },
     { label: 'New Opportunity', href: '/wavecore-erp/crm/opportunities/create', icon: TrendingUp, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950' },
     { label: 'Sales Order', href: '/wavecore-erp/crm/orders/create', icon: ShoppingCart, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-950' },

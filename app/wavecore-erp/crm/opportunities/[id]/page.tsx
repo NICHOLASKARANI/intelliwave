@@ -23,6 +23,8 @@ interface Opportunity {
   customerEmail?: string
   customerPhone?: string
   customerCompany?: string
+  assignedToId?: string
+  assignedToName?: string
   createdAt: string
 }
 
@@ -63,6 +65,7 @@ export default function OpportunityDetailPage() {
   const [activities, setActivities] = useState<LinkedActivity[]>([])
   const [working, setWorking] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [team, setTeam] = useState<any[]>([])
 
   const [form, setForm] = useState<any>({})
 
@@ -77,6 +80,11 @@ export default function OpportunityDetailPage() {
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setOpportunity(data.opportunity)
       setActivities(data.activities || [])
+      const tRes = await fetch('/api/wavecore/crm/team', { cache: 'no-store' })
+      if (tRes.ok) {
+        const tData = await tRes.json()
+        setTeam(tData.members || [])
+      }
     } catch {
       setError('Network error')
     } finally {
@@ -95,6 +103,7 @@ export default function OpportunityDetailPage() {
       probability: opportunity.probability ?? 0,
       expectedCloseDate: opportunity.expectedCloseDate ? opportunity.expectedCloseDate.slice(0, 10) : '',
       notes: opportunity.notes || '',
+      assignedToId: opportunity.assignedToId || '',
     })
     setEditing(true)
   }
@@ -113,6 +122,7 @@ export default function OpportunityDetailPage() {
           probability: parseInt(form.probability) || 0,
           expectedCloseDate: form.expectedCloseDate || null,
           notes: form.notes || null,
+          assignedToId: form.assignedToId || null,
         }),
       })
       const data = await res.json()
@@ -197,6 +207,32 @@ export default function OpportunityDetailPage() {
             <span className={'ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ' + (STAGE_COLORS[opportunity.stage] || 'bg-neutral-800 text-neutral-300')}>
               {opportunity.stage}
             </span>
+            {team.length > 0 && (
+              <select
+                value={opportunity.assignedToId || ''}
+                onChange={async (e) => {
+                  const newVal = e.target.value || null
+                  setWorking(true)
+                  try {
+                    const r = await fetch('/api/wavecore/crm/opportunities/' + id, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+                      body: JSON.stringify({ assignedToId: newVal }),
+                    })
+                    if (!r.ok) { setError('Assign failed'); return }
+                    const d = await r.json()
+                    setOpportunity(d.opportunity)
+                    flash('Owner updated')
+                  } catch { setError('Network error') }
+                  finally { setWorking(false) }
+                }}
+                className="ml-2 px-2 py-1 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs"
+                title="Assign owner"
+              >
+                <option value="">Unassigned</option>
+                {team.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <a

@@ -64,7 +64,7 @@ export async function PATCH(
     const body = await request.json().catch(() => null)
     if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 
-    const allowed = ['name', 'amount', 'stage', 'probability', 'expectedCloseDate', 'notes', 'customerId']
+    const allowed = ['name', 'amount', 'stage', 'probability', 'expectedCloseDate', 'notes', 'customerId', 'assignedToId']
     const sets: string[] = []
     const values: any[] = []
     for (const k of allowed) {
@@ -75,6 +75,7 @@ export async function PATCH(
         if (k === 'expectedCloseDate') v = v ? new Date(v) : null
         if (k === 'customerId') v = v || null
         if (k === 'notes') v = v ? String(v) : null
+        if (k === 'assignedToId') v = v ? String(v) : null
         values.push(v)
         sets.push(`"${k}" = $${values.length}`)
       }

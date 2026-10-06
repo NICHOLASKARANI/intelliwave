@@ -14,6 +14,8 @@ export default function CreateOpportunityPage() {
   const [stage, setStage] = useState('QUALIFICATION')
   const [probability, setProbability] = useState('20')
   const [customers, setCustomers] = useState<any[]>([])
+  const [team, setTeam] = useState<any[]>([])
+  const [assignedToId, setAssignedToId] = useState('')
   const [customerId, setCustomerId] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [expectedCloseDate, setExpectedCloseDate] = useState('')
@@ -29,6 +31,11 @@ export default function CreateOpportunityPage() {
         if (res.ok) {
           const data = await res.json()
           setCustomers(data.customers || [])
+        }
+        const tRes = await fetch('/api/wavecore/crm/team')
+        if (tRes.ok) {
+          const tData = await tRes.json()
+          setTeam(tData.members || [])
         }
       } catch {}
     }
@@ -68,6 +75,7 @@ export default function CreateOpportunityPage() {
           customerId: finalCustomerId,
           expectedCloseDate: expectedCloseDate || undefined,
           notes: notes || undefined,
+          assignedToId: assignedToId || null,
         }),
       })
       const data = await res.json()
@@ -119,6 +127,12 @@ export default function CreateOpportunityPage() {
           </div>
           <div><label className="block text-sm font-medium mb-2">Notes</label>
             <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" placeholder="Any details about this opportunity..." />
+          </div>
+          <div><label className="block text-sm font-medium mb-2">Assign to</label>
+            <select value={assignedToId} onChange={(e) => setAssignedToId(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">
+              <option value="">Unassigned</option>
+              {team.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.email})</option>)}
+            </select>
           </div>
           <div><label className="block text-sm font-medium mb-2">Select Customer</label>
             <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">
