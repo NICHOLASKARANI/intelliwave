@@ -53,14 +53,16 @@ export async function GET(request: NextRequest) {
         p.id,
         p.name,
         p.sku,
-        p.stock_level,
-        p."reorderLevel",
+        COALESCE(SUM(sq.quantity), 0) AS stock_level,
+        COALESCE(p."minStock", 10) AS "reorderLevel",
         p."sellingPrice",
         p.category
       FROM "Product" p
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
-        AND p.stock_level < COALESCE(p."reorderLevel", 10)
-      ORDER BY p.stock_level ASC
+      GROUP BY p.id
+      HAVING COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10)
+      ORDER BY COALESCE(SUM(sq.quantity), 0) ASC
     `, [session.organizationId])
 
     const restocks = restockResult.rows

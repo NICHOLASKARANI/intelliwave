@@ -7,6 +7,7 @@ import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle,
 
 export default function StockCountsPage() {
   const [counts, setCounts] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [products, setProducts] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
@@ -26,8 +27,8 @@ export default function StockCountsPage() {
     notes: ''
   })
 
-  const fetchCounts = async () => {
-    setLoading(true)
+  const fetchCounts = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const [countsRes, productsRes] = await Promise.all([
@@ -42,12 +43,19 @@ export default function StockCountsPage() {
     } catch (err) {
       setError('Failed to load stock counts')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchCounts()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchCounts({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const createCount = async (e: React.FormEvent) => {
@@ -66,7 +74,7 @@ export default function StockCountsPage() {
     try {
       const res = await fetch('/api/wavecore/store/counts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           ...formData,
           productName: selectedProduct?.name || '',
@@ -105,7 +113,7 @@ export default function StockCountsPage() {
     try {
       const res = await fetch(`/api/wavecore/store/counts?id=${encodeURIComponent(id)}`, { 
         method: 'DELETE' 
-      })
+      , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         setSuccess(`Stock count "${number}" deleted successfully`)

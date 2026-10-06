@@ -7,6 +7,7 @@ import { Plus, Loader2, ArrowDown, Search, Printer, CheckCircle, Package, Trash2
 
 export default function StockInPage() {
   const [products, setProducts] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -17,8 +18,8 @@ export default function StockInPage() {
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState('')
 
-  const fetchProducts = async () => {
-    setLoading(true)
+  const fetchProducts = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/store')
       const data = await res.json()
@@ -32,6 +33,13 @@ export default function StockInPage() {
 
   useEffect(() => {
     fetchProducts()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchProducts({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const handleStockIn = async (e: React.FormEvent) => {
@@ -49,7 +57,7 @@ export default function StockInPage() {
     try {
       const res = await fetch('/api/wavecore/store/stock-in', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ productId: selectedProduct, quantity: Number(quantity) })
       })
 
@@ -76,7 +84,7 @@ export default function StockInPage() {
     if (!confirm('Delete this product?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchProducts()
     } catch (err) {
       setError('Delete failed')

@@ -7,6 +7,7 @@ import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle,
 
 export default function RestockPage() {
   const [restocks, setRestocks] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
@@ -24,8 +25,8 @@ export default function RestockPage() {
     notes: ''
   })
 
-  const fetchRestocks = async () => {
-    setLoading(true)
+  const fetchRestocks = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/store/restock')
@@ -36,12 +37,19 @@ export default function RestockPage() {
     } catch (err) {
       setError('Failed to load restock data')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchRestocks()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchRestocks({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const createRestock = async (e: React.FormEvent) => {
@@ -59,7 +67,7 @@ export default function RestockPage() {
     try {
       const res = await fetch('/api/wavecore/store/restock', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           ...formData,
           productName: selectedProduct?.name || '',
@@ -95,7 +103,7 @@ export default function RestockPage() {
     try {
       const res = await fetch(`/api/wavecore/store/restock?id=${encodeURIComponent(id)}`, { 
         method: 'DELETE' 
-      })
+      , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         setSuccess(`Restock order "${number}" deleted successfully`)

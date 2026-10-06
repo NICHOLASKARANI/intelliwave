@@ -16,6 +16,7 @@ interface Sale {
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -30,8 +31,15 @@ export default function SalesPage() {
     fetchSales()
   }, [])
 
-  const fetchSales = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchSales({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchSales = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/store/sales')
       const data = await res.json()
@@ -39,7 +47,7 @@ export default function SalesPage() {
     } catch (err) {
       setError('Failed to load sales')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -47,7 +55,7 @@ export default function SalesPage() {
     if (!confirm('Delete this sale?')) return
     setDeleting(id)
     try {
-      await fetch(`/api/wavecore/store/sales?id=${id}`, { method: 'DELETE' })
+      await fetch(`/api/wavecore/store/sales?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       fetchSales()
     } catch (err) {
       setError('Delete failed')

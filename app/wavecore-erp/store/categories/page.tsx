@@ -7,6 +7,7 @@ import { Plus, Loader2, Trash2, Tag, X, Search, Package, Printer, CheckCircle2, 
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -16,8 +17,8 @@ export default function CategoriesPage() {
   const [newCategory, setNewCategory] = useState('')
   const [activeView, setActiveView] = useState('all')
 
-  const fetchCategories = async () => {
-    setLoading(true)
+  const fetchCategories = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/store/categories')
@@ -26,12 +27,19 @@ export default function CategoriesPage() {
     } catch (err) {
       setError('Failed to load categories')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchCategories()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchCategories({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const createCategory = async (e: React.FormEvent) => {
@@ -45,7 +53,7 @@ export default function CategoriesPage() {
     try {
       const res = await fetch('/api/wavecore/store/categories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ name: newCategory.trim() })
       })
       const data = await res.json()
@@ -71,7 +79,7 @@ export default function CategoriesPage() {
     try {
       const res = await fetch(`/api/wavecore/store/categories?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`, { 
         method: 'DELETE' 
-      })
+      , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         setSuccess(`Category "${name}" deleted successfully`)

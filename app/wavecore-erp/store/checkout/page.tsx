@@ -7,6 +7,7 @@ import { CreditCard, Phone, Loader2, CheckCircle, MapPin } from 'lucide-react'
 
 export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('mpesa')
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [phone, setPhone] = useState('')
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -17,7 +18,7 @@ export default function CheckoutPage() {
     try {
       const res = await fetch('/api/wavecore/mpesa/stkpush', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ phone, amount: 500 })
       })
       if (res.ok) {

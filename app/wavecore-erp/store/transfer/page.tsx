@@ -7,6 +7,7 @@ import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle,
 
 export default function TransferPage() {
   const [transfers, setTransfers] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [products, setProducts] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
@@ -25,8 +26,8 @@ export default function TransferPage() {
     notes: ''
   })
 
-  const fetchTransfers = async () => {
-    setLoading(true)
+  const fetchTransfers = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const [transferRes, productsRes] = await Promise.all([
@@ -41,12 +42,19 @@ export default function TransferPage() {
     } catch (err) {
       setError('Failed to load transfers')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchTransfers()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchTransfers({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const createTransfer = async (e: React.FormEvent) => {
@@ -64,7 +72,7 @@ export default function TransferPage() {
     try {
       const res = await fetch('/api/wavecore/store/transfer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           ...formData,
           productName: selectedProduct?.name || '',
@@ -101,7 +109,7 @@ export default function TransferPage() {
     try {
       const res = await fetch(`/api/wavecore/store/transfer?id=${encodeURIComponent(id)}`, { 
         method: 'DELETE' 
-      })
+      , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         setSuccess(`Transfer "${number}" deleted successfully`)

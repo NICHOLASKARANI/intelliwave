@@ -10,18 +10,20 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(`
-      SELECT 
+      SELECT
         p.id,
         p.name,
         p.sku,
         p."sellingPrice",
-        p.stock_level,
         p.category,
-        (p."sellingPrice" * p.stock_level) as "stockValue",
+        COALESCE(SUM(sq.quantity), 0) AS stock_level,
+        (p."sellingPrice" * COALESCE(SUM(sq.quantity), 0)) AS "stockValue",
         p."createdAt"
       FROM "Product" p
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
-      ORDER BY (p."sellingPrice" * p.stock_level) DESC
+      GROUP BY p.id
+      ORDER BY (p."sellingPrice" * COALESCE(SUM(sq.quantity), 0)) DESC
     `, [session.organizationId])
 
     const products = result.rows

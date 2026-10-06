@@ -18,6 +18,7 @@ interface Product {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -27,8 +28,15 @@ export default function ProductsPage() {
     fetchProducts()
   }, [])
 
-  const fetchProducts = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchProducts({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchProducts = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/store')
       const data = await res.json()
@@ -36,7 +44,7 @@ export default function ProductsPage() {
     } catch (err) {
       setError('Failed to load products')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -44,7 +52,7 @@ export default function ProductsPage() {
     if (!confirm('Delete this product?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchProducts()
     } catch (err) {
       setError('Delete failed')

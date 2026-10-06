@@ -7,6 +7,7 @@ import { Loader2, Trash2, Search, Printer, CheckCircle2, AlertTriangle, Plus, X,
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,8 +26,8 @@ export default function OffersPage() {
     status: 'ACTIVE'
   })
 
-  const fetchOffers = async () => {
-    setLoading(true)
+  const fetchOffers = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/store/offers')
@@ -36,12 +37,19 @@ export default function OffersPage() {
     } catch (err) {
       setError('Failed to load offers')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchOffers()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchOffers({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const createOffer = async (e: React.FormEvent) => {
@@ -57,7 +65,7 @@ export default function OffersPage() {
     try {
       const res = await fetch('/api/wavecore/store/offers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData)
       })
       const data = await res.json()
@@ -91,7 +99,7 @@ export default function OffersPage() {
     try {
       const res = await fetch(`/api/wavecore/store/offers?id=${encodeURIComponent(id)}`, { 
         method: 'DELETE' 
-      })
+      , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         setSuccess(`Offer "${title}" deleted successfully`)

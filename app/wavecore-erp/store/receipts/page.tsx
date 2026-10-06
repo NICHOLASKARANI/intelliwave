@@ -20,7 +20,14 @@ export default function ReceiptsPage() {
     fetchReceipts()
   }, [])
 
-  const fetchReceipts = async () => {
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchReceipts({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchReceipts = async (opts?: { silent?: boolean }) => {
     try {
       const res = await fetch('/api/wavecore/store/receipts')
       const data = await res.json()
@@ -28,7 +35,7 @@ export default function ReceiptsPage() {
     } catch (error) {
       console.error('Failed to fetch receipts')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 

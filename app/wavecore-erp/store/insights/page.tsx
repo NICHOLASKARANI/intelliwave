@@ -27,8 +27,15 @@ export default function InsightsPage() {
     fetchInsights()
   }, [])
 
-  const fetchInsights = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchInsights({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchInsights = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const [productsRes, salesRes] = await Promise.all([
         fetch('/api/wavecore/store'),
@@ -62,7 +69,7 @@ export default function InsightsPage() {
     } catch (err) {
       setError('Failed to load insights')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 

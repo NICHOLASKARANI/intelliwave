@@ -7,6 +7,7 @@ import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle,
 
 export default function StockValuePage() {
   const [products, setProducts] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -15,8 +16,8 @@ export default function StockValuePage() {
   const [search, setSearch] = useState('')
   const [activeView, setActiveView] = useState('all')
 
-  const fetchStockValue = async () => {
-    setLoading(true)
+  const fetchStockValue = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/store/stock-value')
@@ -26,12 +27,19 @@ export default function StockValuePage() {
     } catch (err) {
       setError('Failed to load stock value data')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchStockValue()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchStockValue({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const deleteProduct = async (id: string, name: string) => {
@@ -42,7 +50,7 @@ export default function StockValuePage() {
     try {
       const res = await fetch(`/api/wavecore/store?id=${encodeURIComponent(id)}`, { 
         method: 'DELETE' 
-      })
+      , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         setSuccess(`Product "${name}" deleted successfully`)

@@ -23,6 +23,8 @@ export default function CreateProductPage() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
 
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -37,7 +39,7 @@ export default function CreateProductPage() {
     try {
       const res = await fetch('/api/wavecore/store', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           name: formData.name,
           sku: formData.sku,

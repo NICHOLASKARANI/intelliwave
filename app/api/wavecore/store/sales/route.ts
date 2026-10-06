@@ -44,16 +44,32 @@ export async function POST(request: NextRequest) {
 
     // Create items + deduct stock
     for (const item of items) {
-      await pool.query(
-        `INSERT INTO "SalesOrderItem" (id, "salesOrderId", "productId", quantity, "unitPrice", total, "organizationId")
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [crypto.randomUUID(), saleId, item.id, item.quantity, item.price, item.price * item.quantity, session.organizationId]
-      ).catch(() => {})
+      // Resolve product name for the description field. SalesOrderItem.description
+      // is NOT NULL, so we must always supply a value.
+      let description = item.description || item.name || null
+      if (!description && item.id) {
+        const p = await pool.query(
+          `SELECT name FROM "Product" WHERE id = $1 AND "organizationId" = $2`,
+          [item.id, session.organizationId]
+        ).catch(() => ({ rows: [] as any[] }))
+        description = p.rows[0]?.name || 'Item'
+      }
+      if (!description) description = 'Item'
+
+      try {
+        await pool.query(
+          `INSERT INTO "SalesOrderItem" (id, "salesOrderId", "productId", description, quantity, "unitPrice", total, "organizationId")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [crypto.randomUUID(), saleId, item.id, description, item.quantity, item.price, item.price * item.quantity, session.organizationId]
+        )
+      } catch (e) {
+        console.error('[store sales] item insert failed:', (e as Error).message)
+      }
 
       await pool.query(
         `UPDATE "StockQuantity" SET quantity = GREATEST(quantity - $1, 0), "availableQty" = GREATEST("availableQty" - $1, 0), "updatedAt" = NOW() WHERE "productId" = $2`,
         [item.quantity, item.id]
-      ).catch(() => {})
+      ).catch((e) => { console.warn('[store sales] stock deduct failed:', (e as Error).message) })
     }
 
     return NextResponse.json({ sale: saleResult.rows[0], itemCount: items.length, total }, { status: 201 })

@@ -20,7 +20,14 @@ export default function CartPage() {
     fetchCart()
   }, [])
 
-  const fetchCart = async () => {
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchCart({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchCart = async (opts?: { silent?: boolean }) => {
     try {
       const res = await fetch('/api/wavecore/store')
       const data = await res.json()
@@ -28,7 +35,7 @@ export default function CartPage() {
     } catch (error) {
       console.error('Failed to fetch cart')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 

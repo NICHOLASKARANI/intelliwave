@@ -15,6 +15,7 @@ interface CartItem {
 
 export default function CreateSalePage() {
   const [products, setProducts] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('')
   const [search, setSearch] = useState('')
@@ -88,7 +89,7 @@ export default function CreateSalePage() {
     try {
       const res = await fetch('/api/wavecore/store/sales', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ items: cart, total: cartTotal, customerName })
       })
 

@@ -7,6 +7,7 @@ import { Wallet, Loader2, CheckCircle, Clock, Printer, BarChart3, Plus, Trash2, 
 
 export default function SettlementsPage() {
   const [settlements, setSettlements] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -14,8 +15,8 @@ export default function SettlementsPage() {
   const [activeView, setActiveView] = useState('all')
   const [formData, setFormData] = useState({ amount: '', method: 'MPESA', customerName: '' })
 
-  const fetchSettlements = async () => {
-    setLoading(true)
+  const fetchSettlements = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/store/settlements')
       const data = await res.json()
@@ -23,12 +24,19 @@ export default function SettlementsPage() {
     } catch (err) {
       setError('Failed to load settlements')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchSettlements()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchSettlements({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const createSettlement = async (e: React.FormEvent) => {
@@ -37,7 +45,7 @@ export default function SettlementsPage() {
     try {
       const res = await fetch('/api/wavecore/store/settlements', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData)
       })
       if (res.ok) {
@@ -54,7 +62,7 @@ export default function SettlementsPage() {
     if (!confirm('Delete this settlement?')) return
     setDeleting(id)
     try {
-      await fetch(`/api/wavecore/store/settlements?id=${id}`, { method: 'DELETE' })
+      await fetch(`/api/wavecore/store/settlements?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       fetchSettlements()
     } catch (err) {
       setError('Delete failed')

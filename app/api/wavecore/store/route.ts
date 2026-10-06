@@ -10,10 +10,13 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const products = await pool.query(
-      `SELECT p.*, COALESCE(sq."availableQty", sq.quantity, 0) as stock_level
+      `SELECT p.*,
+              COALESCE(SUM(sq.quantity), 0) AS stock_level,
+              COALESCE(SUM(sq."availableQty"), 0) AS available_qty
        FROM "Product" p
        LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
        WHERE p."organizationId" = $1
+       GROUP BY p.id
        ORDER BY p."createdAt" DESC`,
       [session.organizationId]
     )
