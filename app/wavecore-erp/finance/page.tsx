@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { 
   ArrowLeft, Plus, Search, Filter, Download, Upload,
-  FileText, Calculator, Building2, CreditCard, Receipt, Percent, Lock, PiggyBank, Box,
+  FileText, Calculator, Building2, CreditCard, Receipt, Percent, Lock, PiggyBank, Box, Landmark,
   ChevronDown, TrendingUp, DollarSign, LayoutDashboard,
   ChevronRight
 } from 'lucide-react'
@@ -49,6 +49,7 @@ const quickLinks = [
   { icon: Lock, label: 'Fiscal Periods', desc: 'Close & lock accounting periods', href: '/wavecore-erp/finance/fiscal-periods' },
   { icon: PiggyBank, label: 'Opening Balances', desc: 'Enter starting balances per account', href: '/wavecore-erp/finance/opening-balances' },
   { icon: Box, label: 'Fixed Assets', desc: 'Register & depreciation schedule', href: '/wavecore-erp/finance/assets' },
+  { icon: Landmark, label: 'Statutory (PAYE · SHIF · Housing)', desc: 'KRA-facing payroll summary', href: '/wavecore-erp/finance/reports/statutory' },
 ]
 
 export default function FinancePage() {
