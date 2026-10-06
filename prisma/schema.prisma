@@ -148,6 +148,9 @@ model Organization {
   integrations         Integration[]
   currencies           Currency[]
   roles                Role[]
+  fixedAssets          FixedAsset[]
+  statutoryRates       StatutoryRate[]
+  supplierInvoices     SupplierInvoice[]
 }
 
 model Project {
@@ -996,6 +999,12 @@ model PayrollItem {
   allowances      Float         @default(0)
   deductions      Float         @default(0)
   netSalary       Float         @default(0)
+  grossPay        Float?        @default(0)
+  netPay          Float?        @default(0)
+  paye            Float?        @default(0)
+  nssf            Float?        @default(0)
+  shif            Float?        @default(0)
+  housingLevy     Float?        @default(0)
   employeeId      String
   payrollPeriodId String
   organizationId  String
@@ -1217,6 +1226,7 @@ model Budget {
   fiscalYear     Int
   period         String    @default("ANNUAL")
   amount         Float?    @default(0)
+  accountCode    String?
   organizationId String
   createdAt      DateTime? @default(now())
   updatedAt      DateTime? @default(now())
@@ -2504,4 +2514,98 @@ model SupplierQuotation {
   @@index([organizationId, supplierId])
   @@index([organizationId, status])
   @@map("SupplierQuote")
+}
+
+// ============================================================
+// FIN-14 — Schema reconciliation
+// These tables exist in the runtime DB via CREATE TABLE IF NOT
+// EXISTS in the app code. Declaring them here so a fresh
+// `prisma db push` against an empty database produces the same
+// shape the app expects.
+// ============================================================
+
+model FixedAsset {
+  id                                String    @id @default(cuid())
+  code                              String
+  name                              String
+  category                          String?
+  purchaseDate                      DateTime
+  purchaseCost                      Float     @default(0)
+  residualValue                     Float     @default(0)
+  usefulLifeMonths                  Int       @default(12)
+  method                            String    @default("STRAIGHT_LINE")
+  accumulatedDepreciation           Float     @default(0)
+  lastDepreciatedAt                 DateTime?
+  status                            String    @default("ACTIVE")
+  disposalDate                      DateTime?
+  disposalProceeds                  Float?
+  assetAccountId                    String?
+  depreciationExpenseAccountId      String?
+  accumulatedDepreciationAccountId  String?
+  organizationId                    String
+  createdAt                         DateTime  @default(now())
+  updatedAt                         DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@unique([organizationId, code])
+}
+
+model StatutoryRate {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String
+  label          String
+  bandMin        Float?   @default(0)
+  bandMax        Float?
+  rate           Float?   @default(0)
+  fixedAmount    Float?   @default(0)
+  sortOrder      Int?     @default(0)
+  notes          String?
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model SupplierInvoice {
+  id                  String    @id @default(cuid())
+  organizationId      String
+  invoiceNumber       String?
+  supplierInvoiceRef  String?
+  purchaseOrderId     String?
+  goodsReceiptId      String?
+  supplierId          String?
+  supplierName        String?
+  invoiceDate         DateTime?
+  dueDate             DateTime?
+  currency            String?   @default("KES")
+  subtotal            Decimal?  @default(0) @db.Decimal(14, 2)
+  taxAmount           Decimal?  @default(0) @db.Decimal(14, 2)
+  total               Decimal?  @default(0) @db.Decimal(14, 2)
+  status              String?   @default("DRAFT")
+  matchStatus         String?   @default("UNMATCHED")
+  matchNotes          String?
+  approvedAt          DateTime?
+  approvedBy          String?
+  approvedByName      String?
+  paidAt              DateTime?
+  paymentReference    String?
+  receivedBy          String?
+  receivedByName      String?
+  notes               String?
+  createdAt           DateTime? @default(now())
+  updatedAt           DateTime? @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, supplierId])
+  @@index([organizationId, dueDate])
 }
