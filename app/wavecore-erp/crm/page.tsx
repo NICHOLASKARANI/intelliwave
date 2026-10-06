@@ -34,13 +34,14 @@ export default function CRMPage() {
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [custRes, leadRes, oppRes, quoteRes, orderRes, pipelineRes] = await Promise.all([
-          fetch('/api/wavecore/crm/customers'),
-          fetch('/api/wavecore/crm/leads'),
-          fetch('/api/wavecore/crm/opportunities'),
-          fetch('/api/wavecore/crm/quotations'),
-          fetch('/api/wavecore/crm/orders'),
-          fetch('/api/wavecore/crm/pipeline'),
+        const [custRes, leadRes, oppRes, quoteRes, orderRes, pipelineRes, actRes] = await Promise.all([
+          fetch('/api/wavecore/crm/customers', { cache: 'no-store' }),
+          fetch('/api/wavecore/crm/leads', { cache: 'no-store' }),
+          fetch('/api/wavecore/crm/opportunities', { cache: 'no-store' }),
+          fetch('/api/wavecore/crm/quotations', { cache: 'no-store' }),
+          fetch('/api/wavecore/crm/orders', { cache: 'no-store' }),
+          fetch('/api/wavecore/crm/pipeline', { cache: 'no-store' }),
+          fetch('/api/wavecore/crm/activities', { cache: 'no-store' }),
         ])
         const cust = await custRes.json()
         const lead = await leadRes.json()
@@ -48,10 +49,14 @@ export default function CRMPage() {
         const quote = await quoteRes.json()
         const order = await orderRes.json()
         const pipe = await pipelineRes.json()
+        const act = await actRes.json().catch(() => ({ activities: [] }))
 
         const opportunities = opp.opportunities || []
-        const wonOpps = opportunities.filter((o: any) => o.stage === 'CLOSED_WON')
-        const totalValue = opportunities.reduce((sum: number, o: any) => sum + (o.amount || 0), 0)
+        const wonOpps  = opportunities.filter((o: any) => o.stage === 'CLOSED_WON')
+        const lostOpps = opportunities.filter((o: any) => o.stage === 'CLOSED_LOST')
+        const openOpps = opportunities.filter((o: any) => o.stage !== 'CLOSED_WON' && o.stage !== 'CLOSED_LOST')
+        const totalValue = openOpps.reduce((sum: number, o: any) => sum + (o.amount || 0), 0)
+        const closedCount = wonOpps.length + lostOpps.length
 
         setStats({
           customers: cust.customers?.length || 0,
@@ -59,9 +64,9 @@ export default function CRMPage() {
           opportunities: opportunities.length,
           quotations: quote.quotations?.length || 0,
           orders: order.orders?.length || 0,
-          activities: 0,
+          activities: act.activities?.length || 0,
           totalPipelineValue: totalValue,
-          winRate: opportunities.length > 0 ? Math.round((wonOpps.length / opportunities.length) * 100) : 0,
+          winRate: closedCount > 0 ? Math.round((wonOpps.length / closedCount) * 100) : 0,
         })
         setRecentCustomers((cust.customers || []).slice(0, 5))
         setRecentLeads((lead.leads || []).slice(0, 5))
@@ -71,6 +76,18 @@ export default function CRMPage() {
       } finally { setLoading(false) }
     }
     fetchAll()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => {
+      fetch('/api/wavecore/crm/customers', { cache: 'no-store' })
+        .then(() => { /* keep connection alive; the mount effect handles the render cycle */
+          return fetch('/api/wavecore/crm/opportunities', { cache: 'no-store' })
+        })
+        .catch(() => {})
+    }, 30000)
+    return () => clearInterval(t)
   }, [])
 
   const formatKES = (amount: number) => 'KSh ' + (amount || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
@@ -108,6 +125,9 @@ export default function CRMPage() {
           </div>
           <div className="flex items-center gap-3">
             <CrmGlobalSearch className="w-72 hidden sm:block" />
+            <Button variant="outline" onClick={handleDownloadPDF} className="gap-2">
+              <FileText className="w-4 h-4" /> Export
+            </Button>
             <Link href="/wavecore-erp/crm/customers/create">
               <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
                 <Plus className="w-4 h-4" /> Add Customer
@@ -146,14 +166,6 @@ export default function CRMPage() {
               {quickActions.map((action) => {
                 const Icon = action.icon
               
-  const handleDownloadPDF = () => {
-    const content = ['WaveCore ERP - CRM Dashboard', '='.repeat(50), 'Generated: ' + new Date().toLocaleString(), '', '© 2026 IntelliWavve'].join('\n')
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'crm.pdf'; a.click()
-  }
-
   return (
                   <Link key={action.label} href={action.href}
                     className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:border-indigo-300 hover:shadow-lg transition-all text-center">
@@ -251,15 +263,6 @@ export default function CRMPage() {
 }
 
 function KPICard({ label, value, icon: Icon, color, href }: { label: string; value: number | string; icon: any; color: string; href: string }) {
-
-  const handleDownloadPDF = () => {
-    const content = ['WaveCore ERP - CRM Dashboard', '='.repeat(50), 'Generated: ' + new Date().toLocaleString(), '', '© 2026 IntelliWavve'].join('\n')
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'crm.pdf'; a.click()
-  }
-
   return (
     <Link href={href} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg transition-all cursor-pointer">
       <Icon className={`w-5 h-5 ${color} mb-3`} />

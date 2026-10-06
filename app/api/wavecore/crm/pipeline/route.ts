@@ -59,10 +59,20 @@ export async function GET(request: NextRequest) {
         .reduce((sum, opp) => sum + (opp.amount || 0), 0),
     }))
 
-    const totalPipelineValue = opportunities.rows.reduce((sum, opp) => sum + (opp.amount || 0), 0)
-    const wonCount = opportunities.rows.filter(o => o.stage === 'CLOSED_WON').length
+    // Open pipeline excludes both CLOSED_WON and CLOSED_LOST — the
+    // number a sales leader wants is what is still in play.
+    const openRows = opportunities.rows.filter(
+      o => o.stage !== 'CLOSED_WON' && o.stage !== 'CLOSED_LOST'
+    )
+    const totalPipelineValue = openRows.reduce((sum, opp) => sum + (opp.amount || 0), 0)
+
+    // Win rate = won / (won + lost). Deals still in progress do not
+    // count against the ratio — matches standard CRM practice.
+    const wonCount   = opportunities.rows.filter(o => o.stage === 'CLOSED_WON').length
+    const lostCount  = opportunities.rows.filter(o => o.stage === 'CLOSED_LOST').length
+    const closedCount = wonCount + lostCount
+    const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 100) : 0
     const totalCount = opportunities.rows.length
-    const winRate = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0
 
     return NextResponse.json({
       pipeline,
