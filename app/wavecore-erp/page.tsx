@@ -32,7 +32,7 @@ const modules = [
   { icon: HeartPulse, title: 'AI Health Suite', desc: 'ECG, Vitals, Cardiac, Pulse', href: '/wavecore-erp/ai-health/ecg-arrhythmia', bg: 'from-red-500 to-rose-600', color: 'text-red-500' },
   { icon: Shield, title: 'AI Security Suite', desc: 'Lie, Anger, Red Flag, Night', href: '/wavecore-erp/ai-security/lie-detection', bg: 'from-purple-500 to-violet-600', color: 'text-purple-500' },
   { icon: Leaf, title: 'AI Agriculture', desc: 'Greenhouse, Cattle, Ranch', href: '/wavecore-erp/ai-vision/greenhouse', bg: 'from-green-500 to-emerald-600', color: 'text-green-500' },
-  { icon: DollarSign, title: 'AI Finance', desc: 'Forex Signals', href: '/wavecore-erp/ai-finance/forex-signals', bg: 'from-amber-500 to-yellow-600', color: 'text-amber-500' },
+  { icon: TrendingUp, title: 'Wavve SI', desc: 'AI Trading Intelligence', href: '/wavecore-erp/wavve-si', bg: 'from-amber-500 to-yellow-600', color: 'text-amber-500' },
   { icon: GraduationCap, title: 'AI Education', desc: 'Student Performance', href: '/wavecore-erp/ai-education/student-performance', bg: 'from-cyan-500 to-sky-600', color: 'text-cyan-500' },
   { icon: Languages, title: 'AI Language', desc: 'Arabic Detection', href: '/wavecore-erp/ai-language/arabic-detection', bg: 'from-teal-500 to-emerald-600', color: 'text-teal-500' },
   { icon: Clock, title: 'Social Media AI', desc: 'Coming Soon', href: '#', bg: 'from-gray-400 to-gray-500', color: 'text-gray-500' },
