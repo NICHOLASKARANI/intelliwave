@@ -26,8 +26,8 @@ function downloadJournalPdf(id: string) {
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
 
-  async function fetchEntries() {
-    setLoading(true)
+  async function fetchEntries(opts?: { silent?: boolean }) {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/gl/journal-entries')
       if (res.ok) {
@@ -37,12 +37,19 @@ function downloadJournalPdf(id: string) {
     } catch (err) {
       console.error('Failed to load entries:', err)
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchEntries()
+  }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchEntries({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [])
 
   const formatKES = (amount: number) => 'KSh ' + (amount || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })

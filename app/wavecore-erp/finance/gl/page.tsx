@@ -45,6 +45,7 @@ export default function ChartOfAccountsPage() {
     try {
       const res = await fetch('/api/wavecore/gl/chart-of-accounts/quick-setup', {
         method: 'POST',
+        headers: { 'X-CSRF-Token': csrf() },
       })
       const data = await res.json()
       if (res.ok) {
