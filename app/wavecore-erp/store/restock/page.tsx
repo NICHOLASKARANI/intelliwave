@@ -279,13 +279,72 @@ export default function RestockPage() {
               </button>
             )}
           </div>
+        ) : activeView === 'low' ? (
+          lowStockProducts.length === 0 ? (
+            <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
+              <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-30 text-green-500" />
+              <p className="font-medium">No low stock products</p>
+              <p className="text-sm text-muted-foreground mt-1">Every product is above its reorder threshold.</p>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800">
+                  <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="p-4">Product</th>
+                    <th className="p-4">SKU</th>
+                    <th className="p-4">Category</th>
+                    <th className="p-4 text-right">Current stock</th>
+                    <th className="p-4 text-right">Reorder at</th>
+                    <th className="p-4 text-right">Order qty</th>
+                    <th className="p-4"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lowStockProducts.map((p: any) => {
+                    const stock = Number(p.stock_level || 0)
+                    const reorderAt = Number(p.reorderLevel || 10)
+                    const suggested = Math.max(reorderAt * 2 - stock, 1)
+                    return (
+                      <tr key={p.id} className="border-t">
+                        <td className="p-4 font-bold">{p.name}</td>
+                        <td className="p-4 font-mono text-xs">{p.sku || ''}</td>
+                        <td className="p-4 text-xs text-muted-foreground">{p.category || 'Uncategorized'}</td>
+                        <td className="p-4 text-right">
+                          <span className="font-bold text-red-600">{stock}</span>
+                        </td>
+                        <td className="p-4 text-right text-muted-foreground">{reorderAt}</td>
+                        <td className="p-4 text-right font-bold text-orange-600">{suggested}</td>
+                        <td className="p-4 text-right">
+                          <button
+                            onClick={() => {
+                              setFormData({
+                                productId: p.id,
+                                productName: p.name || '',
+                                quantity: String(suggested),
+                                supplierName: '',
+                                notes: '',
+                              })
+                              setShowForm(true)
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-bold hover:bg-orange-700"
+                          >
+                            Restock this
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : (
           <div className="space-y-4">
             {filtered
               .filter(r => {
                 if (activeView === 'pending') return r.status === 'PENDING'
                 if (activeView === 'completed') return r.status === 'COMPLETED'
-                if (activeView === 'low') return false
                 return true
               })
               .map((restock) => (
