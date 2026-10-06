@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowLeft, Loader2, RefreshCw, Radio, Activity, Globe, TrendingUp,
-  TrendingDown, Shield, AlertTriangle, Info,
+  TrendingDown, Shield, AlertTriangle, Info, Sparkles, Target, ChevronRight,
 } from 'lucide-react'
 
 interface Quote {
@@ -34,6 +34,33 @@ interface Summary {
   }
   server: { nowUtc: string; nowNairobi: string; timezone: string }
 }
+interface SignalRow {
+  pair: string
+  direction: 'BUY' | 'SELL' | 'NO_TRADE'
+  tier: 'NO_TRADE' | 'WEAK' | 'MODERATE' | 'STRONG' | 'HIGH' | 'VERY_HIGH'
+  score: number
+  levels: { entry: number; sl: number; tp1: number; tp2: number; rr: number } | null
+  breakdown?: { name: string; weight: number; score: number; value: any; note: string }[]
+  reason: Record<string, any>
+  lastClose?: number
+  lastCloseDate?: string
+}
+
+interface SignalsResponse {
+  signals: SignalRow[]
+  summary: {
+    pairsScanned: number
+    actionable: number
+    highConviction: number
+    buys: number
+    sells: number
+    noTrade: number
+    source: string
+    cadence: string
+    serverLatencyMs: number
+  }
+  asOf: string
+}
 
 const GROUP_FX      = ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY']
 const GROUP_AFRICAN = ['USD/KES','EUR/KES','GBP/KES','USD/ZAR','USD/NGN','USD/GHS','USD/TZS','USD/UGX','USD/ETB','USD/EGP']
@@ -55,6 +82,12 @@ export default function WavveSIPage() {
   const [error, setError] = useState('')
   const [lastUpdate, setLastUpdate] = useState('')
   const [tab, setTab] = useState<'all' | 'fx' | 'african' | 'other'>('all')
+  // SI-2 — signal engine state
+  const [signals, setSignals] = useState<SignalRow[]>([])
+  const [signalSummary, setSignalSummary] = useState<SignalsResponse['summary'] | null>(null)
+  const [selectedSignal, setSelectedSignal] = useState<SignalRow | null>(null)
+  const [signalTab, setSignalTab] = useState<'actionable' | 'all' | 'high'>('actionable')
+  const [signalsLoading, setSignalsLoading] = useState(true)
 
   const load = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true); else setRefreshing(true)
@@ -80,6 +113,50 @@ export default function WavveSIPage() {
     const t = setInterval(() => load({ silent: true }), 5000)
     return () => clearInterval(t)
   }, [live])
+  // SI-2 — load signals once on mount, refresh every 60s
+  const loadSignals = async () => {
+    setSignalsLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/wavve-si/signals', { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok) {
+        setSignals(data.signals || [])
+        setSignalSummary(data.summary || null)
+        if (data.signals?.length && !selectedSignal) {
+          const firstActionable = data.signals.find((s: SignalRow) => s.direction !== 'NO_TRADE')
+          setSelectedSignal(firstActionable || data.signals[0])
+        }
+      }
+    } catch {}
+    finally { setSignalsLoading(false) }
+  }
+
+  useEffect(() => { loadSignals() /* eslint-disable-next-line */ }, [])
+  useEffect(() => {
+    const t = setInterval(() => { loadSignals() }, 60_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const filteredSignals = signals.filter(s => {
+    if (signalTab === 'actionable') return s.direction !== 'NO_TRADE'
+    if (signalTab === 'high') return ['STRONG', 'HIGH', 'VERY_HIGH'].includes(s.tier)
+    return true
+  })
+
+  const tierColor = (tier: string) => {
+    if (tier === 'VERY_HIGH') return 'bg-fuchsia-900/40 text-fuchsia-300 border-fuchsia-800'
+    if (tier === 'HIGH')      return 'bg-emerald-900/40 text-emerald-300 border-emerald-800'
+    if (tier === 'STRONG')    return 'bg-teal-900/40 text-teal-300 border-teal-800'
+    if (tier === 'MODERATE')  return 'bg-amber-900/40 text-amber-300 border-amber-800'
+    if (tier === 'WEAK')      return 'bg-slate-800 text-slate-400 border-slate-700'
+    return 'bg-slate-900 text-slate-500 border-slate-800'
+  }
+
+  const dirColor = (dir: string) => {
+    if (dir === 'BUY')  return 'text-emerald-400'
+    if (dir === 'SELL') return 'text-red-400'
+    return 'text-slate-500'
+  }
 
   const fmtPrice = (n: number | null, pair: string) => {
     if (n == null) return '—'
@@ -229,6 +306,192 @@ export default function WavveSIPage() {
             })}
           </div>
         )}
+
+        {/* ============================================================ */}
+        {/* SI-2 — AI Signal Engine                                     */}
+        {/* Every number is derived from real ECB daily closes.         */}
+        {/* ============================================================ */}
+        <section className="mt-10">
+          <div className="flex items-end justify-between mb-4 flex-wrap gap-3">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-400" /> AI Signal Engine
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Computed from real ECB daily closes via api.frankfurter.app ·
+                RSI(14), MACD(12,26,9), EMA20/50, Bollinger(20,2), ATR(14) ·
+                {signalSummary ? ` ${signalSummary.pairsScanned} pairs scanned in ${signalSummary.serverLatencyMs}ms` : ''}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setSignalTab('actionable')} className={'px-3 py-1.5 rounded-lg text-xs font-bold ' + (signalTab === 'actionable' ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-400')}>
+                Actionable ({signals.filter(s => s.direction !== 'NO_TRADE').length})
+              </button>
+              <button onClick={() => setSignalTab('high')} className={'px-3 py-1.5 rounded-lg text-xs font-bold ' + (signalTab === 'high' ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-400')}>
+                High conviction ({signals.filter(s => ['STRONG','HIGH','VERY_HIGH'].includes(s.tier)).length})
+              </button>
+              <button onClick={() => setSignalTab('all')} className={'px-3 py-1.5 rounded-lg text-xs font-bold ' + (signalTab === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-400')}>
+                All ({signals.length})
+              </button>
+            </div>
+          </div>
+
+          {signalSummary && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Buys</p>
+                <p className="text-lg font-bold text-emerald-400">{signalSummary.buys}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Sells</p>
+                <p className="text-lg font-bold text-red-400">{signalSummary.sells}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">High conviction</p>
+                <p className="text-lg font-bold text-teal-400">{signalSummary.highConviction}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">NO TRADE</p>
+                <p className="text-lg font-bold text-slate-500">{signalSummary.noTrade}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Cadence</p>
+                <p className="text-xs text-slate-400 mt-1">Daily closes</p>
+              </div>
+            </div>
+          )}
+
+          {signalsLoading && signals.length === 0 ? (
+            <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
+          ) : filteredSignals.length === 0 ? (
+            <div className="text-center py-12 bg-slate-900 rounded-2xl border border-slate-800">
+              <Target className="w-10 h-10 mx-auto mb-3 opacity-30 text-slate-500" />
+              <p className="text-slate-400">No signals in this category right now.</p>
+              <p className="text-xs text-slate-500 mt-1">The engine returns NO TRADE when criteria are not met — that is a valid outcome.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Signal list */}
+              <div className="lg:col-span-2 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-950/50 border-b border-slate-800">
+                      <tr className="text-left text-[10px] uppercase tracking-wide text-slate-500 font-bold">
+                        <th className="px-3 py-3">Pair</th>
+                        <th className="px-3 py-3">Direction</th>
+                        <th className="px-3 py-3">Tier</th>
+                        <th className="px-3 py-3 text-right">Score</th>
+                        <th className="px-3 py-3 text-right">Entry</th>
+                        <th className="px-3 py-3 text-right">SL</th>
+                        <th className="px-3 py-3 text-right">TP1</th>
+                        <th className="px-3 py-3 text-right">R:R</th>
+                        <th className="px-3 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSignals.map(s => {
+                        const isSel = selectedSignal?.pair === s.pair
+                        return (
+                          <tr key={s.pair} onClick={() => setSelectedSignal(s)} className={'border-b border-slate-800/60 last:border-0 cursor-pointer transition ' + (isSel ? 'bg-indigo-950/40' : 'hover:bg-slate-800/40')}>
+                            <td className="px-3 py-2 font-bold">{s.pair}</td>
+                            <td className={'px-3 py-2 font-bold ' + dirColor(s.direction)}>{s.direction === 'NO_TRADE' ? '—' : s.direction}</td>
+                            <td className="px-3 py-2">
+                              <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold border ' + tierColor(s.tier)}>
+                                {s.tier.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono">{s.score}</td>
+                            <td className="px-3 py-2 text-right font-mono text-xs">{s.levels ? s.levels.entry.toFixed(5) : '—'}</td>
+                            <td className="px-3 py-2 text-right font-mono text-xs text-red-400">{s.levels ? s.levels.sl.toFixed(5) : '—'}</td>
+                            <td className="px-3 py-2 text-right font-mono text-xs text-emerald-400">{s.levels ? s.levels.tp1.toFixed(5) : '—'}</td>
+                            <td className="px-3 py-2 text-right text-xs">{s.levels ? '1:' + s.levels.rr.toFixed(1) : '—'}</td>
+                            <td className="px-3 py-2 text-right"><ChevronRight className={'w-4 h-4 transition ' + (isSel ? 'text-indigo-400' : 'text-slate-600')} /></td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Reasoning panel */}
+              <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+                {selectedSignal ? (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-bold text-lg">{selectedSignal.pair}</p>
+                        <p className="text-xs text-slate-500">Last close {selectedSignal.lastClose?.toFixed(5) ?? '—'} {selectedSignal.lastCloseDate ? '(' + selectedSignal.lastCloseDate + ')' : ''}</p>
+                      </div>
+                      <span className={'px-3 py-1 rounded-full text-[10px] font-bold border ' + tierColor(selectedSignal.tier)}>
+                        {selectedSignal.tier.replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    {selectedSignal.direction !== 'NO_TRADE' && selectedSignal.levels && (
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        <div className="p-2 rounded-lg bg-slate-950/60">
+                          <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Entry</p>
+                          <p className="font-mono text-sm">{selectedSignal.levels.entry.toFixed(5)}</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-950/60">
+                          <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Risk : Reward</p>
+                          <p className="font-mono text-sm">1 : {selectedSignal.levels.rr.toFixed(1)}</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-red-950/30 border border-red-900/50">
+                          <p className="text-[10px] uppercase tracking-wide text-red-400 font-bold">Stop loss</p>
+                          <p className="font-mono text-sm text-red-300">{selectedSignal.levels.sl.toFixed(5)}</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-emerald-950/30 border border-emerald-900/50">
+                          <p className="text-[10px] uppercase tracking-wide text-emerald-400 font-bold">TP1</p>
+                          <p className="font-mono text-sm text-emerald-300">{selectedSignal.levels.tp1.toFixed(5)}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold mb-2">AI reasoning</p>
+                    <ul className="space-y-1.5 text-xs">
+                      {Object.entries(selectedSignal.reason).map(([k, v]) => {
+                        if (k === 'candlesUsed' || k === 'lastClose' || k === 'lastDate') return null
+                        return (
+                          <li key={k} className="flex justify-between gap-2 border-b border-slate-800/60 pb-1.5">
+                            <span className="text-slate-500 capitalize">{k}</span>
+                            <span className="text-right text-slate-300">{String(v)}</span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+
+                    {selectedSignal.breakdown && selectedSignal.breakdown.length > 0 && (
+                      <>
+                        <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold mt-4 mb-2">Score breakdown</p>
+                        <div className="space-y-1.5">
+                          {selectedSignal.breakdown.map(b => (
+                            <div key={b.name}>
+                              <div className="flex justify-between text-[10px] mb-0.5">
+                                <span className="text-slate-400">{b.name} · {b.weight}%</span>
+                                <span className="text-slate-500">{b.score}/100</span>
+                              </div>
+                              <div className="h-1 rounded-full bg-slate-800 overflow-hidden">
+                                <div className="h-full bg-indigo-500" style={{ width: b.score + '%' }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    <p className="text-[10px] text-slate-500 mt-4">
+                      Informational only. Not financial advice. Historical indicator readings do not predict future prices.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500">Select a signal to see the reasoning.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
 
         {/* Roadmap */}
         <div className="mt-8 p-5 rounded-2xl bg-slate-900 border border-slate-800">
