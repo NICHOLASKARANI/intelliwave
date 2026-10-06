@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
-// Helper to ensure Category table exists
 async function ensureCategoryTable() {
   try {
     await pool.query(`
@@ -25,15 +24,43 @@ async function ensureCategoryTable() {
   }
 }
 
+/**
+ * GET /api/wavecore/store/categories
+ * GET /api/wavecore/store/categories?name=Electronics   → products in that category
+ *
+ * Default: all categories with product counts.
+ * With ?name=: returns the products whose Product.category = name.
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    // Ensure table exists
     await ensureCategoryTable()
 
-    // Get categories from Category table, with product counts from Product table
+    const { searchParams } = new URL(request.url)
+    const name = searchParams.get('name')
+
+    // Drill-down: return products in the given category
+    if (name) {
+      const productsRes = await pool.query(`
+        SELECT
+          p.id,
+          p.name,
+          p.sku,
+          p.category,
+          p."sellingPrice",
+          p."costPrice",
+          COALESCE(SUM(sq.quantity), 0) AS stock_level
+        FROM "Product" p
+        LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
+        WHERE p."organizationId" = $1 AND p.category = $2
+        GROUP BY p.id
+        ORDER BY p.name ASC
+      `, [session.organizationId, name])
+      return NextResponse.json({ products: productsRes.rows, category: name })
+    }
+
+    // Default: list categories
     const result = await pool.query(`
       SELECT c.id, c.name, c."createdAt",
         (SELECT COUNT(*) FROM "Product" p WHERE p.category = c.name AND p."organizationId" = $1) as "productCount"
@@ -42,17 +69,15 @@ export async function GET(request: NextRequest) {
       ORDER BY c.name ASC
     `, [session.organizationId])
 
-    // If no categories in Category table, get distinct from Product table
     if (result.rows.length === 0) {
       const productCategories = await pool.query(`
         SELECT DISTINCT category as name, category as id,
           COUNT(*) as "productCount"
-        FROM "Product" 
+        FROM "Product"
         WHERE "organizationId" = $1 AND category IS NOT NULL AND category != ''
-        GROUP BY category 
+        GROUP BY category
         ORDER BY category ASC
       `, [session.organizationId])
-      
       return NextResponse.json({ categories: productCategories.rows })
     }
 
@@ -70,18 +95,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const name = body.name?.trim()
-    
-    if (!name) {
-      return NextResponse.json({ error: 'Category name is required' }, { status: 400 })
-    }
+    if (!name) return NextResponse.json({ error: 'Category name is required' }, { status: 400 })
 
-    // Ensure table exists
     await ensureCategoryTable()
 
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
-    // Insert into Category table
     const result = await pool.query(`
       INSERT INTO "Category" (id, name, "organizationId", "createdAt", "updatedAt")
       VALUES ($1, $2, $3, NOW(), NOW())
@@ -89,9 +109,9 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `, [id, name, session.organizationId])
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       category: result.rows[0],
-      message: 'Category created successfully' 
+      message: 'Category created successfully'
     }, { status: 201 })
   } catch (error) {
     console.error('Categories POST error:', error)
@@ -99,6 +119,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * DELETE /api/wavecore/store/categories?id=X&name=Y
+ *
+ * Works for both real Category rows and derived categories:
+ *  - if a real row matches id or name, delete it
+ *  - always clear Product.category for the given name so the derived
+ *    category disappears from the fallback query too
+ */
 export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -107,27 +135,44 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     const name = searchParams.get('name')
-    
-    if (!id && !name) {
-      return NextResponse.json({ error: 'Category ID or name required' }, { status: 400 })
-    }
 
-    // Ensure table exists
+    if (!id && !name) return NextResponse.json({ error: 'Category ID or name required' }, { status: 400 })
+
     await ensureCategoryTable()
 
-    // Delete from Category table
+    let removed = 0
+
+    // Delete from Category table by id (if it's a real row)
     if (id) {
-      await pool.query(`DELETE FROM "Category" WHERE id = $1 AND ("organizationId" = $2 OR "organizationId" IS NULL)`, [id, session.organizationId])
-    } else if (name) {
-      await pool.query(`DELETE FROM "Category" WHERE name = $1 AND ("organizationId" = $2 OR "organizationId" IS NULL)`, [name, session.organizationId])
-      
-      // Also remove category from products
-      await pool.query(`UPDATE "Product" SET category = NULL WHERE category = $1 AND "organizationId" = $2`, [name, session.organizationId])
+      const r = await pool.query(
+        `DELETE FROM "Category" WHERE id = $1 AND ("organizationId" = $2 OR "organizationId" IS NULL)`,
+        [id, session.organizationId]
+      )
+      removed += r.rowCount || 0
     }
 
-    return NextResponse.json({ success: true, message: 'Category deleted successfully' })
+    // Delete from Category table by name
+    if (name) {
+      const r = await pool.query(
+        `DELETE FROM "Category" WHERE name = $1 AND ("organizationId" = $2 OR "organizationId" IS NULL)`,
+        [name, session.organizationId]
+      )
+      removed += r.rowCount || 0
+
+      // Clear the category from products (so a derived category disappears)
+      await pool.query(
+        `UPDATE "Product" SET category = NULL WHERE category = $1 AND "organizationId" = $2`,
+        [name, session.organizationId]
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      removedCategories: removed,
+      message: 'Category deleted successfully',
+    })
   } catch (error) {
     console.error('Categories DELETE error:', error)
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
   }
 }

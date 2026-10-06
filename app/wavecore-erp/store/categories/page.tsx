@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Loader2, Trash2, Tag, X, Search, Package, Printer, CheckCircle2, AlertTriangle, BarChart3, Layers, Tags } from 'lucide-react'
+import {
+  Plus, Loader2, Trash2, Tag, X, Search, Package, Printer,
+  CheckCircle2, AlertTriangle, Layers, Tags, ChevronRight, ChevronDown,
+} from 'lucide-react'
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([])
@@ -17,11 +20,16 @@ export default function CategoriesPage() {
   const [newCategory, setNewCategory] = useState('')
   const [activeView, setActiveView] = useState('all')
 
+  // POS-4 — inline product drill-down
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [categoryProducts, setCategoryProducts] = useState<any[]>([])
+  const [categoryProductsLoading, setCategoryProductsLoading] = useState(false)
+
   const fetchCategories = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/store/categories')
+      const res = await fetch('/api/wavecore/store/categories', { cache: 'no-store' })
       const data = await res.json()
       setCategories(data.categories || [])
     } catch (err) {
@@ -31,85 +39,88 @@ export default function CategoriesPage() {
     }
   }
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  // 30-second silent auto-refresh
+  useEffect(() => { fetchCategories() /* eslint-disable-next-line */ }, [])
   useEffect(() => {
     const t = setInterval(() => { fetchCategories({ silent: true }) }, 30000)
     return () => clearInterval(t)
-    // eslint-disable-next-line
   }, [])
+
+  // When the expanded category changes, load its products
+  useEffect(() => {
+    if (!expandedCategory) { setCategoryProducts([]); return }
+    setCategoryProductsLoading(true)
+    fetch('/api/wavecore/store/categories?name=' + encodeURIComponent(expandedCategory), { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => setCategoryProducts(d.products || []))
+      .catch(() => setCategoryProducts([]))
+      .finally(() => setCategoryProductsLoading(false))
+  }, [expandedCategory])
 
   const createCategory = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
-    if (!newCategory.trim()) {
-      setError('Please enter a category name')
-      return
-    }
+    setError(''); setSuccess('')
+    if (!newCategory.trim()) { setError('Please enter a category name'); return }
     try {
       const res = await fetch('/api/wavecore/store/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
-        body: JSON.stringify({ name: newCategory.trim() })
+        body: JSON.stringify({ name: newCategory.trim() }),
       })
       const data = await res.json()
       if (res.ok) {
-        setNewCategory('')
-        setShowForm(false)
+        setNewCategory(''); setShowForm(false)
         setSuccess('Category created successfully!')
         setTimeout(() => setSuccess(''), 3000)
         fetchCategories()
-      } else {
-        setError(data.error || 'Failed to create category')
-      }
-    } catch (err) {
-      setError('Network error - failed to create')
-    }
+      } else { setError(data.error || 'Failed to create category') }
+    } catch { setError('Network error - failed to create') }
   }
 
   const deleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Delete category "${name}"?`)) return
-    setDeleting(id)
-    setError('')
-    setSuccess('')
+    if (!confirm('Delete category "' + name + '"? Any products tagged "' + name + '" will lose their tag.')) return
+    setDeleting(id); setError(''); setSuccess('')
     try {
-      const res = await fetch(`/api/wavecore/store/categories?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`, { 
-        method: 'DELETE' 
-      , headers: { 'X-CSRF-Token': csrf() } })
+      const qs = new URLSearchParams()
+      if (id) qs.set('id', id)
+      if (name) qs.set('name', name)
+      const res = await fetch('/api/wavecore/store/categories?' + qs.toString(), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
       const data = await res.json()
       if (res.ok) {
-        setSuccess(`Category "${name}" deleted successfully`)
+        setSuccess('Category "' + name + '" deleted successfully')
         setTimeout(() => setSuccess(''), 3000)
+        if (expandedCategory === name) setExpandedCategory(null)
         fetchCategories()
-      } else {
-        setError(data.error || 'Delete failed')
-      }
-    } catch (err) {
-      setError('Network error - delete failed')
-    } finally {
-      setDeleting('')
-    }
+      } else { setError(data.error || 'Delete failed') }
+    } catch { setError('Network error - delete failed') }
+    finally { setDeleting('') }
   }
 
   const downloadPdf = (id: string) => {
-    if (!id) {
-      setError('Category ID missing')
-      return
-    }
-    window.open(`/api/wavecore/store/categories/${id}/pdf`, '_blank')
+    if (!id) { setError('Category ID missing'); return }
+    window.open('/api/wavecore/store/categories/' + id + '/pdf', '_blank')
   }
 
-  const filtered = categories.filter(c => 
+  const toggleExpand = (name: string) => {
+    setExpandedCategory(prev => prev === name ? null : name)
+  }
+
+  const filtered = categories.filter(c =>
     (c.name || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const totalProducts = categories.reduce((sum, c) => sum + Number(c.productCount || 0), 0)
   const activeCategories = categories.filter(c => Number(c.productCount || 0) > 0).length
   const emptyCategories = categories.filter(c => Number(c.productCount || 0) === 0).length
+
+  const visible = filtered.filter(c => {
+    if (activeView === 'products') return Number(c.productCount || 0) > 0
+    if (activeView === 'active')   return Number(c.productCount || 0) > 0
+    if (activeView === 'empty')    return Number(c.productCount || 0) === 0
+    return true
+  })
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -151,31 +162,30 @@ export default function CategoriesPage() {
           </form>
         )}
 
-        {/* CLICKABLE KPI CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <button onClick={() => setActiveView('all')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'all' ? 'ring-4 ring-pink-300' : ''}`}
+            className={'p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ' + (activeView === 'all' ? 'ring-4 ring-pink-300' : '')}
             style={{ background: 'linear-gradient(135deg, #db2777, #be185d)' }}>
             <Tags className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{categories.length}</p>
             <p className="text-xs opacity-80">Total Categories</p>
           </button>
           <button onClick={() => setActiveView('products')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'products' ? 'ring-4 ring-blue-300' : ''}`}
+            className={'p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ' + (activeView === 'products' ? 'ring-4 ring-blue-300' : '')}
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
             <Package className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{totalProducts}</p>
             <p className="text-xs opacity-80">Total Products</p>
           </button>
           <button onClick={() => setActiveView('active')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'active' ? 'ring-4 ring-green-300' : ''}`}
+            className={'p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ' + (activeView === 'active' ? 'ring-4 ring-green-300' : '')}
             style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}>
             <CheckCircle2 className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{activeCategories}</p>
             <p className="text-xs opacity-80">Active Categories</p>
           </button>
           <button onClick={() => setActiveView('empty')}
-            className={`p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ${activeView === 'empty' ? 'ring-4 ring-yellow-300' : ''}`}
+            className={'p-5 rounded-2xl text-white text-center transition-all hover:shadow-lg ' + (activeView === 'empty' ? 'ring-4 ring-yellow-300' : '')}
             style={{ background: 'linear-gradient(135deg, #d97706, #b45309)' }}>
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{emptyCategories}</p>
@@ -189,9 +199,13 @@ export default function CategoriesPage() {
             className="pl-9 pr-4 py-2.5 rounded-xl border w-full focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Search categories..." />
         </div>
 
+        <p className="text-xs text-muted-foreground mb-4">
+          Click a category to see the products tagged with it.
+        </p>
+
         {loading ? (
           <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin mx-auto text-pink-500" /></div>
-        ) : filtered.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
             <Tag className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-muted-foreground">No categories found</p>
@@ -201,40 +215,82 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered
-              .filter(c => {
-                if (activeView === 'products') return Number(c.productCount || 0) > 0
-                if (activeView === 'active') return Number(c.productCount || 0) > 0
-                if (activeView === 'empty') return Number(c.productCount || 0) === 0
-                return true
-              })
-              .map((cat, i) => (
-                <div key={cat.id || i} className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <p className="font-bold text-lg">{cat.name}</p>
+            {visible.map((cat, i) => {
+              const isExpanded = expandedCategory === cat.name
+              return (
+                <div key={cat.id || i} className="rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-md transition-shadow">
+                  {/* Card header — clickable to expand */}
+                  <button
+                    onClick={() => toggleExpand(cat.name)}
+                    className="w-full p-4 flex justify-between items-start text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-lg flex items-center gap-2">
+                        {isExpanded ? <ChevronDown className="w-4 h-4 text-pink-500" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                        {cat.name}
+                      </p>
                       <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                         <Package className="w-4 h-4" /> {cat.productCount || 0} products
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => downloadPdf(cat.id)}
+                    <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); downloadPdf(cat.id) }}
                         className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                         title="Download PDF">
                         <Printer className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={() => deleteCategory(cat.id, cat.name)}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteCategory(cat.id, cat.name) }}
                         disabled={deleting === cat.id}
                         className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
                         title="Delete category">
                         {deleting === cat.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>
-                  </div>
+                  </button>
+
+                  {/* Expanded product list */}
+                  {isExpanded && (
+                    <div className="border-t bg-neutral-50 dark:bg-neutral-800/50 max-h-80 overflow-y-auto">
+                      {categoryProductsLoading ? (
+                        <div className="p-6 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-pink-500" /></div>
+                      ) : categoryProducts.length === 0 ? (
+                        <p className="p-4 text-xs text-muted-foreground text-center">No products in this category.</p>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                              <th className="px-3 py-2">Product</th>
+                              <th className="px-3 py-2 text-right">Price</th>
+                              <th className="px-3 py-2 text-right">Stock</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {categoryProducts.map((p: any) => (
+                              <tr key={p.id} className="border-t border-neutral-200 dark:border-neutral-700">
+                                <td className="px-3 py-2">
+                                  <Link href={'/wavecore-erp/store/products'} className="font-medium hover:underline">
+                                    {p.name}
+                                  </Link>
+                                  <p className="text-[10px] text-muted-foreground font-mono">{p.sku || ''}</p>
+                                </td>
+                                <td className="px-3 py-2 text-right">KSh {Number(p.sellingPrice || 0).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right">
+                                  <span className={Number(p.stock_level || 0) === 0 ? 'text-red-600 font-bold' : ''}>
+                                    {Number(p.stock_level || 0)}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))}
+              )
+            })}
           </div>
         )}
       </main>
