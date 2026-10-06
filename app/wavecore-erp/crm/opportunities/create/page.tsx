@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 
 export default function CreateOpportunityPage() {
   const [name, setName] = useState('')
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [amount, setAmount] = useState('')
   const [stage, setStage] = useState('QUALIFICATION')
   const [probability, setProbability] = useState('20')
@@ -58,7 +59,7 @@ export default function CreateOpportunityPage() {
     try {
       const res = await fetch('/api/wavecore/crm/opportunities', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           name,
           amount: parseFloat(amount),

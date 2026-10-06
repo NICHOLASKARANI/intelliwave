@@ -7,6 +7,7 @@ import { Phone, Mail, MessageSquare, Users, Loader2, CheckCircle, Calendar, Cloc
 
 export default function CreateActivityPage() {
   const [customers, setCustomers] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')

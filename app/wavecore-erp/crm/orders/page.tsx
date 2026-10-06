@@ -18,6 +18,7 @@ interface SalesOrder {
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<SalesOrder[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -27,8 +28,15 @@ export default function OrdersPage() {
     fetchOrders()
   }, [])
 
-  const fetchOrders = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchOrders({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchOrders = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/crm/orders')
       const data = await res.json()
@@ -36,7 +44,7 @@ export default function OrdersPage() {
     } catch (err) {
       setError('Failed to load orders')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -44,7 +52,7 @@ export default function OrdersPage() {
     if (!confirm('Delete this order?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/orders?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/crm/orders?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchOrders()
     } catch (err) {
       setError('Delete failed')

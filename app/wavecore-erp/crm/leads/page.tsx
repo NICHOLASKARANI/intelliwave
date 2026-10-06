@@ -70,6 +70,7 @@ function scoreBadge(score: number): { icon: string; label: string; className: st
 }
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -79,8 +80,15 @@ export default function LeadsPage() {
     fetchLeads()
   }, [])
 
-  const fetchLeads = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchLeads({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchLeads = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/crm/leads')
       const data = await res.json()
@@ -88,7 +96,7 @@ export default function LeadsPage() {
     } catch (err) {
       setError('Failed to load leads')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -96,7 +104,7 @@ export default function LeadsPage() {
     if (!confirm('Delete this lead?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/leads?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/crm/leads?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchLeads()
     } catch (err) {
       setError('Delete failed')

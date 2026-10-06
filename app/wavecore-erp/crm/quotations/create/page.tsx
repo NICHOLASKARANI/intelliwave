@@ -20,6 +20,7 @@ interface LineItem {
 
 export default function CreateQuotationPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [customerId, setCustomerId] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: 0 }])
@@ -84,7 +85,7 @@ export default function CreateQuotationPage() {
     try {
       const res = await fetch('/api/wavecore/crm/quotations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
           customerId: finalCustomerId,
           items: items.map(i => ({ description: i.description, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),

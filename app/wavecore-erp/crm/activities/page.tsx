@@ -19,6 +19,7 @@ interface Activity {
 
 export default function ActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -28,8 +29,15 @@ export default function ActivitiesPage() {
     fetchActivities()
   }, [])
 
-  const fetchActivities = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchActivities({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchActivities = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/crm/activities')
       const data = await res.json()
@@ -37,7 +45,7 @@ export default function ActivitiesPage() {
     } catch (err) {
       setError('Failed to load activities')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -45,7 +53,7 @@ export default function ActivitiesPage() {
     if (!confirm('Delete this activity?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/activities?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/crm/activities?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchActivities()
     } catch (err) {
       setError('Delete failed')

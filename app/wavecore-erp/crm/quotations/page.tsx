@@ -17,6 +17,7 @@ interface Quotation {
 
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<Quotation[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -26,8 +27,15 @@ export default function QuotationsPage() {
     fetchQuotations()
   }, [])
 
-  const fetchQuotations = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchQuotations({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchQuotations = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/crm/quotations')
       const data = await res.json()
@@ -35,7 +43,7 @@ export default function QuotationsPage() {
     } catch (err) {
       setError('Failed to load quotations')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -43,7 +51,7 @@ export default function QuotationsPage() {
     if (!confirm('Delete this quotation?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/quotations?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/crm/quotations?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchQuotations()
     } catch (err) {
       setError('Delete failed')

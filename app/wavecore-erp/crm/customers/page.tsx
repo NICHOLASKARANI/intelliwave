@@ -17,6 +17,7 @@ interface Customer {
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -26,8 +27,15 @@ export default function CustomersPage() {
     fetchCustomers()
   }, [])
 
-  const fetchCustomers = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchCustomers({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchCustomers = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/crm/customers')
       const data = await res.json()
@@ -35,7 +43,7 @@ export default function CustomersPage() {
     } catch (err) {
       setError('Failed to load customers')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -43,7 +51,7 @@ export default function CustomersPage() {
     if (!confirm('Delete this customer?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/customers?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/wavecore/crm/customers?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchCustomers()
     } catch (err) {
       setError('Delete failed')
