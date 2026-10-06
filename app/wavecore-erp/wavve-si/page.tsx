@@ -13,7 +13,7 @@ interface Quote {
   last: number | null
   bid: number | null
   ask: number | null
-  source: 'DERIV' | 'EXCHANGERATE_HOST' | 'UNAVAILABLE'
+  source: 'DERIV' | 'REST_DAILY' | 'UNAVAILABLE'
   updatedAt: string
 }
 
@@ -173,9 +173,9 @@ export default function WavveSIPage() {
           </div>
           <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
             <TrendingUp className="w-5 h-5 mb-2 text-emerald-400" />
-            <p className="text-lg font-bold text-emerald-400">{quotes.filter(q => q.source === 'DERIV').length}</p>
-            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Live (Deriv)</p>
-            <p className="text-[10px] text-slate-500 mt-1">{quotes.filter(q => q.source === 'EXCHANGERATE_HOST').length} fallback · {quotes.filter(q => q.source === 'UNAVAILABLE').length} unavailable</p>
+            <p className="text-lg font-bold text-emerald-400">{quotes.filter(q => q.source === 'REST_DAILY' || q.source === 'DERIV').length}</p>
+            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Real prices</p>
+            <p className="text-[10px] text-slate-500 mt-1">{quotes.filter(q => q.source === 'UNAVAILABLE').length} unavailable · {summary ? 'daily freshness' : ''}</p>
           </div>
           <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
             <Info className="w-5 h-5 mb-2 text-indigo-400" />
@@ -211,8 +211,8 @@ export default function WavveSIPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filtered.map(q => {
-              const srcColor = q.source === 'DERIV' ? 'bg-emerald-900/40 text-emerald-300' : q.source === 'EXCHANGERATE_HOST' ? 'bg-amber-900/40 text-amber-300' : 'bg-red-900/40 text-red-300'
-              const srcLabel = q.source === 'DERIV' ? 'LIVE' : q.source === 'EXCHANGERATE_HOST' ? 'DELAYED' : 'NO DATA'
+              const srcColor = q.source === 'DERIV' ? 'bg-emerald-900/40 text-emerald-300' : q.source === 'REST_DAILY' ? 'bg-emerald-900/40 text-emerald-300' : 'bg-red-900/40 text-red-300'
+              const srcLabel = q.source === 'DERIV' ? 'LIVE (tick)' : q.source === 'REST_DAILY' ? 'REAL (daily)' : 'NO DATA'
               return (
                 <div key={q.pair} className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
                   <div className="flex items-start justify-between mb-2">
