@@ -16,18 +16,20 @@ export async function GET(request: NextRequest) {
         p.sku,
         p."sellingPrice",
         p."costPrice",
-        p.stock_level,
+        COALESCE(SUM(sq.quantity), 0) AS stock_level,
         p.category,
-        p."reorderLevel",
+        COALESCE(p."minStock", 10) AS "reorderLevel",
         p."createdAt",
         CASE 
-          WHEN p.stock_level = 0 THEN 'OUT_OF_STOCK'
-          WHEN p.stock_level < COALESCE(p."reorderLevel", 10) THEN 'LOW_STOCK'
+          WHEN COALESCE(SUM(sq.quantity), 0) = 0 THEN 'OUT_OF_STOCK'
+          WHEN COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10) THEN 'LOW_STOCK'
           ELSE 'IN_STOCK'
         END as "stockStatus"
       FROM "Product" p
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
-      ORDER BY p.stock_level ASC
+      GROUP BY p.id
+      ORDER BY COALESCE(SUM(sq.quantity), 0) ASC
     `, [session.organizationId])
 
     const products = result.rows

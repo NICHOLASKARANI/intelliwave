@@ -15,7 +15,8 @@ export async function GET(
     const result = await pool.query(`
       SELECT 
         p.*,
-        (p."sellingPrice" * p.stock_level) as "stockValue"
+        COALESCE((SELECT SUM(sq.quantity) FROM "StockQuantity" sq WHERE sq."productId" = p.id), 0) AS stock_level,
+        (p."sellingPrice" * COALESCE((SELECT SUM(sq.quantity) FROM "StockQuantity" sq WHERE sq."productId" = p.id), 0)) as "stockValue"
       FROM "Product" p
       WHERE p.id = $1 AND p."organizationId" = $2
     `, [params.id, session.organizationId])

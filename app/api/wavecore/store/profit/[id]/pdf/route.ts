@@ -16,12 +16,13 @@ export async function GET(
       SELECT 
         p.*,
         (p."sellingPrice" - COALESCE(p."costPrice", 0)) as "profitPerUnit",
-        ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * p.stock_level) as "potentialProfit",
+        ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * COALESCE(sq.qty, 0)) as "potentialProfit",
         CASE 
           WHEN p."sellingPrice" > 0 THEN ((p."sellingPrice" - COALESCE(p."costPrice", 0)) / p."sellingPrice") * 100
           ELSE 0
         END as "profitMargin"
       FROM "Product" p
+      LEFT JOIN (SELECT "productId", SUM(quantity) AS qty FROM "StockQuantity" GROUP BY "productId") sq ON sq."productId" = p.id
       WHERE p.id = $1 AND p."organizationId" = $2
     `, [params.id, session.organizationId])
 

@@ -15,9 +15,11 @@ export async function GET(
     const result = await pool.query(`
       SELECT 
         p.*,
+        COALESCE((SELECT SUM(sq.quantity) FROM "StockQuantity" sq WHERE sq."productId" = p.id), 0) AS stock_level,
+        COALESCE(p."minStock", 10) AS "reorderLevel",
         CASE 
-          WHEN p.stock_level = 0 THEN 'OUT_OF_STOCK'
-          WHEN p.stock_level < COALESCE(p."reorderLevel", 10) THEN 'LOW_STOCK'
+          WHEN COALESCE((SELECT SUM(sq.quantity) FROM "StockQuantity" sq WHERE sq."productId" = p.id), 0) = 0 THEN 'OUT_OF_STOCK'
+          WHEN COALESCE((SELECT SUM(sq.quantity) FROM "StockQuantity" sq WHERE sq."productId" = p.id), 0) < COALESCE(p."minStock", 10) THEN 'LOW_STOCK'
           ELSE 'IN_STOCK'
         END as "stockStatus"
       FROM "Product" p

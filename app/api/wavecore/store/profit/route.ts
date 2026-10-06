@@ -17,14 +17,15 @@ export async function GET(request: NextRequest) {
         p.sku,
         p."sellingPrice",
         p."costPrice",
-        p.stock_level,
+        COALESCE(SUM(sq.quantity), 0) AS stock_level,
         p.category,
         (p."sellingPrice" - COALESCE(p."costPrice", 0)) as "profitPerUnit",
-        ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * p.stock_level) as "potentialProfit",
+        ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * COALESCE(SUM(sq.quantity), 0)) as "potentialProfit",
         p."createdAt"
       FROM "Product" p
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
       WHERE p."organizationId" = $1
-      ORDER BY ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * p.stock_level) DESC
+      ORDER BY ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * COALESCE(SUM(sq.quantity), 0)) DESC
     `, [session.organizationId])
 
     // Get sales data
@@ -35,7 +36,6 @@ export async function GET(request: NextRequest) {
         s.total,
         s."createdAt",
         s.status
-      FROM "Sale" s
       WHERE s."organizationId" = $1
       ORDER BY s."createdAt" DESC
       LIMIT 100
