@@ -4,33 +4,33 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  BarChart3, TrendingUp, TrendingDown, DollarSign, Package, Factory, Users,
-  Loader2, Download, RefreshCw, ChevronRight, PieChart, LineChart,
-  Activity, Target, Award, Zap, Clock, AlertCircle, CheckCircle, ArrowUpRight, ArrowDownRight
+  BarChart3, TrendingUp, DollarSign, Package, Factory, Users,
+  Loader2, Download, RefreshCw, ChevronRight, PieChart,
+  Activity, Award, Zap, Target, FileText, Briefcase, Ticket,
 } from 'lucide-react'
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState('month')
-  const [data, setData] = useState<any>({})
   const [refreshing, setRefreshing] = useState(false)
+  const [period, setPeriod] = useState('month')
+  const [kpis, setKpis] = useState<any>({})
 
+  useEffect(() => { fetchAnalytics() /* eslint-disable-next-line */ }, [period])
+
+  // 30-second silent auto-refresh
   useEffect(() => {
-    fetchAnalytics()
+    const t = setInterval(() => { fetchAnalytics({ silent: true }) }, 30000)
+    return () => clearInterval(t)
   }, [period])
 
-  const fetchAnalytics = async () => {
-    setRefreshing(true)
+  const fetchAnalytics = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setRefreshing(true)
     try {
-      const [analyticsRes, chartsRes] = await Promise.all([
-        fetch(`/api/wavecore/analytics?period=${period}`),
-        fetch(`/api/wavecore/charts?period=${period}`)
-      ])
-      const analyticsData = await analyticsRes.json()
-      const chartsData = await chartsRes.json()
-      setData({ ...analyticsData, ...chartsData })
+      const res = await fetch('/api/wavecore/analytics?period=' + period, { cache: 'no-store' })
+      const data = await res.json()
+      setKpis(data.kpis || {})
     } catch (error) {
-      console.error('Failed to fetch analytics')
+      console.error('Failed to fetch analytics:', error)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -43,40 +43,53 @@ export default function AnalyticsPage() {
     printWindow.document.write(`
       <html><head><title>Executive Analytics - ${period}</title>
       <style>
-        body{font-family:Arial;padding:40px}
-        h1{color:#333;border-bottom:3px solid #7c3aed;padding-bottom:10px}
-        table{width:100%;border-collapse:collapse;margin-top:20px}
-        th{background:#7c3aed;color:white;padding:12px;text-align:left}
-        td{padding:10px;border-bottom:1px solid #ddd}
-        .metric{margin:20px 0;padding:20px;background:#f9fafb;border-radius:8px}
-        .metric h3{margin:0;color:#7c3aed}
-        .metric p{font-size:24px;font-weight:bold;margin:10px 0 0}
+        body{font-family:Arial;padding:40px;color:#111827}
+        h1{color:#7c3aed;border-bottom:3px solid #7c3aed;padding-bottom:10px}
+        .kpi{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+        .card{padding:20px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb}
+        .card h3{margin:0;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+        .card p{font-size:24px;font-weight:bold;margin:10px 0 0;color:#7c3aed}
+        .footer{margin-top:40px;text-align:center;color:#9ca3af;font-size:11px;border-top:1px solid #e5e7eb;padding-top:12px}
       </style></head><body>
-      <h1>Executive Analytics - ${period.toUpperCase()}</h1>
-      <p>Generated: ${new Date().toLocaleString()}</p>
-      <div class="metric"><h3>Total Revenue</h3><p>KSh ${(data.totalRevenue || 0).toLocaleString()}</p></div>
-      <div class="metric"><h3>Total Expenses</h3><p>KSh ${(data.totalExpenses || 0).toLocaleString()}</p></div>
-      <div class="metric"><h3>Net Profit</h3><p>KSh ${(data.netProfit || 0).toLocaleString()}</p></div>
-      <div class="metric"><h3>Total Products</h3><p>${data.totalProducts || 0}</p></div>
-      <div class="metric"><h3>Active Employees</h3><p>${data.totalEmployees || 0}</p></div>
+      <h1>Executive Analytics — ${period.toUpperCase()}</h1>
+      <p>Generated: ${new Date().toLocaleString('en-KE')}</p>
+      <div class="kpi">
+        <div class="card"><h3>Revenue (MTD)</h3><p>KSh ${Number(kpis.revenueMTD || 0).toLocaleString('en-KE')}</p></div>
+        <div class="card"><h3>Outstanding Receivables</h3><p>KSh ${Number(kpis.outstandingReceivables || 0).toLocaleString('en-KE')}</p></div>
+        <div class="card"><h3>Active Customers</h3><p>${kpis.activeCustomers || 0}</p></div>
+        <div class="card"><h3>Inventory Items</h3><p>${kpis.inventoryItems || 0}</p></div>
+        <div class="card"><h3>Employees</h3><p>${kpis.employees || 0}</p></div>
+        <div class="card"><h3>Invoices</h3><p>${kpis.invoiceCount || 0}</p></div>
+        <div class="card"><h3>Journal Entries</h3><p>${kpis.journalEntries || 0}</p></div>
+        <div class="card"><h3>Support Tickets</h3><p>${kpis.tickets || 0}</p></div>
+      </div>
+      <div class="footer">Generated by WaveCore ERP · © ${new Date().getFullYear()} IntelliWavve</div>
       <script>window.print()</script></body></html>
     `)
     printWindow.document.close()
   }
 
   const modules = [
-    { name: 'Financial Analytics', desc: 'Revenue, expenses, profit', href: '/wavecore-erp/analytics/financial', icon: DollarSign, color: 'from-emerald-500 to-green-600', stat: 'KSh ' + ((data.totalRevenue || 0) / 1000000).toFixed(1) + 'M' },
-    { name: 'Inventory Analytics', desc: 'Stock, movement, valuation', href: '/wavecore-erp/analytics/inventory', icon: Package, color: 'from-orange-500 to-amber-600', stat: data.totalProducts || 0 },
-    { name: 'Manufacturing', desc: 'Production, efficiency, quality', href: '/wavecore-erp/analytics/manufacturing', icon: Factory, color: 'from-purple-500 to-violet-600', stat: data.workOrders || 0 },
-    { name: 'HR Analytics', desc: 'Attendance, payroll, performance', href: '/wavecore-erp/analytics/hr', icon: Users, color: 'from-indigo-500 to-blue-600', stat: data.totalEmployees || 0 },
-    { name: 'Custom Reports', desc: 'Create custom reports', href: '/wavecore-erp/analytics/custom-reports', icon: BarChart3, color: 'from-pink-500 to-rose-600', stat: data.reports || 0 },
+    { name: 'Financial Analytics', desc: 'Revenue, expenses, profit', href: '/wavecore-erp/analytics/financial', icon: DollarSign, color: 'from-emerald-500 to-green-600', stat: 'KSh ' + ((kpis.revenueMTD || 0) / 1000000).toFixed(2) + 'M' },
+    { name: 'Inventory Analytics', desc: 'Stock, movement, valuation', href: '/wavecore-erp/analytics/inventory', icon: Package, color: 'from-orange-500 to-amber-600', stat: kpis.inventoryItems || 0 },
+    { name: 'Manufacturing', desc: 'Production, efficiency, quality', href: '/wavecore-erp/analytics/manufacturing', icon: Factory, color: 'from-purple-500 to-violet-600', stat: '—' },
+    { name: 'HR Analytics', desc: 'Attendance, payroll, performance', href: '/wavecore-erp/analytics/hr', icon: Users, color: 'from-indigo-500 to-blue-600', stat: kpis.employees || 0 },
+    { name: 'Sales Analytics', desc: 'Pipeline, invoices, customers', href: '/wavecore-erp/analytics/sales', icon: TrendingUp, color: 'from-cyan-500 to-sky-600', stat: kpis.invoiceCount || 0 },
+    { name: 'Custom Reports', desc: 'Create and schedule reports', href: '/wavecore-erp/analytics/custom-reports', icon: BarChart3, color: 'from-pink-500 to-rose-600', stat: '—' },
   ]
 
-  const kpis = [
-    { label: 'Revenue', value: 'KSh ' + (data.totalRevenue || 0).toLocaleString(), change: '+12.5%', up: true, icon: DollarSign, color: 'text-emerald-500' },
-    { label: 'Profit', value: 'KSh ' + (data.netProfit || 0).toLocaleString(), change: '+8.3%', up: true, icon: TrendingUp, color: 'text-green-500' },
-    { label: 'Products', value: data.totalProducts || 0, change: '+5.1%', up: true, icon: Package, color: 'text-orange-500' },
-    { label: 'Employees', value: data.totalEmployees || 0, change: '-2.4%', up: false, icon: Users, color: 'text-indigo-500' },
+  const kpiCards = [
+    { label: 'Revenue (MTD)',   value: 'KSh ' + Number(kpis.revenueMTD || 0).toLocaleString('en-KE'),       icon: DollarSign, color: 'text-emerald-500' },
+    { label: 'Receivables',     value: 'KSh ' + Number(kpis.outstandingReceivables || 0).toLocaleString('en-KE'), icon: TrendingUp, color: 'text-amber-500' },
+    { label: 'Active Customers', value: kpis.activeCustomers || 0,                                          icon: Users,      color: 'text-blue-500' },
+    { label: 'Inventory Items', value: kpis.inventoryItems || 0,                                            icon: Package,    color: 'text-orange-500' },
+  ]
+
+  const performance = [
+    { label: 'Invoices',        value: kpis.invoiceCount || 0,   icon: FileText,   color: 'text-indigo-500' },
+    { label: 'Journal Entries', value: kpis.journalEntries || 0, icon: Activity,   color: 'text-emerald-500' },
+    { label: 'Projects',        value: kpis.projects || 0,       icon: Briefcase,  color: 'text-purple-500' },
+    { label: 'Support Tickets', value: kpis.tickets || 0,        icon: Ticket,     color: 'text-pink-500' },
   ]
 
   return (
@@ -92,7 +105,6 @@ export default function AnalyticsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
-        {/* Hero */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-8 lg:p-12 shadow-2xl">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500 rounded-full filter blur-3xl" />
@@ -103,15 +115,13 @@ export default function AnalyticsPage() {
               <BarChart3 className="w-10 h-10" /> Executive Analytics
             </h1>
             <p className="text-white/80 text-lg mb-6">Real-time business intelligence for data-driven decisions</p>
-            
-            {/* Period Selector */}
+
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden">
                 {['week', 'month', 'year'].map(p => (
                   <button key={p} onClick={() => setPeriod(p)}
-                    className={`px-5 py-2.5 text-sm font-medium capitalize transition-all ${
-                      period === p ? 'bg-white text-violet-700' : 'text-white/80 hover:bg-white/10'
-                    }`}>
+                    className={'px-5 py-2.5 text-sm font-medium capitalize transition-all ' +
+                      (period === p ? 'bg-white text-violet-700' : 'text-white/80 hover:bg-white/10')}>
                     {p} view
                   </button>
                 ))}
@@ -119,7 +129,7 @@ export default function AnalyticsPage() {
               <button onClick={downloadPDF} className="px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center gap-2 hover:bg-white/20 transition-all">
                 <Download className="w-4 h-4" /> Export PDF
               </button>
-              <button onClick={fetchAnalytics} disabled={refreshing}
+              <button onClick={() => fetchAnalytics()} disabled={refreshing}
                 className="px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center gap-2 hover:bg-white/20 transition-all disabled:opacity-50">
                 {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                 Refresh
@@ -132,51 +142,34 @@ export default function AnalyticsPage() {
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-violet-500" /></div>
         ) : (
           <>
-            {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {kpis.map(kpi => {
+              {kpiCards.map(kpi => {
                 const Icon = kpi.icon
                 return (
                   <div key={kpi.label} className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm hover:shadow-lg transition-all">
                     <div className="flex items-center justify-between mb-3">
-                      <Icon className={`w-6 h-6 ${kpi.color}`} />
-                      <span className={`flex items-center gap-1 text-xs font-medium ${kpi.up ? 'text-green-600' : 'text-red-600'}`}>
-                        {kpi.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                        {kpi.change}
-                      </span>
+                      <Icon className={'w-6 h-6 ' + kpi.color} />
                     </div>
                     <p className="text-2xl font-bold">{kpi.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{kpi.label} ({period})</p>
+                    <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
                   </div>
                 )
               })}
             </div>
 
-            {/* Performance Indicators */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
-                <Target className="w-5 h-5 text-emerald-500 mb-2" />
-                <p className="text-lg font-bold">{data.efficiency || 0}%</p>
-                <p className="text-xs text-muted-foreground">Efficiency Rate</p>
-              </div>
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20">
-                <Award className="w-5 h-5 text-blue-500 mb-2" />
-                <p className="text-lg font-bold">{data.quality || 0}%</p>
-                <p className="text-xs text-muted-foreground">Quality Score</p>
-              </div>
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/20">
-                <Clock className="w-5 h-5 text-orange-500 mb-2" />
-                <p className="text-lg font-bold">{data.uptime || 99.9}%</p>
-                <p className="text-xs text-muted-foreground">Uptime</p>
-              </div>
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20">
-                <Zap className="w-5 h-5 text-purple-500 mb-2" />
-                <p className="text-lg font-bold">{data.performance || 0}%</p>
-                <p className="text-xs text-muted-foreground">Performance</p>
-              </div>
+              {performance.map(p => {
+                const Icon = p.icon
+                return (
+                  <div key={p.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+                    <Icon className={'w-5 h-5 mb-2 ' + p.color} />
+                    <p className="text-2xl font-bold">{p.value}</p>
+                    <p className="text-xs text-muted-foreground">{p.label}</p>
+                  </div>
+                )
+              })}
             </div>
 
-            {/* Analytics Modules */}
             <div>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <PieChart className="w-5 h-5 text-violet-500" /> Analytics Modules
@@ -188,7 +181,7 @@ export default function AnalyticsPage() {
                     <Link key={module.name} href={module.href}
                       className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-xl transition-all group">
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${module.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                        <div className={'w-12 h-12 rounded-xl bg-gradient-to-br ' + module.color + ' flex items-center justify-center group-hover:scale-110 transition-transform'}>
                           <Icon className="w-6 h-6 text-white" />
                         </div>
                         <ChevronRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -205,29 +198,15 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            {/* System Status */}
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
               <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-green-500" /> System Status
+                <Activity className="w-5 h-5 text-emerald-500" /> Data freshness
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-sm">API: Operational</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-sm">Database: Connected</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-sm">Real-time: Active</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-sm">Reports: Ready</span>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Every KPI on this page is computed from live tables — CustomerInvoice, CustomerPayment,
+                Customer, Product, Employee, JournalEntry, Project, SupportTicket. The page refreshes
+                silently every 30 seconds.
+              </p>
             </div>
           </>
         )}
