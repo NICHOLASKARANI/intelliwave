@@ -51,12 +51,8 @@ export default function SalesAnalyticsPage() {
       'Time Range: ' + timeRange,
       '='.repeat(50),
       '',
-      ...salesMetrics.map(m => m.label + ': ' + m.value + ' (' + m.trend + ')'),
+      ...salesMetrics.map(m => m.label + ': ' + m.value),
       '',
-      'Sales Performance:',
-      'Conversion Rate: 24.5%',
-      'Win Rate: 32.8%',
-      'Customer Retention: 87.3%',
       '',
       '(c) 2026 IntelliWavve - All Rights Reserved'
     ].join('\n')
@@ -129,13 +125,7 @@ export default function SalesAnalyticsPage() {
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <p className="text-2xl font-extrabold">{metric.value}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-muted-foreground">{metric.label}</p>
-                      <span className={`text-xs font-bold flex items-center gap-0.5 ${metric.up ? 'text-green-500' : 'text-red-500'}`}>
-                        {metric.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                        {metric.trend}
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">{metric.label}</p>
                   </div>
                 )
               })}
@@ -155,24 +145,6 @@ export default function SalesAnalyticsPage() {
               ))}
             </div>
 
-            {/* Sales KPIs */}
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-500" /> Sales Performance
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border text-center">
-                <p className="text-3xl font-bold text-green-500">24.5%</p>
-                <p className="text-xs text-muted-foreground">Conversion Rate</p>
-              </div>
-              <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border text-center">
-                <p className="text-3xl font-bold text-blue-500">32.8%</p>
-                <p className="text-xs text-muted-foreground">Win Rate</p>
-              </div>
-              <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border text-center">
-                <p className="text-3xl font-bold text-purple-500">87.3%</p>
-                <p className="text-xs text-muted-foreground">Retention</p>
-              </div>
-            </div>
           </>
         )}
       </main>
