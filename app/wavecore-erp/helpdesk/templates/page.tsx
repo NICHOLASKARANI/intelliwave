@@ -12,6 +12,7 @@ const CATEGORIES = ['GENERAL', 'BILLING', 'TECHNICAL', 'SALES', 'SUPPORT', 'FOLL
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [summary, setSummary] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -68,7 +69,7 @@ export default function TemplatesPage() {
     if (!confirm('Delete template "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/templates/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/helpdesk/templates/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Template deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

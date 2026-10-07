@@ -13,6 +13,7 @@ const STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED']
 
 export default function KBPage() {
   const [articles, setArticles] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [summary, setSummary] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -73,7 +74,7 @@ export default function KBPage() {
     if (!confirm('Delete article "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Article deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -87,7 +88,7 @@ export default function KBPage() {
   const vote = async (id: string, helpful: boolean) => {
     await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify(helpful ? { helpful: 1 } : { notHelpful: 1 }),
     })
     flash(helpful ? 'Marked helpful' : 'Feedback recorded')

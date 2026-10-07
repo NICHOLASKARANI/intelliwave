@@ -10,6 +10,7 @@ import {
 
 export default function ChatPage() {
   const [tickets, setTickets] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [comments, setComments] = useState<any[]>([])
   const [message, setMessage] = useState('')
@@ -54,7 +55,7 @@ export default function ChatPage() {
     try {
       const res = await fetch('/api/wavecore/helpdesk/comments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ticketId: selectedTicket.id, body: message.trim() }),
       })
       if (res.ok) {

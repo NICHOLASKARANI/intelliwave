@@ -21,6 +21,7 @@ const priorityStyle = (p: string) => {
 
 export default function SLAPage() {
   const [policies, setPolicies] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [summary, setSummary] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -79,7 +80,7 @@ export default function SLAPage() {
     if (!confirm('Delete policy "' + name + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/sla/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/helpdesk/sla/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Policy deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -87,7 +88,7 @@ export default function SLAPage() {
   const toggle = async (p: any) => {
     await fetch('/api/wavecore/helpdesk/sla/' + p.id, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify({ active: !p.active }),
     })
     flash(p.active ? 'Policy paused' : 'Policy activated')

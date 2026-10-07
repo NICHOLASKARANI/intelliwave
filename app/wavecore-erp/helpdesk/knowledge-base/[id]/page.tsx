@@ -15,6 +15,7 @@ export default function ArticleDetailPage() {
   const id = params.id as string
 
   const [article, setArticle] = useState<any>(null)
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -36,7 +37,7 @@ export default function ArticleDetailPage() {
   const vote = async (helpful: boolean) => {
     await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify(helpful ? { helpful: 1 } : { notHelpful: 1 }),
     })
     flash(helpful ? 'Thank you for the feedback!' : 'Thanks — we\'ll improve this')

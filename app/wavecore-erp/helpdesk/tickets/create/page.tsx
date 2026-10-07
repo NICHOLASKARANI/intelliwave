@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 
 export default function CreateTicketPage() {
   const [subject, setSubject] = useState('')
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('MEDIUM')
   const [loading, setLoading] = useState(false)
@@ -26,7 +27,7 @@ export default function CreateTicketPage() {
 
     try {
       const res = await fetch('/api/wavecore/helpdesk/tickets', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ subject, description, priority }),
       })
       const data = await res.json()

@@ -41,6 +41,7 @@ export default function TicketDetailPage() {
   const id = params.id as string
 
   const [ticket, setTicket] = useState<any>(null)
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [comments, setComments] = useState<any[]>([])
   const [attachments, setAttachments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,7 +78,7 @@ export default function TicketDetailPage() {
     try {
       const res = await fetch('/api/wavecore/helpdesk/comments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ticketId: id, body: newComment.trim(), isInternal }),
       })
       if (res.ok) { setNewComment(''); setIsInternal(false); flash('Comment added'); fetchAll() }
@@ -86,7 +87,7 @@ export default function TicketDetailPage() {
 
   const delComment = async (commentId: string) => {
     if (!confirm('Delete this comment?')) return
-    await fetch('/api/wavecore/helpdesk/comments/' + commentId, { method: 'DELETE' })
+    await fetch('/api/wavecore/helpdesk/comments/' + commentId, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
     flash('Comment deleted'); fetchAll()
   }
 
@@ -109,7 +110,7 @@ export default function TicketDetailPage() {
     try {
       const res = await fetch('/api/wavecore/helpdesk/tickets/' + id, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(editForm),
       })
       if (res.ok) { flash('Ticket updated'); setShowEdit(false); fetchAll() }
@@ -119,7 +120,7 @@ export default function TicketDetailPage() {
   const quickStatus = async (status: string) => {
     await fetch('/api/wavecore/helpdesk/tickets/' + id, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify({ status }),
     })
     flash('Status: ' + status); fetchAll()
@@ -127,7 +128,7 @@ export default function TicketDetailPage() {
 
   const delTicket = async () => {
     if (!confirm('Delete this ticket and all its comments?')) return
-    await fetch('/api/wavecore/helpdesk/tickets/' + id, { method: 'DELETE' })
+    await fetch('/api/wavecore/helpdesk/tickets/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
     router.push('/wavecore-erp/helpdesk/tickets')
   }
 

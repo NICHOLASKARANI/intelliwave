@@ -35,6 +35,7 @@ const priorityStyle = (p: string) => {
 
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [summary, setSummary] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -65,7 +66,7 @@ export default function TicketsPage() {
     if (!confirm('Delete ticket "' + subject + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets/' + id, { method: 'DELETE' })
+      const res = await fetch('/api/wavecore/helpdesk/tickets/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Ticket deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

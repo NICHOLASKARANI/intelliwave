@@ -44,6 +44,7 @@ function classifyTicket(subject: string, description: string) {
 
 export default function AIClassificationPage() {
   const [tickets, setTickets] = useState<any[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [processing, setProcessing] = useState(false)
@@ -79,7 +80,7 @@ export default function AIClassificationPage() {
       try {
         const res = await fetch('/api/wavecore/helpdesk/tickets/' + t.id, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
           body: JSON.stringify({ priority: t.suggestion.priority, category: t.suggestion.category }),
         })
         if (res.ok) updated++
