@@ -14,6 +14,7 @@ interface Report {
 
 export default function CustomReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('month')
   const [showForm, setShowForm] = useState(false)
@@ -41,7 +42,7 @@ export default function CustomReportsPage() {
     try {
       await fetch('/api/wavecore/analytics/reports', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData)
       })
       setFormData({ name: '', type: 'Financial' })

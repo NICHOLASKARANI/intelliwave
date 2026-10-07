@@ -48,7 +48,7 @@ export default function RevenuePage() {
         {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
           <div className="grid grid-cols-2 gap-4">
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900"><DollarSign className="w-8 h-8 text-emerald-500 mb-3" /><p className="text-3xl font-extrabold">{formatKES(stats.revenueMTD)}</p><p className="text-xs">Revenue (Month to Date)</p></div>
-            <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900"><TrendingUp className="w-8 h-8 text-green-500 mb-3" /><p className="text-3xl font-extrabold">+12%</p><p className="text-xs">Growth Rate</p></div>
+            <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900"><TrendingUp className="w-8 h-8 text-green-500 mb-3" /><p className="text-3xl font-extrabold">{stats.outstandingReceivables ? formatKES(stats.outstandingReceivables) : '—'}</p><p className="text-xs">Outstanding Receivables</p></div>
           </div>
         )}
       </main>

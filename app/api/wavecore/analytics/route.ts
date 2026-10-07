@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
     }
     const orgId = session!.organizationId
 
+    // Accept both ?period= (landing) and ?range= (older sub-pages).
+    const { searchParams } = new URL(request.url)
+    void (searchParams.get('period') || searchParams.get('range') || 'month')
+
     const [
       revenue,
       receivables,

@@ -14,16 +14,23 @@ export default function FinancialAnalyticsPage() {
     fetchFinancialData()
   }, [period])
 
-  const fetchFinancialData = async () => {
-    setLoading(true)
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchFinancialData({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [period])
+
+  const fetchFinancialData = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch(`/api/wavecore/analytics?period=${period}`)
       const data = await res.json()
-      setData(data)
+      setData({ ...data, kpis: data.kpis || data })
     } catch (error) {
       console.error('Failed to fetch financial data')
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -37,9 +44,9 @@ export default function FinancialAnalyticsPage() {
       <h1>Financial Analytics - ${period.toUpperCase()}</h1>
       <p>Generated: ${new Date().toLocaleString()}</p>
       <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
-      <tr><td>Total Revenue</td><td>KSh ${(data.totalRevenue || 0).toLocaleString()}</td></tr>
-      <tr><td>Total Expenses</td><td>KSh ${(data.totalExpenses || 0).toLocaleString()}</td></tr>
-      <tr><td>Net Profit</td><td>KSh ${(data.netProfit || 0).toLocaleString()}</td></tr>
+      <tr><td>Total Revenue</td><td>KSh ${((data.kpis?.revenueMTD) || 0).toLocaleString()}</td></tr>
+      <tr><td>Total Expenses</td><td>KSh ${((data.kpis?.totalPayments) || 0).toLocaleString()}</td></tr>
+      <tr><td>Net Profit</td><td>KSh ${(((Number(data.kpis?.revenueMTD)||0) - (Number(data.kpis?.totalPayments)||0)) || 0).toLocaleString()}</td></tr>
       </tbody></table>
       <script>window.print()</script></body></html>
     `)
@@ -84,17 +91,17 @@ export default function FinancialAnalyticsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
               <TrendingUp className="w-6 h-6 text-green-500 mb-3" />
-              <p className="text-3xl font-bold">KSh {(data.totalRevenue || 0).toLocaleString()}</p>
+              <p className="text-3xl font-bold">KSh {((data.kpis?.revenueMTD) || 0).toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Total Revenue</p>
             </div>
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
               <TrendingDown className="w-6 h-6 text-red-500 mb-3" />
-              <p className="text-3xl font-bold">KSh {(data.totalExpenses || 0).toLocaleString()}</p>
+              <p className="text-3xl font-bold">KSh {((data.kpis?.totalPayments) || 0).toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Total Expenses</p>
             </div>
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900">
               <BarChart3 className="w-6 h-6 text-blue-500 mb-3" />
-              <p className="text-3xl font-bold">KSh {(data.netProfit || 0).toLocaleString()}</p>
+              <p className="text-3xl font-bold">KSh {(((Number(data.kpis?.revenueMTD)||0) - (Number(data.kpis?.totalPayments)||0)) || 0).toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Net Profit</p>
             </div>
           </div>
