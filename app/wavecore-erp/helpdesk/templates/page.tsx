@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  FileText, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2,
+  FileText, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2, Printer,
   FileEdit, Sparkles, Copy, Hash, FolderOpen,
 } from 'lucide-react'
 
@@ -175,6 +175,7 @@ export default function TemplatesPage() {
                   <div className="flex gap-1">
                     <button onClick={() => copyBody(t.body)} className="p-1 rounded bg-blue-900/40 text-blue-300 hover:bg-blue-800" title="Copy body"><Copy className="w-3 h-3" /></button>
                     <button onClick={() => openEdit(t)} className="p-1 rounded bg-yellow-900/40 text-yellow-300 hover:bg-yellow-800"><FileEdit className="w-3 h-3" /></button>
+                    <button onClick={() => printPdf(t.id)} className="p-1 rounded bg-purple-900/40 text-purple-300 hover:bg-purple-800" title="Print / PDF"><Printer className="w-3 h-3" /></button>
                     <button onClick={() => del(t.id, t.title)} disabled={deleting === t.id} className="p-1 rounded bg-red-900/40 text-red-300 hover:bg-red-800">
                       {deleting === t.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                     </button>

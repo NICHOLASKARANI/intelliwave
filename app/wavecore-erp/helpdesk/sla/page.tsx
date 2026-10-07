@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  BarChart3, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2,
+  BarChart3, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2, Printer,
   ArrowUpDown, FileEdit, Sparkles, Clock, Shield, AlertTriangle, Timer,
 } from 'lucide-react'
 
@@ -208,6 +208,7 @@ export default function SLAPage() {
                 <div className="flex gap-1">
                   <button onClick={() => toggle(p)} className="p-2 rounded-lg bg-blue-900/40 text-blue-300 hover:bg-blue-800 text-xs font-bold">{p.active ? 'Pause' : 'Activate'}</button>
                   <button onClick={() => openEdit(p)} className="p-2 rounded-lg bg-yellow-900/40 text-yellow-300 hover:bg-yellow-800"><FileEdit className="w-4 h-4" /></button>
+                  <button onClick={() => printPdf(p.id)} className="p-2 rounded-lg bg-orange-900/40 text-orange-300 hover:bg-orange-800" title="Print / PDF"><Printer className="w-4 h-4" /></button>
                   <button onClick={() => del(p.id, p.name)} disabled={deleting === p.id} className="p-2 rounded-lg bg-red-900/40 text-red-300 hover:bg-red-800">
                     {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   </button>

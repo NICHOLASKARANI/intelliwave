@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  BookOpen, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2,
+  BookOpen, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2, Printer,
   ArrowUpDown, FileEdit, Sparkles, Eye, ThumbsUp, EyeIcon, FileText,
 } from 'lucide-react'
 
@@ -221,6 +221,7 @@ export default function KBPage() {
                   <span className={'px-2 py-1 rounded-full text-[10px] font-bold border ' + statusStyle(a.status)}>{a.status}</span>
                   <div className="flex gap-1">
                     <button onClick={() => openEdit(a)} className="p-1 rounded bg-yellow-900/40 text-yellow-300 hover:bg-yellow-800"><FileEdit className="w-3 h-3" /></button>
+                    <button onClick={() => printPdf(a.id)} className="p-1 rounded bg-cyan-900/40 text-cyan-300 hover:bg-cyan-800" title="Print / PDF"><Printer className="w-3 h-3" /></button>
                     <button onClick={() => del(a.id, a.title)} disabled={deleting === a.id} className="p-1 rounded bg-red-900/40 text-red-300 hover:bg-red-800">
                       {deleting === a.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                     </button>
