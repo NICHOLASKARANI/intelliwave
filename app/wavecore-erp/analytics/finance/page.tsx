@@ -14,27 +14,34 @@ export default function FinancialAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('MONTH')
 
-  async function fetchStats() {
-    setLoading(true)
+  async function fetchStats(opts?: { silent?: boolean }) {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/analytics?range=' + timeRange)
       if (res.ok) { const data = await res.json(); setStats(data.kpis || {}) }
-    } catch {} finally { setLoading(false) }
+    } catch {} finally { if (!opts?.silent) setLoading(false) }
   }
 
   useEffect(() => {
     fetchStats()
   }, [timeRange])
 
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchStats({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [timeRange])
+
   const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
   const metrics = [
-    { label: 'Revenue', value: formatKES(stats.revenueMTD), icon: DollarSign, color: 'from-emerald-500 to-green-600', trend: '+12.4%', up: true },
-    { label: 'Receivables', value: formatKES(stats.outstandingReceivables), icon: CreditCard, color: 'from-orange-500 to-amber-600', trend: '-3.2%', up: false },
-    { label: 'Payables', value: formatKES(stats.accountsPayable), icon: Wallet, color: 'from-red-500 to-rose-600', trend: '+5.1%', up: false },
-    { label: 'Invoices', value: stats.invoiceCount || 0, icon: Receipt, color: 'from-blue-500 to-indigo-600', trend: '+10.5%', up: true },
-    { label: 'Payments', value: formatKES(stats.totalPayments || 0), icon: Banknote, color: 'from-teal-500 to-cyan-600', trend: '+8.3%', up: true },
-    { label: 'Journal Entries', value: stats.journalEntries || 0, icon: BarChart3, color: 'from-purple-500 to-violet-600', trend: '+4.7%', up: true },
+    { label: 'Revenue', value: formatKES(stats.revenueMTD), icon: DollarSign, color: 'from-emerald-500 to-green-600' },
+    { label: 'Receivables', value: formatKES(stats.outstandingReceivables), icon: CreditCard, color: 'from-orange-500 to-amber-600' },
+    { label: 'Payables', value: formatKES(stats.accountsPayable), icon: Wallet, color: 'from-red-500 to-rose-600' },
+    { label: 'Invoices', value: stats.invoiceCount || 0, icon: Receipt, color: 'from-blue-500 to-indigo-600' },
+    { label: 'Payments', value: formatKES(stats.totalPayments || 0), icon: Banknote, color: 'from-teal-500 to-cyan-600' },
+    { label: 'Journal Entries', value: stats.journalEntries || 0, icon: BarChart3, color: 'from-purple-500 to-violet-600' },
   ]
 
   const handleDownloadPDF = () => {
@@ -45,7 +52,7 @@ export default function FinancialAnalyticsPage() {
       'Time Range: ' + timeRange,
       '='.repeat(50),
       '',
-      ...metrics.map(m => m.label + ': ' + m.value + ' (' + m.trend + ')'),
+      ...metrics.map(m => m.label + ': ' + m.value),
       '',
       '(c) 2026 IntelliWavve - All Rights Reserved'
     ].join('\n')
@@ -77,7 +84,7 @@ export default function FinancialAnalyticsPage() {
               <p className="text-white/80 text-sm">Revenue • Profitability • Cash Flow</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={fetchStats} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
+              <button onClick={() => fetchStats()} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
                 <RefreshCw className="w-4 h-4" /> Refresh
               </button>
               <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
@@ -119,33 +126,39 @@ export default function FinancialAnalyticsPage() {
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <p className="text-2xl font-extrabold">{metric.value}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-muted-foreground">{metric.label}</p>
-                      <span className={`text-xs font-bold flex items-center gap-0.5 ${metric.up ? 'text-green-500' : 'text-red-500'}`}>
-                        {metric.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                        {metric.trend}
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">{metric.label}</p>
                   </div>
                 )
               })}
             </div>
 
-            {/* Ratios */}
-            <h2 className="text-lg font-bold mb-4">Financial Health Ratios</h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {[
-                { name: 'Gross Margin', value: '38.2%', color: 'text-emerald-500' },
-                { name: 'Net Margin', value: '11.8%', color: 'text-green-500' },
-                { name: 'Current Ratio', value: '1.85', color: 'text-blue-500' },
-                { name: 'Quick Ratio', value: '1.42', color: 'text-indigo-500' },
-                { name: 'Debt/Equity', value: '0.35', color: 'text-purple-500' },
-              ].map(ratio => (
-                <div key={ratio.name} className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border text-center">
-                  <p className={`text-2xl font-bold ${ratio.color}`}>{ratio.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{ratio.name}</p>
-                </div>
-              ))}
+            {/* Financial Health — derived from current stats */}
+            <h2 className="text-lg font-bold mb-4">Financial Health</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {(() => {
+                const rev = Number(stats.revenueMTD) || 0
+                const pay = Number(stats.totalPayments) || 0
+                const recv = Number(stats.outstandingReceivables) || 0
+                const cust = Number(stats.activeCustomers) || 0
+                const inv = Number(stats.invoiceCount) || 0
+                const netPct = rev > 0 ? ((rev - pay) / rev * 100) : null
+                const coverRatio = pay > 0 ? (recv / pay) : null
+                const invoicesPerCustomer = cust > 0 ? (inv / cust) : null
+                const paymentsPerCustomer = cust > 0 ? (pay / cust) : null
+                return [
+                  { name: 'Net margin',           value: netPct != null ? netPct.toFixed(1) + '%' : '—', color: 'text-emerald-500' },
+                  { name: 'Receivable coverage',  value: coverRatio != null ? coverRatio.toFixed(2) : '—',      color: 'text-blue-500' },
+                  { name: 'Invoices / customer',  value: invoicesPerCustomer != null ? invoicesPerCustomer.toFixed(2) : '—', color: 'text-purple-500' },
+                  { name: 'Payments / customer',  value: paymentsPerCustomer != null ? formatKES(paymentsPerCustomer) : '—', color: 'text-indigo-500' },
+                  { name: 'Outstanding recv.',    value: formatKES(recv),                                     color: 'text-orange-500' },
+                  { name: 'Total payments',       value: formatKES(pay),                                      color: 'text-green-500' },
+                ].map(ratio => (
+                  <div key={ratio.name} className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border text-center">
+                    <p className={`text-2xl font-bold ${ratio.color}`}>{ratio.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{ratio.name}</p>
+                  </div>
+                ))
+              })()}
             </div>
           </>
         )}
