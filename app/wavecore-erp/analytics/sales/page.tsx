@@ -36,10 +36,10 @@ export default function SalesAnalyticsPage() {
   const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
   const salesMetrics = [
-    { label: 'Total Revenue', value: formatKES(stats.revenueMTD), icon: DollarSign, color: 'from-blue-500 to-indigo-600', trend: '+12.4%', up: true },
-    { label: 'Customers', value: stats.activeCustomers || 0, icon: Users, color: 'from-purple-500 to-violet-600', trend: '+8.7%', up: true },
-    { label: 'Orders', value: stats.invoiceCount || 0, icon: FileSpreadsheet, color: 'from-pink-500 to-rose-600', trend: '+10.5%', up: true },
-    { label: 'Avg Order Value', value: formatKES((stats.revenueMTD || 0) / (stats.invoiceCount || 1)), icon: Target, color: 'from-emerald-500 to-green-600', trend: '+3.2%', up: true },
+    { label: 'Total Revenue', value: formatKES(stats.revenueMTD), icon: DollarSign, color: 'from-blue-500 to-indigo-600' },
+    { label: 'Customers', value: stats.activeCustomers || 0, icon: Users, color: 'from-purple-500 to-violet-600' },
+    { label: 'Orders', value: stats.invoiceCount || 0, icon: FileSpreadsheet, color: 'from-pink-500 to-rose-600' },
+    { label: 'Avg Order Value', value: formatKES((stats.revenueMTD || 0) / (stats.invoiceCount || 1)), icon: Target, color: 'from-emerald-500 to-green-600' },
   ]
 
   const pipelineStages = [
