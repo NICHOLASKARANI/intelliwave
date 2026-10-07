@@ -43,6 +43,7 @@ export default function KBPage() {
   }
   useEffect(() => { fetchAll() }, [])
 
+  const printPdf = (id: string) => window.open('/api/wavecore/helpdesk/knowledge-base/' + id + '/pdf', '_blank')
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 2500) }
   const resetForm = () => setForm({ ...blank })
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }

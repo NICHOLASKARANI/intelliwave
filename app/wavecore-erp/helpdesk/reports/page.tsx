@@ -14,17 +14,24 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const fetchAll = async () => {
-    setLoading(true)
+  const fetchAll = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/helpdesk/tickets')
       const data = await res.json()
       setTickets(data.tickets || [])
       setSummary(data.summary || {})
     } catch { setError('Network error') }
-    finally { setLoading(false) }
+    finally { if (!opts?.silent) setLoading(false) }
   }
   useEffect(() => { fetchAll() }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchAll({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
 
   const byStatus = useMemo(() => {
     const m: Record<string, number> = { OPEN: 0, IN_PROGRESS: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 }
@@ -98,7 +105,7 @@ export default function ReportsPage() {
             <p className="text-sm text-neutral-400 mt-1">Volume · Performance · Distributions · PDF export</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={fetchAll} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
+            <button onClick={() => fetchAll()} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
             </button>
             <button onClick={() => window.open('/api/wavecore/helpdesk/tickets/pdf', '_blank')} className="px-5 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-pink-900/40">
