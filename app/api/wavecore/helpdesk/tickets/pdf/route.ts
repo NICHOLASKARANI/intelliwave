@@ -5,6 +5,10 @@ import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 
+function esc(s: any): string {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -16,19 +20,20 @@ export async function GET(request: NextRequest) {
     const orgId = session.organizationId
 
     const res = await pool.query(
-      `SELECT * FROM "SupportTicket" WHERE "organizationId" = $1 
-       ORDER BY CASE priority WHEN 'URGENT' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END, "createdAt" DESC 
+      `SELECT * FROM "SupportTicket" WHERE "organizationId" = $1
+       ORDER BY CASE priority WHEN 'URGENT' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END, "createdAt" DESC
        LIMIT 500`,
       [orgId]
     )
     const tickets = res.rows
 
     const now = new Date()
-    const enriched = tickets.map(t => {
+    const enriched = tickets.map((t: any) => {
       const dueAt = t.dueAt ? new Date(t.dueAt) : null
       const resolved = t.resolvedAt ? new Date(t.resolvedAt) : null
-      const isOverdue = !resolved && dueAt && dueAt < now
-      const daysOpen = Math.floor((now.getTime() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      const isClosed = t.status === 'RESOLVED' || t.status === 'CLOSED'
+      const isOverdue = !isClosed && dueAt && dueAt < now
+      const daysOpen = Math.floor((now.getTime() - new Date(t.createdAt).getTime()) / 86400000)
       return { ...t, isOverdue, daysOpen }
     })
 
@@ -38,32 +43,42 @@ export async function GET(request: NextRequest) {
     const resolvedList = enriched.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED')
     const overdue = enriched.filter(t => t.isOverdue)
 
+    // Avg resolution time (minutes) across resolved tickets
+    const resolvedWithTime = enriched.filter((t: any) => t.resolvedAt)
+    const avgResolutionMin = resolvedWithTime.length > 0
+      ? Math.round(resolvedWithTime.reduce((s: number, t: any) => s + (new Date(t.resolvedAt).getTime() - new Date(t.createdAt).getTime()) / 60000, 0) / resolvedWithTime.length)
+      : null
+
+    // Avg satisfaction
+    const rated = enriched.filter((t: any) => typeof t.satisfactionRating === 'number' && t.satisfactionRating > 0)
+    const avgCsat = rated.length > 0
+      ? (rated.reduce((s: number, t: any) => s + Number(t.satisfactionRating), 0) / rated.length).toFixed(2)
+      : null
+
     const statusColor = (s: string, overdue: boolean) =>
       overdue ? '#dc2626' :
       s === 'OPEN' ? '#0891b2' :
       s === 'IN_PROGRESS' ? '#ca8a04' :
       s === 'PENDING' ? '#ea580c' :
       s === 'RESOLVED' ? '#16a34a' :
-      s === 'CLOSED' ? '#6b7280' :
-      '#6b7280'
-
+      s === 'CLOSED' ? '#6b7280' : '#6b7280'
     const priorityColor = (p: string) =>
       p === 'URGENT' ? '#dc2626' :
       p === 'HIGH' ? '#ea580c' :
-      p === 'MEDIUM' ? '#0891b2' :
-      '#6b7280'
+      p === 'MEDIUM' ? '#0891b2' : '#6b7280'
 
-    const bodyRows = enriched.map((t, i) => `
+    const bodyRows = enriched.map((t: any, i: number) => `
       <tr>
         <td style="text-align:center;color:#6b7280">${i + 1}</td>
-        <td><b>${t.subject}</b></td>
-        <td>${t.customerName || '—'}</td>
-        <td>${t.category || 'GENERAL'}</td>
-        <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;background:${priorityColor(t.priority)}22;color:${priorityColor(t.priority)};font-size:9px;font-weight:700">${t.priority}</span></td>
-        <td>${t.assigneeName || 'Unassigned'}</td>
+        <td><b>${esc(t.subject)}</b>${t.subcategory ? '<br><span style="font-size:8px;color:#6b7280">' + esc(t.subcategory) + '</span>' : ''}</td>
+        <td>${esc(t.customerName || '—')}${t.customerEmail ? '<br><span style="font-size:8px;color:#6b7280">' + esc(t.customerEmail) + '</span>' : ''}</td>
+        <td>${esc(t.category || 'GENERAL')}</td>
+        <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;background:${priorityColor(t.priority)}22;color:${priorityColor(t.priority)};font-size:9px;font-weight:700">${esc(t.priority)}</span></td>
+        <td>${esc(t.assigneeName || 'Unassigned')}</td>
         <td style="text-align:center">${new Date(t.createdAt).toLocaleDateString('en-GB')}</td>
         <td style="text-align:center">${t.daysOpen}d</td>
-        <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;background:${statusColor(t.status, t.isOverdue)}22;color:${statusColor(t.status, t.isOverdue)};font-size:9px;font-weight:700">${t.isOverdue ? 'OVERDUE' : t.status}</span></td>
+        <td style="text-align:center">${t.satisfactionRating ? esc(t.satisfactionRating) + '/5' : '—'}</td>
+        <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;background:${statusColor(t.status, t.isOverdue)}22;color:${statusColor(t.status, t.isOverdue)};font-size:9px;font-weight:700">${t.isOverdue ? 'OVERDUE' : esc(t.status)}</span></td>
       </tr>`).join('')
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -76,14 +91,18 @@ export async function GET(request: NextRequest) {
   .brand-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
   .doc-title h1 { font-size: 22px; margin: 0; }
   .doc-title .num { font-family: 'Courier New', monospace; font-size: 14px; color: #db2777; margin-top: 4px; font-weight: 700; }
-  .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 20px; }
+  .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
   .stat { padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; text-align: center; }
   .stat-num { font-size: 20px; font-weight: 800; }
   .stat-label { font-size: 9px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; font-weight: 700; margin-top: 3px; }
+  .kpis { display:grid;grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+  .kpi { padding: 10px; background:#fdf2f8; border-radius: 10px; text-align: center; }
+  .kpi-num { font-size: 18px; font-weight: 800; color: #db2777; }
+  .kpi-lbl { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-top: 2px; }
   .section-title { font-size: 13px; font-weight: 800; color: #db2777; text-transform: uppercase; letter-spacing: 0.6px; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #fce7f3; }
   table { width: 100%; border-collapse: collapse; font-size: 10px; }
   thead th { background: #db2777; color: white; text-align: left; padding: 7px 5px; font-size: 9px; text-transform: uppercase; }
-  tbody td { padding: 6px 5px; border-bottom: 1px solid #f3f4f6; }
+  tbody td { padding: 6px 5px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
   tbody tr:nth-child(even) { background: #fdf2f8; }
   .footer { margin-top: 24px; text-align: center; color: #9ca3af; font-size: 10px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
 </style></head><body>
@@ -94,12 +113,23 @@ export async function GET(request: NextRequest) {
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">${enriched.length}</div><div class="stat-label">Total Tickets</div></div>
+  <div class="stat"><div class="stat-num">${enriched.length}</div><div class="stat-label">Total</div></div>
   <div class="stat"><div class="stat-num" style="color:#0891b2">${open.length}</div><div class="stat-label">Open</div></div>
   <div class="stat"><div class="stat-num" style="color:#ca8a04">${inProgress.length}</div><div class="stat-label">In Progress</div></div>
   <div class="stat"><div class="stat-num" style="color:#ea580c">${pending.length}</div><div class="stat-label">Pending</div></div>
   <div class="stat"><div class="stat-num" style="color:#16a34a">${resolvedList.length}</div><div class="stat-label">Resolved</div></div>
   <div class="stat"><div class="stat-num" style="color:${overdue.length > 0 ? '#dc2626' : '#6b7280'}">${overdue.length}</div><div class="stat-label">Overdue</div></div>
+</div>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="kpi-num">${avgResolutionMin != null ? (avgResolutionMin < 60 ? avgResolutionMin + ' min' : (avgResolutionMin / 60).toFixed(1) + ' h') : '—'}</div>
+    <div class="kpi-lbl">Avg Resolution</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num">${avgCsat != null ? avgCsat + ' / 5' : '—'}</div>
+    <div class="kpi-lbl">Avg CSAT (${rated.length})</div>
+  </div>
 </div>
 
 <div class="section-title">Support Tickets (${enriched.length})</div>
@@ -113,9 +143,10 @@ export async function GET(request: NextRequest) {
     <th>Assignee</th>
     <th style="text-align:center">Created</th>
     <th style="text-align:center">Age</th>
+    <th style="text-align:center">CSAT</th>
     <th style="text-align:center">Status</th>
   </tr></thead>
-  <tbody>${bodyRows || '<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:24px">No tickets yet</td></tr>'}</tbody>
+  <tbody>${bodyRows || '<tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:24px">No tickets yet</td></tr>'}</tbody>
 </table>
 
 <div class="footer"><p>Generated by WaveCore ERP · © ${new Date().getFullYear()} IntelliWavve</p></div>
