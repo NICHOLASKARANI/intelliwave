@@ -69,8 +69,16 @@ export default function TemplatesPage() {
     if (!confirm('Delete template "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/templates/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
-      if (res.ok) { flash('Template deleted'); fetchAll() }
+      const res = await fetch('/api/wavecore/helpdesk/templates/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(data.error || ('Delete failed (HTTP ' + res.status + ')'))
+        return
+      }
+      flash('Template deleted')
+      await fetchAll()
+    } catch (e) {
+      alert('Network error: ' + (e as Error).message)
     } finally { setDeleting('') }
   }
 

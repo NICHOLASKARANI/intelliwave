@@ -80,8 +80,16 @@ export default function SLAPage() {
     if (!confirm('Delete policy "' + name + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/sla/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
-      if (res.ok) { flash('Policy deleted'); fetchAll() }
+      const res = await fetch('/api/wavecore/helpdesk/sla/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(data.error || ('Delete failed (HTTP ' + res.status + ')'))
+        return
+      }
+      flash('Policy deleted')
+      await fetchAll()
+    } catch (e) {
+      alert('Network error: ' + (e as Error).message)
     } finally { setDeleting('') }
   }
 

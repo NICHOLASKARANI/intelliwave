@@ -74,8 +74,16 @@ export default function KBPage() {
     if (!confirm('Delete article "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
-      if (res.ok) { flash('Article deleted'); fetchAll() }
+      const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(data.error || ('Delete failed (HTTP ' + res.status + ')'))
+        return
+      }
+      flash('Article deleted')
+      await fetchAll()
+    } catch (e) {
+      alert('Network error: ' + (e as Error).message)
     } finally { setDeleting('') }
   }
 
