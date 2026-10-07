@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Users, Loader2, RefreshCw, Search, ArrowUpDown, TrendingUp,
-  CheckCircle2, Clock, AlertTriangle, Star, Ticket, Activity,
+  CheckCircle2, Clock, AlertTriangle, Star, Ticket, Activity, Sparkles,
 } from 'lucide-react'
 
 export default function AgentsPage() {
@@ -13,6 +13,7 @@ export default function AgentsPage() {
   const [summary, setSummary] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [seeding, setSeeding] = useState(false)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('openCount')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -32,7 +33,33 @@ export default function AgentsPage() {
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchAll({ silent: true }) }, 30000)
-    return () => clearInterval(t)
+    const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const seedDemo = async () => {
+    if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Seed failed'); return }
+      alert(data.message || 'Seeded')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+  const clearDemo = async () => {
+    if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Clear failed'); return }
+      alert(data.message || 'Cleared')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+
+  return () => clearInterval(t)
     // eslint-disable-next-line
   }, [])
 
@@ -101,6 +128,32 @@ export default function AgentsPage() {
 
   const totalAgents = agents.filter(a => a.id !== 'UNASSIGNED').length
   const topPerformer = [...agents].sort((a, b) => b.resolved - a.resolved)[0]
+
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const seedDemo = async () => {
+    if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Seed failed'); return }
+      alert(data.message || 'Seeded')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+  const clearDemo = async () => {
+    if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Clear failed'); return }
+      alert(data.message || 'Cleared')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950">

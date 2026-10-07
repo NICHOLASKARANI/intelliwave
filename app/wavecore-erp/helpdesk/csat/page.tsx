@@ -5,13 +5,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Star, Loader2, RefreshCw, TrendingUp, ThumbsUp, ThumbsDown,
-  MessageSquare, BarChart3, Smile, Frown, Meh,
+  MessageSquare, BarChart3, Smile, Frown, Meh, Sparkles,
 } from 'lucide-react'
 
 export default function CSATPage() {
   const [tickets, setTickets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [seeding, setSeeding] = useState(false)
 
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
@@ -27,7 +28,33 @@ export default function CSATPage() {
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchAll({ silent: true }) }, 30000)
-    return () => clearInterval(t)
+    const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const seedDemo = async () => {
+    if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Seed failed'); return }
+      alert(data.message || 'Seeded')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+  const clearDemo = async () => {
+    if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Clear failed'); return }
+      alert(data.message || 'Cleared')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+
+  return () => clearInterval(t)
     // eslint-disable-next-line
   }, [])
 
@@ -54,6 +81,32 @@ export default function CSATPage() {
   const recentWithComments = useMemo(() => {
     return rated.filter(t => t.satisfactionComment).slice(0, 10)
   }, [rated])
+
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const seedDemo = async () => {
+    if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Seed failed'); return }
+      alert(data.message || 'Seeded')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+  const clearDemo = async () => {
+    if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Clear failed'); return }
+      alert(data.message || 'Cleared')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950">
@@ -116,7 +169,33 @@ export default function CSATPage() {
                       const count = distribution[rating] || 0
                       const pct = rated.length > 0 ? Math.round((count / rated.length) * 100) : 0
                       const colors: Record<number, string> = { 5: 'bg-green-500', 4: 'bg-cyan-500', 3: 'bg-yellow-500', 2: 'bg-orange-500', 1: 'bg-red-500' }
-                      return (
+                      const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const seedDemo = async () => {
+    if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Seed failed'); return }
+      alert(data.message || 'Seeded')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+  const clearDemo = async () => {
+    if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Clear failed'); return }
+      alert(data.message || 'Cleared')
+      await fetchAll()
+    } catch (e) { alert('Network error: ' + (e as Error).message) }
+    finally { setSeeding(false) }
+  }
+
+  return (
                         <div key={rating} className="flex items-center gap-3">
                           <div className="w-12 flex items-center gap-1">
                             <span className="text-sm font-bold text-white">{rating}</span>
