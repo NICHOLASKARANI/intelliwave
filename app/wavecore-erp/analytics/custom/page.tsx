@@ -17,16 +17,23 @@ export default function CustomReportsPage() {
   const [reportName, setReportName] = useState('')
   const [previewUrl, setPreviewUrl] = useState('')
 
-  async function fetchStats() {
-    setLoading(true)
+  async function fetchStats(opts?: { silent?: boolean }) {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/analytics?range=' + timeRange)
       if (res.ok) { const data = await res.json(); setStats(data.kpis || {}) }
-    } catch {} finally { setLoading(false) }
+    } catch {} finally { if (!opts?.silent) setLoading(false) }
   }
 
   useEffect(() => {
     fetchStats()
+  }, [timeRange])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchStats({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
   }, [timeRange])
 
   const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
@@ -157,7 +164,7 @@ startxref
               </h1>
               <p className="text-white/80 text-sm">Build reports from real-time data</p>
             </div>
-            <button onClick={fetchStats} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
+            <button onClick={() => fetchStats()} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
               <RefreshCw className="w-4 h-4" /> Refresh
             </button>
           </div>
