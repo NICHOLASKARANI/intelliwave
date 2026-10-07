@@ -63,7 +63,7 @@ export default function TemplatesPage() {
       const url = editing ? '/api/wavecore/helpdesk/templates/' + editing.id : '/api/wavecore/helpdesk/templates'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
       })
       const data = await res.json()

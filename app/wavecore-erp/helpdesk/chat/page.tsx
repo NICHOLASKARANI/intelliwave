@@ -77,6 +77,19 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [comments])
 
+  // HD-6: poll the currently-open ticket's comments every 15s
+  // so incoming replies appear without re-selecting the ticket.
+  useEffect(() => {
+    if (!selectedTicket?.id) return
+    const t = setInterval(() => {
+      fetch('/api/wavecore/helpdesk/comments?ticketId=' + selectedTicket.id, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => setComments(d.comments || []))
+        .catch(() => {})
+    }, 15000)
+    return () => clearInterval(t)
+  }, [selectedTicket?.id])
+
   const filtered = useMemo(() => {
     let list = [...tickets]
     if (search) {
