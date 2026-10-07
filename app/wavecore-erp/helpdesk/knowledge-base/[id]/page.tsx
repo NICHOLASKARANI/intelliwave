@@ -20,17 +20,24 @@ export default function ArticleDetailPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const fetchArticle = async () => {
-    setLoading(true)
+  const fetchArticle = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       setArticle(data.article)
     } catch { setError('Network error') }
-    finally { setLoading(false) }
+    finally { if (!opts?.silent) setLoading(false) }
   }
   useEffect(() => { if (id) fetchArticle() }, [id])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchArticle({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 2500) }
 

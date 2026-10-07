@@ -34,17 +34,24 @@ export default function SLAPage() {
   const blank = { name: '', description: '', priority: 'MEDIUM', firstResponseHours: '4', resolutionHours: '24', businessHoursOnly: true, active: true }
   const [form, setForm] = useState<any>(blank)
 
-  const fetchAll = async () => {
-    setLoading(true)
+  const fetchAll = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/helpdesk/sla')
       const data = await res.json()
       setPolicies(data.policies || [])
       setSummary(data.summary || {})
     } catch { setError('Network error') }
-    finally { setLoading(false) }
+    finally { if (!opts?.silent) setLoading(false) }
   }
   useEffect(() => { fetchAll() }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchAll({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
 
   const printPdf = (id: string) => window.open('/api/wavecore/helpdesk/sla/' + id + '/pdf', '_blank')
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 2500) }
@@ -134,7 +141,7 @@ export default function SLAPage() {
             <p className="text-sm text-neutral-400 mt-1">Response & resolution targets by priority</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={fetchAll} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
+            <button onClick={() => fetchAll()} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
             </button>
             <button onClick={openCreate} className="px-5 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-green-900/40">

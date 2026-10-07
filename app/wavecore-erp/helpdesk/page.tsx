@@ -84,7 +84,7 @@ export default function HelpdeskPage() {
               <p className="text-white/80 text-sm">9 modules · Live ticket queue · SLA tracking · CSAT analytics</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={fetchAll} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">
+              <button onClick={() => fetchAll()} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">
                 <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
               </button>
               <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">

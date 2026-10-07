@@ -54,8 +54,8 @@ export default function TicketDetailPage() {
   const [editForm, setEditForm] = useState<any>({})
   const [saving, setSaving] = useState(false)
 
-  const fetchAll = async () => {
-    setLoading(true)
+  const fetchAll = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/wavecore/helpdesk/tickets/' + id)
@@ -65,9 +65,17 @@ export default function TicketDetailPage() {
       setComments(data.comments || [])
       setAttachments(data.attachments || [])
     } catch { setError('Network error') }
-    finally { setLoading(false) }
+    finally { if (!opts?.silent) setLoading(false) }
   }
   useEffect(() => { if (id) fetchAll() }, [id])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    if (!id) return
+    const t = setInterval(() => { fetchAll({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [id])
 
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 2500) }
 

@@ -17,17 +17,24 @@ export default function AgentsPage() {
   const [sortBy, setSortBy] = useState('openCount')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
-  const fetchAll = async () => {
-    setLoading(true)
+  const fetchAll = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     try {
       const res = await fetch('/api/wavecore/helpdesk/tickets')
       const data = await res.json()
       setTickets(data.tickets || [])
       setSummary(data.summary || {})
     } catch { setError('Network error') }
-    finally { setLoading(false) }
+    finally { if (!opts?.silent) setLoading(false) }
   }
   useEffect(() => { fetchAll() }, [])
+
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => { fetchAll({ silent: true }) }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
 
   // Aggregate by assignee
   const agents = useMemo(() => {
@@ -116,7 +123,7 @@ export default function AgentsPage() {
             <p className="text-sm text-neutral-400 mt-1">Workload · Response times · CSAT by assignee</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={fetchAll} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
+            <button onClick={() => fetchAll()} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
             </button>
           </div>
