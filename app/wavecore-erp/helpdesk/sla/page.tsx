@@ -74,7 +74,7 @@ export default function SLAPage() {
       const url = editing ? '/api/wavecore/helpdesk/sla/' + editing.id : '/api/wavecore/helpdesk/sla'
       const res = await fetch(url, {
         method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ...form, firstResponseHours: Number(form.firstResponseHours), resolutionHours: Number(form.resolutionHours) }),
       })
       const data = await res.json()
