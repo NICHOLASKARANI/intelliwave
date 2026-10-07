@@ -13,6 +13,18 @@ export default function productsPage() {
     fetch('/api/wavecore/analytics').then(r => r.json()).then(d => setStats(d.kpis || {})).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => {
+      fetch('/api/wavecore/analytics', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => setStats(d.kpis || {}))
+        .catch(() => {})
+    }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
   const handleDownloadPDF = () => {
     const content = ['WaveCore ERP - Products', '='.repeat(50), 'Count: ' + (stats.inventoryItems || 0), '', '(c) 2026 IntelliWavve'].join('\n')
     const blob = new Blob([content], { type: 'application/pdf' })

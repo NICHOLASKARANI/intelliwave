@@ -17,6 +17,18 @@ export default function RevenuePage() {
       .finally(() => setLoading(false))
   }, [])
 
+  // 30-second silent auto-refresh
+  useEffect(() => {
+    const t = setInterval(() => {
+      fetch('/api/wavecore/analytics', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => setStats(d.kpis || {}))
+        .catch(() => {})
+    }, 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line
+  }, [])
+
   const formatKES = (a: number) => 'KSh ' + (a || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })
 
   const handleDownloadPDF = () => {
