@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Activity, Download, Loader2, Search, Trash2 } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface LogItem {
   id: string
@@ -18,21 +19,31 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
+  const fetchLogs = async () => {
+    setLoading(true)
+    try {
+      const res = await authedFetch('/api/wavecore/logs')
+      if (res.ok) {
+        const data = await res.json()
+        setLogs(data.logs || [])
+      }
+    } catch {} finally { setLoading(false) }
+  }
+
   useEffect(() => {
-    const saved = localStorage.getItem('execution-logs')
-    if (saved) setLogs(JSON.parse(saved))
-    setLoading(false)
+    fetchLogs()
   }, [])
 
   const deleteLog = (id: string) => {
     setLogs(prev => prev.filter(l => l.id !== id))
-    localStorage.setItem('execution-logs', JSON.stringify(logs.filter(l => l.id !== id)))
   }
 
-  const clearAllLogs = () => {
+  const clearAllLogs = async () => {
     if (!confirm('Clear all execution logs?')) return
-    setLogs([])
-    localStorage.removeItem('execution-logs')
+    try {
+      await authedFetch('/api/wavecore/logs', { method: 'DELETE' })
+      setLogs([])
+    } catch {}
   }
 
   const filtered = logs.filter(l =>
