@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { checkCsrf } from '@/lib/wavecore/csrf'
 
 // GET: List webhooks
 export async function GET(request: NextRequest) {
@@ -27,12 +28,15 @@ export async function POST(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
+
     const body = await request.json()
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
     const result = await pool.query(
-      `INSERT INTO "Webhook" (id, name, url, active, "organizationId", "createdAt")
+      `INSERT INTO "Webhook" (id, name, url, "isActive", "organizationId", "createdAt")
        VALUES ($1, $2, $3, true, $4, NOW())
        RETURNING *`,
       [id, body.name, body.url, session!.organizationId]
@@ -50,10 +54,13 @@ export async function PUT(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
+
     const body = await request.json()
     const result = await pool.query(
-      `UPDATE "Webhook" SET name = $1, url = $2, active = $3 WHERE id = $4 AND "organizationId" = $5 RETURNING *`,
-      [body.name, body.url, body.active, body.id, session!.organizationId]
+      `UPDATE "Webhook" SET name = $1, url = $2, "isActive" = $3 WHERE id = $4 AND "organizationId" = $5 RETURNING *`,
+      [body.name, body.url, body.isActive !== undefined ? body.isActive : body.active, body.id, session!.organizationId]
     )
 
     return NextResponse.json({ webhook: result.rows[0] })
@@ -67,6 +74,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
