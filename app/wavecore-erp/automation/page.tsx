@@ -32,7 +32,7 @@ export default function AutomationPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<WorkflowItem | null>(null)
-  const [stats, setStats] = useState<{ successRate: number; totalRuns: number; successRuns: number; failedRuns: number; runsToday: number }>({ successRate: 0, totalRuns: 0, successRuns: 0, failedRuns: 0, runsToday: 0 })
+  const [stats, setStats] = useState<{ successRate: number; totalRuns: number; successRuns: number; failedRuns: number; runsToday: number; approvals?: { chainCount: number; stepCount: number } }>({ successRate: 0, totalRuns: 0, successRuns: 0, failedRuns: 0, runsToday: 0, approvals: { chainCount: 0, stepCount: 0 } })
 
   useEffect(() => {
     fetchWorkflows()
@@ -45,7 +45,7 @@ export default function AutomationPage() {
       if (res.ok) {
         const data = await res.json()
         setWorkflows(data.workflows || [])
-        if (data.stats) setStats(data.stats)
+        if (data.stats) setStats({ ...data.stats, approvals: data.approvals || { chainCount: 0, stepCount: 0 } })
       }
     } catch {} finally { setLoading(false) }
   }
@@ -248,7 +248,7 @@ export default function AutomationPage() {
         </div>
 
         {/* KPIs - CLICKABLE */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Link href="/wavecore-erp/automation/workflows" className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg cursor-pointer">
             <Workflow className="w-6 h-6 text-blue-500 mb-3" />
             <p className="text-2xl font-bold">{workflows.length}</p>
@@ -269,6 +269,11 @@ export default function AutomationPage() {
             <p className="text-2xl font-bold">{stats.totalRuns > 0 ? stats.successRate + '%' : '—'}</p>
             <p className="text-xs text-muted-foreground">{stats.totalRuns > 0 ? `Success Rate ($($stats.totalRuns) runs)` : 'Success Rate — no runs yet'}</p>
           </div>
+          <Link href="/wavecore-erp/procurement/approvals" className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg cursor-pointer">
+            <AlertCircle className="w-6 h-6 text-indigo-500 mb-3" />
+            <p className="text-2xl font-bold">{stats.approvals?.chainCount ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Approval Chains ({stats.approvals?.stepCount ?? 0} steps)</p>
+          </Link>
         </div>
 
         {/* Trigger Types */}

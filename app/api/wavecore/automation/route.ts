@@ -44,6 +44,24 @@ export async function GET(request: NextRequest) {
     } catch (e) {
       console.warn('[automation GET] ExecutionLog query failed:', (e as Error).message)
     }
+
+    // Approval chains + steps for this tenant (real data from procurement)
+    let approvalChainCount = 0
+    let approvalStepCount = 0
+    try {
+      const chainR = await pool.query(
+        'SELECT COUNT(*)::int AS n FROM "ApprovalChain" WHERE "organizationId" = $1 AND "isActive" = true',
+        [session!.organizationId]
+      )
+      const stepR = await pool.query(
+        'SELECT COUNT(*)::int AS n FROM "ApprovalStep" WHERE "organizationId" = $1',
+        [session!.organizationId]
+      )
+      approvalChainCount = chainR.rows[0]?.n || 0
+      approvalStepCount = stepR.rows[0]?.n || 0
+    } catch (e) {
+      console.warn('[automation GET] approval query failed:', (e as Error).message)
+    }
     // Attach steps to each workflow (single extra query, grouped in JS)
     const stepsByWf = new Map<string, any[]>()
     if (result.rows.length > 0) {
@@ -64,6 +82,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       workflows: result.rows.map((w: any) => ({ ...w, steps: stepsByWf.get(w.id) || [] })),
       stats,
+      approvals: { chainCount: approvalChainCount, stepCount: approvalStepCount },
     })
   } catch (error) {
     console.error('[automation GET]', error)
