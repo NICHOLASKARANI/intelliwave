@@ -44,7 +44,27 @@ export async function GET(request: NextRequest) {
     } catch (e) {
       console.warn('[automation GET] ExecutionLog query failed:', (e as Error).message)
     }
-    return NextResponse.json({ workflows: result.rows, stats })
+    // Attach steps to each workflow (single extra query, grouped in JS)
+    const stepsByWf = new Map<string, any[]>()
+    if (result.rows.length > 0) {
+      try {
+        const ids = result.rows.map((w: any) => w.id)
+        const stepsResult = await pool.query(
+          `SELECT * FROM "WorkflowStep" WHERE "workflowId" = ANY($1) ORDER BY "workflowId", "stepNumber"`,
+          [ids]
+        )
+        for (const s of stepsResult.rows) {
+          const arr = stepsByWf.get(s.workflowId) || []
+          arr.push(s)
+          stepsByWf.set(s.workflowId, arr)
+        }
+      } catch { /* WorkflowStep may be empty — fall through with no steps */ }
+    }
+
+    return NextResponse.json({
+      workflows: result.rows.map((w: any) => ({ ...w, steps: stepsByWf.get(w.id) || [] })),
+      stats,
+    })
   } catch (error) {
     console.error('[automation GET]', error)
     return NextResponse.json({ workflows: [], error: 'Failed to load workflows' }, { status: 500 })
@@ -118,15 +138,60 @@ export async function PUT(request: NextRequest) {
     if (!csrf.allow) return csrf.response!
 
     const body = await request.json()
-    const result = await pool.query(
-      `UPDATE "Workflow" SET name = $1, trigger = $2, status = $3, "updatedAt" = NOW()
-       WHERE id = $4 AND "organizationId" = $5
-       RETURNING *`,
-      [body.name, body.trigger, body.status, body.id, session!.organizationId]
-    )
+    const crypto = require('crypto')
 
-    if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json({ workflow: result.rows[0] })
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      const result = await client.query(
+        `UPDATE "Workflow" SET name = $1, trigger = $2, status = $3, "updatedAt" = NOW()
+         WHERE id = $4 AND "organizationId" = $5
+         RETURNING *`,
+        [body.name, body.trigger, body.status, body.id, session!.organizationId]
+      )
+
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK')
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+
+      // If steps provided, replace them entirely.
+      // If omitted, existing steps are preserved (name/trigger-only updates).
+      let savedSteps: any[] | null = null
+      if (Array.isArray(body.steps)) {
+        await client.query(
+          `DELETE FROM "WorkflowStep" WHERE "workflowId" = $1 AND "organizationId" = $2`,
+          [body.id, session!.organizationId]
+        )
+        savedSteps = []
+        for (let idx = 0; idx < body.steps.length; idx++) {
+          const s = body.steps[idx] || {}
+          const stepId = crypto.randomUUID()
+          const stepRow = await client.query(
+            `INSERT INTO "WorkflowStep" (id, "workflowId", "stepNumber", type, config, "organizationId", "createdAt")
+             VALUES ($1, $2, $3, $4, $5::jsonb, $6, NOW())
+             RETURNING *`,
+            [stepId, body.id, idx + 1, String(s.type || 'notification'), JSON.stringify(s.config || {}), session!.organizationId]
+          )
+          savedSteps.push(stepRow.rows[0])
+        }
+      }
+
+      await client.query('COMMIT')
+
+      return NextResponse.json({
+        workflow: {
+          ...result.rows[0],
+          ...(savedSteps !== null ? { steps: savedSteps } : {}),
+        },
+      })
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {})
+      throw err
+    } finally {
+      client.release()
+    }
   } catch (error) {
     return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
@@ -145,9 +210,25 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    await pool.query(`DELETE FROM "Workflow" WHERE id = $1 AND "organizationId" = $2`, [id, session!.organizationId])
-
-    return NextResponse.json({ success: true })
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        `DELETE FROM "WorkflowStep" WHERE "workflowId" = $1 AND "organizationId" = $2`,
+        [id, session!.organizationId]
+      )
+      await client.query(
+        `DELETE FROM "Workflow" WHERE id = $1 AND "organizationId" = $2`,
+        [id, session!.organizationId]
+      )
+      await client.query('COMMIT')
+      return NextResponse.json({ success: true })
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {})
+      throw err
+    } finally {
+      client.release()
+    }
   } catch (error) {
     return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
