@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { checkCsrf } from '@/lib/wavecore/csrf'
 
 // GET: List execution logs
 export async function GET(request: NextRequest) {
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ logs: result.rows })
   } catch (error) {
-    return NextResponse.json({ logs: [] })
+    console.error('[logs GET]', error)
+    return NextResponse.json({ logs: [], error: 'Failed to load logs' }, { status: 500 })
   }
 }
 
@@ -26,6 +28,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
 
     const body = await request.json()
     const crypto = require('crypto')
@@ -49,6 +54,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
 
     await pool.query(`DELETE FROM "ExecutionLog" WHERE "organizationId" = $1`, [session!.organizationId])
 
