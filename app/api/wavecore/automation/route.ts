@@ -9,6 +9,7 @@ import { ensureAutomationSchema } from '@/lib/wavecore/automation-schema'
 // GET: List all workflows for tenant
 export async function GET(request: NextRequest) {
   try {
+    await ensureAutomationSchema()
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -53,9 +54,9 @@ export async function GET(request: NextRequest) {
 // POST: Create new workflow
 export async function POST(request: NextRequest) {
   try {
+    await ensureAutomationSchema()
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    await ensureAutomationSchema()
 
     const csrf = checkCsrf(request)
     if (!csrf.allow) return csrf.response!
@@ -109,9 +110,9 @@ export async function POST(request: NextRequest) {
 // PUT: Update workflow
 export async function PUT(request: NextRequest) {
   try {
+    await ensureAutomationSchema()
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    await ensureAutomationSchema()
 
     const csrf = checkCsrf(request)
     if (!csrf.allow) return csrf.response!
@@ -134,9 +135,9 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete workflow
 export async function DELETE(request: NextRequest) {
   try {
+    await ensureAutomationSchema()
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    await ensureAutomationSchema()
 
     const csrf = checkCsrf(request)
     if (!csrf.allow) return csrf.response!
