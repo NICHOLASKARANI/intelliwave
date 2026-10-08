@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
     const id = crypto.randomUUID()
 
     const result = await pool.query(
-      `INSERT INTO "Webhook" (id, name, url, "isActive", "organizationId", "createdAt")
-       VALUES ($1, $2, $3, true, $4, NOW())
+      `INSERT INTO "Webhook" (id, name, url, secret, "isActive", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, true, $5, NOW(), NOW())
        RETURNING *`,
-      [id, body.name, body.url, session!.organizationId]
+      [id, body.name, body.url, crypto.randomBytes(32).toString('hex'), session!.organizationId]
     )
 
     return NextResponse.json({ webhook: result.rows[0] }, { status: 201 })
@@ -59,7 +59,7 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
     const result = await pool.query(
-      `UPDATE "Webhook" SET name = $1, url = $2, "isActive" = $3 WHERE id = $4 AND "organizationId" = $5 RETURNING *`,
+      `UPDATE "Webhook" SET name = $1, url = $2, "isActive" = $3, "updatedAt" = NOW() WHERE id = $4 AND "organizationId" = $5 RETURNING *`,
       [body.name, body.url, body.isActive !== undefined ? body.isActive : body.active, body.id, session!.organizationId]
     )
 
