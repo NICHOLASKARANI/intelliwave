@@ -17,7 +17,32 @@ export async function GET(request: NextRequest) {
       [session!.organizationId]
     )
 
-    return NextResponse.json({ workflows: result.rows })
+    let stats = { successRate: 0, totalRuns: 0, successRuns: 0, failedRuns: 0, runsToday: 0 }
+    try {
+      const logStats = await pool.query(
+        'SELECT COUNT(*)::int AS total, ' +
+        'COUNT(*) FILTER (WHERE status = $2)::int AS success, ' +
+        'COUNT(*) FILTER (WHERE status = $3)::int AS failed, ' +
+        'COUNT(*) FILTER (WHERE "createdAt" >= CURRENT_DATE)::int AS today ' +
+        'FROM "ExecutionLog" WHERE "organizationId" = $1',
+        [session!.organizationId, 'SUCCESS', 'FAILED']
+      )
+      const r = logStats.rows[0] || {}
+      const totalRuns = r.total || 0
+      const successRuns = r.success || 0
+      const failedRuns = r.failed || 0
+      const runsToday = r.today || 0
+      stats = {
+        successRate: totalRuns > 0 ? Math.round((successRuns / totalRuns) * 1000) / 10 : 0,
+        totalRuns,
+        successRuns,
+        failedRuns,
+        runsToday,
+      }
+    } catch (e) {
+      console.warn('[automation GET] ExecutionLog query failed:', (e as Error).message)
+    }
+    return NextResponse.json({ workflows: result.rows, stats })
   } catch (error) {
     console.error('[automation GET]', error)
     return NextResponse.json({ workflows: [], error: 'Failed to load workflows' }, { status: 500 })

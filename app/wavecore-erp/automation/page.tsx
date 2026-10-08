@@ -24,6 +24,7 @@ export default function AutomationPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<WorkflowItem | null>(null)
+  const [stats, setStats] = useState<{ successRate: number; totalRuns: number; successRuns: number; failedRuns: number; runsToday: number }>({ successRate: 0, totalRuns: 0, successRuns: 0, failedRuns: 0, runsToday: 0 })
 
   useEffect(() => {
     fetchWorkflows()
@@ -36,6 +37,7 @@ export default function AutomationPage() {
       if (res.ok) {
         const data = await res.json()
         setWorkflows(data.workflows || [])
+        if (data.stats) setStats(data.stats)
       }
     } catch {} finally { setLoading(false) }
   }
@@ -144,8 +146,8 @@ export default function AutomationPage() {
           </Link>
           <div className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
             <CheckCircle className="w-6 h-6 text-emerald-500 mb-3" />
-            <p className="text-2xl font-bold">100%</p>
-            <p className="text-xs text-muted-foreground">Success Rate</p>
+            <p className="text-2xl font-bold">{stats.totalRuns > 0 ? stats.successRate + '%' : '—'}</p>
+            <p className="text-xs text-muted-foreground">{stats.totalRuns > 0 ? `Success Rate ($($stats.totalRuns) runs)` : 'Success Rate — no runs yet'}</p>
           </div>
         </div>
 
