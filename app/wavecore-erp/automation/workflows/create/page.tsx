@@ -11,6 +11,7 @@ import {
   Webhook, Layers, Clock, Plus, Trash2, MoveUp,
   MoveDown, Settings, AlertCircle
  } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 import { Button } from '@/components/ui/button'
 
 interface WorkflowStep {
@@ -63,7 +64,7 @@ export default function CreateWorkflowPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/wavecore/automation', {
+      const res = await authedFetch('/api/wavecore/automation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, steps }),

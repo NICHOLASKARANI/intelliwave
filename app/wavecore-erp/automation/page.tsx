@@ -9,6 +9,7 @@ import {
   Layers, Activity, BarChart3, Loader2, RefreshCw, TrendingUp,
   Database, Mail, Calendar, Edit3
 } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface WorkflowItem {
   id: string
@@ -31,7 +32,7 @@ export default function AutomationPage() {
   const fetchWorkflows = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/automation')
+      const res = await authedFetch('/api/wavecore/automation')
       if (res.ok) {
         const data = await res.json()
         setWorkflows(data.workflows || [])
@@ -42,7 +43,7 @@ export default function AutomationPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this workflow?')) return
     try {
-      await fetch(`/api/wavecore/automation?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/automation?id=${id}`, { method: 'DELETE' })
       fetchWorkflows()
     } catch {}
   }
@@ -50,7 +51,7 @@ export default function AutomationPage() {
   const handleToggleStatus = async (workflow: WorkflowItem) => {
     const newStatus = workflow.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
     try {
-      await fetch('/api/wavecore/automation', {
+      await authedFetch('/api/wavecore/automation', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...workflow, status: newStatus }),
@@ -62,7 +63,7 @@ export default function AutomationPage() {
   const handleSaveEdit = async () => {
     if (!editing) return
     try {
-      await fetch('/api/wavecore/automation', {
+      await authedFetch('/api/wavecore/automation', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editing),

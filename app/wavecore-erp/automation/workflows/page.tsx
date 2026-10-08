@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Workflow, Plus, Search, Play, Pause, Trash2, Edit3, Loader2 } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface WorkflowItem {
   id: string
@@ -26,7 +27,7 @@ export default function WorkflowsPage() {
   const fetchWorkflows = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/automation')
+      const res = await authedFetch('/api/wavecore/automation')
       if (res.ok) {
         const data = await res.json()
         setWorkflows(data.workflows || [])
@@ -37,7 +38,7 @@ export default function WorkflowsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this workflow permanently?')) return
     try {
-      await fetch(`/api/wavecore/automation?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/automation?id=${id}`, { method: 'DELETE' })
       fetchWorkflows()
     } catch {}
   }
@@ -45,7 +46,7 @@ export default function WorkflowsPage() {
   const handleToggle = async (workflow: WorkflowItem) => {
     const newStatus = workflow.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
     try {
-      await fetch('/api/wavecore/automation', {
+      await authedFetch('/api/wavecore/automation', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...workflow, status: newStatus }),
@@ -57,7 +58,7 @@ export default function WorkflowsPage() {
   const handleSaveEdit = async () => {
     if (!editing) return
     try {
-      await fetch('/api/wavecore/automation', {
+      await authedFetch('/api/wavecore/automation', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editing),
