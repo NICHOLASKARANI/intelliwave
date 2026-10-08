@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { checkCsrf } from '@/lib/wavecore/csrf'
+import { ensureAutomationSchema } from '@/lib/wavecore/automation-schema'
 
 // GET: List all workflows for tenant
 export async function GET(request: NextRequest) {
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureAutomationSchema()
 
     const csrf = checkCsrf(request)
     if (!csrf.allow) return csrf.response!
@@ -62,14 +64,43 @@ export async function POST(request: NextRequest) {
     const crypto = require('crypto')
     const workflowId = crypto.randomUUID()
 
-    const result = await pool.query(
-      `INSERT INTO "Workflow" (id, name, trigger, status, "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, 'ACTIVE', $4, NOW(), NOW())
-       RETURNING *`,
-      [workflowId, body.name, body.trigger || 'Schedule', session!.organizationId]
-    )
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
 
-    return NextResponse.json({ workflow: result.rows[0] }, { status: 201 })
+      const wfResult = await client.query(
+        `INSERT INTO "Workflow" (id, name, trigger, status, "organizationId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'ACTIVE', $4, NOW(), NOW())
+         RETURNING *`,
+        [workflowId, body.name, body.trigger || 'Schedule', session!.organizationId]
+      )
+
+      const incomingSteps = Array.isArray(body.steps) ? body.steps : []
+      const savedSteps: any[] = []
+      for (let idx = 0; idx < incomingSteps.length; idx++) {
+        const s = incomingSteps[idx] || {}
+        const stepId = crypto.randomUUID()
+        const stepRow = await client.query(
+          `INSERT INTO "WorkflowStep" (id, "workflowId", "stepNumber", type, config, "organizationId", "createdAt")
+           VALUES ($1, $2, $3, $4, $5::jsonb, $6, NOW())
+           RETURNING *`,
+          [stepId, workflowId, idx + 1, String(s.type || 'notification'), JSON.stringify(s.config || {}), session!.organizationId]
+        )
+        savedSteps.push(stepRow.rows[0])
+      }
+
+      await client.query('COMMIT')
+
+      return NextResponse.json(
+        { workflow: { ...wfResult.rows[0], steps: savedSteps } },
+        { status: 201 }
+      )
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {})
+      throw err
+    } finally {
+      client.release()
+    }
   } catch (error) {
     return NextResponse.json({ error: 'Failed: ' + (error as Error).message }, { status: 500 })
   }
@@ -80,6 +111,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureAutomationSchema()
 
     const csrf = checkCsrf(request)
     if (!csrf.allow) return csrf.response!
@@ -104,6 +136,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureAutomationSchema()
 
     const csrf = checkCsrf(request)
     if (!csrf.allow) return csrf.response!
