@@ -3,12 +3,14 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { checkCsrf } from '@/lib/wavecore/csrf'
 
 // GET: List all workflows for tenant
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
 
     const result = await pool.query(
       `SELECT * FROM "Workflow" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC`,
@@ -17,7 +19,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ workflows: result.rows })
   } catch (error) {
-    return NextResponse.json({ workflows: [] })
+    console.error('[automation GET]', error)
+    return NextResponse.json({ workflows: [], error: 'Failed to load workflows' }, { status: 500 })
   }
 }
 
@@ -26,6 +29,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
 
     const body = await request.json()
     const crypto = require('crypto')
@@ -50,6 +56,9 @@ export async function PUT(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
+
     const body = await request.json()
     const result = await pool.query(
       `UPDATE "Workflow" SET name = $1, trigger = $2, status = $3, "updatedAt" = NOW()
@@ -70,6 +79,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
