@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Settings, Save, Bell, Shield, CheckCircle } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 export default function AutomationSettingsPage() {
   const [saved, setSaved] = useState(false)
@@ -15,15 +16,45 @@ export default function AutomationSettingsPage() {
     webhookTimeout: '30',
   })
 
+  const fetchSettings = async () => {
+    try {
+      const res = await authedFetch('/api/wavecore/automation/settings')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.settings) {
+          setSettings({
+            notifications: !!data.settings.notifications,
+            autoRetry: !!data.settings.autoRetry,
+            maxRetries: String(data.settings.maxRetries),
+            emailNotifications: true,
+            webhookTimeout: String(data.settings.webhookTimeout),
+          })
+        }
+      }
+    } catch {}
+  }
+
   useEffect(() => {
-    const savedSettings = localStorage.getItem('automation-settings')
-    if (savedSettings) setSettings(JSON.parse(savedSettings))
+    fetchSettings()
   }, [])
 
-  const handleSave = () => {
-    localStorage.setItem('automation-settings', JSON.stringify(settings))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    try {
+      const res = await authedFetch('/api/wavecore/automation/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notifications: settings.notifications,
+          autoRetry: settings.autoRetry,
+          maxRetries: Number(settings.maxRetries) || 3,
+          webhookTimeout: Number(settings.webhookTimeout) || 30,
+        }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
+    } catch {}
   }
 
   return (
