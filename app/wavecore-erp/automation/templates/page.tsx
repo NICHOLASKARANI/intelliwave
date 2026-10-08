@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Layers, Plus, Trash2, Edit3, Loader2 } from 'lucide-react'
+import { Layers, Plus, Trash2, Edit3, Loader2, RefreshCw } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface Template {
   id: string
@@ -17,32 +18,61 @@ export default function TemplatesPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [editing, setEditing] = useState<Template | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const fetchTemplates = async () => {
+    setLoading(true)
+    try {
+      const res = await authedFetch('/api/wavecore/automation/templates')
+      if (res.ok) {
+        const data = await res.json()
+        setTemplates(data.templates || [])
+      }
+    } catch {} finally { setLoading(false) }
+  }
 
   useEffect(() => {
-    const saved = localStorage.getItem('workflow-templates')
-    if (saved) setTemplates(JSON.parse(saved))
-    setLoading(false)
+    fetchTemplates()
   }, [])
 
-  useEffect(() => {
-    if (!loading) localStorage.setItem('workflow-templates', JSON.stringify(templates))
-  }, [templates, loading])
-
-  const addTemplate = () => {
-    if (!name) return
-    setTemplates(prev => [...prev, { id: Date.now().toString(), name, description: description || 'Custom template' }])
-    setName('')
-    setDescription('')
+  const addTemplate = async () => {
+    if (!name || saving) return
+    setSaving(true)
+    try {
+      const res = await authedFetch('/api/wavecore/automation/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description: description || 'Custom template' }),
+      })
+      if (res.ok) {
+        setName('')
+        setDescription('')
+        await fetchTemplates()
+      }
+    } catch {} finally { setSaving(false) }
   }
 
-  const deleteTemplate = (id: string) => {
-    setTemplates(prev => prev.filter(t => t.id !== id))
+  const deleteTemplate = async (id: string) => {
+    if (!confirm('Delete this template?')) return
+    try {
+      await authedFetch('/api/wavecore/automation/templates?id=' + id, { method: 'DELETE' })
+      fetchTemplates()
+    } catch {}
   }
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editing) return
-    setTemplates(prev => prev.map(t => t.id === editing.id ? editing : t))
-    setEditing(null)
+    try {
+      const res = await authedFetch('/api/wavecore/automation/templates', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editing),
+      })
+      if (res.ok) {
+        setEditing(null)
+        fetchTemplates()
+      }
+    } catch {}
   }
 
   return (
@@ -53,7 +83,12 @@ export default function TemplatesPage() {
             <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
             <span className="font-bold">WaveCore</span>
           </Link>
-          <span className="text-sm">Templates</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Templates</span>
+            <button onClick={fetchTemplates} className="p-2 rounded-lg border hover:bg-neutral-100">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
@@ -62,10 +97,12 @@ export default function TemplatesPage() {
         <div className="flex gap-2 mb-6">
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl border" placeholder="Template name" />
           <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl border" placeholder="Description" />
-          <button onClick={addTemplate} className="px-4 py-2.5 rounded-xl bg-green-600 text-white"><Plus className="w-4 h-4" /></button>
+          <button onClick={addTemplate} disabled={saving || !name} className="px-4 py-2.5 rounded-xl bg-green-600 text-white disabled:opacity-50">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          </button>
         </div>
 
-        {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : templates.length === 0 ? (
+        {loading ? <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div> : templates.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-neutral-900 rounded-2xl border">
             <Layers className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-muted-foreground">No templates yet</p>

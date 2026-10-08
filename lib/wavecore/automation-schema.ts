@@ -56,6 +56,19 @@ export async function ensureAutomationSchema(): Promise<void> {
   await pool.query(`CREATE INDEX IF NOT EXISTS "idx_workflowrun_workflow" ON "WorkflowRun" ("workflowId", "createdAt" DESC)`).catch(() => {})
   await pool.query(`CREATE INDEX IF NOT EXISTS "idx_workflowrun_org_status" ON "WorkflowRun" ("organizationId", status)`).catch(() => {})
 
+  // ---------- WorkflowTemplate ----------
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "WorkflowTemplate" (
+      id               TEXT PRIMARY KEY,
+      name             TEXT NOT NULL,
+      description      TEXT,
+      "organizationId" TEXT NOT NULL,
+      "createdAt"      TIMESTAMP NOT NULL DEFAULT NOW(),
+      "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {})
+  await pool.query(`CREATE INDEX IF NOT EXISTS "idx_workflowtemplate_org" ON "WorkflowTemplate" ("organizationId")`).catch(() => {})
+
   // ---------- Workflow.description column ----------
   await pool.query(`ALTER TABLE "Workflow" ADD COLUMN IF NOT EXISTS description TEXT`).catch(() => {})
 
