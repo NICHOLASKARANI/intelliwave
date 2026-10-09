@@ -81,9 +81,34 @@ export async function runWorkflow(
         )
         logEntries.push({ stepNumber: step.stepNumber, type: step.type, status: 'SUCCESS', note: 'notification sent' })
         stepsRun++
+      } else if (step.type === 'webhook') {
+        // Real side effect: POST JSON to the URL configured on the step.
+        const cfg = (step.config || {}) as { url?: string; headers?: Record<string, string> }
+        const targetUrl = cfg.url
+        if (!targetUrl) throw new Error('webhook step missing config.url')
+        const payload = {
+          workflow: workflow.name,
+          workflowId: workflowId,
+          runId: runId,
+          step: step.stepNumber,
+          stepType: step.type,
+          at: new Date().toISOString(),
+        }
+        const resp = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WaveCore-Event': 'workflow.step',
+            ...(cfg.headers || {}),
+          },
+          body: JSON.stringify(payload),
+        })
+        if (!resp.ok) throw new Error('webhook returned HTTP ' + resp.status)
+        logEntries.push({ stepNumber: step.stepNumber, type: step.type, status: 'SUCCESS', note: 'webhook POST ' + resp.status })
+        stepsRun++
       } else {
         // Logged but not executed
-        logEntries.push({ stepNumber: step.stepNumber, type: step.type, status: 'SKIPPED', note: 'step type not implemented in WF-12a' })
+        logEntries.push({ stepNumber: step.stepNumber, type: step.type, status: 'SKIPPED', note: 'step type not implemented yet' })
         stepsSkipped++
       }
     } catch (e) {
