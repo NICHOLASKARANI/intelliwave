@@ -7,7 +7,7 @@ import {
   Workflow, Plus, Search, Play, Pause, CheckCircle, AlertCircle,
   Clock, Zap, Settings, Trash2, Eye, ArrowRight, Webhook,
   Layers, Activity, BarChart3, Loader2, RefreshCw, TrendingUp,
-  Database, Mail, Calendar, Edit3
+  Database, Mail, Calendar, Edit3, PlayCircle
 } from 'lucide-react'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 
@@ -32,6 +32,7 @@ export default function AutomationPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<WorkflowItem | null>(null)
+  const [running, setRunning] = useState<string | null>(null)
   const [stats, setStats] = useState<{ successRate: number; totalRuns: number; successRuns: number; failedRuns: number; runsToday: number; approvals?: { chainCount: number; stepCount: number } }>({ successRate: 0, totalRuns: 0, successRuns: 0, failedRuns: 0, runsToday: 0, approvals: { chainCount: 0, stepCount: 0 } })
 
   useEffect(() => {
@@ -68,6 +69,28 @@ export default function AutomationPage() {
       })
       fetchWorkflows()
     } catch {}
+  }
+
+  const handleRun = async (id: string) => {
+    setRunning(id)
+    try {
+      const res = await authedFetch('/api/wavecore/automation/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflowId: id }),
+      })
+      const data = await res.json()
+      if (res.ok && data.result) {
+        const r = data.result
+        alert('Run complete: ' + r.status + ' in ' + r.durationMs + 'ms' + String.fromCharCode(10) + r.stepsRun + ' executed, ' + r.stepsSkipped + ' skipped')
+      } else if (data.error) {
+        alert('Run failed: ' + data.error)
+      }
+    } catch (e) {
+      alert('Run failed: ' + (e as Error).message)
+    } finally {
+      setRunning(null)
+    }
   }
 
   const handleSaveEdit = async () => {
@@ -332,6 +355,9 @@ export default function AutomationPage() {
                   <p className="text-xs text-muted-foreground">{workflow.trigger} • {new Date(workflow.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button onClick={() => handleRun(workflow.id)} disabled={running === workflow.id} className="p-2 rounded-lg text-teal-500 disabled:opacity-50" title="Run now">
+                    {running === workflow.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
+                  </button>
                   <button onClick={() => handleToggleStatus(workflow)} className={`p-2 rounded-lg ${workflow.status === 'ACTIVE' ? 'text-green-500' : 'text-amber-500'}`}>
                     {workflow.status === 'ACTIVE' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </button>
