@@ -228,12 +228,25 @@ export default function CreateWorkflowPage() {
                         newSteps[index].type = e.target.value
                         setSteps(newSteps)
                       }}
-                      className="flex-1 px-4 py-2 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                      className="w-48 px-4 py-2 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     >
                       {actionTypes.map((action) => (
                         <option key={action.value} value={action.value}>{action.label}</option>
                       ))}
                     </select>
+                    {step.type === 'webhook' && (
+                      <input
+                        type="url"
+                        value={(step.config && step.config.url) || ''}
+                        onChange={(e) => {
+                          const newSteps = [...steps]
+                          newSteps[index].config = { ...(newSteps[index].config || {}), url: e.target.value }
+                          setSteps(newSteps)
+                        }}
+                        className="flex-1 px-4 py-2 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        placeholder="https://your-endpoint.example.com/hook"
+                      />
+                    )}
                     <button type="button" onClick={() => removeStep(step.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-red-500">
                       <Trash2 className="w-4 h-4" />
                     </button>
