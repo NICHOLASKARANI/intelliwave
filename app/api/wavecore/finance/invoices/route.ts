@@ -3,12 +3,14 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { ensureInvoiceSchema } from '@/lib/wavecore/invoice-schema'
 
 // GET: List all invoices with customer info
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureInvoiceSchema()
 
     const result = await pool.query(
       `SELECT ci.*, c.name as "customerName", c.email as "customerEmail", c.phone as "customerPhone",
@@ -26,12 +28,36 @@ export async function GET(request: NextRequest) {
     const totalPaid = invoices.reduce((sum, inv) => sum + parseFloat(inv.paidAmount || 0), 0)
     const totalOutstanding = totalInvoiced - totalPaid
 
-    return NextResponse.json({ 
-      invoices, 
-      totalInvoiced, 
+    // Attach line items to each invoice (single query, grouped in JS)
+    const itemsByInvoice = new Map<string, any[]>()
+    if (invoices.length > 0) {
+      try {
+        const ids = invoices.map((inv: any) => inv.id)
+        const itemsResult = await pool.query(
+          'SELECT id, "invoiceId", description, quantity, "unitPrice", total FROM "InvoiceItem" WHERE "invoiceId" = ANY($1) ORDER BY "createdAt"',
+          [ids]
+        )
+        for (const item of itemsResult.rows) {
+          const arr = itemsByInvoice.get(item.invoiceId) || []
+          arr.push(item)
+          itemsByInvoice.set(item.invoiceId, arr)
+        }
+      } catch (e) {
+        console.warn('[invoices GET] failed to load items:', (e as Error).message)
+      }
+    }
+
+    const invoicesWithItems = invoices.map((inv: any) => ({
+      ...inv,
+      items: itemsByInvoice.get(inv.id) || [],
+    }))
+
+    return NextResponse.json({
+      invoices: invoicesWithItems,
+      totalInvoiced,
       totalPaid,
       totalOutstanding,
-      count: invoices.length
+      count: invoicesWithItems.length
     })
   } catch (error) {
     console.error('Invoices GET error:', error)
@@ -44,6 +70,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureInvoiceSchema()
 
     const body = await request.json()
     const crypto = require('crypto')
@@ -63,56 +90,67 @@ export async function POST(request: NextRequest) {
     // Get customerId
     let customerId = body.customerId
 
-    // Insert invoice
-    const result = await pool.query(
-      `INSERT INTO "CustomerInvoice" (id, number, date, "dueDate", status, subtotal, "taxAmount", total, "customerId", "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) RETURNING *`,
-      [
-        invoiceId,
-        invoiceNumber,
-        body.date || new Date().toISOString().split('T')[0],
-        body.dueDate || body.date || new Date().toISOString().split('T')[0],
-        body.status || 'DRAFT',
-        subtotal,
-        taxAmount,
-        total,
-        customerId,
-        session.organizationId
-      ]
-    )
-
-    // Insert invoice items if table exists
+    // Insert invoice + items in a single transaction.
+    // Either the whole invoice saves, or nothing does.
+    const client = await pool.connect()
     try {
+      await client.query('BEGIN')
+
+      const result = await client.query(
+        `INSERT INTO "CustomerInvoice" (id, number, date, "dueDate", status, subtotal, "taxAmount", total, "customerId", "organizationId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) RETURNING *`,
+        [
+          invoiceId,
+          invoiceNumber,
+          body.date || new Date().toISOString().split('T')[0],
+          body.dueDate || body.date || new Date().toISOString().split('T')[0],
+          body.status || 'DRAFT',
+          subtotal,
+          taxAmount,
+          total,
+          customerId,
+          session.organizationId
+        ]
+      )
+
+      const savedItems: any[] = []
       for (const item of items) {
-        await pool.query(
+        const itemId = crypto.randomUUID()
+        const itemTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+        const itemRow = await client.query(
           `INSERT INTO "InvoiceItem" (id, "invoiceId", description, quantity, "unitPrice", total, "organizationId")
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
           [
-            crypto.randomUUID(),
+            itemId,
             invoiceId,
             item.description,
-            item.quantity,
-            item.unitPrice,
-            (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
+            Number(item.quantity) || 0,
+            Number(item.unitPrice) || 0,
+            itemTotal,
             session.organizationId
           ]
         )
+        savedItems.push(itemRow.rows[0])
       }
-    } catch (itemError) {
-      console.log('InvoiceItem table may not exist, skipping items:', itemError)
+
+      await client.query('COMMIT')
+
+      const invoice = result.rows[0]
+      return NextResponse.json({
+        invoice: {
+          ...invoice,
+          subtotal,
+          taxAmount,
+          total,
+          items: savedItems
+        }
+      }, { status: 201 })
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {})
+      throw err
+    } finally {
+      client.release()
     }
-
-    const invoice = result.rows[0]
-
-    return NextResponse.json({ 
-      invoice: {
-        ...invoice,
-        subtotal,
-        taxAmount,
-        total,
-        items
-      }
-    }, { status: 201 })
   } catch (error) {
     console.error('Invoice create error:', error)
     return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })
@@ -124,6 +162,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureInvoiceSchema()
 
     const body = await request.json()
     const result = await pool.query(
@@ -141,6 +180,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureInvoiceSchema()
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -156,6 +196,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await ensureInvoiceSchema()
 
     const body = await request.json()
     const result = await pool.query(

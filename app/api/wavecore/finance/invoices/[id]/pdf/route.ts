@@ -27,6 +27,28 @@ export async function GET(
     const invoice = result.rows[0]
     const docType = invoice.status === 'PAID' ? 'RECEIPT' : 'INVOICE'
 
+    // Load line items for this invoice
+    let items: any[] = []
+    try {
+      const itemsRes = await pool.query(
+        'SELECT description, quantity, "unitPrice", total FROM "InvoiceItem" WHERE "invoiceId" =  ORDER BY "createdAt"',
+        [params.id]
+      )
+      items = itemsRes.rows
+    } catch (e) {
+      console.warn('[invoice pdf] failed to load items:', (e as Error).message)
+    }
+
+    // Build items rows (fall back to a single generic row if no items saved)
+    const itemRowsHtml = items.length > 0
+      ? items.map((it: any) =>
+          '<tr><td>' + (it.description || '') + '</td>' +
+          '<td class="c">' + Number(it.quantity || 0) + '</td>' +
+          '<td class="r">KSh ' + Number(it.unitPrice || 0).toLocaleString() + '</td>' +
+          '<td class="r">KSh ' + Number(it.total || 0).toLocaleString() + '</td></tr>'
+        ).join('')
+      : '<tr><td>' + (docType === 'RECEIPT' ? 'Payment received' : 'Invoice services') + '</td><td class="c"></td><td class="r"></td><td class="r">KSh ' + Number(invoice.total || 0).toLocaleString() + '</td></tr>'
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -44,6 +66,8 @@ export async function GET(
           table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
           th { background: #2563eb; color: white; padding: 12px; text-align: left; }
           td { padding: 10px; border-bottom: 1px solid #ddd; }
+          th.c, td.c { text-align: center; }
+          th.r, td.r { text-align: right; }
           .totals { text-align: right; font-size: 16px; }
           .total-row { font-weight: bold; font-size: 20px; color: #2563eb; }
           .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
@@ -76,14 +100,13 @@ export async function GET(
           <thead>
             <tr>
               <th>Description</th>
-              <th>Amount</th>
+              <th class="c">Qty</th>
+              <th class="r">Unit Price</th>
+              <th class="r">Total</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>${docType === 'RECEIPT' ? 'Payment received' : 'Invoice services'}</td>
-              <td>KSh ${Number(invoice.total || 0).toLocaleString()}</td>
-            </tr>
+            ${itemRowsHtml}
           </tbody>
         </table>
 

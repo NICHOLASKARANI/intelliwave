@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Plus, Loader2, RefreshCw, Trash2, Edit3, X, Save,
   Calculator, TrendingDown, Package, AlertTriangle, CheckCircle2,
-  ChevronRight, Calendar as CalIcon,
+  ChevronRight, Calendar as CalIcon, Printer
 } from 'lucide-react'
 
 interface Asset {
@@ -232,6 +232,15 @@ export default function AssetsPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          .print-modal, .print-modal * { visibility: visible !important; }
+          .print-modal { position: absolute !important; left: 0; top: 0; width: 100%; background: white !important; color: black !important; box-shadow: none !important; border: none !important; max-height: none !important; overflow: visible !important; }
+          .print-modal .print\:hidden { display: none !important; }
+          @page { margin: 15mm; }
+        }
+      `}</style>
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-3">
@@ -442,13 +451,31 @@ export default function AssetsPage() {
         {/* Schedule drawer */}
         {scheduleFor && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setScheduleFor(null)}>
-            <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div onClick={e => e.stopPropagation()} className="print-modal bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+              {/* Print-only asset sheet — visible only when printing */}
+              <div className="hidden print:block px-6 pt-6 border-b border-neutral-200">
+                <h1 className="text-2xl font-bold mb-1">IntelliWavve — Fixed Asset Record</h1>
+                <p className="text-xs text-neutral-500 mb-4">Printed {new Date().toLocaleString()}</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                  <p><span className="font-bold">Code:</span> {scheduleFor.code || '—'}</p>
+                  <p><span className="font-bold">Name:</span> {scheduleFor.name || '—'}</p>
+                  <p><span className="font-bold">Category:</span> {scheduleFor.category || '—'}</p>
+                  <p><span className="font-bold">Status:</span> {scheduleFor.status || '—'}</p>
+                  <p><span className="font-bold">Purchase date:</span> {scheduleFor.purchaseDate ? new Date(scheduleFor.purchaseDate).toLocaleDateString() : '—'}</p>
+                  <p><span className="font-bold">Purchase cost:</span> {fmt(scheduleFor.purchaseCost)}</p>
+                  <p><span className="font-bold">Residual value:</span> {fmt(scheduleFor.residualValue)}</p>
+                  <p><span className="font-bold">Useful life:</span> {scheduleFor.usefulLifeMonths || '—'} months</p>
+                  <p><span className="font-bold">Method:</span> {scheduleFor.method || '—'}</p>
+                  <p><span className="font-bold">Accumulated dep.:</span> {fmt(scheduleFor.accumulatedDepreciation)}</p>
+                  <p className="col-span-2"><span className="font-bold">Book value:</span> {fmt((Number(scheduleFor.purchaseCost) || 0) - (Number(scheduleFor.accumulatedDepreciation) || 0))}</p>
+                </div>
+              </div>
               <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
                 <div>
                   <h3 className="font-bold">{scheduleFor.code} · {scheduleFor.name}</h3>
                   <p className="text-xs text-neutral-500">{scheduleFor.usefulLifeMonths}-month {scheduleFor.method === 'DECLINING' ? 'declining balance' : 'straight line'} schedule</p>
                 </div>
-                <button onClick={() => setScheduleFor(null)} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                <button onClick={() => setScheduleFor(null)} className="print:hidden p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -491,9 +518,16 @@ export default function AssetsPage() {
                   {schedule.filter(r => r.posted).length} of {schedule.length} periods posted
                 </p>
                 <button
+                  onClick={() => window.print()}
+                  className="print:hidden mr-2 px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-bold flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print Asset
+                </button>
+                <button
                   onClick={() => depreciateOne(scheduleFor)}
                   disabled={scheduleFor.status !== 'ACTIVE' || working === 'dep-' + scheduleFor.id || schedule.every(r => r.posted)}
-                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-40"
+                  className="print:hidden px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-40"
                 >
                   {working === 'dep-' + scheduleFor.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
                   Post next period

@@ -18,6 +18,7 @@ interface Invoice {
   dueDate: string
   createdAt: string
   paidAmount: number
+  items?: Array<{ id: string; description: string; quantity: number; unitPrice: number; total: number }>
 }
 
 export default function InvoicesPage() {
@@ -103,6 +104,15 @@ export default function InvoicesPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          .print-modal, .print-modal * { visibility: visible !important; }
+          .print-modal { position: absolute !important; left: 0; top: 0; width: 100%; background: white !important; color: black !important; box-shadow: none !important; border: none !important; }
+          .print-modal .print\:hidden { display: none !important; }
+          @page { margin: 15mm; }
+        }
+      `}</style>
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b">
         <div className="flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
           <Link href="/wavecore-erp/finance" className="flex items-center gap-3">
@@ -209,7 +219,7 @@ export default function InvoicesPage() {
         {/* PDF Modal */}
         {showPdf && selectedInvoice && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="print-modal bg-white dark:bg-neutral-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">{selectedInvoice.status === 'PAID' ? 'Receipt' : 'Invoice'} {selectedInvoice.number}</h2>
@@ -254,10 +264,24 @@ export default function InvoicesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td className="p-2">Invoice services</td>
-                        <td className="p-2 text-right">KSh {Number(selectedInvoice.subtotal || 0).toLocaleString()}</td>
-                      </tr>
+                      {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                        selectedInvoice.items.map((item, idx) => (
+                          <tr key={item.id || idx}>
+                            <td className="p-2">
+                              <p className="font-medium">{item.description}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.quantity} × KSh {Number(item.unitPrice || 0).toLocaleString()}
+                              </p>
+                            </td>
+                            <td className="p-2 text-right font-medium">KSh {Number(item.total || 0).toLocaleString()}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="p-2">Invoice services</td>
+                          <td className="p-2 text-right">KSh {Number(selectedInvoice.subtotal || 0).toLocaleString()}</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
 
@@ -268,10 +292,16 @@ export default function InvoicesPage() {
                   </div>
                 </div>
 
-                <button onClick={() => downloadPdf(selectedInvoice)}
-                  className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center gap-2">
-                  <Download className="w-5 h-5" /> Download PDF
-                </button>
+                <div className="flex gap-3 print:hidden">
+                  <button onClick={() => window.print()}
+                    className="flex-1 py-3 rounded-xl bg-neutral-800 text-white font-bold flex items-center justify-center gap-2 hover:bg-neutral-700">
+                    <Printer className="w-5 h-5" /> Print
+                  </button>
+                  <button onClick={() => downloadPdf(selectedInvoice)}
+                    className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-700">
+                    <Download className="w-5 h-5" /> Download PDF
+                  </button>
+                </div>
               </div>
             </div>
           </div>
