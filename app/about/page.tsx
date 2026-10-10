@@ -15,7 +15,7 @@ const leadership = [
     title: 'CEO & Founder',
     credentials: 'AI & Software Engineer',
     image: '/leadership/ceo-nicholas-karani.jpg',
-    bio: 'Visionary software engineer and founder of IntelliWave. Nicholas leads the company\'s mission to build Africa\'s first trillion-dollar AI company. With deep expertise in enterprise software architecture and AI systems, he has grown IntelliWave from a Nairobi startup to a global technology company serving 450,000+ users across 100+ countries.',
+    bio: 'As Founder and CEO, Nicholas Karani leads the strategic direction and long-term development of IntelliWave. His focus spans corporate vision, product strategy, technological innovation, and the development of an integrated ecosystem connecting AI, enterprise software, automation, and digital commerce. He is committed to building a technology company capable of competing on a global stage while contributing to the advancement of Africa\'s digital and engineering capabilities. His leadership philosophy centers on ambitious thinking, hands-on innovation, continuous improvement, and building systems that create lasting value beyond individual products.',
     quote: 'We are building Africa\'s digital future. World-class technology engineered from Kenya, for the world.',
     goals: [
       'Build Africa\'s first trillion-dollar AI company',
@@ -119,7 +119,64 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Leadership Team */}
+        {/* Product Showcase */}
+        <div className="mb-24">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Our{' '}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                Products
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              An integrated ecosystem of AI, enterprise, and commerce platforms
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                name: 'WaveCore ERP',
+                tagline: 'Enterprise Resource Planning',
+                description: 'Integrated business operations — finance, procurement, inventory, HR, CRM, manufacturing, and analytics in one platform.',
+              },
+              {
+                name: 'WavveMarket',
+                tagline: 'Digital Commerce Platform',
+                description: 'Commerce infrastructure for sellers, retailers, and marketplaces with payments, logistics, and analytics built in.',
+              },
+              {
+                name: 'WavveAI',
+                tagline: 'Applied Intelligence',
+                description: 'Enterprise AI solutions — document processing, decision support, automation, and intelligent assistants for business.',
+              },
+              {
+                name: 'Custom Platforms',
+                tagline: 'Engineering Services',
+                description: "Bespoke software, cloud infrastructure, and integration engineering delivered by IntelliWave's engineering teams.",
+              },
+            ].map((product) => (
+              <div key={product.name} className="rounded-2xl border bg-card overflow-hidden hover:shadow-2xl transition-all group">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/30 via-accent/20 to-primary/30 flex items-center justify-center">
+                  <div className="text-center p-6">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <span className="text-2xl font-bold text-white">
+                        {product.name.split(' ').map((w) => w[0]).join('').slice(0, 2)}
+                      </span>
+                    </div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{product.tagline}</p>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <p className="font-bold text-lg mb-2">{product.name}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+
         <div className="mb-24">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
