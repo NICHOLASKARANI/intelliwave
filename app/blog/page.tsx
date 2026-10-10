@@ -115,35 +115,6 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* 2026 Stats with Animated Counters */}
-      <section className="relative py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white text-center mb-10">2026 Statistics</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="p-6 rounded-2xl bg-white/5 text-center">
-              <Globe className="w-8 h-8 text-indigo-400 mx-auto mb-3" />
-              <p className="text-3xl font-extrabold text-white"><AnimatedCounter end={450000} suffix="+" /></p>
-              <p className="text-sm text-neutral-400">Businesses Served</p>
-            </div>
-            <div className="p-6 rounded-2xl bg-white/5 text-center">
-              <Globe className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-              <p className="text-3xl font-extrabold text-white"><AnimatedCounter end={100} suffix="+" /></p>
-              <p className="text-sm text-neutral-400">Countries</p>
-            </div>
-            <div className="p-6 rounded-2xl bg-white/5 text-center">
-              <Zap className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-              <p className="text-3xl font-extrabold text-white"><AnimatedCounter end={2500} suffix="+" /></p>
-              <p className="text-sm text-neutral-400">AI Models Deployed</p>
-            </div>
-            <div className="p-6 rounded-2xl bg-white/5 text-center">
-              <Shield className="w-8 h-8 text-green-400 mx-auto mb-3" />
-              <p className="text-3xl font-extrabold text-white"><AnimatedCounter end={99} suffix=".99%" /></p>
-              <p className="text-sm text-neutral-400">Uptime SLA</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Categories */}
       <section className="relative py-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -188,12 +159,8 @@ export default function BlogPage() {
                   <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {post.date}</span>
                   <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {post.readTime}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-sm text-neutral-500">
-                    <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> <AnimatedCounter end={post.views} /></span>
-                    <span className="flex items-center gap-1"><Heart className="w-4 h-4" /> {post.likes}</span>
-                  </div>
-                  <Link href="/contact" className="flex items-center gap-1 text-indigo-400 font-medium hover:gap-2 transition-all">
+                <div className="flex items-center justify-end pt-2 border-t border-white/5">
+                  <Link href="/contact" className="flex items-center gap-2 text-indigo-400 font-medium hover:gap-3 transition-all">
                     Read More <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
