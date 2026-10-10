@@ -18,7 +18,7 @@ const leadership = [
     bio: 'As Founder and CEO, Nicholas Karani leads the strategic direction and long-term development of IntelliWave. His focus spans corporate vision, product strategy, technological innovation, and the development of an integrated ecosystem connecting AI, enterprise software, automation, and digital commerce. He is committed to building a technology company capable of competing on a global stage while contributing to the advancement of Africa\'s digital and engineering capabilities. His leadership philosophy centers on ambitious thinking, hands-on innovation, continuous improvement, and building systems that create lasting value beyond individual products.',
     quote: 'We are building Africa\'s digital future. World-class technology engineered from Kenya, for the world.',
     goals: [
-      'Build Africa\'s first trillion-dollar AI company',
+      'Build the intelligent infrastructure for the next multi-planetary era of human civilization',
       'Deploy AI solutions to 10,000+ enterprises',
       'Create 10,000 high-value tech jobs in Africa',
       'Establish IntelliWave as a global technology leader',
@@ -43,7 +43,7 @@ const leadership = [
     title: 'Chief Financial Officer',
     credentials: 'CPA, BCOM',
     image: '/leadership/cfo-kelvin-muchui.jpg',
-    bio: 'Certified Public Accountant and financial strategist. Kelvin manages IntelliWave\'s financial architecture, ensuring sustainable growth and investor confidence. His financial modeling expertise supports the company\'s trajectory toward trillion-dollar valuation.',
+    bio: 'Certified Public Accountant and financial strategist. Kelvin manages IntelliWave\'s financial architecture, ensuring sustainable growth and investor confidence. His financial modeling expertise supports the company\'s long-term capital strategy as it builds infrastructure for global scale.',
     quote: 'Financial discipline and strategic investment are the engines of sustainable growth.',
     goals: [
       'Achieve $1 billion revenue milestone',
@@ -106,16 +106,15 @@ export default function AboutPage() {
               across Africa and building a global technology powerhouse.
             </p>
           </div>
-          <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-            <div className="text-center p-8">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                <span className="text-4xl font-bold text-white">IW</span>
-              </div>
-              <h3 className="text-2xl font-bold mb-2">IntelliWave</h3>
-              <p className="text-muted-foreground">Est. 2026</p>
-              <p className="text-muted-foreground mt-2">Nairobi, Kenya</p>
-              <p className="text-muted-foreground">Global Operations</p>
-            </div>
+          <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+            <Image
+              src="/products/intelliwavve-card.png"
+              alt="IntelliWave — Engineering the Intelligence Behind Tomorrow"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              priority
+            />
           </div>
         </div>
 
@@ -139,32 +138,40 @@ export default function AboutPage() {
                 name: 'WaveCore ERP',
                 tagline: 'Enterprise Resource Planning',
                 description: 'Integrated business operations — finance, procurement, inventory, HR, CRM, manufacturing, and analytics in one platform.',
+                image: '/products/wavecore.png',
               },
               {
                 name: 'WavveMarket',
                 tagline: 'Digital Commerce Platform',
                 description: 'Commerce infrastructure for sellers, retailers, and marketplaces with payments, logistics, and analytics built in.',
+                image: '/products/wavvemarket.png',
               },
               {
                 name: 'WavveAI',
                 tagline: 'Applied Intelligence',
                 description: 'Enterprise AI solutions — document processing, decision support, automation, and intelligent assistants for business.',
+                image: '/products/wavveai.png',
               },
               {
                 name: 'Custom Platforms',
                 tagline: 'Engineering Services',
                 description: "Bespoke software, cloud infrastructure, and integration engineering delivered by IntelliWave's engineering teams.",
+                image: '/products/custom-platforms.png',
               },
             ].map((product) => (
               <div key={product.name} className="rounded-2xl border bg-card overflow-hidden hover:shadow-2xl transition-all group">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/30 via-accent/20 to-primary/30 flex items-center justify-center">
-                  <div className="text-center p-6">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <span className="text-2xl font-bold text-white">
-                        {product.name.split(' ').map((w) => w[0]).join('').slice(0, 2)}
-                      </span>
-                    </div>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{product.tagline}</p>
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <p className="text-xs uppercase tracking-wider opacity-80">{product.tagline}</p>
+                    <p className="font-bold text-lg">{product.name}</p>
                   </div>
                 </div>
                 <div className="p-5">
