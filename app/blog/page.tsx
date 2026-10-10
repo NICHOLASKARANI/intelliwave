@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { 
   ArrowRight, Search, Calendar, Clock, User, Tag, TrendingUp,
@@ -51,13 +52,13 @@ function AnimatedCounter({ end, duration = 2500, suffix = '', prefix = '' }: { e
 const categories = ['All', 'AI & ML', 'Web Dev', 'Cloud', 'Business', 'Security', 'Career', 'IIoT', 'ERP']
 
 const posts = [
-  { id: 1, title: 'The Future of AI in African Enterprise: 2026-2030 Vision', excerpt: 'How AI is transforming businesses across Africa.', date: '2026-08-18', readTime: '5 min', category: 'AI & ML', author: 'Nicholas Karani', featured: true, views: 12500, likes: 890 },
-  { id: 2, title: 'Building Scalable SaaS Platforms for Millions in 2026', excerpt: 'Best practices for SaaS that scale to millions.', date: '2026-08-15', readTime: '7 min', category: 'Web Dev', author: 'Mark Mwangi', featured: true, views: 9800, likes: 756 },
-  { id: 3, title: 'Cloud Infrastructure: Multi-Tenant ERP Architecture', excerpt: 'Neon PostgreSQL, Vercel Edge, 100+ connections.', date: '2026-08-12', readTime: '4 min', category: 'Cloud', author: 'IntelliWavve Team', featured: false, views: 7200, likes: 543 },
-  { id: 4, title: 'Why Kenyan Companies Invest in AI: 2026 Stats', excerpt: 'KSh 500 ERP subscriptions democratizing access.', date: '2026-08-10', readTime: '6 min', category: 'AI & ML', author: 'Nicholas Karani', featured: false, views: 6300, likes: 421 },
-  { id: 5, title: 'AI-Native ERP: Oracle, Epicor, Acumatica vs WaveCore', excerpt: 'Combining NetSuite + Kinetic + Acumatica + Fusion.', date: '2026-08-08', readTime: '8 min', category: 'ERP', author: 'Nicholas Karani', featured: false, views: 8500, likes: 634 },
-  { id: 6, title: 'Cybersecurity 2026: Protecting Multi-Tenant SaaS', excerpt: 'SOC 2 Type II, ISO 27001, GDPR compliance.', date: '2026-08-05', readTime: '5 min', category: 'Security', author: 'IntelliWavve Team', featured: false, views: 5400, likes: 389 },
-  { id: 7, title: 'From Idea to IPO: IntelliWavve Journey to 2030', excerpt: 'Becoming the world\'s largest AI-native ERP platform.', date: '2026-08-01', readTime: '10 min', category: 'Business', author: 'Nicholas Karani', featured: true, views: 15000, likes: 1200 },
+  { id: 1, title: 'The Future of AI in African Enterprise: 2026-2030 Vision', excerpt: 'How AI is transforming businesses across Africa.', date: '2026-08-18', readTime: '5 min', category: 'AI & ML', author: 'Nicholas Karani', featured: true, views: 12500, likes: 890, image: '/products/wavecore.png' },
+  { id: 2, title: 'Building Scalable SaaS Platforms for Millions in 2026', excerpt: 'Best practices for SaaS that scale to millions.', date: '2026-08-15', readTime: '7 min', category: 'Web Dev', author: 'Mark Mwangi', featured: true, views: 9800, likes: 756, image: '/products/wavveai.png' },
+  { id: 3, title: 'Cloud Infrastructure: Multi-Tenant ERP Architecture', excerpt: 'Neon PostgreSQL, Vercel Edge, 100+ connections.', date: '2026-08-12', readTime: '4 min', category: 'Cloud', author: 'IntelliWavve Team', featured: false, views: 7200, likes: 543, image: '/products/wavvemarket.png' },
+  { id: 4, title: 'Why Kenyan Companies Invest in AI: 2026 Stats', excerpt: 'KSh 500 ERP subscriptions democratizing access.', date: '2026-08-10', readTime: '6 min', category: 'AI & ML', author: 'Nicholas Karani', featured: false, views: 6300, likes: 421, image: '/products/custom-platforms.png' },
+  { id: 5, title: 'AI-Native ERP: Oracle, Epicor, Acumatica vs WaveCore', excerpt: 'Combining NetSuite + Kinetic + Acumatica + Fusion.', date: '2026-08-08', readTime: '8 min', category: 'ERP', author: 'Nicholas Karani', featured: false, views: 8500, likes: 634, image: '/products/intelliwavve-card.png' },
+  { id: 6, title: 'Cybersecurity 2026: Protecting Multi-Tenant SaaS', excerpt: 'SOC 2 Type II, ISO 27001, GDPR compliance.', date: '2026-08-05', readTime: '5 min', category: 'Security', author: 'IntelliWavve Team', featured: false, views: 5400, likes: 389, image: '/products/wavecore.png' },
+  { id: 7, title: 'From Idea to IPO: IntelliWavve Journey to 2030', excerpt: 'Becoming the world\'s largest AI-native ERP platform.', date: '2026-08-01', readTime: '10 min', category: 'Business', author: 'Nicholas Karani', featured: true, views: 15000, likes: 1200, image: '/products/wavveai.png' },
 ]
 
 export default function BlogPage() {
@@ -142,6 +143,16 @@ export default function BlogPage() {
                 className={`bg-white/5 rounded-3xl overflow-hidden p-8 border border-white/10 ${
                   post.featured ? 'lg:col-span-2' : ''
                 }`}>
+                <div className={`relative w-full ${post.featured ? 'aspect-[21/9]' : 'aspect-[16/9]'} overflow-hidden -m-8 mb-6`}>
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    className="object-cover transition-transform duration-700 hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
+                </div>
                 <div className="flex items-center gap-3 mb-4">
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-400">
                     {post.category}
@@ -167,6 +178,41 @@ export default function BlogPage() {
               </motion.article>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Newsletter */}
+      <section className="relative py-20 border-t border-white/10">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm mb-6">
+            <Sparkles className="w-4 h-4 text-amber-400" /> Editorial Newsletter
+          </span>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
+            Ideas for What&apos;s Next
+          </h2>
+          <p className="text-lg text-neutral-300 mb-10 max-w-2xl mx-auto">
+            Get thoughtful perspectives on AI, software engineering, enterprise transformation, and emerging technology.
+          </p>
+          <form
+            onSubmit={(e) => { e.preventDefault(); window.location.href = '/contact' }}
+            className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto"
+          >
+            <input
+              type="email"
+              required
+              placeholder="you@company.com"
+              className="flex-1 px-6 py-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-neutral-400 focus:outline-none focus:border-indigo-400"
+            />
+            <button
+              type="submit"
+              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:opacity-90 transition"
+            >
+              Subscribe
+            </button>
+          </form>
+          <p className="text-xs text-neutral-500 mt-4">
+            By subscribing you agree to receive editorial updates from IntelliWavve Insights.
+          </p>
         </div>
       </section>
     </div>
