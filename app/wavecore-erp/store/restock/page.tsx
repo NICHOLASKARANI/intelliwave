@@ -8,7 +8,7 @@ import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle,
 export default function RestockPage() {
   const [restocks, setRestocks] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
-  const [lowStockProducts, setLowStockProducts] = useState<any[]>([])
+  const [allProducts, setAllProducts] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -32,7 +32,7 @@ export default function RestockPage() {
       const res = await fetch('/api/wavecore/store/restock')
       const data = await res.json()
       setRestocks(data.restocks || [])
-      setLowStockProducts(data.lowStockProducts || [])
+      setAllProducts(data.allProducts || data.lowStockProducts || [])
       setStats(data.stats || {})
     } catch (err) {
       setError('Failed to load restock data')
@@ -62,7 +62,7 @@ export default function RestockPage() {
       return
     }
 
-    const selectedProduct = lowStockProducts.find(p => p.id === formData.productId)
+    const selectedProduct = allProducts.find(p => p.id === formData.productId)
     
     try {
       const res = await fetch('/api/wavecore/store/restock', {
@@ -178,7 +178,7 @@ export default function RestockPage() {
                   onChange={(e) => setFormData({...formData, productId: e.target.value})}
                   className="w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500">
                   <option value="">Select product...</option>
-                  {lowStockProducts.map(p => (
+                  {allProducts.map(p => (
                     <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_level || 0})</option>
                   ))}
                 </select>
@@ -280,7 +280,7 @@ export default function RestockPage() {
             )}
           </div>
         ) : activeView === 'low' ? (
-          lowStockProducts.length === 0 ? (
+          allProducts.filter(p => p.isLowStock).length === 0 ? (
             <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
               <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-30 text-green-500" />
               <p className="font-medium">No low stock products</p>
@@ -301,7 +301,7 @@ export default function RestockPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {lowStockProducts.map((p: any) => {
+                  {allProducts.filter(p => p.isLowStock).map((p: any) => {
                     const stock = Number(p.stock_level || 0)
                     const reorderAt = Number(p.reorderLevel || 10)
                     const suggested = Math.max(reorderAt * 2 - stock, 1)

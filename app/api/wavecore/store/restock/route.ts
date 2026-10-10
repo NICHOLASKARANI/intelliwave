@@ -47,23 +47,26 @@ export async function GET(request: NextRequest) {
       LIMIT 100
     `, [session.organizationId])
 
-    // Get low stock products
-    const lowStockResult = await pool.query(`
-      SELECT 
+    // All active products — the dropdown must never be empty.
+    // Low-stock items are flagged so the UI can sort them first.
+    const allProductsResult = await pool.query(`
+      SELECT
         p.id,
         p.name,
         p.sku,
         COALESCE(SUM(sq.quantity), 0) AS stock_level,
         COALESCE(p."minStock", 10) AS "reorderLevel",
         p."sellingPrice",
-        p.category
+        p.category,
+        (COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10)) AS "isLowStock"
       FROM "Product" p
       LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
-      WHERE p."organizationId" = $1
+      WHERE p."organizationId" = $1 AND COALESCE(p."isActive", true) = true
       GROUP BY p.id
-      HAVING COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10)
-      ORDER BY COALESCE(SUM(sq.quantity), 0) ASC
+      ORDER BY (COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10)) DESC, p.name ASC
     `, [session.organizationId])
+
+    const lowStockResult = { rows: allProductsResult.rows.filter((p: any) => p.isLowStock) }
 
     const restocks = restockResult.rows
     const lowStockProducts = lowStockResult.rows
@@ -79,6 +82,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       restocks,
       lowStockProducts,
+      allProducts: allProductsResult.rows,
       stats
     })
   } catch (error) {

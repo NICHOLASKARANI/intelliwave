@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         s.total,
         s."createdAt",
         s.status
+      FROM "SalesOrder" s
       WHERE s."organizationId" = $1
       ORDER BY s."createdAt" DESC
       LIMIT 100

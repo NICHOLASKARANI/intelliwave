@@ -17,6 +17,8 @@ async function ensureCategoryTable() {
     `)
     await pool.query(`CREATE INDEX IF NOT EXISTS "idx_category_org" ON "Category" ("organizationId")`)
     await pool.query(`CREATE INDEX IF NOT EXISTS "idx_category_name" ON "Category" (name)`)
+    await pool.query(`ALTER TABLE "Category" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT NOW()`)
+    await pool.query(`ALTER TABLE "Category" ADD COLUMN IF NOT EXISTS name TEXT`).catch(() => {})
     return true
   } catch (error) {
     console.error('Failed to create Category table:', error)
