@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         body.currency || 'KES',
         body.startDate || null,
         body.endDate || null,
-        body.clientId || '',
+        body.clientId || session.userId,
         body.priority || 'NORMAL',
         Number(body.progress || 0),
         body.managerId || null,
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
       ]
     )
 
-    return NextResponse.json({ project: result.rows[0] }, { status: 201 })
+    return NextResponse.json({ success: true, project: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('Projects POST error:', error)
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
