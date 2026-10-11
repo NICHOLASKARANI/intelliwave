@@ -80,7 +80,7 @@ export default function TasksPage() {
     if (!form.projectId) { setError('Project required'); return }
     try {
       const url = editing ? '/api/wavecore/projects/tasks/' + editing.id : '/api/wavecore/projects/tasks'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, estimatedHours: Number(form.estimatedHours || 0) }),

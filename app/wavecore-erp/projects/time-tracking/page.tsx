@@ -68,7 +68,7 @@ export default function TimeTrackingPage() {
     if (hours <= 0 || hours > 24) { setError('Hours must be 1-24'); return }
     try {
       const url = editing ? '/api/wavecore/projects/time-entries/' + editing.id : '/api/wavecore/projects/time-entries'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, hours }),

@@ -62,7 +62,7 @@ export default function ResourcesPage() {
     if (!form.employeeName.trim()) { setError('Employee name required'); return }
     try {
       const url = editing ? '/api/wavecore/projects/members/' + editing.id : '/api/wavecore/projects/members'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, hourlyRate: Number(form.hourlyRate || 0), allocatedHours: Number(form.allocatedHours || 0) }),

@@ -65,7 +65,7 @@ export default function MilestonesPage() {
     if (!form.dueDate) { setError('Due date required'); return }
     try {
       const url = editing ? '/api/wavecore/projects/milestones/' + editing.id : '/api/wavecore/projects/milestones'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
