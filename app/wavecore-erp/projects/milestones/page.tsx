@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
@@ -80,7 +81,7 @@ export default function MilestonesPage() {
     setToggling(m.id)
     setMilestones(prev => prev.map(x => x.id === m.id ? { ...x, completed: !m.completed } : x))
     try {
-      await fetch('/api/wavecore/projects/milestones/' + m.id, {
+      await authedFetch('/api/wavecore/projects/milestones/' + m.id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !m.completed }),
@@ -94,7 +95,7 @@ export default function MilestonesPage() {
     if (!confirm('Delete milestone "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/projects/milestones/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/projects/milestones/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Milestone deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

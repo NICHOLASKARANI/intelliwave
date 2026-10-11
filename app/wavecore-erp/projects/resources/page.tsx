@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
@@ -77,7 +78,7 @@ export default function ResourcesPage() {
     if (!confirm('Remove ' + name + ' from this project?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/projects/members/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/projects/members/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Member removed'); fetchAll() }
     } finally { setDeleting('') }
   }

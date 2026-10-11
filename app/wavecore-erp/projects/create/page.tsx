@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useState } from 'react'
 import Image from 'next/image'
@@ -27,7 +28,7 @@ export default function CreateProjectPage() {
     if (!formData.title) { setError('Project title required'); setLoading(false); return }
 
     try {
-      const res = await fetch('/api/wavecore/projects', {
+      const res = await authedFetch('/api/wavecore/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, budget: parseFloat(formData.budget) || 0 }),

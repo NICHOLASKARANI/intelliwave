@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
@@ -83,7 +84,7 @@ export default function TimeTrackingPage() {
     if (!confirm('Delete time entry for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/projects/time-entries/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/projects/time-entries/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Entry deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
@@ -95,7 +96,7 @@ export default function TasksPage() {
     if (!confirm('Delete task "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/projects/tasks/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/projects/tasks/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Task deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

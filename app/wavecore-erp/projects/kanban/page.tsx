@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
@@ -88,7 +89,7 @@ export default function KanbanPage() {
     const payload = { ...form, estimatedHours: Number(form.estimatedHours || 0) }
     try {
       const url = editing ? '/api/wavecore/projects/tasks/' + editing.id : '/api/wavecore/projects/tasks'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -103,7 +104,7 @@ export default function KanbanPage() {
   const del = async (id: string, title: string) => {
     if (!confirm('Delete task "' + title + '"?')) return
     try {
-      const res = await fetch('/api/wavecore/projects/tasks/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/projects/tasks/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Task deleted'); fetchAll() }
     } catch {}
   }
@@ -114,7 +115,7 @@ export default function KanbanPage() {
     // Optimistic update
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
     try {
-      const res = await fetch('/api/wavecore/projects/tasks/' + taskId, {
+      const res = await authedFetch('/api/wavecore/projects/tasks/' + taskId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
