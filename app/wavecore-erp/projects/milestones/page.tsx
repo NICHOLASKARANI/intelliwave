@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Target, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2,
-  AlertTriangle, ArrowUpDown, FileEdit, Sparkles, Clock, Calendar,
+  AlertTriangle, ArrowUpDown, FileEdit, Sparkles, Clock, Calendar, Download
 } from 'lucide-react'
 
 export default function MilestonesPage() {
@@ -149,6 +149,9 @@ export default function MilestonesPage() {
           <div className="flex gap-3">
             <button onClick={fetchAll} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
+            </button>
+            <button onClick={() => window.open('/api/wavecore/projects/milestones/pdf', '_blank')} className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold flex items-center gap-2">
+              <Download className="w-4 h-4" /> PDF
             </button>
             <button onClick={openCreate} className="px-5 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-pink-900/40">
               <Plus className="w-5 h-5" /> New Milestone

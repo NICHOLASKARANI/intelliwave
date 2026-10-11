@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Timer, Loader2, Plus, Trash2, X, RefreshCw, Search, CheckCircle2,
-  ArrowUpDown, FileEdit, Sparkles, Clock, DollarSign, TrendingUp,
+  ArrowUpDown, FileEdit, Sparkles, Clock, DollarSign, TrendingUp, Download
 } from 'lucide-react'
 
 export default function TimeTrackingPage() {
@@ -137,6 +137,9 @@ export default function TimeTrackingPage() {
           <div className="flex gap-3">
             <button onClick={fetchAll} className="px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center gap-2">
               <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
+            </button>
+            <button onClick={() => window.open('/api/wavecore/projects/time-entries/pdf', '_blank')} className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold flex items-center gap-2">
+              <Download className="w-4 h-4" /> PDF
             </button>
             <button onClick={openCreate} className="px-5 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-green-900/40">
               <Plus className="w-5 h-5" /> Log Time
