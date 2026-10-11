@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { getBranding, brandingHeaderHtml } from '@/lib/wavecore/report-branding'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const guard = await guardHR(request, 'HR_EXPORT')
     if (guard.deny) return guard.response!
+    const branding = await getBranding(session.organizationId)
 
     const orgId = session.organizationId
     const msRes = await pool.query(
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
 __STYLE__
 </style></head><body>
 <div class="hdr">
-  <div><div class="brand">WaveCore ERP</div><div class="brand-sub">Project Management · Milestones Report</div></div>
+  ${brandingHeaderHtml(branding, { subtitle: 'Project Management · Milestones Report' })}
   <div class="doc-title"><h1>MILESTONES</h1><div class="num">${new Date().toLocaleDateString('en-GB')}</div></div>
 </div>
 <div class="stats">

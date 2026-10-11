@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { getBranding, brandingHeaderHtml } from '@/lib/wavecore/report-branding'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
     // === PROJECTS RBAC GUARD ===
     const guard = await guardHR(request, 'HR_EXPORT')
     if (guard.deny) return guard.response!
+    const branding = await getBranding(session.organizationId)
     // ===========================
     const orgId = session.organizationId
 
@@ -111,7 +113,7 @@ export async function GET(request: NextRequest) {
 </style></head><body>
 
 <div class="hdr">
-  <div><div class="brand">WaveCore ERP</div><div class="brand-sub">Project Management · Portfolio Report</div></div>
+  ${brandingHeaderHtml(branding, { subtitle: 'Project Management · Portfolio Report' })}
   <div class="doc-title"><h1>PROJECT PORTFOLIO</h1><div class="num">${new Date().toLocaleDateString('en-GB')}</div></div>
 </div>
 
