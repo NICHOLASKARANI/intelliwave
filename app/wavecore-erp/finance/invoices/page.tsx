@@ -232,6 +232,7 @@ export default function InvoicesPage() {
                 <div className="border rounded-xl p-6 mb-4">
                   <div className="flex justify-between mb-4">
                     <div>
+                      <img src="/api/wavecore/organization/logo" alt="Logo" className="h-12 w-auto object-contain mb-2" />
                       <p className="text-2xl font-bold text-blue-600">IntelliWavve</p>
                       {selectedInvoice.status === 'PAID' && (
                         <p className="text-xs text-green-600 font-bold">PAID - RECEIPT</p>

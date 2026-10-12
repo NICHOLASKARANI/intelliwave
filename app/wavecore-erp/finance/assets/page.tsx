@@ -454,6 +454,7 @@ export default function AssetsPage() {
             <div onClick={e => e.stopPropagation()} className="print-modal bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
               {/* Print-only asset sheet — visible only when printing */}
               <div className="hidden print:block px-6 pt-6 border-b border-neutral-200">
+                <img src="/api/wavecore/organization/logo" alt="Logo" className="h-12 w-auto object-contain mb-2" />
                 <h1 className="text-2xl font-bold mb-1">IntelliWavve — Fixed Asset Record</h1>
                 <p className="text-xs text-neutral-500 mb-4">Printed {new Date().toLocaleString()}</p>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
