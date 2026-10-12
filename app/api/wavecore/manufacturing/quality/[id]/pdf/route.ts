@@ -2,12 +2,17 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const qcRes = await pool.query(
       `SELECT * FROM "QualityCheck" WHERE id = $1 AND "organizationId" = $2`,
@@ -61,7 +66,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 <div class="hdr">
   <div>
-    <div class="brand">WaveCore ERP</div>
+    ${companyHeader}
     <div class="brand-sub">Manufacturing · Quality Control Report</div>
   </div>
   <div class="doc-title">

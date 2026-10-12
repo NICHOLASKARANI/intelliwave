@@ -2,12 +2,17 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const res = await pool.query(
       `SELECT * FROM "ScrapRecord" WHERE "organizationId" = $1 ORDER BY "scrapDate" DESC LIMIT 500`,
@@ -97,7 +102,7 @@ export async function GET(request: NextRequest) {
 </style></head><body>
 
 <div class="hdr">
-  <div><div class="brand">WaveCore ERP</div><div class="brand-sub">Manufacturing · Scrap & Rework Report</div></div>
+  <div>${companyHeader}<div style="font-size:12px;color:#6b7280;margin-top:2px">Manufacturing · Scrap & Rework Report</div></div>
   <div class="doc-title"><h1>SCRAP REPORT</h1><div class="num">${new Date().toLocaleDateString('en-GB')}</div></div>
 </div>
 

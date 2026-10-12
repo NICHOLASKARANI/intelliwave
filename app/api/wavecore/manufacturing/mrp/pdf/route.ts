@@ -2,12 +2,17 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const prodRes = await pool.query(
       `SELECT id, name, sku, unit, "costPrice", "minStock", "maxStock" FROM "Product"
@@ -98,7 +103,7 @@ export async function GET(request: NextRequest) {
 
 <div class="hdr">
   <div>
-    <div class="brand">WaveCore ERP</div>
+    ${companyHeader}
     <div class="brand-sub">Manufacturing · Material Requirements Planning</div>
   </div>
   <div class="doc-title">
