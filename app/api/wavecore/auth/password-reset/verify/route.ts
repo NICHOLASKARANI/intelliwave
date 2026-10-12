@@ -4,10 +4,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { pool } from '@/lib/wavecore/db'
 import { hashOtp, logAuthEvent, OTP_MAX_ATTEMPTS } from '@/lib/wavecore/auth/otp'
+import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rateLimit = await checkRedisRateLimit('otp-verify:' + ip, 10, 900)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ verified: false, error: 'Too many attempts. Try again later.' }, { status: 429 })
+    }
     const ua = req.headers.get('user-agent') || 'unknown'
     const body = await req.json()
     const identifier = String(body?.identifier || '').trim()

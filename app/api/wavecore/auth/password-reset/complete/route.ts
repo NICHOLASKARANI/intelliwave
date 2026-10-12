@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { hash } from 'bcryptjs'
+import { validatePassword } from '@/lib/wavecore/password-policy'
 import { pool } from '@/lib/wavecore/db'
 import { logAuthEvent } from '@/lib/wavecore/auth/otp'
 

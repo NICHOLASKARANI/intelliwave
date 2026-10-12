@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { pool } from '@/lib/wavecore/db'
 import { getSessionFromRequest } from '@/lib/wavecore/auth'
+import { checkCsrf } from '@/lib/wavecore/csrf'
 import { getSession } from '@/lib/wavecore/auth'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
@@ -18,6 +19,10 @@ export async function POST(request: NextRequest) {
     const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+
+    // CSRF guard: block cross-site organization switches
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
     }
 
     const body = await request.json()

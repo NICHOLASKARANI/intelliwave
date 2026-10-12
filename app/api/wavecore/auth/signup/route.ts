@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { hash } from 'bcryptjs'
+import { validatePassword } from '@/lib/wavecore/password-policy'
 import { sign } from 'jsonwebtoken'
 import { checkRedisRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
@@ -30,6 +31,10 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const { name, email, phone, password } = body
+
+    // Password strength check (server-side, no client hints)
+    const pwCheck = validatePassword(password)
+    if (!pwCheck.ok) return NextResponse.json({ error: pwCheck.message }, { status: 400 })
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Name, email, and password required' }, { status: 400 })
