@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 
@@ -9,6 +10,10 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     // === RBAC GUARD (wave 2) ===
     const guard = await guardHR(request, 'HR_EXPORT')
@@ -81,7 +86,7 @@ export async function GET(request: NextRequest) {
 </style></head><body>
 
 <div class="hdr">
-  <div><div class="brand">WaveCore ERP</div><div class="brand-sub">Human Resources · Leave & Absence Report</div></div>
+  <div>${companyHeader}<div style="font-size:12px;color:#6b7280;margin-top:2px">Human Resources · Leave & Absence Report</div></div>
   <div class="doc-title"><h1>LEAVE REPORT</h1><div class="num">${new Date().toLocaleDateString('en-GB')}</div></div>
 </div>
 

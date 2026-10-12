@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 
@@ -20,6 +21,10 @@ export async function GET(
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const guard = await guardHR(request, 'HR_EXPORT')
     if (guard.deny) return guard.response!
@@ -94,7 +99,7 @@ export async function GET(
       '</style></head><body>' +
 
       '<div class="hdr">' +
-        '<div><div class="brand">' + esc(orgName) + '</div><div class="brand-sub">Employee Payslip</div></div>' +
+        companyHeader + '<div style="font-size:12px;color:#6b7280;margin-top:2px">Employee Payslip</div>' +
         '<div class="doc-title"><h1>PAYSLIP</h1><div class="sub">' + esc(item.periodName || '') + '</div></div>' +
       '</div>' +
 
