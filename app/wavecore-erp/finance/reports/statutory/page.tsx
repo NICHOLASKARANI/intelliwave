@@ -159,6 +159,14 @@ export default function StatutorySummaryPage() {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
+          {/* Print-only header with organization logo */}
+        <div className="hidden print:flex items-center gap-4 mb-6 pb-4 border-b-2 border-neutral-800">
+          <img src="/api/wavecore/organization/logo" alt="Logo" className="h-16 w-auto object-contain" />
+          <div>
+            <p className="text-xl font-bold">Statutory Summary</p>
+            <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
+          </div>
+        </div>
         <div className="mb-6 flex items-end justify-between flex-wrap gap-3 print:hidden">
           <div>
             <h1 className="text-2xl font-bold">Statutory Summary — PAYE · NSSF · SHIF · Housing Levy</h1>
