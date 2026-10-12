@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 import { assertProcurement } from '@/lib/wavecore/procurement-guard'
 
 function esc(s: any): string {
@@ -46,6 +47,10 @@ export async function GET(request: NextRequest, ctx: { params: { id: string } })
 
     const supplier = supplierRes.rows[0] || {}
     const orgName = orgRes.rows[0]?.name || 'Organization'
+    const branding = await getBranding(orgId)
+    const logoHtml = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:44px;max-width:180px;object-fit:contain;margin-bottom:8px" />'
+      : ''
     const reqRow = reqRes.rows[0] || null
 
     const linesHtml = linesRes.rows.map((l: any) => `
@@ -117,6 +122,7 @@ export async function GET(request: NextRequest, ctx: { params: { id: string } })
 
 <div class="header">
   <div class="brand">
+    ${logoHtml}
     <h1>${esc(orgName)}</h1>
     <div class="sub">Purchase Order</div>
   </div>
