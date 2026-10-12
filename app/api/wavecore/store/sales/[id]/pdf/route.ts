@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +12,10 @@ export async function GET(
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const result = await pool.query(
       `SELECT so.*, c.name as "customerName"
@@ -36,7 +41,7 @@ export async function GET(
 
     const html = `<!DOCTYPE html><html><head><title>Sale ${sale.number}</title>
 <style>body{font-family:Arial;padding:40px;max-width:700px;margin:0 auto}.header{text-align:center;border-bottom:3px solid #2563eb;padding-bottom:20px}.company{font-size:24px;font-weight:bold;color:#2563eb}.amount{text-align:center;font-size:32px;font-weight:bold;color:#16a34a;margin:20px 0}table{width:100%;border-collapse:collapse;margin-bottom:30px}th{background:#2563eb;color:white;padding:12px;text-align:left}td{padding:10px;border-bottom:1px solid #e5e7eb}.footer{margin-top:40px;text-align:center;font-size:12px;color:#6b7280}</style></head>
-<body><div class="header"><div class="company">IntelliWavve</div><div>SALES RECEIPT</div></div>
+<body><div class="header"><div class="company">${companyHeader}</div><div>SALES RECEIPT</div></div>
 <div class="amount">KSh ${Number(sale.total || 0).toLocaleString()}</div>
 <p><strong>Sale #:</strong> ${sale.number}</p>
 <p><strong>Customer:</strong> ${sale.customerName || 'Walk-in Customer'}</p>

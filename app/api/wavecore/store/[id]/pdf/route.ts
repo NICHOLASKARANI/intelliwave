@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +12,10 @@ export async function GET(
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const productId = params.id
 
@@ -34,7 +39,7 @@ export async function GET(
 
     const html = `<!DOCTYPE html><html><head><title>${product.name}</title>
 <style>body{font-family:Arial;padding:40px;max-width:600px;margin:0 auto}.header{text-align:center;border-bottom:3px solid #ea580c;padding-bottom:20px}.company{font-size:24px;font-weight:bold;color:#ea580c}.card{background:#f9fafb;border-radius:15px;padding:30px}.field{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e5e7eb}.label{font-weight:bold;color:#6b7280}.value{font-weight:bold;color:#111827}.price{text-align:center;font-size:28px;font-weight:bold;color:#ea580c;margin:20px 0}</style></head>
-<body><div class="header"><div class="company">IntelliWavve</div><div>Product Details</div></div>
+<body><div class="header"><div class="company">${companyHeader}</div><div>Product Details</div></div>
 <div class="card"><h2 style="text-align:center;color:#ea580c">${product.name || 'N/A'}</h2>
 <div class="price">KSh ${sellingPrice.toLocaleString()}</div>
 <div class="field"><span class="label">SKU</span><span class="value">${product.sku || 'N/A'}</span></div>

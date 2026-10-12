@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +12,10 @@ export async function GET(
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const result = await pool.query(
       `SELECT * FROM "Settlement" WHERE id = $1 AND "organizationId" = $2`,
@@ -25,7 +30,7 @@ export async function GET(
 
     const html = `<!DOCTYPE html><html><head><title>Settlement ${settlement.number}</title>
 <style>body{font-family:Arial;padding:40px;max-width:600px;margin:0 auto}.header{text-align:center;border-bottom:3px solid #7c3aed;padding-bottom:20px}.company{font-size:24px;font-weight:bold;color:#7c3aed}.amount{text-align:center;font-size:32px;font-weight:bold;color:#16a34a;margin:20px 0}.field{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e5e7eb}.label{font-weight:bold;color:#6b7280}.value{font-weight:bold;color:#111827}</style></head>
-<body><div class="header"><div class="company">IntelliWavve</div><div>SETTLEMENT RECEIPT</div></div>
+<body><div class="header"><div class="company">${companyHeader}</div><div>SETTLEMENT RECEIPT</div></div>
 <div class="amount">KSh ${Number(settlement.amount || 0).toLocaleString()}</div>
 <div class="field"><span class="label">Settlement #</span><span class="value">${settlement.number}</span></div>
 <div class="field"><span class="label">Customer</span><span class="value">${settlement.customerName || 'N/A'}</span></div>

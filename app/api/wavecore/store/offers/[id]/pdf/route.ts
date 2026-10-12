@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +12,10 @@ export async function GET(
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const result = await pool.query(`
       SELECT *
@@ -50,7 +55,7 @@ export async function GET(
 </head>
 <body>
   <div class="header">
-    <div class="company">IntelliWavve</div>
+    <div class="company">${companyHeader}</div>
     <div class="title">Offer Details</div>
   </div>
   
