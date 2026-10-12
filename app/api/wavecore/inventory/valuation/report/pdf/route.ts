@@ -3,11 +3,16 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { getBranding } from '@/lib/wavecore/report-branding'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const branding = await getBranding(session!.organizationId)
+    const companyHeader = branding.logo
+      ? '<img src="' + branding.logo + '" alt="' + branding.companyName + '" style="height:36px;max-width:160px;object-fit:contain" />'
+      : branding.companyName
 
     const orgId = session.organizationId
     const { searchParams } = new URL(request.url)
@@ -35,7 +40,7 @@ export async function GET(request: NextRequest) {
       '.value{font-size:24px;font-weight:bold;color:#059669;margin-top:8px}' +
       '.footer{margin-top:40px;text-align:center;color:#9ca3af;font-size:12px;border-top:1px solid #e5e7eb;padding-top:20px}' +
       '</style></head><body>' +
-      '<div class="header"><div class="company">WaveCore ERP</div><p>Inventory Valuation Report (' + method + ')</p></div>' +
+      '<div class="header">' + companyHeader + '<p>Inventory Valuation Report (' + method + ')</p></div>' +
       '<div class="grid">' +
       '<div class="card"><div class="label">Total Products</div><div class="value">' + products.rows.length + '</div></div>' +
       '<div class="card"><div class="label">Total Units</div><div class="value">' + products.rows.reduce((s, p) => s + Number(p.currentStock || 0), 0) + '</div></div>' +
