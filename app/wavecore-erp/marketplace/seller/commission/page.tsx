@@ -83,6 +83,14 @@ export default function CommissionPage() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
+        {/* Print-only header with organization logo */}
+        <div className="hidden print:flex items-center gap-4 mb-6 pb-4 border-b-2 border-neutral-800">
+          <img src="/api/wavecore/organization/logo" alt="Logo" className="h-16 w-auto object-contain" />
+          <div>
+            <p className="text-xl font-bold">Seller Commission</p>
+            <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
+          </div>
+        </div>
         <div className="flex justify-between items-center flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-2">

@@ -322,6 +322,14 @@ export default function RFQDetailPage() {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
+        {/* Print-only header with organization logo */}
+        <div className="hidden print:flex items-center gap-4 mb-6 pb-4 border-b-2 border-neutral-800">
+          <img src="/api/wavecore/organization/logo" alt="Logo" className="h-16 w-auto object-contain" />
+          <div>
+            <p className="text-xl font-bold">RFQ</p>
+            <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
+          </div>
+        </div>
         <Link href="/wavecore-erp/procurement/rfqs" className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white flex items-center gap-1 mb-4">
           <ArrowLeft className="w-4 h-4" /> Back to RFQs
         </Link>

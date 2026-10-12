@@ -222,6 +222,14 @@ export default function PipelinePage() {
       </header>
 
       <main className="max-w-[1600px] mx-auto p-4 lg:p-6">
+        {/* Print-only header with organization logo */}
+        <div className="hidden print:flex items-center gap-4 mb-6 pb-4 border-b-2 border-neutral-800">
+          <img src="/api/wavecore/organization/logo" alt="Logo" className="h-16 w-auto object-contain" />
+          <div>
+            <p className="text-xl font-bold">CRM Pipeline</p>
+            <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
+          </div>
+        </div>
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
