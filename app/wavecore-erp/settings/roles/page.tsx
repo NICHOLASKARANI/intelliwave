@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -30,7 +31,7 @@ export default function RolesPage() {
 
   const fetchRoles = async () => {
     try {
-      const res = await fetch('/api/wavecore/roles')
+      const res = await authedFetch('/api/wavecore/roles')
       const data = await res.json()
       setRoles(data.roles || [])
     } catch (err) {
@@ -45,7 +46,7 @@ export default function RolesPage() {
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/roles', {
+      const res = await authedFetch('/api/wavecore/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -68,7 +69,7 @@ export default function RolesPage() {
   const deleteRole = async (id: number) => {
     if (!confirm('Delete this role?')) return
     try {
-      await fetch(`/api/wavecore/roles?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/roles?id=${id}`, { method: 'DELETE' })
       fetchRoles()
     } catch (err) {
       setError('Failed to delete role')

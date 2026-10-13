@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -28,7 +29,7 @@ export default function TaxesPage() {
 
   const fetchTaxes = async () => {
     try {
-      const res = await fetch('/api/wavecore/taxes')
+      const res = await authedFetch('/api/wavecore/taxes')
       const data = await res.json()
       setTaxes(data.taxes || [])
     } catch (err) {
@@ -43,7 +44,7 @@ export default function TaxesPage() {
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/taxes', {
+      const res = await authedFetch('/api/wavecore/taxes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, rate: parseFloat(formData.rate) })
@@ -63,7 +64,7 @@ export default function TaxesPage() {
   const deleteTax = async (id: number) => {
     if (!confirm('Delete this tax rate?')) return
     try {
-      await fetch(`/api/wavecore/taxes?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/taxes?id=${id}`, { method: 'DELETE' })
       fetchTaxes()
     } catch (err) {
       setError('Failed to delete tax rate')

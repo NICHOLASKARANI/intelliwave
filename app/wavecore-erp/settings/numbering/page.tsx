@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -28,7 +29,7 @@ export default function NumberingPage() {
 
   const fetchNumbering = async () => {
     try {
-      const res = await fetch('/api/wavecore/numbering')
+      const res = await authedFetch('/api/wavecore/numbering')
       const data = await res.json()
       setNumbering(data.numbering || [])
     } catch (err) {
@@ -42,7 +43,7 @@ export default function NumberingPage() {
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/numbering', {
+      const res = await authedFetch('/api/wavecore/numbering', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documenttype: docType, prefix, nextnumber: nextNumber })

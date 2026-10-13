@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -30,7 +31,7 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/wavecore/users')
+      const res = await authedFetch('/api/wavecore/users')
       const data = await res.json()
       setUsers(data.users || [])
     } catch (err) {
@@ -45,7 +46,7 @@ export default function UsersPage() {
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/users', {
+      const res = await authedFetch('/api/wavecore/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -68,7 +69,7 @@ export default function UsersPage() {
   const deleteUser = async (id: string) => {
     if (!confirm('Delete this user?')) return
     try {
-      await fetch(`/api/wavecore/users?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/users?id=${id}`, { method: 'DELETE' })
       fetchUsers()
     } catch (err) {
       setError('Failed to delete user')

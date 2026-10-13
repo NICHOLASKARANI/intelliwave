@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -31,7 +32,7 @@ export default function GeneralSettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/wavecore/settings')
+      const res = await authedFetch('/api/wavecore/settings')
       const data = await res.json()
       if (data.settings) {
         setCompany(data.settings)
@@ -49,7 +50,7 @@ export default function GeneralSettingsPage() {
     setSaved(false)
     
     try {
-      const res = await fetch('/api/wavecore/settings', {
+      const res = await authedFetch('/api/wavecore/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(company)

@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -28,7 +29,7 @@ export default function CurrencyPage() {
 
   const fetchCurrencies = async () => {
     try {
-      const res = await fetch('/api/wavecore/currency')
+      const res = await authedFetch('/api/wavecore/currency')
       const data = await res.json()
       setCurrencies(data.currencies || [])
     } catch (err) {
@@ -42,7 +43,7 @@ export default function CurrencyPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await fetch('/api/wavecore/currency', {
+      const res = await authedFetch('/api/wavecore/currency', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, rate: parseFloat(formData.rate) })
@@ -62,7 +63,7 @@ export default function CurrencyPage() {
   const deleteCurrency = async (id: number) => {
     if (!confirm('Delete this currency?')) return
     try {
-      await fetch(`/api/wavecore/currency?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/currency?id=${id}`, { method: 'DELETE' })
       fetchCurrencies()
     } catch (err) {
       setError('Failed to delete currency')

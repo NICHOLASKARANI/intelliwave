@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -28,7 +29,7 @@ export default function EmailTemplatesPage() {
 
   const fetchTemplates = async () => {
     try {
-      const res = await fetch('/api/wavecore/email-templates')
+      const res = await authedFetch('/api/wavecore/email-templates')
       const data = await res.json()
       setTemplates(data.templates || [])
     } catch (err) {
@@ -42,7 +43,7 @@ export default function EmailTemplatesPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await fetch('/api/wavecore/email-templates', {
+      const res = await authedFetch('/api/wavecore/email-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -62,7 +63,7 @@ export default function EmailTemplatesPage() {
   const deleteTemplate = async (id: number) => {
     if (!confirm('Delete this template?')) return
     try {
-      await fetch(`/api/wavecore/email-templates?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/email-templates?id=${id}`, { method: 'DELETE' })
       fetchTemplates()
     } catch (err) {
       setError('Failed to delete template')

@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -28,7 +29,7 @@ export default function IntegrationsPage() {
 
   const fetchIntegrations = async () => {
     try {
-      const res = await fetch('/api/wavecore/integrations')
+      const res = await authedFetch('/api/wavecore/integrations')
       const data = await res.json()
       setIntegrations(data.integrations || [])
     } catch (err) {
@@ -42,7 +43,7 @@ export default function IntegrationsPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await fetch('/api/wavecore/integrations', {
+      const res = await authedFetch('/api/wavecore/integrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -62,7 +63,7 @@ export default function IntegrationsPage() {
   const deleteIntegration = async (id: number) => {
     if (!confirm('Delete this integration?')) return
     try {
-      await fetch(`/api/wavecore/integrations?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/integrations?id=${id}`, { method: 'DELETE' })
       fetchIntegrations()
     } catch (err) {
       setError('Failed to delete integration')
