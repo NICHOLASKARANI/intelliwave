@@ -1,4 +1,6 @@
 'use client'
+import { useEffect } from 'react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useState } from 'react'
 import Image from 'next/image'
@@ -26,28 +28,51 @@ export default function SuppliersPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const fetchSuppliers = async () => {
     setLoading(true)
     setError('')
-    if (!name) { setError('Name required'); setLoading(false); return }
-
-    const newSupplier: Supplier = {
-      id: Date.now().toString(),
-      name,
-      email: email || '',
-      phone: phone || '',
-      company: company || '',
-      credit: 0,
+    try {
+      const res = await authedFetch('/api/wavecore/store/suppliers')
+      const data = await res.json()
+      setSuppliers(data.suppliers || [])
+    } catch {
+      setError('Failed to load suppliers')
+    } finally {
+      setLoading(false)
     }
-    setSuppliers([...suppliers, newSupplier])
-    setShowAdd(false)
-    setName(''); setEmail(''); setPhone(''); setCompany('')
-    setLoading(false)
   }
 
-  const handleDelete = (id: string) => {
-    setSuppliers(suppliers.filter(s => s.id !== id))
+  useEffect(() => {
+    fetchSuppliers()
+  }, [])
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true); setError('')
+    try {
+      const res = await authedFetch('/api/wavecore/store/suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, category: company }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Failed to add'); return }
+      setName(''); setEmail(''); setPhone(''); setCompany('')
+      setShowAdd(false)
+      fetchSuppliers()
+    } catch {
+      setError('Network error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this supplier?')) return
+    try {
+      await authedFetch('/api/wavecore/store/suppliers?id=' + encodeURIComponent(id), { method: 'DELETE' })
+      fetchSuppliers()
+    } catch {}
   }
 
   const filtered = suppliers.filter(s =>
