@@ -8,6 +8,7 @@ import {
   ArrowLeft, Package, MapPin, AlertTriangle
 } from 'lucide-react'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 
 interface CartItem {
   id: string
@@ -24,6 +25,7 @@ interface LocationOpt {
 }
 
 export default function CreateSalePage() {
+  const { shopId: ctxShopId } = usePosShop()
   const [products, setProducts] = useState<any[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('')
@@ -35,6 +37,11 @@ export default function CreateSalePage() {
 
   const [locations, setLocations] = useState<LocationOpt[]>([])
   const [locationId, setLocationId] = useState('')
+
+  // Sync with POS context shop (cookie-backed)
+  useEffect(() => {
+    if (ctxShopId) setLocationId(ctxShopId)
+  }, [ctxShopId])
   const [loadingLocations, setLoadingLocations] = useState(true)
 
   useEffect(() => {

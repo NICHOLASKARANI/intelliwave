@@ -7,6 +7,7 @@ import {
   Package, DollarSign, TrendingUp, ShoppingCart, Download, Loader2,
   Store, ArrowRight, AlertTriangle, BarChart3, Wallet
 } from 'lucide-react'
+import ShopSelector from '@/components/wavecore/ShopSelector'
 
 export default function StorePage() {
   const [data, setData] = useState<any>({})
@@ -70,6 +71,9 @@ export default function StorePage() {
             <span className="font-bold">WaveCore</span>
           </Link>
           <span className="text-sm">Point of Sale</span>
+          <div className="hidden md:block min-w-[280px]">
+            <ShopSelector compact />
+          </div>
         </div>
       </header>
 
@@ -85,6 +89,11 @@ export default function StorePage() {
               <Download className="w-4 h-4" /> PDF
             </button>
           </div>
+
+        {/* Shop context — full width */}
+        <div className="mb-6 md:hidden">
+          <ShopSelector />
+        </div>
         </div>
 
         {loading ? (

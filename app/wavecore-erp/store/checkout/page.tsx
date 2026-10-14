@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, CheckCircle, ArrowLeft, AlertTriangle, MapPin } from 'lucide-react'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 
 interface CartItem {
   id: string
@@ -21,6 +22,7 @@ interface LocationOpt {
 }
 
 export default function CheckoutPage() {
+  const { shopId: ctxShopId } = usePosShop()
   const [items, setItems] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('Walk-in Customer')
   const [paymentMethod, setPaymentMethod] = useState('mpesa')
@@ -30,6 +32,11 @@ export default function CheckoutPage() {
   const [error, setError] = useState('')
   const [locations, setLocations] = useState<LocationOpt[]>([])
   const [locationId, setLocationId] = useState('')
+
+  // Sync with POS context shop (cookie-backed)
+  useEffect(() => {
+    if (ctxShopId) setLocationId(ctxShopId)
+  }, [ctxShopId])
   const [loadingLocations, setLoadingLocations] = useState(true)
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { SessionContext } from '@/lib/wavecore/context/session-context'
+import { PosShopProvider } from '@/lib/wavecore/context/pos-shop-context'
 
 interface Session {
   authenticated: boolean
