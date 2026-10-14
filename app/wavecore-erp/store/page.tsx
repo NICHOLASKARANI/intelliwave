@@ -46,7 +46,7 @@ export default function StorePage() {
 
   const modules = [
     { name: 'Products', href: '/wavecore-erp/store/products', icon: Package, color: 'from-orange-500 to-amber-600', desc: 'Manage products' },
-    { name: 'Sales', href: '/wavecore-erp/store/sales/create', icon: ShoppingCart, color: 'from-blue-500 to-indigo-600', desc: 'Create sale' },
+    { name: 'Sales', href: '/wavecore-erp/store/cart', icon: ShoppingCart, color: 'from-blue-500 to-indigo-600', desc: 'Create sale' },
     { name: 'Stock In', href: '/wavecore-erp/store/stock-in', icon: ArrowRight, color: 'from-green-500 to-emerald-600', desc: 'Receive stock' },
     { name: 'Insights', href: '/wavecore-erp/store/insights', icon: BarChart3, color: 'from-violet-500 to-purple-600', desc: 'Analytics' },
     { name: 'Settlements', href: '/wavecore-erp/store/settlements', icon: Wallet, color: 'from-teal-500 to-cyan-600', desc: 'Payments' },
