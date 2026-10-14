@@ -72,8 +72,19 @@ export default function CartPage() {
           <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
         ) : items.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-muted-foreground">Cart is empty</p>
+            <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-bold mb-2">Your cart is empty</p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+              Browse products below and add items to start a sale. The cart holds them until you proceed to checkout.
+            </p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Link href="/wavecore-erp/store/products" className="px-6 py-3 rounded-xl bg-pink-600 text-white font-bold flex items-center gap-2">
+                <Package className="w-4 h-4" /> Browse Products
+              </Link>
+              <Link href="/wavecore-erp/store/sales/create" className="px-6 py-3 rounded-xl border bg-white dark:bg-neutral-900 font-bold flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4" /> One-Page Sale
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
