@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useState } from 'react'
 import Image from 'next/image'
@@ -37,7 +38,7 @@ export default function CreateProductPage() {
     }
 
     try {
-      const res = await fetch('/api/wavecore/store', {
+      const res = await authedFetch('/api/wavecore/store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
