@@ -22,15 +22,22 @@ export async function GET(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const { searchParams } = new URL(request.url)
+    const locationId = searchParams.get('locationId')
+
+    const params: any[] = [session.organizationId]
+    const locationWhere = locationId ? ' AND so."locationId" = $2' : ''
+    if (locationId) params.push(locationId)
+
     const result = await pool.query(
       `SELECT so.*, c.name as "customerName",
               sl.name as "locationName"
        FROM "SalesOrder" so
        LEFT JOIN "Customer" c ON so."customerId" = c.id
        LEFT JOIN "StockLocation" sl ON so."locationId" = sl.id
-       WHERE so."organizationId" = $1
+       WHERE so."organizationId" = $1${locationWhere}
        ORDER BY so."createdAt" DESC LIMIT 500`,
-      [session.organizationId]
+      params
     )
     return NextResponse.json({ sales: result.rows })
   } catch (error) {
