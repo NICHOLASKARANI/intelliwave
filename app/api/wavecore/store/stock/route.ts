@@ -9,8 +9,16 @@ export async function GET(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Optional shop filter
+    const { searchParams } = new URL(request.url)
+    const locationId = searchParams.get('locationId')
+
+    const params: any[] = [session.organizationId]
+    const locationClause = locationId ? ' AND sq."locationId" = $2' : ''
+    if (locationId) params.push(locationId)
+
     const result = await pool.query(`
-      SELECT 
+      SELECT
         p.id,
         p.name,
         p.sku,
@@ -20,17 +28,17 @@ export async function GET(request: NextRequest) {
         p.category,
         COALESCE(p."minStock", 10) AS "reorderLevel",
         p."createdAt",
-        CASE 
+        CASE
           WHEN COALESCE(SUM(sq.quantity), 0) = 0 THEN 'OUT_OF_STOCK'
           WHEN COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10) THEN 'LOW_STOCK'
           ELSE 'IN_STOCK'
         END as "stockStatus"
       FROM "Product" p
-      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id${locationClause}
       WHERE p."organizationId" = $1
       GROUP BY p.id
       ORDER BY COALESCE(SUM(sq.quantity), 0) ASC
-    `, [session.organizationId])
+    `, params)
 
     const products = result.rows
     const totalProducts = products.length

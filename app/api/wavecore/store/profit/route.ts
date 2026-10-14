@@ -10,6 +10,14 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Get products with cost price and selling price
+    // Optional shop filter
+    const { searchParams } = new URL(request.url)
+    const locationId = searchParams.get('locationId')
+
+    const params: any[] = [session.organizationId]
+    const locationClause = locationId ? ' AND sq."locationId" = $2' : ''
+    if (locationId) params.push(locationId)
+
     const productsResult = await pool.query(`
       SELECT 
         p.id,
@@ -23,12 +31,14 @@ export async function GET(request: NextRequest) {
         ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * COALESCE(SUM(sq.quantity), 0)) as "potentialProfit",
         p."createdAt"
       FROM "Product" p
-      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id${locationClause}
       WHERE p."organizationId" = $1
       ORDER BY ((p."sellingPrice" - COALESCE(p."costPrice", 0)) * COALESCE(SUM(sq.quantity), 0)) DESC
-    `, [session.organizationId])
+    `, params)
 
     // Get sales data
+    const salesParams: any[] = [session.organizationId]
+    if (locationId) salesParams.push(locationId)
     const salesResult = await pool.query(`
       SELECT 
         s.id,
@@ -37,10 +47,10 @@ export async function GET(request: NextRequest) {
         s."createdAt",
         s.status
       FROM "SalesOrder" s
-      WHERE s."organizationId" = $1
+      WHERE s."organizationId" = $1${locationId ? ' AND s."locationId" = $2' : ''}
       ORDER BY s."createdAt" DESC
       LIMIT 100
-    `, [session.organizationId]).catch(() => ({ rows: [] }))
+    `, salesParams).catch(() => ({ rows: [] }))
 
     const products = productsResult.rows
     const sales = salesResult.rows

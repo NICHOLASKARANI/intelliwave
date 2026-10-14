@@ -9,6 +9,14 @@ export async function GET(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Optional shop filter
+    const { searchParams } = new URL(request.url)
+    const locationId = searchParams.get('locationId')
+
+    const params: any[] = [session.organizationId]
+    const locationClause = locationId ? ' AND sq."locationId" = $2' : ''
+    if (locationId) params.push(locationId)
+
     const result = await pool.query(`
       SELECT
         p.id,
@@ -20,11 +28,11 @@ export async function GET(request: NextRequest) {
         (p."sellingPrice" * COALESCE(SUM(sq.quantity), 0)) AS "stockValue",
         p."createdAt"
       FROM "Product" p
-      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id${locationClause}
       WHERE p."organizationId" = $1
       GROUP BY p.id
       ORDER BY (p."sellingPrice" * COALESCE(SUM(sq.quantity), 0)) DESC
-    `, [session.organizationId])
+    `, params)
 
     const products = result.rows
     const totalStockValue = products.reduce((sum, p) => sum + Number(p.stockValue || 0), 0)
