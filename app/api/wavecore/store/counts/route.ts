@@ -26,6 +26,7 @@ async function ensureStockCountTable() {
       )
     `)
     await pool.query(`CREATE INDEX IF NOT EXISTS "idx_stockcount_org" ON "StockCount" ("organizationId")`)
+    await pool.query(`ALTER TABLE "StockCount" ADD COLUMN IF NOT EXISTS "locationId" TEXT`).catch(() => {})
     return true
   } catch (error) {
     console.error('Failed to create StockCount table:', error)
@@ -40,14 +41,20 @@ export async function GET(request: NextRequest) {
 
     await ensureStockCountTable()
 
+    const { searchParams } = new URL(request.url)
+    const locationId = searchParams.get('locationId')
+    const countParams: any[] = [session.organizationId]
+    const countWhere = locationId ? ' AND sc."locationId" = $2' : ''
+    if (locationId) countParams.push(locationId)
+
     const result = await pool.query(`
       SELECT sc.*, p.sku, p."sellingPrice"
       FROM "StockCount" sc
       LEFT JOIN "Product" p ON sc."productId" = p.id
-      WHERE sc."organizationId" = $1
+      WHERE sc."organizationId" = $1${countWhere}
       ORDER BY sc."createdAt" DESC
       LIMIT 100
-    `, [session.organizationId])
+    `, countParams)
 
     const counts = result.rows
     const totalCounts = counts.length
@@ -93,8 +100,8 @@ export async function POST(request: NextRequest) {
     const variance = actualQty - expectedQty
 
     const result = await pool.query(`
-      INSERT INTO "StockCount" (id, number, "productId", "productName", "expectedQuantity", "actualQuantity", "variance", status, notes, "countedBy", "organizationId", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      INSERT INTO "StockCount" (id, number, "productId", "productName", "expectedQuantity", "actualQuantity", "variance", status, notes, "countedBy", "organizationId", "locationId", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
       RETURNING *
     `, [
       id, 
@@ -107,7 +114,8 @@ export async function POST(request: NextRequest) {
       body.status || 'PENDING', 
       body.notes || '', 
       body.countedBy || '', 
-      session.organizationId
+      session.organizationId,
+      body.locationId || null
     ])
 
     // Update product stock if count is completed
