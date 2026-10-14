@@ -54,6 +54,7 @@ export default function StorePage() {
     { name: 'Stock Value', href: '/wavecore-erp/store/stock-value', icon: DollarSign, color: 'from-emerald-500 to-green-600', desc: 'Valuation' },
     { name: 'Profit', href: '/wavecore-erp/store/profit', icon: TrendingUp, color: 'from-lime-500 to-green-600', desc: 'Profit report' },
     { name: 'Transfer', href: '/wavecore-erp/store/transfer', icon: ArrowRight, color: 'from-sky-500 to-blue-600', desc: 'Transfer stock' },
+    { name: 'Warehouses / Shops', href: '/wavecore-erp/inventory/warehouses', icon: Store, color: 'from-indigo-500 to-purple-600', desc: 'Manage shops & locations' },
     { name: 'Stock', href: '/wavecore-erp/store/stock', icon: Package, color: 'from-orange-500 to-red-600', desc: 'Stock levels' },
     { name: 'Restock', href: '/wavecore-erp/store/restock', icon: AlertTriangle, color: 'from-amber-500 to-orange-600', desc: 'Low stock' },
     { name: 'Offers', href: '/wavecore-erp/store/offers', icon: Store, color: 'from-purple-500 to-pink-600', desc: 'Promotions' },

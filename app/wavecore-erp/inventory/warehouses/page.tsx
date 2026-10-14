@@ -3,10 +3,13 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
+import {
   Loader2, Package, Warehouse, Plus, Trash2, Printer, Search, X,
-  ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList, Layers, Activity, LineChart, PieChart, ShoppingCart, Zap, DollarSign, ShieldAlert, Truck, MapPin
+  ArrowLeft, ArrowLeftRight, RefreshCw, CheckCircle2, Sliders, ClipboardList,
+  Layers, Activity, LineChart, PieChart, ShoppingCart, Zap, DollarSign,
+  ShieldAlert, Truck, MapPin
 } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 export default function WarehousesPage() {
   const [warehouses, setWarehouses] = useState<any[]>([])
@@ -17,19 +20,25 @@ export default function WarehousesPage() {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
-  const [form, setForm] = useState({ 
-    name: '', code: '', address: '', city: '', country: '', 
-    locationName: '', locationCode: '', locationsCount: '1', 
-    initialStock: '', productId: '', sellingPrice: '' 
+
+  const [form, setForm] = useState({
+    name: '', code: '', address: '', city: '', country: '',
+    locationName: 'Main Location', locationCode: '', locationsCount: '1',
+    initialStock: '', productId: '', sellingPrice: ''
   })
+
+  const [locationsFor, setLocationsFor] = useState<any | null>(null)
+  const [locations, setLocations] = useState<any[]>([])
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [newLocation, setNewLocation] = useState({ name: '', code: '' })
 
   const fetchWarehouses = async () => {
     setLoading(true)
     setError('')
     try {
       const [warehousesRes, productsRes] = await Promise.all([
-        fetch('/api/wavecore/inventory/warehouses'),
-        fetch('/api/wavecore/inventory/products')
+        authedFetch('/api/wavecore/inventory/warehouses'),
+        authedFetch('/api/wavecore/inventory/products'),
       ])
       const data = await warehousesRes.json()
       const productsData = await productsRes.json()
@@ -46,23 +55,19 @@ export default function WarehousesPage() {
 
   const createWarehouse = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
-    if (!form.name) {
-      setError('Warehouse name is required')
-      return
-    }
+    setError(''); setSuccess('')
+    if (!form.name) { setError('Warehouse name is required'); return }
     try {
-      const res = await fetch('/api/wavecore/inventory/warehouses', {
+      const res = await authedFetch('/api/wavecore/inventory/warehouses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       })
       const data = await res.json()
       if (res.ok) {
         setSuccess('Warehouse created!')
         setTimeout(() => setSuccess(''), 3000)
-        setForm({ name: '', code: '', address: '', city: '', country: '', locationName: '', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
+        setForm({ name: '', code: '', address: '', city: '', country: '', locationName: 'Main Location', locationCode: '', locationsCount: '1', initialStock: '', productId: '', sellingPrice: '' })
         setShowForm(false)
         fetchWarehouses()
       } else {
@@ -77,7 +82,7 @@ export default function WarehousesPage() {
     if (!confirm('Delete warehouse "' + name + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/warehouses?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/warehouses?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Warehouse deleted!')
         setTimeout(() => setSuccess(''), 3000)
@@ -94,7 +99,66 @@ export default function WarehousesPage() {
     window.open('/api/wavecore/inventory/warehouses/' + id + '/pdf', '_blank')
   }
 
-  const filtered = warehouses.filter(w => 
+  const openLocations = async (wh: any) => {
+    setLocationsFor(wh)
+    setLocationLoading(true)
+    try {
+      const res = await authedFetch('/api/wavecore/inventory/warehouses/' + wh.id + '/locations')
+      const data = await res.json()
+      setLocations(data.locations || [])
+    } catch {
+      setLocations([])
+    } finally {
+      setLocationLoading(false)
+    }
+  }
+
+  const createLocation = async () => {
+    if (!locationsFor || !newLocation.name.trim()) return
+    setError('')
+    try {
+      const res = await authedFetch('/api/wavecore/inventory/warehouses/' + locationsFor.id + '/locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLocation),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setNewLocation({ name: '', code: '' })
+        const refresh = await authedFetch('/api/wavecore/inventory/warehouses/' + locationsFor.id + '/locations')
+        const rd = await refresh.json()
+        setLocations(rd.locations || [])
+        setSuccess('Location added')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        setError(data.error || 'Failed to add location')
+      }
+    } catch {
+      setError('Network error')
+    }
+  }
+
+  const deleteLocation = async (locId: string, locName: string) => {
+    if (!locationsFor) return
+    if (!confirm('Delete location "' + locName + '"?')) return
+    try {
+      const res = await authedFetch('/api/wavecore/inventory/warehouses/' + locationsFor.id + '/locations?locationId=' + locId, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        const refresh = await authedFetch('/api/wavecore/inventory/warehouses/' + locationsFor.id + '/locations')
+        const rd = await refresh.json()
+        setLocations(rd.locations || [])
+        setSuccess('Location deleted')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        setError(data.error || 'Delete failed')
+      }
+    } catch {
+      setError('Network error')
+    }
+  }
+
+  const filtered = warehouses.filter(w =>
     (w.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (w.code || '').toLowerCase().includes(search.toLowerCase())
   )
@@ -187,7 +251,7 @@ export default function WarehousesPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Location Name</label>
-                <input type="text" value={form.locationName} onChange={(e) => setForm({...form, locationName: e.target.value})} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                <input type="text" value={form.locationName} onChange={(e) => setForm({...form, locationName: e.target.value})} placeholder="e.g., Main Floor" className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-neutral-400">Product (for stock)</label>
@@ -227,6 +291,9 @@ export default function WarehousesPage() {
                     <p className="text-xs text-neutral-400">{wh.code || 'No code'}</p>
                   </div>
                   <div className="flex gap-2">
+                    <button onClick={() => openLocations(wh)} className="p-2 rounded-lg bg-purple-900/50 text-purple-300 hover:bg-purple-800" title="Manage locations">
+                      <Layers className="w-4 h-4" />
+                    </button>
                     <button onClick={() => downloadPdf(wh.id)} className="p-2 rounded-lg bg-blue-900/50 text-blue-300 hover:bg-blue-800" title="PDF">
                       <Printer className="w-4 h-4" />
                     </button>
@@ -240,8 +307,6 @@ export default function WarehousesPage() {
                 </p>
                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
                   <span className="text-neutral-400">Locations: <b className="text-white">{wh.locationCount || 0}</b></span>
-                  <span className="text-neutral-400">Location: <b className="text-white">{wh.locationName || 'N/A'}</b></span>
-                  <span className="text-neutral-400">Product: <b className="text-white">{wh.productName || 'N/A'}</b></span>
                   <span className="text-neutral-400">Stock: <b className="text-white">{wh.totalStock || 0}</b></span>
                 </div>
                 <div className="text-sm mt-1 text-neutral-400">
@@ -252,6 +317,61 @@ export default function WarehousesPage() {
           </div>
         )}
       </div>
+
+      {/* Locations Modal */}
+      {locationsFor && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setLocationsFor(null)}>
+          <div onClick={e => e.stopPropagation()} className="bg-neutral-900 rounded-2xl border border-neutral-800 max-w-lg w-full max-h-[85vh] overflow-y-auto">
+            <div className="p-5 border-b border-neutral-800 flex justify-between items-center">
+              <div>
+                <h2 className="font-bold text-lg text-white flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-purple-400" /> {locationsFor.name} — Locations
+                </h2>
+                <p className="text-xs text-neutral-400 mt-1">Add or remove stock locations in this warehouse</p>
+              </div>
+              <button onClick={() => setLocationsFor(null)} className="p-2 rounded-lg hover:bg-neutral-800 text-neutral-400"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="p-5 border-b border-neutral-800 bg-neutral-900/50">
+              <p className="text-sm font-bold mb-3 text-white">Add a new location</p>
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Location name *" value={newLocation.name}
+                  onChange={e => setNewLocation({ ...newLocation, name: e.target.value })}
+                  className="px-3 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm" />
+                <input type="text" placeholder="Code (optional)" value={newLocation.code}
+                  onChange={e => setNewLocation({ ...newLocation, code: e.target.value })}
+                  className="px-3 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm" />
+              </div>
+              <button onClick={createLocation} className="mt-3 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-sm hover:bg-purple-700">
+                Add Location
+              </button>
+            </div>
+
+            <div className="p-5">
+              <p className="text-sm font-bold mb-3 text-white">Existing locations ({locations.length})</p>
+              {locationLoading ? (
+                <div className="text-center py-6"><Loader2 className="w-6 h-6 animate-spin mx-auto text-purple-400" /></div>
+              ) : locations.length === 0 ? (
+                <p className="text-sm text-neutral-400 text-center py-4">No locations yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {locations.map((loc: any) => (
+                    <div key={loc.id} className="p-3 rounded-xl bg-neutral-800/50 border border-neutral-700 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-sm text-white">{loc.name}</p>
+                        <p className="text-xs text-neutral-400 font-mono">{loc.code}</p>
+                      </div>
+                      <button onClick={() => deleteLocation(loc.id, loc.name)} className="p-2 rounded-lg text-red-400 hover:bg-red-900/30" title="Delete location">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
