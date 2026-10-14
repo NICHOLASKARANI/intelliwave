@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CreditCard, Phone, Loader2, CheckCircle, Package, ArrowLeft, AlertTriangle } from 'lucide-react'
+import { Loader2, CheckCircle, ArrowLeft, AlertTriangle, MapPin } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface CartItem {
   id: string
@@ -12,8 +13,14 @@ interface CartItem {
   quantity: number
 }
 
+interface LocationOpt {
+  id: string
+  name: string
+  code: string
+  warehouseName: string
+}
+
 export default function CheckoutPage() {
-  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [items, setItems] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('Walk-in Customer')
   const [paymentMethod, setPaymentMethod] = useState('mpesa')
@@ -21,33 +28,67 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState<{ number: string; total: number } | null>(null)
   const [error, setError] = useState('')
+  const [locations, setLocations] = useState<LocationOpt[]>([])
+  const [locationId, setLocationId] = useState('')
+  const [loadingLocations, setLoadingLocations] = useState(true)
 
-  // Load cart from sessionStorage (set by /store/cart)
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem('wavecore_pos_cart')
       if (raw) setItems(JSON.parse(raw))
     } catch {}
+
+    // Load available shops/locations
+    ;(async () => {
+      try {
+        const res = await authedFetch('/api/wavecore/inventory/warehouses')
+        const data = await res.json()
+        const wares = data.warehouses || []
+        // For each warehouse, we need its locations. Fetch lazily in parallel.
+        const locs: LocationOpt[] = []
+        await Promise.all(wares.map(async (w: any) => {
+          try {
+            const r2 = await authedFetch('/api/wavecore/inventory/warehouses/' + w.id + '/locations')
+            const d2 = await r2.json()
+            for (const l of d2.locations || []) {
+              locs.push({ id: l.id, name: l.name, code: l.code, warehouseName: w.name })
+            }
+          } catch {}
+        }))
+        setLocations(locs)
+        // Pick a saved shop if there's one
+        try {
+          const saved = sessionStorage.getItem('wavecore_pos_shop')
+          if (saved && locs.some(l => l.id === saved)) setLocationId(saved)
+          else if (locs.length === 1) setLocationId(locs[0].id)
+        } catch {}
+      } catch {} finally {
+        setLoadingLocations(false)
+      }
+    })()
   }, [])
 
   const total = items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0)
 
   const handleCheckout = async () => {
     if (items.length === 0) { setError('Cart is empty'); return }
+    if (!locationId) { setError('Please select the shop this sale is being made from'); return }
     setProcessing(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/store/sales', {
+      const res = await authedFetch('/api/wavecore/store/sales', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: items.map(i => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price })),
           total,
           customerName,
+          locationId,
         }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Sale failed'); return }
+      try { sessionStorage.setItem('wavecore_pos_shop', locationId) } catch {}
       setSuccess({ number: data.sale?.number || 'SALE', total })
       try { sessionStorage.removeItem('wavecore_pos_cart') } catch {}
     } catch (e) {
@@ -69,102 +110,109 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto p-4 lg:p-8">
+      <main className="max-w-3xl mx-auto p-4 lg:p-8">
+        <Link href="/wavecore-erp/store/cart" className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <ArrowLeft className="w-4 h-4" /> Back to Cart
+        </Link>
+
+        <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+
         {success ? (
-          <div className="text-center py-12">
+          <div className="p-8 rounded-2xl bg-green-50 border border-green-200 text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Sale Complete</h1>
-            <p className="text-muted-foreground">Sale <span className="font-mono font-bold">{success.number}</span></p>
-            <p className="text-2xl font-bold text-green-600 my-4">KSh {success.total.toLocaleString()}</p>
-            <div className="flex gap-2 justify-center mt-6">
-              <Link href="/wavecore-erp/store/receipts" className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm">
-                View Receipts
-              </Link>
-              <Link href="/wavecore-erp/store/sales/create" className="px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 font-bold text-sm">
-                New Sale
-              </Link>
-            </div>
+            <h2 className="text-2xl font-bold text-green-700 mb-2">Sale Complete</h2>
+            <p className="text-sm text-green-600">Receipt: <span className="font-mono font-bold">{success.number}</span></p>
+            <p className="text-lg font-bold text-green-700 mt-2">KSh {success.total.toLocaleString()}</p>
+            <Link href="/wavecore-erp/store/sales" className="inline-block mt-6 px-6 py-2.5 rounded-xl bg-green-600 text-white font-bold">View Sales</Link>
           </div>
         ) : (
           <>
-            <Link href="/wavecore-erp/store/cart" className="flex items-center gap-1 text-sm text-blue-600 mb-6">
-              <ArrowLeft className="w-4 h-4" /> Back to Cart
-            </Link>
+            {/* Shop selector */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-5 mb-4">
+              <label className="text-sm font-bold mb-2 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-blue-500" /> Selling From (Shop)
+              </label>
+              {loadingLocations ? (
+                <div className="text-sm text-muted-foreground"><Loader2 className="w-4 h-4 inline animate-spin mr-1" /> Loading shops...</div>
+              ) : locations.length === 0 ? (
+                <div className="p-3 rounded-xl bg-amber-50 text-amber-700 text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  No shops yet. Create a warehouse with a location under Inventory → Warehouses.
+                </div>
+              ) : (
+                <select value={locationId} onChange={(e) => setLocationId(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border">
+                  <option value="">Select shop...</option>
+                  {locations.map(l => (
+                    <option key={l.id} value={l.id}>{l.warehouseName} · {l.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-            <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <CreditCard className="w-6 h-6 text-pink-500" /> Checkout
-            </h1>
+            {/* Cart items */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-5 mb-4">
+              <h2 className="font-bold mb-3">Cart ({items.length})</h2>
+              {items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Your cart is empty</p>
+              ) : (
+                <div className="space-y-2">
+                  {items.map(i => (
+                    <div key={i.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                      <div>
+                        <p className="font-medium">{i.name}</p>
+                        <p className="text-xs text-muted-foreground">{i.quantity} × KSh {Number(i.price || 0).toLocaleString()}</p>
+                      </div>
+                      <p className="font-bold">KSh {(Number(i.price || 0) * Number(i.quantity || 0)).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-4 pt-3 border-t flex justify-between items-center">
+                <span className="font-bold text-lg">Total</span>
+                <span className="font-bold text-lg text-blue-600">KSh {total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Customer + payment */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-5 mb-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Customer Name</label>
+                  <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Payment Method</label>
+                  <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border">
+                    <option value="mpesa">M-Pesa</option>
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                  </select>
+                </div>
+                {paymentMethod === 'mpesa' && (
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium mb-2 block">M-Pesa Phone</label>
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+254..." className="w-full px-4 py-2.5 rounded-xl border" />
+                  </div>
+                )}
+              </div>
+            </div>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 border border-red-200 text-sm flex items-center gap-2">
+              <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" /> {error}
               </div>
             )}
 
-            {/* Cart contents */}
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border mb-4 overflow-hidden">
-              <div className="px-4 py-3 border-b text-xs uppercase tracking-wide text-muted-foreground font-bold flex items-center gap-2">
-                <Package className="w-4 h-4" /> Cart ({items.length})
-              </div>
-              {items.length === 0 ? (
-                <p className="p-6 text-center text-sm text-muted-foreground">
-                  No items in cart. Add products from the store page first.
-                </p>
-              ) : (
-                <div className="divide-y">
-                  {items.map(i => (
-                    <div key={i.id} className="px-4 py-3 flex justify-between text-sm">
-                      <div>
-                        <p className="font-bold">{i.name}</p>
-                        <p className="text-xs text-muted-foreground">{i.quantity} × KSh {Number(i.price).toLocaleString()}</p>
-                      </div>
-                      <p className="font-bold">KSh {(i.quantity * i.price).toLocaleString()}</p>
-                    </div>
-                  ))}
-                  <div className="px-4 py-3 flex justify-between font-bold bg-neutral-50 dark:bg-neutral-800/50">
-                    <span>Total</span>
-                    <span className="text-green-600">KSh {total.toLocaleString()}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Customer</label>
-                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Walk-in Customer" className="w-full px-4 py-2.5 rounded-xl border" />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Payment Method</label>
-                <button type="button" className="w-full p-4 rounded-xl border bg-green-50 border-green-500 text-left">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-5 h-5 text-green-600" />
-                    <span className="font-bold">M-Pesa on Delivery</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Recorded as a POS sale. Reconcile M-Pesa settlements from Finance → Bank Reconciliation.
-                  </p>
-                </button>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Phone (optional, for receipt)</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-                  placeholder="07XX XXX XXX" className="w-full px-4 py-2.5 rounded-xl border" />
-              </div>
-
-              <button onClick={handleCheckout} disabled={processing || items.length === 0}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2">
-                {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
-                {processing ? 'Recording sale...' : 'Complete Sale — KSh ' + total.toLocaleString()}
-              </button>
-
-              <p className="text-xs text-muted-foreground text-center">
-                Records a real POS sale in SalesOrder. Charges nothing to the customer's phone.
-              </p>
-            </div>
+            <button onClick={handleCheckout}
+              disabled={processing || items.length === 0 || !locationId}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-50">
+              {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+              {processing ? 'Processing...' : 'Complete Sale — KSh ' + total.toLocaleString()}
+            </button>
           </>
         )}
       </main>
