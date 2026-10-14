@@ -1,4 +1,5 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -10,6 +11,7 @@ import {
 import ShopSelector from '@/components/wavecore/ShopSelector'
 
 export default function StorePage() {
+  const { shopId } = usePosShop()
   const [data, setData] = useState<any>({})
   const [loading, setLoading] = useState(true)
 
@@ -19,7 +21,7 @@ export default function StorePage() {
       .then(d => setData(d))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [shopId])
 
   const revenue = data.sales?.reduce((s: number, x: any) => s + (parseFloat(x.total) || 0), 0) || 0
   const lowStock = data.products?.filter((p: any) => (p.stock_level || 0) <= (p.minStock || 5)).length || 0
