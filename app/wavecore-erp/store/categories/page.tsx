@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -61,7 +62,7 @@ export default function CategoriesPage() {
     setError(''); setSuccess('')
     if (!newCategory.trim()) { setError('Please enter a category name'); return }
     try {
-      const res = await fetch('/api/wavecore/store/categories', {
+      const res = await authedFetch('/api/wavecore/store/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ name: newCategory.trim() }),
@@ -83,7 +84,7 @@ export default function CategoriesPage() {
       const qs = new URLSearchParams()
       if (id) qs.set('id', id)
       if (name) qs.set('name', name)
-      const res = await fetch('/api/wavecore/store/categories?' + qs.toString(), {
+      const res = await authedFetch('/api/wavecore/store/categories?' + qs.toString(), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

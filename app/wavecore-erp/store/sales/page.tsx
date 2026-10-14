@@ -1,4 +1,6 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -15,6 +17,7 @@ interface Sale {
 }
 
 export default function SalesPage() {
+  const { shopId } = usePosShop()
   const [sales, setSales] = useState<Sale[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
@@ -29,19 +32,20 @@ export default function SalesPage() {
 
   useEffect(() => {
     fetchSales()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchSales({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const fetchSales = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/store/sales')
+      const url = '/api/wavecore/store/sales' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : '')
+      const res = await authedFetch(url)
       const data = await res.json()
       setSales(data.sales || [])
     } catch (err) {
@@ -55,7 +59,7 @@ export default function SalesPage() {
     if (!confirm('Delete this sale?')) return
     setDeleting(id)
     try {
-      await fetch(`/api/wavecore/store/sales?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      await authedFetch(`/api/wavecore/store/sales?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       fetchSales()
     } catch (err) {
       setError('Delete failed')

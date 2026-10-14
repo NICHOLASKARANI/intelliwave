@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -65,7 +66,7 @@ export default function RestockPage() {
     const selectedProduct = allProducts.find(p => p.id === formData.productId)
     
     try {
-      const res = await fetch('/api/wavecore/store/restock', {
+      const res = await authedFetch('/api/wavecore/store/restock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -101,7 +102,7 @@ export default function RestockPage() {
     setError('')
     setSuccess('')
     try {
-      const res = await fetch(`/api/wavecore/store/restock?id=${encodeURIComponent(id)}`, { 
+      const res = await authedFetch(`/api/wavecore/store/restock?id=${encodeURIComponent(id)}`, { 
         method: 'DELETE' 
       , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()

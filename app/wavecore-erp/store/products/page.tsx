@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -52,7 +53,7 @@ export default function ProductsPage() {
     if (!confirm('Delete this product?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchProducts()
     } catch (err) {
       setError('Delete failed')

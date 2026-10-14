@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 
 import { useEffect, useState } from 'react'
@@ -51,7 +52,7 @@ export default function StockPage() {
     setError('')
     setSuccess('')
     try {
-      const res = await fetch(`/api/wavecore/store?id=${encodeURIComponent(id)}`, { 
+      const res = await authedFetch(`/api/wavecore/store?id=${encodeURIComponent(id)}`, { 
         method: 'DELETE' 
       , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()

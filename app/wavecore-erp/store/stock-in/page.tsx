@@ -1,4 +1,5 @@
 'use client'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -55,7 +56,7 @@ export default function StockInPage() {
     }
 
     try {
-      const res = await fetch('/api/wavecore/store/stock-in', {
+      const res = await authedFetch('/api/wavecore/store/stock-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ productId: selectedProduct, quantity: Number(quantity) })
@@ -84,7 +85,7 @@ export default function StockInPage() {
     if (!confirm('Delete this product?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/store?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchProducts()
     } catch (err) {
       setError('Delete failed')
