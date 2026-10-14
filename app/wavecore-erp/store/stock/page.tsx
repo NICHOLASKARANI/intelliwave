@@ -1,4 +1,5 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -6,6 +7,7 @@ import Link from 'next/link'
 import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle, XCircle, Boxes, ArrowDownUp } from 'lucide-react'
 
 export default function StockPage() {
+  const { shopId } = usePosShop()
   const [products, setProducts] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [stats, setStats] = useState<any>({})
@@ -20,7 +22,8 @@ export default function StockPage() {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/store/stock')
+      const url = '/api/wavecore/store/stock' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : '')
+      const res = await fetch(url)
       const data = await res.json()
       setProducts(data.products || [])
       setStats(data.stats || {})
