@@ -1,4 +1,5 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react'
 
 export default function CategoriesPage() {
+  const { shopId } = usePosShop()
   const [categories, setCategories] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
@@ -30,7 +32,7 @@ export default function CategoriesPage() {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/store/categories', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/store/categories' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : ''), { cache: 'no-store' })
       const data = await res.json()
       setCategories(data.categories || [])
     } catch (err) {
@@ -44,7 +46,7 @@ export default function CategoriesPage() {
   useEffect(() => {
     const t = setInterval(() => { fetchCategories({ silent: true }) }, 30000)
     return () => clearInterval(t)
-  }, [])
+  }, [shopId])
 
   // When the expanded category changes, load its products
   useEffect(() => {

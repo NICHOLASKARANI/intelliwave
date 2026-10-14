@@ -1,4 +1,5 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
@@ -18,6 +19,7 @@ interface Product {
 }
 
 export default function ProductsPage() {
+  const { shopId } = usePosShop()
   const [products, setProducts] = useState<Product[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
@@ -27,19 +29,19 @@ export default function ProductsPage() {
 
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchProducts({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const fetchProducts = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/store')
+      const res = await authedFetch('/api/wavecore/store' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : ''))
       const data = await res.json()
       console.log('API products:', data.products); setProducts(data.products || [])
     } catch (err) {

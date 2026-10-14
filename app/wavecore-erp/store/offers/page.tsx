@@ -1,4 +1,5 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
@@ -7,6 +8,7 @@ import Link from 'next/link'
 import { Loader2, Trash2, Search, Printer, CheckCircle2, AlertTriangle, Plus, X, Tag, Percent, Clock, Calendar } from 'lucide-react'
 
 export default function OffersPage() {
+  const { shopId } = usePosShop()
   const [offers, setOffers] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [stats, setStats] = useState<any>({})
@@ -31,7 +33,7 @@ export default function OffersPage() {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/store/offers')
+      const res = await authedFetch('/api/wavecore/store/offers' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : ''))
       const data = await res.json()
       setOffers(data.offers || [])
       setStats(data.stats || {})
@@ -44,14 +46,14 @@ export default function OffersPage() {
 
   useEffect(() => {
     fetchOffers()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchOffers({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const createOffer = async (e: React.FormEvent) => {
     e.preventDefault()

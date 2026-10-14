@@ -1,4 +1,5 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
@@ -7,6 +8,7 @@ import Link from 'next/link'
 import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle, Plus, X, ClipboardList, Scale } from 'lucide-react'
 
 export default function StockCountsPage() {
+  const { shopId } = usePosShop()
   const [counts, setCounts] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [products, setProducts] = useState<any[]>([])
@@ -33,7 +35,7 @@ export default function StockCountsPage() {
     setError('')
     try {
       const [countsRes, productsRes] = await Promise.all([
-        fetch('/api/wavecore/store/counts'),
+        authedFetch('/api/wavecore/store/counts' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : '')),
         fetch('/api/wavecore/store')
       ])
       const countsData = await countsRes.json()
@@ -50,14 +52,14 @@ export default function StockCountsPage() {
 
   useEffect(() => {
     fetchCounts()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchCounts({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const createCount = async (e: React.FormEvent) => {
     e.preventDefault()

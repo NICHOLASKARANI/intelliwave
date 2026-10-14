@@ -1,4 +1,5 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
@@ -7,6 +8,7 @@ import Link from 'next/link'
 import { Loader2, Trash2, Search, Package, Printer, CheckCircle2, AlertTriangle, Plus, X, RefreshCw, Truck } from 'lucide-react'
 
 export default function RestockPage() {
+  const { shopId } = usePosShop()
   const [restocks, setRestocks] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [allProducts, setAllProducts] = useState<any[]>([])
@@ -30,7 +32,7 @@ export default function RestockPage() {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/store/restock')
+      const res = await authedFetch('/api/wavecore/store/restock' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : ''))
       const data = await res.json()
       setRestocks(data.restocks || [])
       setAllProducts(data.allProducts || data.lowStockProducts || [])
@@ -44,14 +46,14 @@ export default function RestockPage() {
 
   useEffect(() => {
     fetchRestocks()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchRestocks({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const createRestock = async (e: React.FormEvent) => {
     e.preventDefault()
