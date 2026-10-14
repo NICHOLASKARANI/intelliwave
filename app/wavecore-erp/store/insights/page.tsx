@@ -1,4 +1,6 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -18,6 +20,7 @@ interface Insights {
 }
 
 export default function InsightsPage() {
+  const { shopId } = usePosShop()
   const [data, setData] = useState<Insights | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,21 +28,21 @@ export default function InsightsPage() {
 
   useEffect(() => {
     fetchInsights()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchInsights({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const fetchInsights = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
       const [productsRes, salesRes] = await Promise.all([
-        fetch('/api/wavecore/store'),
-        fetch('/api/wavecore/store/sales')
+        authedFetch('/api/wavecore/store' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : '')),
+        authedFetch('/api/wavecore/store/sales' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : ''))
       ])
       const productsData = await productsRes.json()
       const salesData = await salesRes.json()
