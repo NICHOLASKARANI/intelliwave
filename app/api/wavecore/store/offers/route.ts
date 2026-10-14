@@ -26,6 +26,7 @@ async function ensureOfferTable() {
       )
     `)
     await pool.query(`CREATE INDEX IF NOT EXISTS "idx_offer_org" ON "Offer" ("organizationId")`)
+    await pool.query(`ALTER TABLE "Offer" ADD COLUMN IF NOT EXISTS "locationId" TEXT`).catch(() => {})
     return true
   } catch (error) {
     console.error('Failed to create Offer table:', error)
@@ -40,13 +41,19 @@ export async function GET(request: NextRequest) {
 
     await ensureOfferTable()
 
+    const { searchParams } = new URL(request.url)
+    const locationId = searchParams.get('locationId')
+    const offerParams: any[] = [session.organizationId]
+    const offerWhere = locationId ? ' AND "locationId" = $2' : ''
+    if (locationId) offerParams.push(locationId)
+
     const result = await pool.query(`
       SELECT *
       FROM "Offer"
-      WHERE "organizationId" = $1
+      WHERE "organizationId" = $1${offerWhere}
       ORDER BY "createdAt" DESC
       LIMIT 100
-    `, [session.organizationId])
+    `, offerParams)
 
     const offers = result.rows
     const activeOffers = offers.filter(o => o.status === 'ACTIVE').length
@@ -89,8 +96,8 @@ export async function POST(request: NextRequest) {
     await ensureOfferTable()
 
     const result = await pool.query(`
-      INSERT INTO "Offer" (id, number, title, description, "discountType", "discountValue", "startDate", "endDate", status, "productIds", "organizationId", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      INSERT INTO "Offer" (id, number, title, description, "discountType", "discountValue", "startDate", "endDate", status, "productIds", "organizationId", "locationId", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
       RETURNING *
     `, [
       id, 
@@ -103,7 +110,8 @@ export async function POST(request: NextRequest) {
       body.endDate || null, 
       body.status || 'ACTIVE', 
       body.productIds || '', 
-      session.organizationId
+      session.organizationId,
+      body.locationId || null
     ])
 
     return NextResponse.json({ 
