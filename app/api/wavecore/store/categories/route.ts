@@ -19,6 +19,7 @@ async function ensureCategoryTable() {
     await pool.query(`CREATE INDEX IF NOT EXISTS "idx_category_org" ON "Category" ("organizationId")`)
     await pool.query(`CREATE INDEX IF NOT EXISTS "idx_category_name" ON "Category" (name)`)
     await pool.query(`ALTER TABLE "Category" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT NOW()`)
+    await pool.query(`ALTER TABLE "Category" ADD COLUMN IF NOT EXISTS "locationId" TEXT`).catch(() => {})
     await pool.query(`ALTER TABLE "Category" ADD COLUMN IF NOT EXISTS name TEXT`).catch(() => {})
     return true
   } catch (error) {
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const name = searchParams.get('name')
+    const locationId = searchParams.get('locationId')
 
     // Drill-down: return products in the given category
     if (name) {
@@ -64,13 +66,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Default: list categories
+    const locationFilter = locationId
+      ? ` AND (c."locationId" IS NULL OR c."locationId" = $2)`
+      : ''
+    const catParams: any[] = [session.organizationId]
+    if (locationId) catParams.push(locationId)
+
     const result = await pool.query(`
-      SELECT c.id, c.name, c."createdAt",
+      SELECT c.id, c.name, c."createdAt", c."locationId",
+        sl.name as "locationName",
         (SELECT COUNT(*) FROM "Product" p WHERE p.category = c.name AND p."organizationId" = $1) as "productCount"
       FROM "Category" c
-      WHERE c."organizationId" = $1 OR c."organizationId" IS NULL
+      LEFT JOIN "StockLocation" sl ON sl.id = c."locationId"
+      WHERE (c."organizationId" = $1 OR c."organizationId" IS NULL)${locationFilter}
       ORDER BY c.name ASC
-    `, [session.organizationId])
+    `, catParams)
 
     if (result.rows.length === 0) {
       const productCategories = await pool.query(`
@@ -109,11 +119,11 @@ export async function POST(request: NextRequest) {
     const id = crypto.randomUUID()
 
     const result = await pool.query(`
-      INSERT INTO "Category" (id, name, "organizationId", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, NOW(), NOW())
+      INSERT INTO "Category" (id, name, "organizationId", "locationId", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
       RETURNING *
-    `, [id, name, session.organizationId])
+    `, [id, name, session.organizationId, body.locationId || null])
 
     return NextResponse.json({
       category: result.rows[0],
