@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { checkCsrf } from '@/lib/wavecore/csrf'
 import { pool } from '@/lib/wavecore/db'
 
 async function ensureCategoryTable() {
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
+
     const body = await request.json()
     const name = body.name?.trim()
     if (!name) return NextResponse.json({ error: 'Category name is required' }, { status: 400 })
@@ -133,6 +137,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const csrf = checkCsrf(request)
+    if (!csrf.allow) return csrf.response!
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
