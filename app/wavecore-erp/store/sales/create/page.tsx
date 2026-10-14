@@ -3,113 +3,140 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Minus, Trash2, Loader2, CheckCircle, ArrowLeft, ShoppingCart, Search, DollarSign, User } from 'lucide-react'
+import {
+  ShoppingCart, Search, Plus, Trash2, Loader2, CheckCircle2,
+  ArrowLeft, Package, MapPin, AlertTriangle
+} from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface CartItem {
   id: string
   name: string
   price: number
-  sellingPrice: number
   quantity: number
+}
+
+interface LocationOpt {
+  id: string
+  name: string
+  code: string
+  warehouseName: string
 }
 
 export default function CreateSalePage() {
   const [products, setProducts] = useState<any[]>([])
-  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('')
   const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const [locations, setLocations] = useState<LocationOpt[]>([])
+  const [locationId, setLocationId] = useState('')
+  const [loadingLocations, setLoadingLocations] = useState(true)
+
   useEffect(() => {
-    fetchProducts()
+    ;(async () => {
+      setLoading(true)
+      try {
+        const res = await authedFetch('/api/wavecore/store')
+        const data = await res.json()
+        setProducts(data.products || [])
+      } catch {
+        setError('Failed to load products')
+      } finally {
+        setLoading(false)
+      }
+
+      setLoadingLocations(true)
+      try {
+        const wRes = await authedFetch('/api/wavecore/inventory/warehouses')
+        const wData = await wRes.json()
+        const wares = wData.warehouses || []
+        const locs: LocationOpt[] = []
+        await Promise.all(wares.map(async (w: any) => {
+          try {
+            const r2 = await authedFetch('/api/wavecore/inventory/warehouses/' + w.id + '/locations')
+            const d2 = await r2.json()
+            for (const l of d2.locations || []) {
+              locs.push({ id: l.id, name: l.name, code: l.code, warehouseName: w.name })
+            }
+          } catch {}
+        }))
+        setLocations(locs)
+        try {
+          const saved = sessionStorage.getItem('wavecore_pos_shop')
+          if (saved && locs.some(l => l.id === saved)) setLocationId(saved)
+          else if (locs.length === 1) setLocationId(locs[0].id)
+        } catch {}
+      } catch {} finally {
+        setLoadingLocations(false)
+      }
+    })()
   }, [])
 
-  const fetchProducts = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/wavecore/store')
-      const data = await res.json()
-      setProducts(data.products || [])
-    } catch (err) {
-      setError('Failed to load products')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const filteredProducts = products.filter(p =>
+    (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.sku || '').toLowerCase().includes(search.toLowerCase())
+  )
 
   const addToCart = (product: any) => {
-    const existing = cart.find(item => item.id === product.id)
-    if (existing) {
-      setCart(cart.map(item => 
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-      ))
-    } else {
-      setCart([...cart, {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === product.id)
+      if (existing) {
+        return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
+      }
+      return [...prev, {
         id: product.id,
         name: product.name,
-        price: product.sellingPrice || product.price || 0,
-        sellingPrice: product.sellingPrice || product.price || 0,
-        quantity: 1
-      }])
-    }
+        price: Number(product.sellingPrice || 0),
+        quantity: 1,
+      }]
+    })
+  }
+
+  const updateQuantity = (id: string, qty: number) => {
+    if (qty <= 0) { removeFromCart(id); return }
+    setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: qty } : i))
   }
 
   const removeFromCart = (id: string) => {
-    setCart(cart.filter(item => item.id !== id))
-  }
-
-  const updateQuantity = (id: string, delta: number) => {
-    setCart(cart.map(item => {
-      if (item.id === id) {
-        const newQty = item.quantity + delta
-        return newQty > 0 ? { ...item, quantity: newQty } : item
-      }
-      return item
-    }))
+    setCart(prev => prev.filter(i => i.id !== id))
   }
 
   const cartTotal = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
 
-  const filteredProducts = products.filter(p => 
-    (p.name || '').toLowerCase().includes(search.toLowerCase())
-  )
-
   const handleSubmit = async () => {
-    if (cart.length === 0) {
-      setError('Cart is empty. Add products first.')
-      return
-    }
+    if (cart.length === 0) { setError('Cart is empty'); return }
+    if (!locationId) { setError('Please select the shop this sale is being made from'); return }
     setSubmitting(true)
     setError('')
-
     try {
-      const res = await fetch('/api/wavecore/store/sales', {
+      const res = await authedFetch('/api/wavecore/store/sales', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
-        body: JSON.stringify({ items: cart, total: cartTotal, customerName })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart,
+          total: cartTotal,
+          customerName: customerName || 'Walk-in Customer',
+          locationId,
+        }),
       })
-
-      if (res.ok) {
-        setSuccess(true)
-        setTimeout(() => {
-          window.location.href = '/wavecore-erp/store/sales'
-        }, 1500)
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to create sale')
-      }
-    } catch (err) {
-      setError('Network error')
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Sale failed'); return }
+      try { sessionStorage.setItem('wavecore_pos_shop', locationId) } catch {}
+      setSuccess(true)
+      setCart([])
+      setCustomerName('')
+      setTimeout(() => setSuccess(false), 4000)
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
     } finally {
       setSubmitting(false)
     }
   }
-
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -123,108 +150,113 @@ export default function CreateSalePage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-3 sm:p-4 lg:p-8">
+      <main className="max-w-6xl mx-auto p-4 lg:p-8">
         <Link href="/wavecore-erp/store/sales" className="flex items-center gap-1 text-sm text-blue-600 mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to Sales
         </Link>
 
         <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <ShoppingCart className="w-6 h-6 text-blue-500" /> Create Sale
+          <ShoppingCart className="w-6 h-6 text-blue-500" /> New Sale
         </h1>
 
-        {success ? (
-          <div className="bg-green-50 rounded-2xl border border-green-200 p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-green-700">Sale Completed!</h2>
-            <p className="text-muted-foreground">Redirecting...</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Product Selection */}
-            <div>
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-                <h2 className="font-bold text-lg mb-4">Select Products</h2>
-                
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search products..." className="pl-9 pr-4 py-2.5 rounded-xl border w-full" />
-                </div>
+        {/* Shop picker */}
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-4">
+          <label className="block text-sm font-bold mb-2 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-blue-500" /> Selling From (Shop)
+          </label>
+          {loadingLocations ? (
+            <div className="text-sm text-muted-foreground"><Loader2 className="w-4 h-4 inline animate-spin mr-1" /> Loading shops...</div>
+          ) : locations.length === 0 ? (
+            <div className="p-3 rounded-xl bg-amber-50 text-amber-700 text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              No shops yet. Create a warehouse with a location under Inventory → Warehouses.
+            </div>
+          ) : (
+            <select value={locationId} onChange={(e) => setLocationId(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border">
+              <option value="">Select shop...</option>
+              {locations.map(l => (
+                <option key={l.id} value={l.id}>{l.warehouseName} · {l.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
 
-                {loading ? (
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto" />
-                ) : (
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {filteredProducts.map(product => (
-                      <button key={product.id} onClick={() => addToCart(product)}
-                        className="w-full p-3 rounded-xl border text-left hover:border-blue-500">
-                        <div className="flex justify-between">
-                          <span className="font-bold">{product.name}</span>
-                          <span className="text-green-600 font-bold">KSh {Number(product.sellingPrice || product.price || 0).toLocaleString()}</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">Stock: {product.stock_level || 0} | Click to add</span>
+        {error && <div className="mb-4 p-4 rounded-xl bg-red-50 text-red-600 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="mb-4 p-4 rounded-xl bg-green-50 text-green-600 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Sale completed</div>}
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Products */}
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4">
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products..."
+                className="pl-9 pr-4 py-2.5 rounded-xl border w-full" />
+            </div>
+            {loading ? (
+              <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+            ) : filteredProducts.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No products</p>
+            ) : (
+              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                {filteredProducts.map(p => (
+                  <button key={p.id} onClick={() => addToCart(p)}
+                    className="w-full p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex justify-between items-center text-left">
+                    <div>
+                      <p className="font-medium text-sm">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">{p.sku || '—'} · KSh {Number(p.sellingPrice || 0).toLocaleString()}</p>
+                    </div>
+                    <Plus className="w-4 h-4 text-blue-500" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Cart */}
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4">
+            <h2 className="font-bold text-lg mb-4">Cart ({cart.length} items)</h2>
+
+            <input value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Customer name (optional)"
+              className="w-full px-4 py-2.5 rounded-xl border mb-4" />
+
+            {cart.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Cart is empty</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {cart.map(item => (
+                  <div key={item.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex justify-between items-center">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">KSh {Number(item.price).toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="number" min="1" value={item.quantity}
+                        onChange={(e) => updateQuantity(item.id, Number(e.target.value) || 1)}
+                        className="w-16 px-2 py-1 rounded-lg border text-center text-sm" />
+                      <button onClick={() => removeFromCart(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded">
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                    ))}
-                    {filteredProducts.length === 0 && (
-                      <p className="text-center text-muted-foreground py-4">No products found</p>
-                    )}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t flex justify-between items-center">
+              <span className="font-bold">TOTAL</span>
+              <span className="text-2xl font-bold text-blue-600">KSh {cartTotal.toLocaleString()}</span>
             </div>
 
-            {/* Cart */}
-            <div>
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-                <h2 className="font-bold text-lg mb-4">Cart ({cart.length} items)</h2>
-
-                {cart.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Cart is empty</p>
-                ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
-                    {cart.map(item => (
-                      <div key={item.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex justify-between items-center">
-                        <div>
-                          <p className="font-bold">{item.name}</p>
-                          <p className="text-sm text-green-600">KSh {Number(item.price).toLocaleString()}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="p-1 rounded-lg bg-neutral-200"><Minus className="w-3 h-3" /></button>
-                          <span className="font-bold w-8 text-center">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="p-1 rounded-lg bg-neutral-200"><Plus className="w-3 h-3" /></button>
-                          <button onClick={() => removeFromCart(item.id)} className="text-red-500 ml-2"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Customer */}
-                <div className="mb-4">
-                  <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
-                  <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Walk-in customer" className={inputClass} />
-                </div>
-
-                {/* Total */}
-                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 mb-4">
-                  <div className="flex justify-between">
-                    <span className="font-bold">TOTAL</span>
-                    <span className="text-2xl font-bold text-blue-600">KSh {cartTotal.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {error && <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm">{error}</div>}
-
-                <button onClick={handleSubmit} disabled={submitting || cart.length === 0}
-                  className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50">
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-                  {submitting ? 'Processing...' : 'Complete Sale'}
-                </button>
-              </div>
-            </div>
+            <button onClick={handleSubmit} disabled={submitting || cart.length === 0 || !locationId}
+              className="w-full mt-4 py-3 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              {submitting ? 'Processing...' : 'Complete Sale'}
+            </button>
           </div>
-        )}
+        </div>
       </main>
     </div>
   )
