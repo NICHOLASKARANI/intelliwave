@@ -1,4 +1,6 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -6,6 +8,7 @@ import Link from 'next/link'
 import { Wallet, Loader2, CheckCircle, Clock, Printer, BarChart3, Plus, Trash2, X } from 'lucide-react'
 
 export default function SettlementsPage() {
+  const { shopId } = usePosShop()
   const [settlements, setSettlements] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const [loading, setLoading] = useState(true)
@@ -18,7 +21,8 @@ export default function SettlementsPage() {
   const fetchSettlements = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/store/settlements')
+      const url = '/api/wavecore/store/settlements' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : '')
+      const res = await authedFetch(url)
       const data = await res.json()
       setSettlements(data.settlements || [])
     } catch (err) {
@@ -30,20 +34,20 @@ export default function SettlementsPage() {
 
   useEffect(() => {
     fetchSettlements()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchSettlements({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const createSettlement = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.amount) return
     try {
-      const res = await fetch('/api/wavecore/store/settlements', {
+      const res = await authedFetch('/api/wavecore/store/settlements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData)
@@ -62,7 +66,7 @@ export default function SettlementsPage() {
     if (!confirm('Delete this settlement?')) return
     setDeleting(id)
     try {
-      await fetch(`/api/wavecore/store/settlements?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      await authedFetch(`/api/wavecore/store/settlements?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       fetchSettlements()
     } catch (err) {
       setError('Delete failed')
