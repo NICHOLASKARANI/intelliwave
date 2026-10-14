@@ -24,6 +24,7 @@ async function ensureRestockTable() {
       )
     `)
     await pool.query(`CREATE INDEX IF NOT EXISTS "idx_restock_org" ON "Restock" ("organizationId")`)
+    await pool.query(`ALTER TABLE "Restock" ADD COLUMN IF NOT EXISTS "locationId" TEXT`).catch(() => {})
     return true
   } catch (error) {
     console.error('Failed to create Restock table:', error)
@@ -38,15 +39,26 @@ export async function GET(request: NextRequest) {
 
     await ensureRestockTable()
 
+    const { searchParams } = new URL(request.url)
+    const locationId = searchParams.get('locationId')
+
+    const restockParams: any[] = [session.organizationId]
+    const restockWhere = locationId ? ' AND r."locationId" = $2' : ''
+    if (locationId) restockParams.push(locationId)
+
+    const productParams: any[] = [session.organizationId]
+    const productWhere = locationId ? ' AND sq."locationId" = $2' : ''
+    if (locationId) productParams.push(locationId)
+
     // Get all restock orders
     const restockResult = await pool.query(`
       SELECT r.*, p.sku, p."sellingPrice"
       FROM "Restock" r
       LEFT JOIN "Product" p ON r."productId" = p.id
-      WHERE r."organizationId" = $1
+      WHERE r."organizationId" = $1${restockWhere}
       ORDER BY r."createdAt" DESC
       LIMIT 100
-    `, [session.organizationId])
+    `, restockParams)
 
     // All active products — the dropdown must never be empty.
     // Low-stock items are flagged so the UI can sort them first.
@@ -61,11 +73,11 @@ export async function GET(request: NextRequest) {
         p.category,
         (COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10)) AS "isLowStock"
       FROM "Product" p
-      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id
+      LEFT JOIN "StockQuantity" sq ON sq."productId" = p.id${productWhere}
       WHERE p."organizationId" = $1 AND COALESCE(p."isActive", true) = true
       GROUP BY p.id
       ORDER BY (COALESCE(SUM(sq.quantity), 0) < COALESCE(p."minStock", 10)) DESC, p.name ASC
-    `, [session.organizationId])
+    `, productParams)
 
     const lowStockResult = { rows: allProductsResult.rows.filter((p: any) => p.isLowStock) }
 
@@ -112,8 +124,8 @@ export async function POST(request: NextRequest) {
     await ensureRestockTable()
 
     const result = await pool.query(`
-      INSERT INTO "Restock" (id, number, "productId", "productName", quantity, "supplierName", status, notes, "organizationId", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+      INSERT INTO "Restock" (id, number, "productId", "productName", quantity, "supplierName", status, notes, "organizationId", "locationId", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
       RETURNING *
     `, [
       id, 
@@ -124,7 +136,8 @@ export async function POST(request: NextRequest) {
       body.supplierName || '', 
       body.status || 'PENDING', 
       body.notes || '', 
-      session.organizationId
+      session.organizationId,
+      body.locationId || null
     ])
 
     return NextResponse.json({ 
