@@ -36,14 +36,14 @@ export default function StockPage() {
 
   useEffect(() => {
     fetchStock()
-  }, [])
+  }, [shopId])
 
   // 30-second silent auto-refresh
   useEffect(() => {
     const t = setInterval(() => { fetchStock({ silent: true }) }, 30000)
     return () => clearInterval(t)
     // eslint-disable-next-line
-  }, [])
+  }, [shopId])
 
   const deleteProduct = async (id: string, name: string) => {
     if (!confirm(`Delete product "${name}"?`)) return
