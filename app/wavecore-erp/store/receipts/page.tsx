@@ -1,4 +1,6 @@
 'use client'
+import { usePosShop } from '@/lib/wavecore/context/pos-shop-context'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -15,6 +17,7 @@ interface SaleRow {
 }
 
 export default function ReceiptsPage() {
+  const { shopId } = usePosShop()
   const [receipts, setReceipts] = useState<SaleRow[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -24,7 +27,8 @@ export default function ReceiptsPage() {
   const fetchReceipts = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true); else setRefreshing(true)
     try {
-      const res = await fetch('/api/wavecore/store/sales', { cache: 'no-store' })
+      const url = '/api/wavecore/store/sales' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : '')
+      const res = await authedFetch(url, { cache: 'no-store' })
       const data = await res.json()
       setReceipts(data.sales || [])
     } catch (e) {
@@ -39,7 +43,7 @@ export default function ReceiptsPage() {
   useEffect(() => {
     const t = setInterval(() => { fetchReceipts({ silent: true }) }, 30000)
     return () => clearInterval(t)
-  }, [])
+  }, [shopId])
 
   const printReceipt = (saleId: string) => {
     window.open(`/api/wavecore/store/sales/${saleId}/pdf`, '_blank')
