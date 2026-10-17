@@ -15,6 +15,7 @@ export default function SettlementsPage() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [activeView, setActiveView] = useState('all')
   const [formData, setFormData] = useState({ amount: '', method: 'MPESA', customerName: '' })
 
@@ -45,20 +46,30 @@ export default function SettlementsPage() {
 
   const createSettlement = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.amount) return
+    setError('')
+    if (!formData.amount || Number(formData.amount) <= 0) {
+      setError('Enter a valid amount greater than zero')
+      return
+    }
+    setSubmitting(true)
     try {
       const res = await authedFetch('/api/wavecore/store/settlements', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       })
-      if (res.ok) {
-        setFormData({ amount: '', method: 'MPESA', customerName: '' })
-        setShowForm(false)
-        fetchSettlements()
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to create settlement')
+        return
       }
+      setFormData({ amount: '', method: 'MPESA', customerName: '' })
+      setShowForm(false)
+      fetchSettlements()
     } catch (err) {
-      setError('Failed to create')
+      setError('Network error: ' + (err as Error).message)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -131,7 +142,7 @@ export default function SettlementsPage() {
                 onChange={(e) => setFormData({...formData, customerName: e.target.value})}
                 className="px-4 py-2 rounded-xl border" />
             </div>
-            <button type="submit" className="mt-4 px-6 py-2 rounded-xl bg-purple-600 text-white font-bold">Create</button>
+            <button type="submit" disabled={submitting} className="mt-4 px-6 py-2 rounded-xl bg-purple-600 text-white font-bold disabled:opacity-50">{submitting ? 'Creating...' : 'Create'}</button>
           </form>
         )}
 
