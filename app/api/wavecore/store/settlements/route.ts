@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const result = await pool.query(
       `INSERT INTO "Settlement" (id, number, amount, method, status, "customerName", "organizationId", "locationId", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *`,
-      [id, number, body.amount, body.method || 'MPESA', body.status || 'PENDING', body.customerName || '', session.organizationId]
+      [id, number, body.amount, body.method || 'MPESA', body.status || 'PENDING', body.customerName || '', session.organizationId, body.locationId || null]
     )
 
     return NextResponse.json({ settlement: result.rows[0] }, { status: 201 })
