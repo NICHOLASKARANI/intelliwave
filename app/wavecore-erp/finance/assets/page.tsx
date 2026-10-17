@@ -266,16 +266,24 @@ export default function AssetsPage() {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Fixed Assets & Depreciation</h1>
-          <p className="text-sm text-neutral-500 mt-1">Asset register, depreciation schedule, and monthly posting.</p>
+        <div className="mb-6 flex justify-between items-start gap-4 flex-wrap print:hidden">
+          <div>
+            <h1 className="text-2xl font-bold">Fixed Assets & Depreciation</h1>
+            <p className="text-sm text-neutral-500 mt-1">Asset register, depreciation schedule, and monthly posting.</p>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2 rounded-xl bg-teal-600 text-white font-bold flex items-center gap-2 hover:bg-teal-500"
+          >
+            <Printer className="w-4 h-4" /> Report
+          </button>
         </div>
 
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/30 text-red-300 border border-red-800 flex items-start gap-2"><AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> {error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/30 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
         {/* KPI tiles */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 print:hidden">
           <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
             <Package className="w-5 h-5 text-teal-500 mb-2" />
             <p className="text-lg font-bold">{totals.count || 0}</p>
@@ -387,7 +395,7 @@ export default function AssetsPage() {
             <p className="text-sm text-neutral-500 mt-1">Add your first fixed asset to start tracking depreciation.</p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden print:hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
@@ -447,6 +455,55 @@ export default function AssetsPage() {
             </div>
           </div>
         )}
+
+        {/* Print-only report — full asset register */}
+        <div className="hidden print:block">
+          <div className="flex items-center gap-4 mb-6 pb-4 border-b-2 border-neutral-800">
+            <img src="/api/wavecore/organization/logo" alt="Logo" className="h-16 w-auto object-contain" />
+            <div>
+              <p className="text-xl font-bold">Fixed Asset Register</p>
+              <p className="text-xs text-neutral-600">Generated {new Date().toLocaleString()} · {assets.length} assets</p>
+            </div>
+          </div>
+          <table className="w-full text-[10px] border-collapse">
+            <thead>
+              <tr className="border-b-2 border-neutral-400">
+                <th className="text-left p-1">Code</th>
+                <th className="text-left p-1">Name</th>
+                <th className="text-left p-1">Category</th>
+                <th className="text-left p-1">Purchased</th>
+                <th className="text-right p-1">Cost</th>
+                <th className="text-right p-1">Accum. Dep</th>
+                <th className="text-right p-1">Book Value</th>
+                <th className="text-left p-1">Method</th>
+                <th className="text-left p-1">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assets.map(a => (
+                <tr key={a.id} className="border-b border-neutral-200">
+                  <td className="p-1 font-mono">{a.code}</td>
+                  <td className="p-1 font-medium">{a.name}</td>
+                  <td className="p-1">{a.category || '—'}</td>
+                  <td className="p-1">{new Date(a.purchaseDate).toLocaleDateString('en-GB')}</td>
+                  <td className="p-1 text-right">{fmt(a.purchaseCost)}</td>
+                  <td className="p-1 text-right">{fmt(a.accumulatedDepreciation)}</td>
+                  <td className="p-1 text-right font-bold">{fmt(a.bookValue)}</td>
+                  <td className="p-1">{a.method === 'DECLINING' ? 'Declining' : 'Straight Line'}</td>
+                  <td className="p-1">{a.status}</td>
+                </tr>
+              ))}
+              <tr className="border-t-2 border-neutral-400 font-bold">
+                <td className="p-1" colSpan={4}>TOTALS</td>
+                <td className="p-1 text-right">{fmt(totals.cost || 0)}</td>
+                <td className="p-1 text-right">{fmt(totals.accumulated || 0)}</td>
+                <td className="p-1 text-right">{fmt(totals.bookValue || 0)}</td>
+                <td className="p-1" colSpan={2}></td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-4 text-[10px] text-neutral-500 text-center">Generated by WaveCore ERP · © 2026 IntelliWavve</p>
+        </div>
 
         {/* Schedule drawer */}
         {scheduleFor && (
