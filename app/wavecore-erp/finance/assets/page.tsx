@@ -240,6 +240,17 @@ export default function AssetsPage() {
           .print-modal .print\:hidden { display: none !important; }
           @page { margin: 15mm; }
         }
+          /* Asset report print rules */
+          .asset-report-print { background: white !important; color: black !important; }
+          .asset-report-print * { color: black !important; }
+          .asset-report-print table { border-collapse: collapse; width: 100%; }
+          .asset-report-print th, .asset-report-print td {
+            border: 1px solid #333 !important;
+            padding: 4px 6px !important;
+            color: black !important;
+          }
+          .asset-report-print th { background: #eee !important; font-weight: bold; }
+          .asset-report-print img { height: 40px !important; }
       `}</style>
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-between px-4 h-16">
@@ -457,7 +468,7 @@ export default function AssetsPage() {
         )}
 
         {/* Print-only report — full asset register */}
-        <div className="hidden print:block">
+        <div className="asset-report-print hidden print:block">
           <div className="flex items-center gap-4 mb-6 pb-4 border-b-2 border-neutral-800">
             <img src="/api/wavecore/organization/logo" alt="Logo" className="h-16 w-auto object-contain" />
             <div>
