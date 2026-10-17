@@ -235,8 +235,8 @@ export default function AssetsPage() {
       <style jsx global>{`
         @media print {
           body * { visibility: hidden !important; }
-          .print-modal, .print-modal * { visibility: visible !important; }
-          .print-modal { position: absolute !important; left: 0; top: 0; width: 100%; background: white !important; color: black !important; box-shadow: none !important; border: none !important; max-height: none !important; overflow: visible !important; }
+          .print-modal, .print-modal *, .asset-report-print, .asset-report-print * { visibility: visible !important; }
+          .print-modal, .asset-report-print { position: absolute !important; left: 0; top: 0; width: 100%; background: white !important; color: black !important; box-shadow: none !important; border: none !important; max-height: none !important; overflow: visible !important; }
           .print-modal .print\:hidden { display: none !important; }
           @page { margin: 15mm; }
         }
