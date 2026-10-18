@@ -83,7 +83,7 @@ export default function ContactPage() {
             <h2 className="text-3xl font-bold mb-8">Contact Information</h2>
             <div className="space-y-4">
               {[
-                { icon: MapPin, label: 'Our Office', value: 'Nairobi CBD, Superior Centre\nShop F11, 1st Floor\nKenyatta Avenue, Kenya', href: null },
+                { icon: MapPin, label: 'Our Office', value: 'Nairobi CBD, Superior Centre\nRoom INTELLIWAVVE F11, 1st Floor\nKenyatta Avenue, Kenya', href: null },
                 { icon: Phone, label: 'WhatsApp', value: '+254 714 694 493', href: 'https://wa.me/254714694493', color: 'text-green-500' },
                 { icon: Mail, label: 'Email', value: 'support@intelliwavve.com', href: 'mailto:support@intelliwavve.com' },
                 { icon: Clock, label: 'Business Hours', value: 'Mon-Fri: 8AM-6PM\nSat: 9AM-1PM\nSun: Closed', href: null },

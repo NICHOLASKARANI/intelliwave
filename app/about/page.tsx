@@ -91,7 +91,7 @@ export default function AboutPage() {
             <h2 className="text-4xl font-bold mb-6">Our Story</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               Founded by AI & Software Engineer Nicholas Karani, IntelliWave was born from a bold vision: 
-              to build Africa's first trillion-dollar AI company. What started as a small team 
+              to engineer the intelligent operating systems that will power the next century of global enterprise and the next generation of African innovation. What started as a small team 
               of passionate engineers in Nairobi has grown into a global force of 500+ AI 
               specialists serving clients across 100+ countries.
             </p>
@@ -106,15 +106,19 @@ export default function AboutPage() {
               across Africa and building a global technology powerhouse.
             </p>
           </div>
-          <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-            <Image
-              src="/products/intelliwavve-card.png"
-              alt="IntelliWave — Engineering the Intelligence Behind Tomorrow"
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-            />
+          <div className="relative group">
+            <div className="absolute -inset-4 bg-gradient-to-br from-primary/30 via-accent/20 to-primary/10 rounded-[2.5rem] blur-3xl opacity-60 group-hover:opacity-80 transition-opacity duration-700" />
+            <div className="relative aspect-square rounded-3xl overflow-hidden border border-primary/20 shadow-2xl shadow-primary/20 ring-1 ring-white/10 transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-primary/40">
+              <Image
+                src="/products/intelliwavve-card.png"
+                alt="IntelliWave — Engineering the Intelligence Behind Tomorrow"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/5 pointer-events-none" />
+            </div>
           </div>
         </div>
 
@@ -159,19 +163,20 @@ export default function AboutPage() {
                 image: '/products/custom-platforms.png',
               },
             ].map((product) => (
-              <div key={product.name} className="rounded-2xl border bg-card overflow-hidden hover:shadow-2xl transition-all group">
+              <div key={product.name} className="group rounded-2xl bg-card overflow-hidden border border-border/60 hover:border-primary/40 shadow-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-1">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <p className="text-xs uppercase tracking-wider opacity-80">{product.tagline}</p>
-                    <p className="font-bold text-lg">{product.name}</p>
+                    <p className="text-[10px] uppercase tracking-widest opacity-90 font-semibold">{product.tagline}</p>
+                    <p className="font-bold text-lg drop-shadow-lg">{product.name}</p>
                   </div>
                 </div>
                 <div className="p-5">
@@ -203,20 +208,21 @@ export default function AboutPage() {
                 index % 2 === 1 ? 'lg:grid-flow-dense' : ''
               }`}>
                 {/* Image */}
-                <div className={`relative ${index % 2 === 1 ? 'lg:col-start-2' : ''}`}>
-                  <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+                <div className={`relative group ${index % 2 === 1 ? 'lg:col-start-2' : ''}`}>
+                  <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-accent/10 to-primary/20 rounded-[2rem] blur-2xl opacity-40 group-hover:opacity-70 transition-opacity duration-700" />
+                  <div className="relative aspect-[3/4] rounded-3xl overflow-hidden border border-primary/20 shadow-2xl shadow-primary/10 ring-1 ring-white/10 transition-transform duration-500 group-hover:scale-[1.02]">
                     <Image
                       src={leader.image}
                       alt={`${leader.name} - ${leader.title} at IntelliWave`}
                       fill
-                      className="object-cover"
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
                       sizes="(max-width: 768px) 100vw, 50vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                      <h3 className="text-2xl font-bold">{leader.name}</h3>
-                      <p className="text-white/80">{leader.title}</p>
-                      <p className="text-white/60 text-sm">{leader.credentials}</p>
+                      <h3 className="text-2xl font-bold drop-shadow-lg">{leader.name}</h3>
+                      <p className="text-white/90 font-medium">{leader.title}</p>
+                      <p className="text-white/70 text-sm">{leader.credentials}</p>
                     </div>
                   </div>
                 </div>
