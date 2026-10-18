@@ -3,15 +3,43 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
-import { guardHR } from '@/lib/wavecore/guard'
+
+async function requireSubscription(session: any): Promise<NextResponse | null> {
+  try {
+    const r = await pool.query(
+      `SELECT status, "endDate", "trialEndsAt" FROM "Subscription"
+       WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+      [session.organizationId]
+    )
+    const s = r.rows[0]
+    const now = Date.now()
+    const subscribed = !!s && (
+      (s.status === 'ACTIVE' && s.endDate && new Date(s.endDate).getTime() > now) ||
+      (s.status === 'TRIAL' && s.trialEndsAt && new Date(s.trialEndsAt).getTime() > now)
+    )
+    if (!subscribed) {
+      return NextResponse.json(
+        {
+          error: 'Active subscription required to use messaging.',
+          code: 'SUBSCRIPTION_REQUIRED',
+          upgradeUrl: '/wavecore-erp/subscription/pay',
+        },
+        { status: 402 }
+      )
+    }
+    return null
+  } catch {
+    return null
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_READ')
-    if (guard.deny) return guard.response!
+    const denied = await requireSubscription(session)
+    if (denied) return denied
 
     const { searchParams } = new URL(req.url)
     const conversationId = searchParams.get('conversationId')
@@ -32,10 +60,12 @@ export async function GET(req: NextRequest) {
       [conversationId]
     )
 
+    // Mark as read for current user
     await pool.query(
-      `UPDATE "MarketplaceMessage" SET "isRead" = true WHERE "conversationId" = $1 AND "receiverId" = $2 AND "isRead" = false`,
+      `UPDATE "MarketplaceMessage" SET "isRead" = true
+       WHERE "conversationId" = $1 AND "receiverId" = $2 AND "isRead" = false`,
       [conversationId, session.userId]
-    )
+    ).catch(() => {})
 
     return NextResponse.json({ messages: result.rows })
   } catch (error) {
@@ -49,11 +79,13 @@ export async function POST(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_WRITE')
-    if (guard.deny) return guard.response!
+    const denied = await requireSubscription(session)
+    if (denied) return denied
 
     const body = await req.json()
-    if (!body.conversationId || !body.content) return NextResponse.json({ error: 'conversationId and content required' }, { status: 400 })
+    if (!body.conversationId || !body.content) {
+      return NextResponse.json({ error: 'conversationId and content required' }, { status: 400 })
+    }
 
     const convCheck = await pool.query(
       `SELECT * FROM "MarketplaceConversation" WHERE id = $1 AND ("buyerId" = $2 OR "sellerId" = $2)`,

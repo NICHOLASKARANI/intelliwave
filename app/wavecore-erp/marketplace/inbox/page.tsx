@@ -20,6 +20,7 @@ export default function InboxPage() {
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
+  const [subscriptionRequired, setSubscriptionRequired] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const fetchConversations = async () => {
@@ -206,7 +207,29 @@ export default function InboxPage() {
                     messages.map(m => {
                       // Determine if this is "my" message by checking receiverId
                       const isMine = m.senderId === selected.senderId || !m.receiverId
-                      return (
+                    
+  if (subscriptionRequired) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-neutral-900 rounded-2xl border border-neutral-800 p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">Subscription Required</h1>
+          <p className="text-sm text-neutral-400 mb-6">
+            Messaging is available to subscribed users only. Activate a plan to message sellers and buyers.
+          </p>
+          <a
+            href="/wavecore-erp/subscription/pay"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold hover:opacity-90"
+          >
+            Subscribe Now
+          </a>
+        </div>
+      </div>
+    )
+  }
+  return (
                         <div key={m.id} className={'flex ' + (isMine ? 'justify-end' : 'justify-start')}>
                           <div className={'max-w-[70%] p-3 rounded-2xl ' + (isMine ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-br-sm' : 'bg-neutral-800 text-neutral-200 rounded-bl-sm')}>
                             <p className="text-sm whitespace-pre-wrap">{m.content}</p>

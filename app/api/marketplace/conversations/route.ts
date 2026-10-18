@@ -3,15 +3,49 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
-import { guardHR } from '@/lib/wavecore/guard'
+
+/**
+ * Shared helper — checks the caller has an active subscription.
+ * Returns null if subscribed, or a 402 NextResponse if not.
+ */
+async function requireSubscription(session: any): Promise<NextResponse | null> {
+  try {
+    const r = await pool.query(
+      `SELECT status, "endDate", "trialEndsAt" FROM "Subscription"
+       WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+      [session.organizationId]
+    )
+    const s = r.rows[0]
+    const now = Date.now()
+    const subscribed = !!s && (
+      (s.status === 'ACTIVE' && s.endDate && new Date(s.endDate).getTime() > now) ||
+      (s.status === 'TRIAL' && s.trialEndsAt && new Date(s.trialEndsAt).getTime() > now)
+    )
+    if (!subscribed) {
+      return NextResponse.json(
+        {
+          error: 'Active subscription required to use messaging.',
+          code: 'SUBSCRIPTION_REQUIRED',
+          upgradeUrl: '/wavecore-erp/subscription/pay',
+        },
+        { status: 402 }
+      )
+    }
+    return null
+  } catch {
+    // If we can't verify subscription, be lenient (don't block on DB hiccups)
+    return null
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_READ')
-    if (guard.deny) return guard.response!
+    // Paywall: only subscribed users can use messaging
+    const denied = await requireSubscription(session)
+    if (denied) return denied
 
     const result = await pool.query(
       `SELECT c.*,
@@ -20,12 +54,13 @@ export async function GET(req: NextRequest) {
         l.price as "listingPrice",
         u.name as "otherPartyName",
         u.image as "otherPartyImage",
-        (SELECT COUNT(*) FROM "MarketplaceMessage" m WHERE m."conversationId" = c.id AND m."receiverId" = $1 AND m."isRead" = false) as "unreadCount"
+        (SELECT COUNT(*) FROM "MarketplaceMessage" m
+          WHERE m."conversationId" = c.id AND m."receiverId" = $1 AND m."isRead" = false) as "unreadCount"
       FROM "MarketplaceConversation" c
       JOIN "MarketplaceListing" l ON c."listingId" = l.id
       JOIN "User" u ON (CASE WHEN c."buyerId" = $1 THEN c."sellerId" ELSE c."buyerId" END) = u.id
       WHERE c."buyerId" = $1 OR c."sellerId" = $1
-      ORDER BY c."lastMessageAt" DESC`,
+      ORDER BY c."lastMessageAt" DESC NULLS LAST`,
       [session.userId]
     )
 
@@ -41,8 +76,8 @@ export async function POST(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_WRITE')
-    if (guard.deny) return guard.response!
+    const denied = await requireSubscription(session)
+    if (denied) return denied
 
     const body = await req.json()
     if (!body.listingId) return NextResponse.json({ error: 'listingId required' }, { status: 400 })
