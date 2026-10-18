@@ -91,6 +91,7 @@ export function middleware(request: NextRequest) {
   }
 
   // ============ MARKETPLACE GATE ============
+  // Requires login + active subscription (paywall)
   if (
     pathname.startsWith('/marketplace/inbox') ||
     pathname.startsWith('/marketplace/saved') ||
@@ -98,6 +99,11 @@ export function middleware(request: NextRequest) {
   ) {
     if (!hasSession(request)) {
       return redirectToLogin(request, pathname)
+    }
+    // Subscription gate for authenticated marketplace sellers/buyers
+    const subscribed = request.cookies.get('wavecore_subscribed')?.value
+    if (subscribed === 'false') {
+      return NextResponse.redirect(new URL('/wavecore-erp/subscription', request.url))
     }
   }
 
