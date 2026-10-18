@@ -5,9 +5,15 @@ import { pool } from '@/lib/wavecore/db'
 
 // ============================================================
 // M-Pesa Daraja — Callback handler
-// Safaricom POSTs here after the customer enters their PIN.
-// Must always respond with 200 + { ResponseCode: "0" } to stop retries.
+// Safaricom POSTs here after customer enters PIN.
+// Reads plan + days from MpesaTransaction.rawRequest._wavecore
+// so multi-month plans get the correct endDate.
 // ============================================================
+
+const PLAN_DAYS_FALLBACK: Record<string, number> = {
+  MONTHLY: 30, QUARTERLY: 90, SEMIANNUAL: 180, YEARLY: 365,
+  STARTER: 30, PROFESSIONAL: 30, ENTERPRISE: 30,
+}
 
 export async function POST(req: NextRequest) {
   let body: any = null
@@ -30,27 +36,26 @@ export async function POST(req: NextRequest) {
 
     // Extract metadata (only present on success)
     let mpesaReceipt: string | null = null
-    let amount: number | null = null
-    let phoneNumber: string | null = null
+    let callbackAmount: number | null = null
+    let callbackPhone: string | null = null
 
     if (Array.isArray(stkCallback.CallbackMetadata?.Item)) {
       for (const item of stkCallback.CallbackMetadata.Item) {
         if (item.Name === 'MpesaReceiptNumber') mpesaReceipt = String(item.Value || '')
-        if (item.Name === 'Amount') amount = Number(item.Value || 0)
-        if (item.Name === 'PhoneNumber') phoneNumber = String(item.Value || '')
+        if (item.Name === 'Amount') callbackAmount = Number(item.Value || 0)
+        if (item.Name === 'PhoneNumber') callbackPhone = String(item.Value || '')
       }
     }
 
-    // Find our transaction row
+    // Load our transaction
     const txRes = await pool.query(
       `SELECT * FROM "MpesaTransaction" WHERE "checkoutRequestId" = $1 LIMIT 1`,
       [checkoutRequestId]
     )
     const tx = txRes.rows[0] || null
-
     const success = resultCode === 0
 
-    // Update MpesaTransaction (always)
+    // Update MpesaTransaction
     if (tx) {
       await pool.query(
         `UPDATE "MpesaTransaction"
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
         ]
       )
     } else {
-      // Unknown transaction (unexpected) — still log it
+      // Unknown transaction — log it
       const crypto = require('crypto')
       await pool.query(
         `INSERT INTO "MpesaTransaction"
@@ -79,8 +84,8 @@ export async function POST(req: NextRequest) {
                  $8,$9,$10::jsonb,NOW(),NOW())`,
         [
           crypto.randomUUID(),
-          amount || 0,
-          phoneNumber || 'UNKNOWN',
+          callbackAmount || 0,
+          callbackPhone || 'UNKNOWN',
           merchantRequestId,
           checkoutRequestId,
           mpesaReceipt,
@@ -92,26 +97,49 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // If subscription payment succeeded, extend/create Subscription
+    // ─── Subscription activation on success ───
     if (success && tx && tx.purpose === 'SUBSCRIPTION' && tx.organizationId && tx.organizationId !== 'UNKNOWN') {
+      // Read plan + days from rawRequest._wavecore
+      let plan = 'MONTHLY'
+      let daysToAdd = 30
+      try {
+        const raw = typeof tx.rawRequest === 'string' ? JSON.parse(tx.rawRequest) : tx.rawRequest
+        if (raw?._wavecore?.plan) plan = String(raw._wavecore.plan)
+        if (Number(raw?._wavecore?.days) > 0) daysToAdd = Number(raw._wavecore.days)
+      } catch { /* fall through to defaults */ }
+      if (!(daysToAdd > 0)) daysToAdd = PLAN_DAYS_FALLBACK[plan] || 30
+
       const existing = await pool.query(
-        `SELECT id, "endDate" FROM "Subscription" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+        `SELECT id, "endDate", status FROM "Subscription"
+         WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
         [tx.organizationId]
       )
 
       const now = new Date()
-      const baseDate = existing.rowCount! > 0 && existing.rows[0].endDate && new Date(existing.rows[0].endDate) > now
-        ? new Date(existing.rows[0].endDate)
-        : now
+      let baseDate = now
+      if (existing.rowCount! > 0 && existing.rows[0].endDate) {
+        const prevEnd = new Date(existing.rows[0].endDate)
+        // If existing subscription is still active, extend from its end.
+        // If expired, start fresh from now.
+        baseDate = prevEnd > now ? prevEnd : now
+      }
       const newEnd = new Date(baseDate)
-      newEnd.setDate(newEnd.getDate() + 30)
+      newEnd.setDate(newEnd.getDate() + daysToAdd)
 
       if (existing.rowCount! > 0) {
         await pool.query(
           `UPDATE "Subscription"
-           SET status = 'ACTIVE', "mpesaReceipt" = $1, "endDate" = $2, "nextBillingAt" = $2, "updatedAt" = NOW()
-           WHERE id = $3`,
-          [mpesaReceipt, newEnd, existing.rows[0].id]
+           SET plan = $1, status = 'ACTIVE', amount = $2,
+               "mpesaReceipt" = $3, "endDate" = $4, "nextBillingAt" = $4, "updatedAt" = NOW()
+           WHERE id = $5`,
+          [
+            // Plan enum: use STARTER for all our durations to satisfy enum constraint
+            'STARTER',
+            Number(tx.amount || callbackAmount || 500),
+            mpesaReceipt,
+            newEnd,
+            existing.rows[0].id,
+          ]
         )
       } else {
         const crypto = require('crypto')
@@ -122,7 +150,7 @@ export async function POST(req: NextRequest) {
            VALUES ($1,'STARTER','ACTIVE',$2,'KES',NOW(),$3,$3,$4,$5,$6,NOW(),NOW())`,
           [
             crypto.randomUUID(),
-            tx.amount || 500,
+            Number(tx.amount || callbackAmount || 500),
             newEnd,
             mpesaReceipt,
             tx.userId,
@@ -131,19 +159,18 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // Audit log
+      // Audit
       await pool.query(
         `INSERT INTO "AuditLog" (id, action, "entityType", "entityId", "organizationId", "userId", "createdAt")
          VALUES (gen_random_uuid()::text, 'SUBSCRIPTION_PAID', 'Subscription', $1, $2, $3, NOW())`,
         [checkoutRequestId, tx.organizationId, tx.userId]
-      ).catch(() => { /* audit failure shouldn't break callback */ })
+      ).catch(() => {})
     }
 
-    // Safaricom expects exactly this format — return 200 always
+    // Safaricom expects 200 + ResultCode 0 to stop retries
     return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' }, { status: 200 })
   } catch (error) {
     console.error('[mpesa/callback] unhandled:', error)
-    // Still return 200 so Safaricom doesn't retry infinitely
     return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' }, { status: 200 })
   }
 }

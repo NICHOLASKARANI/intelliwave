@@ -5,8 +5,9 @@ import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 // ============================================================
-// M-Pesa Daraja — STK Push (Lipa Na M-Pesa Online)
-// Sandbox + Production aware via MPESA_ENVIRONMENT
+// M-Pesa Daraja — STK Push
+// Supports both monthly and multi-month plans.
+// Reads { phoneNumber, plan, amount, days } from request body.
 // ============================================================
 
 const ENV = (process.env.MPESA_ENVIRONMENT || 'sandbox').toLowerCase()
@@ -20,7 +21,19 @@ const MPESA_STK_URL = IS_PROD
   ? 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
   : 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
 
-// Rate limiting — 3 STK pushes per phone per minute
+// Plan definitions — canonical source of truth
+const PLAN_DEFAULTS: Record<string, { amount: number; days: number; name: string }> = {
+  MONTHLY:    { amount: 500,  days: 30,  name: 'Monthly' },
+  QUARTERLY:  { amount: 1350, days: 90,  name: '3 Months' },
+  SEMIANNUAL: { amount: 2750, days: 180, name: '6 Months' },
+  YEARLY:     { amount: 5000, days: 365, name: '1 Year' },
+  // legacy aliases
+  STARTER:      { amount: 500,  days: 30, name: 'Monthly' },
+  PROFESSIONAL: { amount: 2500, days: 30, name: 'Monthly Pro' },
+  ENTERPRISE:   { amount: 10000, days: 30, name: 'Monthly Enterprise' },
+}
+
+// Rate limiting
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
 function checkRateLimit(phone: string): boolean {
@@ -39,9 +52,7 @@ function checkRateLimit(phone: string): boolean {
 async function getAccessToken(): Promise<string> {
   const key = process.env.MPESA_CONSUMER_KEY || ''
   const secret = process.env.MPESA_CONSUMER_SECRET || ''
-  if (!key || !secret) {
-    throw new Error('MPESA_CONSUMER_KEY or MPESA_CONSUMER_SECRET not configured')
-  }
+  if (!key || !secret) throw new Error('MPESA_CONSUMER_KEY or MPESA_CONSUMER_SECRET not configured')
   const auth = Buffer.from(`${key}:${secret}`).toString('base64')
 
   const r = await fetch(MPESA_AUTH_URL, {
@@ -60,7 +71,6 @@ function generatePassword(shortcode: string, passkey: string, timestamp: string)
 }
 
 function timestampNow(): string {
-  // Format: YYYYMMDDHHmmss
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return (
@@ -73,10 +83,15 @@ function timestampNow(): string {
   )
 }
 
-// ============================================================
-// POST /api/wavecore/mpesa/stkpush
-// Body: { phoneNumber: string, plan?: 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE' }
-// ============================================================
+/**
+ * POST /api/wavecore/mpesa/stkpush
+ * Body: {
+ *   phoneNumber: string
+ *   plan?:  MONTHLY | QUARTERLY | SEMIANNUAL | YEARLY
+ *   amount?: number  (override — validated against plan if not matched, still accepted)
+ *   days?:   number  (override — how many days access should be granted)
+ * }
+ */
 export async function POST(req: NextRequest) {
   try {
     const session = await requireTenant(req)
@@ -84,9 +99,18 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}))
     const rawPhone = String(body?.phoneNumber || '').trim()
-    const plan = ['TRIAL', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE'].includes(body?.plan)
-      ? body.plan
-      : 'STARTER'
+
+    // Parse plan + amount + days
+    const planKey = String(body?.plan || 'MONTHLY').toUpperCase()
+    const planDefaults = PLAN_DEFAULTS[planKey] || PLAN_DEFAULTS.MONTHLY
+
+    const bodyAmount = Number(body?.amount)
+    const amount = Number.isFinite(bodyAmount) && bodyAmount > 0 ? bodyAmount : planDefaults.amount
+
+    const bodyDays = Number(body?.days)
+    const days = Number.isFinite(bodyDays) && bodyDays > 0 ? bodyDays : planDefaults.days
+
+    const planName = planDefaults.name
 
     // Validate phone (Kenyan)
     const cleaned = rawPhone.replace(/[\s\-()]/g, '')
@@ -99,7 +123,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Too many attempts. Try again in 1 minute.' }, { status: 429 })
     }
 
-    // Normalize to 2547XXXXXXXX
+    // Normalize phone
     const formattedPhone = cleaned.startsWith('0')
       ? '254' + cleaned.slice(1)
       : cleaned.startsWith('+254')
@@ -110,22 +134,18 @@ export async function POST(req: NextRequest) {
     const passkey = process.env.MPESA_PASSKEY || ''
     if (!passkey) return NextResponse.json({ error: 'MPESA_PASSKEY not configured' }, { status: 500 })
 
-    const amount = Number(body?.amount) > 0 ? Number(body.amount) : Number(process.env.MPESA_SUBSCRIPTION_AMOUNT || 500)
     const timestamp = timestampNow()
     const password = generatePassword(shortcode, passkey, timestamp)
 
-    // Get token
     let accessToken: string
     try {
       accessToken = await getAccessToken()
     } catch (err) {
       console.error('[mpesa/stkpush] OAuth error:', (err as Error).message)
-      return NextResponse.json({
-        error: 'M-Pesa service unavailable. Check your Consumer Key/Secret.',
-      }, { status: 503 })
+      return NextResponse.json({ error: 'M-Pesa service unavailable. Check Consumer Key/Secret.' }, { status: 503 })
     }
 
-    // Build request
+    // Safaricom request
     const requestPayload = {
       BusinessShortCode: shortcode,
       Password: password,
@@ -136,30 +156,33 @@ export async function POST(req: NextRequest) {
       PartyB: shortcode,
       PhoneNumber: formattedPhone,
       CallBackURL: process.env.MPESA_CALLBACK_URL || 'https://www.intelliwavve.com/api/wavecore/mpesa/callback',
-      AccountReference: 'WaveCore ' + plan,
-      TransactionDesc: 'WaveCore ERP ' + plan + ' Subscription',
+      AccountReference: 'WaveCore ' + planKey,
+      TransactionDesc: 'WaveCore ' + planName + ' (' + days + ' days)',
     }
 
     const stkResponse = await fetch(MPESA_STK_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify(requestPayload),
       cache: 'no-store',
     })
 
     const stkData: any = await stkResponse.json().catch(() => ({}))
-
-    // Response codes:
-    //   0    = success (STK Push sent)
-    //   1032 = user cancelled
-    //   1037 = user unreachable
-    //   etc.
     const isSuccess = stkData.ResponseCode === '0'
 
-    // Log transaction regardless of success
+    // Build full request record — includes plan + days so callback can use them
+    const enrichedRequest = {
+      ...requestPayload,
+      // Our metadata (Safaricom ignores unknown fields on their side but we store them)
+      _wavecore: {
+        plan: planKey,
+        planName,
+        days,
+        amount,
+        phone: formattedPhone,
+      },
+    }
+
     const crypto = require('crypto')
     const txId = crypto.randomUUID()
 
@@ -173,8 +196,8 @@ export async function POST(req: NextRequest) {
                $11::jsonb,NOW(),NOW())`,
       [
         txId,
-        session!.organizationId,
-        session!.userId,
+        session.organizationId,
+        session.userId,
         amount,
         formattedPhone,
         stkData.MerchantRequestID || null,
@@ -182,7 +205,7 @@ export async function POST(req: NextRequest) {
         isSuccess ? 'STK_SENT' : 'STK_FAILED',
         Number(stkData.ResponseCode || 0) || null,
         stkData.ResponseDescription || stkData.errorMessage || null,
-        JSON.stringify(requestPayload),
+        JSON.stringify(enrichedRequest),
       ]
     )
 
@@ -193,6 +216,10 @@ export async function POST(req: NextRequest) {
         transactionId: txId,
         checkoutRequestId: stkData.CheckoutRequestID,
         merchantRequestId: stkData.MerchantRequestID,
+        plan: planKey,
+        planName,
+        amount,
+        days,
       })
     } else {
       return NextResponse.json({
