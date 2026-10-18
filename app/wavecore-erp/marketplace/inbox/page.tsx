@@ -27,10 +27,25 @@ export default function InboxPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/marketplace/conversations')
+      // 402 = subscription required (paywall)
+      if (res.status === 402) {
+        setSubscriptionRequired(true)
+        setConversations([])
+        setError('')
+        return
+      }
+      // 401 = auth
+      if (res.status === 401) {
+        setError('Your session expired. Please log in again.')
+        return
+      }
       const data = await res.json()
       setConversations(data.conversations || [])
-    } catch { setError('Network error') }
-    finally { setLoading(false) }
+      setSubscriptionRequired(false)
+      setError('')
+    } catch (e) {
+      setError('Network error: ' + ((e as Error).message || 'unknown'))
+    } finally { setLoading(false) }
   }
   useEffect(() => { fetchConversations() }, [])
 
@@ -39,9 +54,19 @@ export default function InboxPage() {
     setLoadingMessages(true)
     try {
       const res = await fetch('/api/marketplace/messages?conversationId=' + conversationId)
+      if (res.status === 402) {
+        setSubscriptionRequired(true)
+        setMessages([])
+        return
+      }
+      if (res.status === 403) {
+        setError('Access denied to this conversation')
+        setMessages([])
+        return
+      }
       const data = await res.json()
       setMessages(data.messages || [])
-    } catch {}
+    } catch { /* silent */ }
     finally { setLoadingMessages(false) }
   }
 
