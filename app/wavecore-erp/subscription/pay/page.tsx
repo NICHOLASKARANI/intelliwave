@@ -89,7 +89,8 @@ export default function MpesaPayPage() {
         body: JSON.stringify({
           phoneNumber: cleaned,
           plan: selectedPlan.key,
-          amount: selectedPlan.price,
+          // 🧪 TEST MODE — KSh 5 override. Revert this to selectedPlan.price after testing.
+          amount: 5,
           days: selectedPlan.days,
         }),
       })
@@ -210,7 +211,7 @@ export default function MpesaPayPage() {
               className="w-full py-4 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50"
             >
               <Smartphone className="w-5 h-5" />
-              Pay KSh {selectedPlan.price.toLocaleString()} for {selectedPlan.name}
+              TEST MODE: Pay KSh 5 for {selectedPlan.name}
             </button>
 
             <div className="mt-4 flex items-center justify-center gap-2 text-xs text-neutral-500">
