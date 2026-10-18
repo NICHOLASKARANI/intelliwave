@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import type { PoolClient } from 'pg'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 const defaultAccounts = [
@@ -26,10 +27,18 @@ const defaultAccounts = [
 ]
 
 export async function POST(request: NextRequest) {
-  const client = await pool.connect()
+  let client: PoolClient | null = null
+
   try {
+    // 1) Auth first — before touching the DB pool
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const orgId = session.organizationId
+
+    // 2) Only now grab a connection
+    client = await pool.connect()
 
     await client.query('BEGIN')
     let created = 0
@@ -50,11 +59,20 @@ export async function POST(request: NextRequest) {
 
     await client.query('COMMIT')
     return NextResponse.json({ success: true, created }, { status: 201 })
-  } catch (error) {
-    await client.query('ROLLBACK')
+  } catch (error: any) {
+    // Safe rollback — never throws
+    if (client) {
+      try { await client.query('ROLLBACK') } catch { /* swallow */ }
+    }
     console.error('Quick setup error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const message =
+      process.env.NODE_ENV === 'development'
+        ? `Internal server error: ${error?.message || String(error)}`
+        : 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   } finally {
-    client.release()
+    if (client) {
+      try { client.release() } catch { /* swallow */ }
+    }
   }
 }
