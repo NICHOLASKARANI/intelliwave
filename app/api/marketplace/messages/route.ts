@@ -5,6 +5,11 @@ import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 
 async function requireSubscription(session: any): Promise<NextResponse | null> {
+  // Admin/testing bypass
+  const BYPASS_EMAILS = ['intelliwavehr@gmail.com']
+  if (BYPASS_EMAILS.includes(String(session.email || '').toLowerCase())) {
+    return null
+  }
   try {
     const r = await pool.query(
       `SELECT status, "endDate", "trialEndsAt" FROM "Subscription"

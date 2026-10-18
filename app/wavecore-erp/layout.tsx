@@ -5,6 +5,9 @@ import { usePathname, useRouter } from 'next/navigation'
 import { SessionContext } from '@/lib/wavecore/context/session-context'
 import { PosShopProvider } from '@/lib/wavecore/context/pos-shop-context'
 
+// Admin/testing bypass — these emails bypass the paywall redirect
+const BYPASS_EMAILS = ['intelliwavehr@gmail.com']
+
 interface Session {
   authenticated: boolean
   user?: {
@@ -85,6 +88,9 @@ export default function WaveCoreLayout({
     if (!session.authenticated) return
     if (session.subscribed === true) return
     if (isPaywallExempt(pathname || '')) return
+    // Admin/testing bypass — skip redirect
+    const email = String(session.user?.email || '').toLowerCase()
+    if (BYPASS_EMAILS.includes(email)) return
 
     // Expired or no subscription → redirect to subscription page
     router.replace('/wavecore-erp/subscription')

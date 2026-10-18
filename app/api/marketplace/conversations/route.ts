@@ -9,6 +9,11 @@ import { requireTenant } from '@/lib/wavecore/auth'
  * Returns null if subscribed, or a 402 NextResponse if not.
  */
 async function requireSubscription(session: any): Promise<NextResponse | null> {
+  // Admin/testing bypass
+  const BYPASS_EMAILS = ['intelliwavehr@gmail.com']
+  if (BYPASS_EMAILS.includes(String(session.email || '').toLowerCase())) {
+    return null
+  }
   try {
     const r = await pool.query(
       `SELECT status, "endDate", "trialEndsAt" FROM "Subscription"

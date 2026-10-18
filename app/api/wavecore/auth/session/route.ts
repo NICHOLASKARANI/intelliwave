@@ -81,6 +81,10 @@ export async function GET(req: NextRequest) {
     let daysLeft: number | null = null
 
     if (orgId) {
+      // ─── Admin/testing bypass ───
+      const BYPASS_EMAILS = ['intelliwavehr@gmail.com']
+      const isBypassUser = BYPASS_EMAILS.includes(String(row.email || '').toLowerCase())
+
       const subRes = await pool.query(
         `SELECT status, "endDate", "trialEndsAt"
          FROM "Subscription"
@@ -90,7 +94,12 @@ export async function GET(req: NextRequest) {
         [orgId]
       )
       const sub = subRes.rows[0]
-      if (sub) {
+      if (isBypassUser) {
+        subscribed = true
+        subscriptionStatus = 'ACTIVE'
+        subscriptionEndDate = null
+        daysLeft = 9999
+      } else if (sub) {
         subscriptionStatus = sub.status
         const now = Date.now()
         const end = sub.endDate ? new Date(sub.endDate).getTime() : null
