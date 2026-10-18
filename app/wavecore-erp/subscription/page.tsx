@@ -1,328 +1,310 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
-  Shield, Zap, CheckCircle2, Loader2, Phone, Smartphone, AlertCircle,
-  Fingerprint, KeyRound, Sparkles, Server, TrendingUp, Users, Clock,
-  Globe, Award, BadgeCheck, HelpCircle, Star, Building2, Check,
+  Shield, CheckCircle2, Loader2, AlertCircle, Sparkles, Server,
+  TrendingUp, Users, Clock, Globe, Building2, Check, X, Crown,
+  Calendar, Receipt, ArrowRight, Zap, Lock, BarChart3, Layers,
 } from 'lucide-react'
 
-export default function SubscriptionPage() {
-  const [status, setStatus] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [pushing, setPushing] = useState(false)
-  const [stkSent, setStkSent] = useState(false)
-  const [checkoutId, setCheckoutId] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [verifying, setVerifying] = useState(false)
+interface SubData {
+  subscription: any
+  subscribed: boolean
+  isTrialActive: boolean
+  daysLeft: number | null
+  plan: string
+  status: string
+  amount: number
+  currency: string
+  endDate: string | null
+  mpesaReceipt: string | null
+  orgName: string
+}
 
-  useEffect(() => { fetchStatus() }, [])
+const PLAN_NAMES: Record<string, string> = {
+  STARTER: 'WaveCore ERP',
+  PROFESSIONAL: 'WaveCore Pro',
+  ENTERPRISE: 'WaveCore Enterprise',
+  TRIAL: 'Free Trial',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  TRIAL: 'Trial',
+  ACTIVE: 'Active',
+  PAST_DUE: 'Past Due',
+  CANCELLED: 'Cancelled',
+  EXPIRED: 'Expired',
+}
+
+export default function SubscriptionPage() {
+  const router = useRouter()
+  const [data, setData] = useState<SubData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchStatus()
+  }, [])
 
   const fetchStatus = async () => {
     try {
       const res = await fetch('/api/wavecore/subscription')
       if (res.ok) {
-        const data = await res.json()
-        setStatus(data)
-        if (data.subscribed) setSuccess(true)
+        const json = await res.json()
+        setData(json)
+      } else if (res.status === 401) {
+        router.push('/wavecore-erp/auth/login')
+      } else {
+        setError('Unable to load subscription')
       }
-    } catch {} finally { setLoading(false) }
-  }
-
-  const validatePhone = (phone: string): boolean => {
-    const cleaned = phone.replace(/[\s-]/g, '')
-    return /^(?:\+?254|0)(?:7\d{8}|1\d{8})$/.test(cleaned)
-  }
-
-  const handleSTKPush = async () => {
-    if (!validatePhone(phoneNumber)) {
-      setError('Invalid phone number. Use format: 0712345678 or +254712345678')
-      return
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setLoading(false)
     }
-    setPushing(true); setError('')
-    try {
-      const res = await fetch('/api/wavecore/mpesa/stkpush', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber }),
-      })
-      const data = await res.json()
-      if (res.ok && data.success) { setStkSent(true); setCheckoutId(data.checkoutRequestId) }
-      else if (data.needsConfig) { setError('M-Pesa not configured. Please add Consumer Key in Vercel env.') }
-      else { setError(data.error || 'STK Push failed') }
-    } catch { setError('Network error') }
-    finally { setPushing(false) }
   }
 
-  const handleVerifyPayment = async () => {
-    setVerifying(true)
-    const checkStatus = async () => {
-      try {
-        const res = await fetch('/api/wavecore/subscription')
-        if (res.ok) {
-          const data = await res.json()
-          if (data.subscribed) {
-            setSuccess(true)
-            setTimeout(() => { window.location.href = '/wavecore-erp' }, 2000)
-            return true
-          }
-        }
-        return false
-      } catch { return false }
-    }
-    for (let i = 0; i < 10; i++) {
-      const paid = await checkStatus()
-      if (paid) return
-      await new Promise(r => setTimeout(r, 3000))
-    }
-    setVerifying(false)
-    setError('Payment not confirmed yet. Please wait or try again.')
+  const formatDate = (iso: string | null) => {
+    if (!iso) return '—'
+    return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
-  if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-      <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-    </div>
-  )
+  const planActive = data?.subscribed || (data?.isTrialActive ?? false)
+  const isPaid = data?.subscribed === true
+  const isTrial = data?.status === 'TRIAL'
+  const expiry = data?.endDate
 
-  if (success || status?.subscribed) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-10 border border-slate-700/50 shadow-2xl text-center max-w-md">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 flex items-center justify-center">
-            <CheckCircle2 className="w-10 h-10 text-green-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Subscription Active</h1>
-          <p className="text-slate-400 mb-6 text-sm">
-            Expires: {new Date(status?.expiresAt || Date.now() + 30 * 86400000).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
-          </p>
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" />
-          <p className="text-xs text-slate-500 mt-4">Redirecting to dashboard…</p>
-        </div>
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-500" />
       </div>
     )
   }
 
-  const trustBadges = [
-    { label: 'SOC 2', icon: Shield },
-    { label: 'ISO 27001', icon: Award },
-    { label: 'GDPR', icon: Globe },
-    { label: 'Kenya DPA', icon: BadgeCheck },
-  ]
-
-  const includes = [
-    { icon: Server, label: 'All ERP modules unlocked', desc: 'HR · Projects · Manufacturing · Helpdesk · Marketplace' },
-    { icon: Sparkles, label: 'AI Copilot & analytics', desc: 'Predictive insights in every workflow' },
-    { icon: Users, label: 'Unlimited users in your org', desc: 'Owner, admins, managers, employees' },
-    { icon: TrendingUp, label: 'Automatic updates', desc: 'New features shipped weekly' },
-    { icon: Shield, label: 'Enterprise-grade security', desc: 'AES-256 · RBAC · full audit logs' },
-    { icon: Clock, label: '24/7 support SLA', desc: 'Response within 1 business hour' },
-  ]
-
-  const faqs = [
-    { q: 'When does my subscription activate?', a: 'Immediately after M-Pesa confirms the payment — usually within seconds.' },
-    { q: 'Can I cancel anytime?', a: 'Yes. Cancel from your dashboard settings. You keep access until the end of your current billing period.' },
-    { q: 'Do you offer annual plans?', a: 'Yes — contact sales for annual pricing with 20% savings.' },
-    { q: 'What payment methods do you accept?', a: 'M-Pesa (primary). Enterprise customers can request bank transfer or purchase order.' },
-  ]
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Hero band */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/20 rounded-full filter blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/20 rounded-full filter blur-3xl" />
-
-        <div className="relative max-w-6xl mx-auto px-4 lg:px-8 py-16 lg:py-20">
-          <div className="text-center mb-12">
-            <Link href="/" className="inline-flex items-center gap-3 mb-8">
-              <Image src="/images/Wavecore.jpeg" alt="IntelliWavve" width={48} height={48} className="rounded-xl shadow-lg" />
-              <div className="text-left">
-                <p className="text-lg font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-purple-300">
-                  IntelliWavve
-                </p>
-                <p className="text-[10px] text-indigo-300/70 font-semibold tracking-widest uppercase">
-                  WaveCore ERP
-                </p>
-              </div>
-            </Link>
-
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 backdrop-blur border border-white/10 text-xs text-indigo-200 font-bold mb-6">
-              <Sparkles className="w-3 h-3 text-amber-400" /> Simple monthly pricing · No setup fees
-            </div>
-
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
-              Activate your<br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                enterprise workspace.
-              </span>
-            </h1>
-
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-              One subscription. Every module. All future updates. Cancel anytime.
-            </p>
-          </div>
-
-          {/* Price card */}
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border border-slate-700/50 shadow-2xl">
-              <div className="text-center pb-8 border-b border-slate-800">
-                <div className="inline-flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl text-slate-400">KSh</span>
-                  <span className="text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                    500
-                  </span>
-                  <span className="text-lg text-slate-400">/ month</span>
-                </div>
-                <p className="text-sm text-slate-400">Billed monthly via M-Pesa · Cancel anytime</p>
-              </div>
-
-              {/* Error banner */}
-              {error && (
-                <div className="mt-6 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {!stkSent ? (
-                <div className="mt-8 space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Smartphone className="w-4 h-4 text-green-500" />
-                    <p className="text-sm font-bold text-white">Pay with M-Pesa</p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs uppercase tracking-wide text-slate-400 font-bold mb-1.5 block">
-                      Your M-Pesa number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={e => setPhoneNumber(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSTKPush()}
-                        placeholder="0712345678"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/50 border border-slate-600/50 text-white placeholder-slate-500 text-center font-mono text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSTKPush}
-                    disabled={pushing}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg hover:shadow-2xl hover:shadow-indigo-500/30 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
-                  >
-                    {pushing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Smartphone className="w-5 h-5" />}
-                    {pushing ? 'Sending STK Push…' : 'Send STK Push · Pay KSh 500'}
-                  </button>
-
-                  <p className="text-xs text-slate-500 text-center">
-                    You&apos;ll receive a prompt on your phone to enter your M-Pesa PIN
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-8 text-center space-y-4">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center animate-pulse">
-                    <Smartphone className="w-10 h-10 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-1">Check your phone</h3>
-                    <p className="text-sm text-slate-400">
-                      Enter your M-Pesa PIN to complete the payment of KSh 500
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleVerifyPayment}
-                    disabled={verifying}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-lg hover:shadow-2xl hover:shadow-green-500/30 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
-                  >
-                    {verifying ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                    {verifying ? 'Verifying payment…' : "I've entered my PIN · Verify"}
-                  </button>
-                  <button onClick={() => setStkSent(false)} className="text-xs text-indigo-400 hover:text-indigo-300">
-                    Use a different number
-                  </button>
-                </div>
-              )}
-
-              {/* Trust mini strip */}
-              <div className="mt-8 pt-6 border-t border-slate-800">
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="p-2 rounded-lg bg-green-500/10 text-center">
-                    <Shield className="w-4 h-4 text-green-500 mx-auto mb-1" />
-                    <p className="text-[9px] text-slate-400 font-bold uppercase">Encrypted</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-blue-500/10 text-center">
-                    <Fingerprint className="w-4 h-4 text-blue-500 mx-auto mb-1" />
-                    <p className="text-[9px] text-slate-400 font-bold uppercase">Verified</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-purple-500/10 text-center">
-                    <KeyRound className="w-4 h-4 text-purple-500 mx-auto mb-1" />
-                    <p className="text-[9px] text-slate-400 font-bold uppercase">Secure</p>
-                  </div>
-                </div>
-                <div className="flex justify-center gap-3 text-[10px] text-slate-500">
-                  {trustBadges.map(b => (
-                    <span key={b.label} className="flex items-center gap-1">
-                      <b.icon className="w-3 h-3 text-indigo-400" /> {b.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* What's included */}
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-white mb-2">Everything included</h2>
-          <p className="text-slate-400">One price. Unlimited value.</p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {includes.map(f => (
-            <div key={f.label} className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-indigo-600 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center mb-3">
-                <f.icon className="w-5 h-5 text-indigo-400" />
-              </div>
-              <p className="text-sm font-bold text-white mb-1">{f.label}</p>
-              <p className="text-xs text-slate-400">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* FAQ */}
-      <div className="max-w-3xl mx-auto px-4 lg:px-8 pb-20">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-            <HelpCircle className="w-7 h-7 text-indigo-400" /> Common questions
-          </h2>
-        </div>
-        <div className="space-y-3">
-          {faqs.map(f => (
-            <div key={f.q} className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800">
-              <p className="font-bold text-white mb-1">{f.q}</p>
-              <p className="text-sm text-slate-400">{f.a}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-12 text-center">
-          <p className="text-sm text-slate-400 mb-3">Need a different plan or enterprise features?</p>
-          <Link href="/contact" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur border border-white/10 text-white font-bold text-sm transition-all">
-            <Building2 className="w-4 h-4" /> Contact Enterprise Sales
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
+          <Link href="/wavecore-erp" className="flex items-center gap-3">
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={36} height={36} className="rounded-xl object-cover" />
+            <span className="font-bold">WaveCore</span>
+          </Link>
+          <Link href="/wavecore-erp" className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white flex items-center gap-1">
+            Back to Dashboard <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-      </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto p-4 lg:p-8">
+
+        {/* Hero */}
+        <div className="rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-8 lg:p-10 mb-8 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-white blur-3xl"></div>
+          </div>
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <Crown className="w-6 h-6 text-amber-300" />
+              <span className="text-xs uppercase tracking-widest text-white/80 font-bold">Subscription</span>
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">
+              {isPaid ? 'Your Plan is Active' : isTrial ? 'You are on a Trial' : 'Activate Your Plan'}
+            </h1>
+            <p className="text-white/80 text-sm lg:text-base">
+              {isPaid
+                ? 'Manage your subscription and billing below.'
+                : isTrial
+                  ? 'Upgrade to keep using WaveCore after your trial ends.'
+                  : 'Choose a plan to unlock the full power of WaveCore ERP.'}
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-900/30 border border-red-800 text-red-300 flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {data && (
+          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+
+            {/* Current plan card */}
+            <div className="lg:col-span-2 bg-white dark:bg-neutral-900 rounded-3xl border-2 border-emerald-500 overflow-hidden shadow-2xl shadow-emerald-500/10">
+              <div className="p-6 lg:p-8">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wide font-bold ${
+                        planActive ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                      }`}>
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5"></span>
+                        {STATUS_LABELS[data.status] || data.status}
+                      </span>
+                      {isPaid && <Receipt className="w-4 h-4 text-neutral-400" />}
+                    </div>
+                    <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900 dark:text-white">
+                      {PLAN_NAMES[data.plan] || data.plan}
+                    </h2>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {data.currency} {Number(data.amount || 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-neutral-500">
+                      {isPaid ? 'Paid' : isTrial ? 'Trial period' : '—'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Key dates */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Status</p>
+                    <p className="font-bold text-neutral-900 dark:text-white">
+                      {planActive ? 'Active' : 'Inactive'}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold mb-1">Expires</p>
+                    <p className="font-bold text-neutral-900 dark:text-white">
+                      {formatDate(expiry)}
+                    </p>
+                  </div>
+                  {isTrial && data.daysLeft !== null && (
+                    <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 col-span-2">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 font-bold mb-1">Trial Ends In</p>
+                      <p className="font-bold text-amber-700 dark:text-amber-300">
+                        {data.daysLeft} day{data.daysLeft !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  )}
+                  {data.mpesaReceipt && (
+                    <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 col-span-2">
+                      <p className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 font-bold mb-1">Last M-Pesa Receipt</p>
+                      <p className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{data.mpesaReceipt}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => router.push('/wavecore-erp')}
+                    className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+                  >
+                    <Layers className="w-5 h-5" /> Continue to Dashboard
+                  </button>
+                  <Link
+                    href="/wavecore-erp/subscription/pay"
+                    className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white font-bold text-base flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Zap className="w-5 h-5" /> {isPaid ? 'Renew Plan' : 'Activate Plan'}
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* What's included */}
+            <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 p-6 lg:p-8">
+              <h3 className="text-sm uppercase tracking-wide text-neutral-500 font-bold mb-4">
+                {isPaid ? 'What You Have' : 'What You Unlock'}
+              </h3>
+              <ul className="space-y-3">
+                {[
+                  'Full WaveCore ERP access',
+                  'HR, Projects, Manufacturing',
+                  'Inventory, Sales, Procurement',
+                  'Documents & PDF tools',
+                  'AI assistant & insights',
+                  'Email support',
+                ].map(f => (
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-neutral-700 dark:text-neutral-300">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Plan comparison (for upgrades) */}
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 p-6 lg:p-8 mb-8">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div>
+              <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Subscription Plans</h2>
+              <p className="text-sm text-neutral-500">Pay via M-Pesa · Instant activation</p>
+            </div>
+            <Link
+              href="/wavecore-erp/subscription/pay"
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold flex items-center gap-2 hover:shadow-lg transition"
+            >
+              <Zap className="w-4 h-4" /> Pay Now
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { name: 'Monthly', price: 500, days: 30, badge: null, rate: '16.7' },
+              { name: '3 Months', price: 1350, days: 90, badge: 'Best Value', rate: '15.0' },
+              { name: '6 Months', price: 2750, days: 180, badge: null, rate: '15.3' },
+              { name: '1 Year', price: 5000, days: 365, badge: 'Max Savings', rate: '13.7' },
+            ].map(p => (
+              <div
+                key={p.name}
+                className={`relative p-5 rounded-2xl border-2 ${p.badge ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10' : 'border-neutral-200 dark:border-neutral-800'}`}
+              >
+                {p.badge && (
+                  <span className="absolute -top-2 left-4 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide">
+                    {p.badge}
+                  </span>
+                )}
+                <p className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-2">{p.name}</p>
+                <p className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">KSh {p.price.toLocaleString()}</p>
+                <p className="text-xs text-neutral-500 mb-3">KSh {p.rate}/day</p>
+                <Link
+                  href="/wavecore-erp/subscription/pay"
+                  className="block text-center w-full py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-bold hover:opacity-90 transition"
+                >
+                  Choose
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 p-6 lg:p-8">
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-6">Frequently Asked</h2>
+          <div className="space-y-4">
+            {[
+              { q: 'How does billing work?', a: 'You pay via M-Pesa. Your subscription is active for the exact days you purchased. When it expires, you can renew anytime from this page.' },
+              { q: 'Can I cancel anytime?', a: 'Yes. Since subscriptions are pre-paid, you keep access until your current period ends. No auto-renewal, no surprise charges.' },
+              { q: 'What happens when my plan expires?', a: 'You lose access to the dashboard until you renew. Your data is preserved safely and instantly available on renewal.' },
+              { q: 'Which payment methods do you accept?', a: 'Safaricom M-Pesa (STK Push). Pay from your phone with your M-Pesa PIN.' },
+              { q: 'Is my data secure?', a: 'Yes. All payments go through Safaricom M-Pesa directly. We never store your M-Pesa PIN or card details.' },
+            ].map((f, i) => (
+              <details key={i} className="group border-b border-neutral-200 dark:border-neutral-800 pb-4 last:border-0">
+                <summary className="cursor-pointer list-none flex justify-between items-center gap-3">
+                  <span className="font-bold text-sm text-neutral-900 dark:text-white">{f.q}</span>
+                  <span className="text-neutral-400 group-open:rotate-45 transition">+</span>
+                </summary>
+                <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8 text-center text-xs text-neutral-500">
+          Need help? <Link href="/contact" className="text-emerald-600 hover:underline font-bold">Contact Support</Link>
+        </div>
+      </main>
     </div>
   )
 }
