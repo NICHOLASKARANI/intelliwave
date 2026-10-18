@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Shield, Activity, AlertTriangle, Users, Trash2, Key, RefreshCw, Lock, LogOut, Server, Loader2, XCircle, Eye, EyeOff } from 'lucide-react'
+import { Shield, Activity, AlertTriangle, Users, Trash2, Key, RefreshCw, Lock, LogOut, Server, Loader2, XCircle, Eye, EyeOff, DollarSign, TrendingUp, CreditCard, Building2, Receipt, Calendar } from 'lucide-react'
 
 export default function SecurityAdminPage() {
   const [authenticated, setAuthenticated] = useState(false)
@@ -16,18 +16,24 @@ export default function SecurityAdminPage() {
   const [resettingId, setResettingId] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('users')
+  const [adminStats, setAdminStats] = useState<any>(null)
 
   const fetchSecurityData = useCallback(async () => {
     setRefreshing(true)
     try {
-      const [eventsRes, usersRes] = await Promise.all([
+      const [eventsRes, usersRes, statsRes] = await Promise.all([
         fetch('/api/wavecore/security/events'),
-        fetch('/api/wavecore/security/users')
+        fetch('/api/wavecore/security/users'),
+        fetch('/api/wavecore/security/admin-stats')
       ])
       const eventsData = await eventsRes.json()
       const usersData = await usersRes.json()
       setEvents(eventsData.events || [])
       setUsers(usersData.users || [])
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        setAdminStats(statsData)
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error)
       setActionMessage('❌ Failed to refresh data')
@@ -197,18 +203,39 @@ export default function SecurityAdminPage() {
         )}
 
         {/* Clickable Stats Grid */}
+        {/* KPI Cards */}
+        {authenticated && adminStats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="p-5 rounded-2xl border bg-slate-900/50 border-slate-700/50">
+              <Users className="w-6 h-6 text-blue-400 mb-3" />
+              <p className="text-3xl font-bold text-white">{adminStats.kpis?.totalUsers || 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Total Users</p>
+            </div>
+            <div className="p-5 rounded-2xl border bg-slate-900/50 border-slate-700/50">
+              <Building2 className="w-6 h-6 text-indigo-400 mb-3" />
+              <p className="text-3xl font-bold text-white">{adminStats.kpis?.totalOrgs || 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Organizations</p>
+            </div>
+            <div className="p-5 rounded-2xl border bg-slate-900/50 border-slate-700/50">
+              <TrendingUp className="w-6 h-6 text-green-400 mb-3" />
+              <p className="text-3xl font-bold text-white">{adminStats.kpis?.activeSubscriptions || 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Active Subs</p>
+            </div>
+            <div className="p-5 rounded-2xl border bg-slate-900/50 border-slate-700/50">
+              <DollarSign className="w-6 h-6 text-amber-400 mb-3" />
+              <p className="text-3xl font-bold text-white">KSh {(adminStats.kpis?.revenueAllTime || 0).toLocaleString()}</p>
+              <p className="text-xs text-slate-400 mt-1">All-time Revenue</p>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Tabs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button onClick={() => setActiveTab('events')}
             className={`p-6 rounded-2xl border text-left transition-all ${activeTab === 'events' ? 'bg-slate-800/80 border-blue-500/50' : 'bg-slate-900/50 border-slate-700/50 hover:border-blue-500/30'}`}>
             <Activity className="w-6 h-6 text-blue-400 mb-3" />
             <p className="text-3xl font-bold text-white">{events.length}</p>
-            <p className="text-xs text-slate-400 mt-1">Total Events</p>
-          </button>
-          <button onClick={() => setActiveTab('events')}
-            className={`p-6 rounded-2xl border text-left transition-all ${activeTab === 'events' ? 'bg-slate-800/80 border-red-500/50' : 'bg-slate-900/50 border-slate-700/50 hover:border-red-500/30'}`}>
-            <AlertTriangle className="w-6 h-6 text-red-500 mb-3" />
-            <p className="text-3xl font-bold text-red-400">{criticalCount}</p>
-            <p className="text-xs text-slate-400 mt-1">Critical Alerts</p>
+            <p className="text-xs text-slate-400 mt-1">Security Events</p>
           </button>
           <button onClick={() => setActiveTab('users')}
             className={`p-6 rounded-2xl border text-left transition-all ${activeTab === 'users' ? 'bg-slate-800/80 border-purple-500/50' : 'bg-slate-900/50 border-slate-700/50 hover:border-purple-500/30'}`}>
@@ -216,11 +243,17 @@ export default function SecurityAdminPage() {
             <p className="text-3xl font-bold text-purple-400">{users.length}</p>
             <p className="text-xs text-slate-400 mt-1">Users</p>
           </button>
-          <button onClick={() => setActiveTab('users')}
-            className={`p-6 rounded-2xl border text-left transition-all ${activeTab === 'users' ? 'bg-slate-800/80 border-green-500/50' : 'bg-slate-900/50 border-slate-700/50 hover:border-green-500/30'}`}>
-            <Server className="w-6 h-6 text-green-400 mb-3" />
-            <p className="text-3xl font-bold text-green-400">0</p>
-            <p className="text-xs text-slate-400 mt-1">Active Sessions</p>
+          <button onClick={() => setActiveTab('subscriptions')}
+            className={`p-6 rounded-2xl border text-left transition-all ${activeTab === 'subscriptions' ? 'bg-slate-800/80 border-cyan-500/50' : 'bg-slate-900/50 border-slate-700/50 hover:border-cyan-500/30'}`}>
+            <Receipt className="w-6 h-6 text-cyan-400 mb-3" />
+            <p className="text-3xl font-bold text-cyan-400">{adminStats?.subscriptions?.length || 0}</p>
+            <p className="text-xs text-slate-400 mt-1">Subscriptions</p>
+          </button>
+          <button onClick={() => setActiveTab('payments')}
+            className={`p-6 rounded-2xl border text-left transition-all ${activeTab === 'payments' ? 'bg-slate-800/80 border-amber-500/50' : 'bg-slate-900/50 border-slate-700/50 hover:border-amber-500/30'}`}>
+            <CreditCard className="w-6 h-6 text-amber-400 mb-3" />
+            <p className="text-3xl font-bold text-amber-400">{adminStats?.payments?.length || 0}</p>
+            <p className="text-xs text-slate-400 mt-1">Payments</p>
           </button>
         </div>
 
@@ -275,6 +308,108 @@ export default function SecurityAdminPage() {
                             </button>
                           </div>
                         </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Subscriptions - shown when subscriptions tab active */}
+        {activeTab === 'subscriptions' && (
+          <div className="rounded-2xl bg-slate-900/50 border border-slate-700/50 overflow-hidden">
+            <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+              <h2 className="font-bold text-white flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-cyan-400" /> All Subscriptions ({adminStats?.subscriptions?.length || 0})
+              </h2>
+              <button onClick={fetchSecurityData} disabled={refreshing}
+                className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                {refreshing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Refresh
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-800/50">
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Organization</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">User</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Plan</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Status</th>
+                    <th className="text-right p-4 text-xs text-slate-400 font-medium">Amount</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Expires</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">M-Pesa Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(!adminStats || (adminStats.subscriptions || []).length === 0) ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-500">No subscriptions found</td>
+                    </tr>
+                  ) : (
+                    (adminStats.subscriptions || []).map((s: any) => (
+                      <tr key={s.id} className="border-t border-slate-700/30 hover:bg-slate-800/30 transition-colors">
+                        <td className="p-4 text-sm text-white font-medium">{s.orgName || '—'}</td>
+                        <td className="p-4 text-xs text-slate-400">{s.userEmail || '—'}</td>
+                        <td className="p-4">
+                          <span className="px-2 py-1 rounded-lg text-xs font-medium bg-indigo-500/20 text-indigo-400">{s.plan}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${s.status === 'ACTIVE' ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-400'}`}>{s.status}</span>
+                        </td>
+                        <td className="p-4 text-sm text-white font-bold text-right">KSh {Number(s.amount || 0).toLocaleString()}</td>
+                        <td className="p-4 text-xs text-slate-400">{s.endDate ? new Date(s.endDate).toLocaleDateString() : '—'}</td>
+                        <td className="p-4 text-xs text-slate-300 font-mono">{s.mpesaReceipt || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Payments - shown when payments tab active */}
+        {activeTab === 'payments' && (
+          <div className="rounded-2xl bg-slate-900/50 border border-slate-700/50 overflow-hidden">
+            <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+              <h2 className="font-bold text-white flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-amber-400" /> M-Pesa Transactions ({adminStats?.payments?.length || 0})
+              </h2>
+              <button onClick={fetchSecurityData} disabled={refreshing}
+                className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                {refreshing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Refresh
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-800/50">
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Date</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Organization</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Phone</th>
+                    <th className="text-right p-4 text-xs text-slate-400 font-medium">Amount</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">Status</th>
+                    <th className="text-left p-4 text-xs text-slate-400 font-medium">M-Pesa Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(!adminStats || (adminStats.payments || []).length === 0) ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-slate-500">No payments found</td>
+                    </tr>
+                  ) : (
+                    (adminStats.payments || []).map((p: any) => (
+                      <tr key={p.id} className="border-t border-slate-700/30 hover:bg-slate-800/30 transition-colors">
+                        <td className="p-4 text-xs text-slate-400">{new Date(p.createdAt).toLocaleString()}</td>
+                        <td className="p-4 text-sm text-white">{p.orgName || '—'}</td>
+                        <td className="p-4 text-xs text-slate-300 font-mono">{p.phoneNumber}</td>
+                        <td className="p-4 text-sm text-white font-bold text-right">KSh {Number(p.amount || 0).toLocaleString()}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${p.status === 'SUCCESS' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{p.status}</span>
+                        </td>
+                        <td className="p-4 text-xs text-slate-300 font-mono">{p.mpesaReceipt || '—'}</td>
                       </tr>
                     ))
                   )}
