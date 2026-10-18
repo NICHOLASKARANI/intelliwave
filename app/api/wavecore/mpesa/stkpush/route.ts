@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     const passkey = process.env.MPESA_PASSKEY || ''
     if (!passkey) return NextResponse.json({ error: 'MPESA_PASSKEY not configured' }, { status: 500 })
 
-    const amount = Number(process.env.MPESA_SUBSCRIPTION_AMOUNT || 500)
+    const amount = Number(body?.amount) > 0 ? Number(body.amount) : Number(process.env.MPESA_SUBSCRIPTION_AMOUNT || 500)
     const timestamp = timestampNow()
     const password = generatePassword(shortcode, passkey, timestamp)
 

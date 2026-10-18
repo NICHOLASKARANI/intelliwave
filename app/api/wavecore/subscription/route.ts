@@ -1,100 +1,72 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
-import { getSessionFromRequest } from '@/lib/wavecore/auth'
-import { getSession } from '@/lib/wavecore/auth'
+import { requireTenant } from '@/lib/wavecore/auth'
 
-const SUBSCRIPTION_AMOUNT = 500
-const SUBSCRIPTION_CURRENCY = 'KES'
-
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getSessionFromRequest(req)
+    const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Get the most recent subscription for this org
     const result = await pool.query(
-      `SELECT * FROM "Subscription"
-       WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "endDate" > NOW()
-       ORDER BY "createdAt" DESC LIMIT 1`,
-      [session!.organizationId]
+      `SELECT s.*, o.name as org_name
+       FROM "Subscription" s
+       JOIN "Organization" o ON o.id = s."organizationId"
+       WHERE s."organizationId" = $1
+       ORDER BY s."createdAt" DESC
+       LIMIT 1`,
+      [session.organizationId]
     )
 
     if (result.rows.length === 0) {
       return NextResponse.json({
+        subscription: null,
         subscribed: false,
-        amount: SUBSCRIPTION_AMOUNT,
-        currency: SUBSCRIPTION_CURRENCY,
+        isTrialActive: false,
+        daysLeft: null,
       })
     }
 
     const sub = result.rows[0]
-    const endDate = sub.endDate || sub.trialEndsAt
+    const trialEndsAt = sub.trialEndsAt ? new Date(sub.trialEndsAt) : null
+    const endDate = sub.endDate ? new Date(sub.endDate) : null
+    const now = Date.now()
+
+    const daysLeft = trialEndsAt
+      ? Math.ceil((trialEndsAt.getTime() - now) / (24 * 60 * 60 * 1000))
+      : null
+
+    const isActive = ['ACTIVE', 'TRIAL'].includes(sub.status)
+    const isExpired = (endDate && endDate.getTime() < now) || (trialEndsAt && trialEndsAt.getTime() < now && sub.status === 'TRIAL')
+
+    // Consider "subscribed" = has a paid/active plan that's not expired
+    const subscribed = isActive && !isExpired && sub.status === 'ACTIVE' && !!sub.mpesaReceipt
 
     return NextResponse.json({
-      subscribed: true,
-      amount: sub.amount || SUBSCRIPTION_AMOUNT,
-      currency: sub.currency || SUBSCRIPTION_CURRENCY,
+      // Top-level for easy access by UI
+      subscribed,
+      isTrialActive: sub.status === 'TRIAL' && daysLeft !== null && daysLeft > 0,
+      daysLeft,
       plan: sub.plan,
       status: sub.status,
-      startedAt: sub.startDate,
-      expiresAt: endDate,
-      daysRemaining: Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+      amount: sub.amount,
+      currency: sub.currency,
+      endDate: sub.endDate,
       mpesaReceipt: sub.mpesaReceipt,
+      orgName: sub.org_name,
+
+      // Full object preserved
+      subscription: {
+        ...sub,
+        daysLeft,
+        isTrialActive: sub.status === 'TRIAL' && daysLeft !== null && daysLeft > 0,
+        nextBillingAmount: sub.amount || 500,
+      },
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 })
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const body = await req.json()
-    const { phoneNumber, mpesaReceipt } = body
-
-    if (!mpesaReceipt) {
-      return NextResponse.json({ error: 'M-Pesa receipt number required' }, { status: 400 })
-    }
-
-    // Check if receipt already used
-    const existingReceipt = await pool.query(
-      `SELECT id FROM "Subscription" WHERE "mpesaReceipt" = $1`,
-      [mpesaReceipt]
-    )
-
-    if (existingReceipt.rows.length > 0) {
-      return NextResponse.json({ error: 'This receipt number has already been used' }, { status: 400 })
-    }
-
-    // Calculate dates
-    const endDate = new Date()
-    endDate.setDate(endDate.getDate() + 30)
-    const nextBillingAt = new Date(endDate)
-
-    // Deactivate existing subscriptions
-    await pool.query(
-      `UPDATE "Subscription" SET status = 'EXPIRED' WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
-      [session!.organizationId]
-    )
-
-    // Create subscription
-    const result = await pool.query(
-      `INSERT INTO "Subscription" 
-       ("organizationId", "userId", plan, status, amount, currency, "startDate", "endDate", "nextBillingAt", "mpesaReceipt", "createdAt", "updatedAt")
-       VALUES ($1, $2, 'MONTHLY', 'ACTIVE', $3, $4, NOW(), $5, $6, $7, NOW(), NOW())
-       RETURNING *`,
-      [session!.organizationId, session!.userId, SUBSCRIPTION_AMOUNT, SUBSCRIPTION_CURRENCY, endDate, nextBillingAt, mpesaReceipt]
-    )
-
-    return NextResponse.json({
-      success: true,
-      subscription: result.rows[0],
-      message: 'Subscription activated successfully for 30 days',
-      expiresAt: endDate,
-    })
-  } catch (error) {
-    console.error('Subscription create error:', error)
-    return NextResponse.json({ error: 'Failed to activate subscription' }, { status: 500 })
+    console.error('Subscription GET error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

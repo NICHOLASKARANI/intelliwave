@@ -6,43 +6,31 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Smartphone, ArrowLeft, Loader2, CheckCircle2, XCircle, AlertTriangle,
-  CreditCard, Clock, Phone, Sparkles, Receipt, ShieldCheck,
+  Clock, Phone, Receipt, ShieldCheck, Sparkles, Calendar, Zap,
 } from 'lucide-react'
 
 type Stage = 'form' | 'sending' | 'waiting' | 'success' | 'failed'
 
 interface Plan {
-  key: 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE'
+  key: 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUAL' | 'YEARLY'
   name: string
+  duration: string
+  days: number
   price: number
-  features: string[]
+  popular?: boolean
 }
 
 const PLANS: Plan[] = [
-  {
-    key: 'STARTER',
-    name: 'Starter',
-    price: 500,
-    features: ['Up to 5 users', 'Core ERP modules', 'Email support'],
-  },
-  {
-    key: 'PROFESSIONAL',
-    name: 'Professional',
-    price: 2500,
-    features: ['Up to 25 users', 'All modules + AI', 'Priority support'],
-  },
-  {
-    key: 'ENTERPRISE',
-    name: 'Enterprise',
-    price: 10000,
-    features: ['Unlimited users', 'Dedicated infrastructure', '24/7 support'],
-  },
+  { key: 'MONTHLY',    name: 'Monthly',     duration: '1 month',   days: 30,  price: 500 },
+  { key: 'QUARTERLY',  name: '3 Months',    duration: '3 months',  days: 90,  price: 1350, popular: true },
+  { key: 'SEMIANNUAL', name: '6 Months',    duration: '6 months',  days: 180, price: 2750 },
+  { key: 'YEARLY',     name: '1 Year',      duration: '12 months', days: 365, price: 5000 },
 ]
 
 export default function MpesaPayPage() {
   const router = useRouter()
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(PLANS[0])
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(PLANS[1]) // default to 3 months
   const [phoneNumber, setPhoneNumber] = useState('')
   const [stage, setStage] = useState<Stage>('form')
   const [error, setError] = useState('')
@@ -62,53 +50,25 @@ export default function MpesaPayPage() {
       try {
         const res = await fetch('/api/wavecore/mpesa/status/' + encodeURIComponent(checkoutId))
         const data = await res.json()
-        if (!res.ok) {
-          setPollCount(c => c + 1)
-          if (pollCount > 40) {
-            setStage('failed')
-            setError('Payment timed out. Please try again.')
-          } else {
-            setTimeout(poll, 3000)
-          }
-          return
+        if (res.ok) {
+          if (data.isSuccess) { setTxData(data); setStage('success'); return }
+          if (data.isFailed) { setTxData(data); setStage('failed'); setError(data.resultDescription || 'Payment failed'); return }
         }
-
-        if (data.isSuccess) {
-          setTxData(data)
-          setStage('success')
-          return
-        }
-        if (data.isFailed) {
-          setTxData(data)
-          setStage('failed')
-          setError(data.resultDescription || 'Payment failed')
-          return
-        }
-
-        // Still pending — keep polling for up to 2 minutes
         const next = pollCount + 1
         setPollCount(next)
-        if (next > 40) {
-          setStage('failed')
-          setError('Payment timed out after 2 minutes. Please try again.')
-          return
-        }
+        if (next > 40) { setStage('failed'); setError('Payment timed out after 2 minutes. Please try again.'); return }
         setTimeout(poll, 3000)
-      } catch (e) {
+      } catch {
         if (!cancelled) {
-          setPollCount(c => c + 1)
-          if (pollCount > 40) {
-            setStage('failed')
-            setError('Network error while checking status.')
-          } else {
-            setTimeout(poll, 3000)
-          }
+          const next = pollCount + 1
+          setPollCount(next)
+          if (next > 40) { setStage('failed'); setError('Network error while checking status.') }
+          else setTimeout(poll, 3000)
         }
       }
     }
 
     setTimeout(poll, 3000)
-
     return () => { cancelled = true }
     /* eslint-disable-next-line */
   }, [stage, checkoutId, pollCount])
@@ -126,7 +86,12 @@ export default function MpesaPayPage() {
       const res = await fetch('/api/wavecore/mpesa/stkpush', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
-        body: JSON.stringify({ phoneNumber: cleaned, plan: selectedPlan.key }),
+        body: JSON.stringify({
+          phoneNumber: cleaned,
+          plan: selectedPlan.key,
+          amount: selectedPlan.price,
+          days: selectedPlan.days,
+        }),
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
@@ -144,11 +109,7 @@ export default function MpesaPayPage() {
   }
 
   const reset = () => {
-    setStage('form')
-    setError('')
-    setCheckoutId('')
-    setPollCount(0)
-    setTxData(null)
+    setStage('form'); setError(''); setCheckoutId(''); setPollCount(0); setTxData(null)
   }
 
   return (
@@ -180,29 +141,39 @@ export default function MpesaPayPage() {
         {stage === 'form' && (
           <>
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 mb-4">
-              <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-4">Choose Plan</h3>
+              <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-4">Choose Duration</h3>
               <div className="space-y-3">
                 {PLANS.map(p => (
                   <button
                     key={p.key}
                     onClick={() => setSelectedPlan(p)}
                     className={
-                      'w-full text-left p-4 rounded-xl border-2 transition ' +
+                      'w-full text-left p-4 rounded-xl border-2 transition relative ' +
                       (selectedPlan.key === p.key
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                         : 'border-neutral-200 dark:border-neutral-800 hover:border-green-300')
                     }
                   >
+                    {p.popular && (
+                      <span className="absolute -top-2 right-4 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide">
+                        Best Value
+                      </span>
+                    )}
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="font-bold">{p.name}</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">{p.features.join(' · ')}</p>
+                        <p className="font-bold flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-green-500" />
+                          {p.name}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-0.5">{p.duration}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-green-600 dark:text-green-400">
                           KSh {p.price.toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-neutral-500">per month</p>
+                        <p className="text-[10px] text-neutral-500">
+                          {(p.price / p.days).toFixed(1)} KSh/day
+                        </p>
                       </div>
                     </div>
                   </button>
@@ -223,7 +194,7 @@ export default function MpesaPayPage() {
                 />
               </div>
               <p className="text-xs text-neutral-500 mt-2">
-                Enter your Safaricom M-Pesa number. You&apos;ll get a prompt on your phone to enter your PIN.
+                You&apos;ll get a prompt on your phone to enter your M-Pesa PIN.
               </p>
             </div>
 
@@ -239,7 +210,7 @@ export default function MpesaPayPage() {
               className="w-full py-4 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50"
             >
               <Smartphone className="w-5 h-5" />
-              Pay KSh {selectedPlan.price.toLocaleString()} with M-Pesa
+              Pay KSh {selectedPlan.price.toLocaleString()} for {selectedPlan.name}
             </button>
 
             <div className="mt-4 flex items-center justify-center gap-2 text-xs text-neutral-500">
@@ -289,7 +260,7 @@ export default function MpesaPayPage() {
                   try {
                     const r = await fetch('/api/wavecore/mpesa/query', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '' },
+                      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
                       body: JSON.stringify({ checkoutRequestId: checkoutId }),
                     })
                     const d = await r.json()
@@ -299,7 +270,7 @@ export default function MpesaPayPage() {
                 }}
                 className="px-5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold flex items-center gap-2"
               >
-                <Clock className="w-4 h-4" /> Check Status Now
+                <Zap className="w-4 h-4" /> Check Status Now
               </button>
               <button onClick={reset} className="text-xs text-neutral-500 hover:text-red-500">
                 Cancel and start over
@@ -311,14 +282,16 @@ export default function MpesaPayPage() {
         {/* Stage: SUCCESS */}
         {stage === 'success' && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border-2 border-green-500 p-8 text-center">
-            <CheckCircle2 className="w-16 h-16 mx-auto text-green-500 mb-4" />
-            <p className="font-bold text-2xl mb-2">Payment Successful!</p>
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+              <CheckCircle2 className="w-12 h-12 text-green-500" />
+            </div>
+            <p className="font-bold text-3xl mb-2 text-green-600 dark:text-green-400">Payment Successful!</p>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
-              Your subscription is now active.
+              Your {selectedPlan.name} plan is now active.
             </p>
 
             <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 text-left text-sm mb-6 space-y-2">
-              <div className="flex justify-between"><span className="text-neutral-500">Plan</span><span className="font-bold">{selectedPlan.name}</span></div>
+              <div className="flex justify-between"><span className="text-neutral-500">Plan</span><span className="font-bold">{selectedPlan.name} ({selectedPlan.days} days)</span></div>
               <div className="flex justify-between"><span className="text-neutral-500">Amount</span><span className="font-bold">KSh {selectedPlan.price.toLocaleString()}</span></div>
               {txData?.mpesaReceipt && (
                 <div className="flex justify-between"><span className="text-neutral-500">M-Pesa Receipt</span><span className="font-mono text-xs font-bold">{txData.mpesaReceipt}</span></div>
@@ -326,17 +299,16 @@ export default function MpesaPayPage() {
               <div className="flex justify-between"><span className="text-neutral-500">Phone</span><span className="font-mono text-xs">{phoneNumber}</span></div>
             </div>
 
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => router.push('/wavecore-erp/subscription')}
-                className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold"
-              >
-                View Subscription
-              </button>
-              <button onClick={reset} className="px-6 py-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 font-bold">
-                Make Another Payment
-              </button>
-            </div>
+            <button
+              onClick={() => router.push('/wavecore-erp/subscription')}
+              className="w-full px-6 py-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2"
+            >
+              <Receipt className="w-5 h-5" /> View My Subscription
+            </button>
+
+            <p className="mt-6 text-xs text-neutral-500">
+              A confirmation SMS has been sent to your phone.
+            </p>
           </div>
         )}
 
@@ -348,7 +320,6 @@ export default function MpesaPayPage() {
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
               {error || 'The payment was not completed. Please try again.'}
             </p>
-
             <button onClick={reset} className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold">
               Try Again
             </button>
