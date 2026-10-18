@@ -282,9 +282,29 @@ export default function MpesaPayPage() {
               ></div>
             </div>
 
-            <button onClick={reset} className="mt-6 text-xs text-neutral-500 hover:text-red-500">
-              Cancel and start over
-            </button>
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <button
+                onClick={async () => {
+                  if (!checkoutId) return
+                  try {
+                    const r = await fetch('/api/wavecore/mpesa/query', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '' },
+                      body: JSON.stringify({ checkoutRequestId: checkoutId }),
+                    })
+                    const d = await r.json()
+                    if (d.isSuccess) { setTxData(d); setStage('success') }
+                    else if (d.status === 'FAILED') { setTxData(d); setStage('failed'); setError(d.resultDescription || 'Payment failed') }
+                  } catch { /* ignore */ }
+                }}
+                className="px-5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold flex items-center gap-2"
+              >
+                <Clock className="w-4 h-4" /> Check Status Now
+              </button>
+              <button onClick={reset} className="text-xs text-neutral-500 hover:text-red-500">
+                Cancel and start over
+              </button>
+            </div>
           </div>
         )}
 
