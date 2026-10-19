@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
     if (!body.orderId) return NextResponse.json({ error: 'orderId required' }, { status: 400 })
 
     const orderRes = await pool.query(
-      `SELECT * FROM "MarketplaceOrder" WHERE id = $1`,
-      [body.orderId]
+      `SELECT * FROM "MarketplaceOrder" WHERE id = $1 AND "organizationId" = $2`,
+      [body.orderId, session.organizationId]
     )
     if (orderRes.rows.length === 0) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     const order = orderRes.rows[0]
@@ -74,17 +74,18 @@ export async function POST(req: NextRequest) {
         [item.id]
       )
 
-      // Log transaction
+      // Log transaction (org-scoped)
       const txId = crypto.randomUUID()
       await pool.query(
-        `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, "orderId", status, "createdAt")
-         VALUES ($1,$2,$3,'SALE_SETTLED',$4,$5,$6,$7,'COMPLETED',NOW())`,
+        `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, "orderId", status, "createdAt", "organizationId")
+         VALUES ($1,$2,$3,'SALE_SETTLED',$4,$5,$6,$7,'COMPLETED',NOW(),$8)`,
         [
           txId, item.sellerId, item.wallet_id,
           Math.round(payout * 100) / 100,
           Math.round(newAvailable * 100) / 100,
           `Settled sale from ${order.orderNumber}`,
           order.id,
+          session.organizationId,
         ]
       )
 
@@ -130,8 +131,11 @@ export async function GET(req: NextRequest) {
       `SELECT DISTINCT o.id, o."orderNumber"
        FROM "MarketplaceOrder" o
        JOIN "MarketplaceOrderItem" oi ON oi."orderId" = o.id
-       WHERE o.status = 'DELIVERED' AND o."updatedAt" < $1 AND oi."fulfillmentStatus" != 'SETTLED'`,
-      [sevenDaysAgo]
+       WHERE o."organizationId" = $1
+         AND o.status = 'DELIVERED'
+         AND o."updatedAt" < $2
+         AND oi."fulfillmentStatus" != 'SETTLED'`,
+      [session.organizationId, sevenDaysAgo]
     )
 
     const results: any[] = []
@@ -164,14 +168,15 @@ export async function GET(req: NextRequest) {
 
         const txId = crypto.randomUUID()
         await pool.query(
-          `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, "orderId", status, "createdAt")
-           VALUES ($1,$2,$3,'SALE_SETTLED',$4,$5,$6,$7,'COMPLETED',NOW())`,
+          `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, "orderId", status, "createdAt", "organizationId")
+           VALUES ($1,$2,$3,'SALE_SETTLED',$4,$5,$6,$7,'COMPLETED',NOW(),$8)`,
           [
             txId, item.sellerId, item.wallet_id,
             Math.round(payout * 100) / 100,
             Math.round(newAvailable * 100) / 100,
             `Auto-settled (DD+7) from ${order.orderNumber}`,
             order.id,
+            session.organizationId,
           ]
         )
       }

@@ -150,17 +150,18 @@ export async function POST(req: NextRequest) {
           [Math.round(newPending * 100) / 100, Math.round(newCommission * 100) / 100, wallet.id]
         )
 
-        // Log wallet transaction
+        // Log wallet transaction (org-scoped)
         const txId = crypto.randomUUID()
         await pool.query(
-          `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, "orderId", status, "createdAt")
-           VALUES ($1,$2,$3,'SALE_PENDING',$4,$5,$6,$7,'PENDING',NOW())`,
+          `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, "orderId", status, "createdAt", "organizationId")
+           VALUES ($1,$2,$3,'SALE_PENDING',$4,$5,$6,$7,'PENDING',NOW(),$8)`,
           [
             txId, sellerId, wallet.id,
             Math.round(seller.items.reduce((s, i) => s + i.payout, 0) * 100) / 100,
             Math.round(newPending * 100) / 100,
             `Pending sale from order ${orderNumber}`,
             orderId,
+            session.organizationId,
           ]
         )
       }

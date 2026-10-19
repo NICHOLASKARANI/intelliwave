@@ -109,13 +109,14 @@ export async function POST(req: NextRequest) {
     )
 
     await pool.query(
-      `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, status, "createdAt")
-       VALUES ($1,$2,$3,'PAYOUT_REQUEST',$4,$5,$6,'PENDING',NOW())`,
+      `INSERT INTO "WalletTransaction" (id, "sellerId", "walletId", type, amount, balance, description, status, "createdAt", "organizationId")
+       VALUES ($1,$2,$3,'PAYOUT_REQUEST',$4,$5,$6,'PENDING',NOW(),$7)`,
       [
         txId, session.userId, wallet.id,
         -Math.round(amount * 100) / 100,
         Math.round(newBalance * 100) / 100,
         `Payout request — KES ${amount.toLocaleString()}`,
+        session.organizationId,
       ]
     )
 
