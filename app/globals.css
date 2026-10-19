@@ -405,3 +405,44 @@ html {
     transform: none;
   }
 }
+/* --- Print styles for statutory reports --- */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* Force all text to be dark */
+  * {
+    color: black !important;
+    text-shadow: none !important;
+  }
+  /* Ensure table borders are visible */
+  table, th, td {
+    border-color: #000 !important;
+  }
+  /* Hide non-print UI elements (buttons, nav) */
+  button, nav, .no-print {
+    display: none !important;
+  }
+}
+
+/* --- Print styles for statutory reports --- */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* Force all text to be dark */
+  * {
+    color: black !important;
+    text-shadow: none !important;
+  }
+  /* Ensure table borders are visible */
+  table, th, td {
+    border-color: #000 !important;
+  }
+  /* Hide non-print UI elements (buttons, nav) */
+  button, nav, .no-print {
+    display: none !important;
+  }
+}
