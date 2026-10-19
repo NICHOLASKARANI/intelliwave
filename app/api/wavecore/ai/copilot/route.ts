@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       pool.query('SELECT COUNT(*) FROM "Product" WHERE "organizationId" = $1', [orgId]),
       pool.query('SELECT COUNT(*) FROM "CustomerInvoice" WHERE "organizationId" = $1', [orgId]),
       pool.query('SELECT COUNT(*) FROM "Employee" WHERE "organizationId" = $1', [orgId]),
-      pool.query('SELECT COUNT(*) FROM "Project"', []),
+      pool.query('SELECT COUNT(*) FROM "Project" WHERE "organizationId" = $1', [orgId]),
     ])
 
     const insights: string[] = []
