@@ -14,7 +14,17 @@ export async function POST(req: NextRequest) {
     }
     
     if (password === adminPassword) {
-      return NextResponse.json({ success: true })
+      // Set an HttpOnly session cookie so subsequent security API calls
+      // are authenticated without re-sending the password manually.
+      const res = NextResponse.json({ success: true })
+      res.cookies.set('security_password', adminPassword, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 8, // 8 hours
+        path: '/',
+      })
+      return res
     }
     
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
