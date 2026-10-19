@@ -3,8 +3,20 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 
+function checkAdminPassword(req: NextRequest): boolean {
+  const expected = process.env.SECURITY_ADMIN_PASSWORD
+  if (!expected) return false
+  const header = req.headers.get('x-security-password') || ''
+  const cookie = req.cookies?.get?.('security_password')?.value || ''
+  const supplied = header || cookie
+  return supplied === expected
+}
+
 export async function GET(req: NextRequest) {
   try {
+    if (!checkAdminPassword(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const result = await pool.query(
       `SELECT id, name, email, "createdAt", 0 as "riskScore" FROM "User" ORDER BY "createdAt" DESC LIMIT 200`
     )
@@ -18,6 +30,9 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    if (!checkAdminPassword(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
 
