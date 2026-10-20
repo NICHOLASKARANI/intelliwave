@@ -553,7 +553,7 @@ export default function ContractDetailPage() {
           <Field label="Description *">
             <input value={newLine.description} onChange={e => setNewLine({ ...newLine, description: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" />
           </Field>
-          <div className="grid grid-cols-4 gap-2 mt-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
             <Field label="Qty"><input type="number" value={newLine.quantity} onChange={e => setNewLine({ ...newLine, quantity: Number(e.target.value) })} className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>
             <Field label="UoM">
               <select value={newLine.unitOfMeasure} onChange={e => setNewLine({ ...newLine, unitOfMeasure: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm">
@@ -577,7 +577,7 @@ export default function ContractDetailPage() {
           <Field label="Name *">
             <input value={newMilestone.name} onChange={e => setNewMilestone({ ...newMilestone, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" />
           </Field>
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
             <Field label="Due date"><input type="date" value={newMilestone.dueDate} onChange={e => setNewMilestone({ ...newMilestone, dueDate: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>
             <Field label="Amount"><input type="number" value={newMilestone.amount} onChange={e => setNewMilestone({ ...newMilestone, amount: Number(e.target.value) })} className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>
           </div>

@@ -584,7 +584,7 @@ export default function PurchaseOrderDetailPage() {
             <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Description *</label>
             <input value={newLine.description} onChange={e => setNewLine({ ...newLine, description: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />
           </div>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             <div>
               <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Qty</label>
               <input type="number" value={newLine.quantity} onChange={e => setNewLine({ ...newLine, quantity: Number(e.target.value) })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />

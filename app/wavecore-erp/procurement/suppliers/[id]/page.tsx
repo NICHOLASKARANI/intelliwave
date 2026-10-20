@@ -685,7 +685,7 @@ export default function SupplierDetailPage() {
                     {s.overallScore}/100
                   </span>
                 </div>
-                <div className="grid grid-cols-5 gap-2 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-xs">
                   <ScoreCell label="Delivery" value={s.deliveryScore} />
                   <ScoreCell label="Quality"  value={s.qualityScore} />
                   <ScoreCell label="Price"    value={s.priceScore} />
@@ -836,7 +836,7 @@ export default function SupplierDetailPage() {
 
               {subModal === 'scorecard' && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs uppercase tracking-wide text-neutral-500 font-bold block mb-1">Period start *</label>
                       <input type="date" value={subForm.periodStart} onChange={e => setSubForm({ ...subForm, periodStart: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700" />

@@ -498,7 +498,7 @@ export default function GRNDetailPage() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <Field label="Sample size">
                   <input type="number" value={decideForm.sampleSize} onChange={e => setDecideForm({ ...decideForm, sampleSize: e.target.value })} min="0" className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" />
                 </Field>

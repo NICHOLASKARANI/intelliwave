@@ -712,7 +712,7 @@ export default function RFQDetailPage() {
       {modal === 'add-line' && (
         <Modal title="Add RFQ line" onClose={() => setModal(null)}>
           <Field label="Description *"><input value={newLine.description} onChange={e => setNewLine({ ...newLine, description: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>
-          <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-3">
             <Field label="Qty"><input type="number" value={newLine.quantity} onChange={e => setNewLine({ ...newLine, quantity: Number(e.target.value) })} className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>
             <Field label="UoM">
               <select value={newLine.unitOfMeasure} onChange={e => setNewLine({ ...newLine, unitOfMeasure: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm">
@@ -763,7 +763,7 @@ export default function RFQDetailPage() {
             {quoteLines.map((ql, i) => (
               <div key={i} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-800 space-y-2">
                 <p className="text-xs font-bold text-neutral-500">Line {i+1}: {ql.description} (qty {ql.quantity})</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   <Field label="Unit price *"><input type="number" value={ql.unitPrice} onChange={e => setQuoteLines(prev => prev.map((x, idx) => idx === i ? { ...x, unitPrice: Number(e.target.value) } : x))} min="0" step="0.01" className="w-full px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>
                   <Field label="Tax %"><input type="number" value={ql.taxRate} onChange={e => setQuoteLines(prev => prev.map((x, idx) => idx === i ? { ...x, taxRate: Number(e.target.value) } : x))} min="0" max="100" className="w-full px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>
                   <Field label="Lead days"><input type="number" value={ql.leadTimeDays} onChange={e => setQuoteLines(prev => prev.map((x, idx) => idx === i ? { ...x, leadTimeDays: e.target.value } : x))} min="0" className="w-full px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" /></Field>

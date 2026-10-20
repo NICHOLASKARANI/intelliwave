@@ -85,12 +85,14 @@ export default function QuotesPage() {
             <h1>Supplier Quotes</h1>
             <div>Generated: ${new Date().toLocaleString()}</div>
           </div>
-          <table>
+          <div className="overflow-x-auto">
+<table>
             <thead><tr><th>Supplier</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
             <tbody>
               ${quotes.map(q => `<tr><td>${q.supplierName}</td><td>KSh ${q.amount}</td><td>${q.status}</td><td>${new Date(q.createdAt).toLocaleDateString()}</td></tr>`).join('')}
             </tbody>
           </table>
+</div>
           <script>window.print();</script>
         </body>
       </html>
@@ -139,7 +141,7 @@ export default function QuotesPage() {
 
         {showForm && (
           <form onSubmit={addQuote} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input type="text" placeholder="Supplier Name" required value={formData.supplierName}
                 onChange={(e) => setFormData({...formData, supplierName: e.target.value})}
                 className="px-4 py-2 rounded-xl border" />
@@ -166,7 +168,8 @@ export default function QuotesPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-sm">Supplier</th>
@@ -194,6 +197,7 @@ export default function QuotesPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </main>

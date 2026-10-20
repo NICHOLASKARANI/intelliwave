@@ -602,7 +602,7 @@ function ContractWizard({ onClose, onCreated }: { onClose: () => void; onCreated
                       <button type="button" onClick={() => removeLine(i)} className="p-1 rounded text-red-400 hover:bg-red-900/30"><X className="w-3.5 h-3.5" /></button>
                     </div>
                     <input value={l.description} onChange={e => updateLine(i, { description: e.target.value })} placeholder="Description" className="w-full px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" />
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <input type="number" value={l.quantity} onChange={e => updateLine(i, { quantity: Number(e.target.value) })} placeholder="Qty" min="0" step="0.01" className="px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" />
                       <select value={l.unitOfMeasure} onChange={e => updateLine(i, { unitOfMeasure: e.target.value })} className="px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm">
                         {UOM.map(u => <option key={u} value={u}>{u}</option>)}
@@ -631,7 +631,7 @@ function ContractWizard({ onClose, onCreated }: { onClose: () => void; onCreated
                       <button type="button" onClick={() => removeMilestone(i)} className="p-1 rounded text-red-400 hover:bg-red-900/30"><X className="w-3.5 h-3.5" /></button>
                     </div>
                     <input value={m.name} onChange={e => updateMilestone(i, { name: e.target.value })} placeholder="Milestone name" className="w-full px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" />
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input type="date" value={m.dueDate} onChange={e => updateMilestone(i, { dueDate: e.target.value })} className="px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" />
                       <input type="number" value={m.amount} onChange={e => updateMilestone(i, { amount: Number(e.target.value) })} placeholder="Amount" min="0" step="0.01" className="px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm" />
                     </div>

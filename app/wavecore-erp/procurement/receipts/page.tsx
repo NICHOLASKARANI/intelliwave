@@ -84,12 +84,14 @@ export default function GoodsReceiptsPage() {
             <h1>Goods Receipts</h1>
             <div>Generated: ${new Date().toLocaleString()}</div>
           </div>
-          <table>
+          <div className="overflow-x-auto">
+<table>
             <thead><tr><th>PO ID</th><th>Quantity</th><th>Received Date</th></tr></thead>
             <tbody>
               ${receipts.map(r => `<tr><td>${r.purchaseOrderId}</td><td>${r.quantity}</td><td>${new Date(r.receivedAt).toLocaleDateString()}</td></tr>`).join('')}
             </tbody>
           </table>
+</div>
           <script>window.print();</script>
         </body>
       </html>
@@ -138,7 +140,7 @@ export default function GoodsReceiptsPage() {
 
         {showForm && (
           <form onSubmit={addReceipt} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input type="text" placeholder="Purchase Order ID" required value={formData.purchaseOrderId}
                 onChange={(e) => setFormData({...formData, purchaseOrderId: e.target.value})}
                 className="px-4 py-2 rounded-xl border" />
@@ -165,7 +167,8 @@ export default function GoodsReceiptsPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-sm">PO ID</th>
@@ -185,6 +188,7 @@ export default function GoodsReceiptsPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </main>
