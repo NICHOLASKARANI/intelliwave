@@ -414,7 +414,7 @@ export default function BOMPage() {
               <button onClick={() => setDetail(null)} className="text-neutral-400 hover:text-red-400"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[['Name', detail.bom?.name],['Code', detail.bom?.code],['Product', detail.bom?.productId],['Output Qty', detail.bom?.quantity],['Status', detail.bom?.isActive ? 'ACTIVE' : 'INACTIVE']].map(([k,v]) => (
                   <div key={k as string} className="bg-neutral-800 rounded-xl p-3">
                     <div className="text-[10px] uppercase tracking-wide text-neutral-500">{k}</div>

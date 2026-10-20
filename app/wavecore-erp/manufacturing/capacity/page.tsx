@@ -278,7 +278,7 @@ export default function CapacityPage() {
               <div className="text-center">
                 <span className={'inline-block px-5 py-2 rounded-2xl text-base font-bold ' + statusStyle(detail.status)}>{detail.status}</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   ['Name', detail.name],
                   ['Code', detail.code],

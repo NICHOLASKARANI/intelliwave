@@ -337,7 +337,7 @@ export default function SchedulingPage() {
               <div className="text-center">
                 <span className={'inline-block px-5 py-2 rounded-2xl text-base font-bold ' + scheduleStatusStyle(detail.scheduleStatus)}>{detail.scheduleStatus.replace('_', ' ')}</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   ['Number', detail.number],
                   ['Product', detail.product],

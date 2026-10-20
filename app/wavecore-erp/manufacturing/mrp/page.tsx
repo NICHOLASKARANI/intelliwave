@@ -218,7 +218,7 @@ export default function MRPPage() {
               <div className="text-center">
                 <span className={'inline-block px-6 py-3 rounded-2xl text-xl font-bold ' + statusStyle(detail.status)}>{detail.status}</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   ['Product', detail.name],
                   ['SKU', detail.sku],

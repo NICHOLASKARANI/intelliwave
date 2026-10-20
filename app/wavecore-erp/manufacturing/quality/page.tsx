@@ -449,7 +449,7 @@ export default function QualityPage() {
               <div className="text-center">
                 <span className={'inline-block px-6 py-3 rounded-2xl text-2xl font-bold ' + resultStyle(detail.check?.result)}>{detail.check?.result || 'PENDING'}</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   ['Type', detail.check?.type],
                   ['Work Order', detail.workOrder?.number || detail.check?.workOrderId],
