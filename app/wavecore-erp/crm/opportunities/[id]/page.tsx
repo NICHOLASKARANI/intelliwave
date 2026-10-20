@@ -366,7 +366,7 @@ export default function OpportunityDetailPage() {
               <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-4 flex items-center gap-2">
                 <DollarSign className="w-4 h-4" /> Summary
               </h3>
-              <div className="grid grid-cols-2 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
                 <span className="text-neutral-500">Amount</span>
                 <span className="text-right font-medium">{fmtMoney(opportunity.amount)}</span>
 

@@ -368,7 +368,7 @@ export default function LeadsPage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-neutral-500 mb-2">Action</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {(['assign','status','delete'] as const).map(a => (
                     <button
                       key={a}

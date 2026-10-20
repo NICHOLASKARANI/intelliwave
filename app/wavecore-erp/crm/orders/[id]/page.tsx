@@ -265,7 +265,7 @@ export default function OrderDetailPage() {
             <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-4 flex items-center gap-2">
               <DollarSign className="w-4 h-4" /> Summary
             </h3>
-            <div className="grid grid-cols-2 gap-y-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
               <span className="text-neutral-500">Subtotal</span>
               <span className="text-right font-medium">{fmtMoney(order.subtotal)}</span>
 
@@ -358,7 +358,7 @@ export default function OrderDetailPage() {
                 </button>
               </div>
               <div className="p-6 space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
                   <span className="text-neutral-500">Invoice #</span>
                   <span className="text-right font-mono font-bold">{conversionResult.number}</span>
                   <span className="text-neutral-500">Status</span>

@@ -500,7 +500,7 @@ export default function LeadDetailPage() {
               <h3 className="text-xs uppercase tracking-wide text-neutral-500 font-bold mb-4 flex items-center gap-2">
                 <User className="w-4 h-4" /> Contact details
               </h3>
-              <div className="grid grid-cols-2 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
                 <span className="text-neutral-500 flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> Email</span>
                 <span className="text-right">{lead.email || '—'}</span>
                 <span className="text-neutral-500 flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> Phone</span>
@@ -623,7 +623,7 @@ export default function LeadDetailPage() {
                   <label className="block text-xs font-bold text-neutral-500 mb-1">Opportunity name</label>
                   <input value={oppForm.name} onChange={(e) => setOppForm({ ...oppForm, name: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-neutral-500 mb-1">Amount (KSh)</label>
                     <input type="number" value={oppForm.amount} onChange={(e) => setOppForm({ ...oppForm, amount: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm" />

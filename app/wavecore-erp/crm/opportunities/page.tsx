@@ -307,7 +307,7 @@ export default function OpportunitiesPage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-neutral-500 mb-2">Action</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {(['assign','stage','probability','delete'] as const).map(a => (
                     <button
                       key={a}

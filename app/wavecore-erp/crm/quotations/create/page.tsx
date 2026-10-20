@@ -119,7 +119,7 @@ export default function CreateQuotationPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
             <h3 className="font-bold mb-4">Customer</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Select Existing Customer</label>
                 <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border">

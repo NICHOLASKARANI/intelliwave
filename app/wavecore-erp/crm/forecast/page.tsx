@@ -245,7 +245,8 @@ export default function ForecastPage() {
           {stageRollup.length === 0 ? (
             <p className="text-sm text-neutral-500 text-center py-6">No open deals</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+<table className="w-full text-sm">
               <thead className="border-b border-neutral-100 dark:border-neutral-800">
                 <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
                   <th className="px-2 py-2">Stage</th>
@@ -268,6 +269,7 @@ export default function ForecastPage() {
                 ))}
               </tbody>
             </table>
+</div>
           )}
         </div>
 

@@ -105,7 +105,7 @@ export default function CreateActivityPage() {
             {/* Activity Type */}
             <div>
               <label className="text-sm font-medium mb-2 block">Activity Type</label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {activityTypes.map(type => {
                   const Icon = type.icon
                   return (
@@ -148,7 +148,7 @@ export default function CreateActivityPage() {
             </div>
 
             {/* Due Date + Priority */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block flex items-center gap-1">
                   <Calendar className="w-4 h-4" /> Due Date
