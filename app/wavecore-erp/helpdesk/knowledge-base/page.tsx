@@ -265,7 +265,7 @@ export default function KBPage() {
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Title *</label>
                 <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Category</label>
                   <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">

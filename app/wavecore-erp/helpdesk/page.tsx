@@ -165,7 +165,7 @@ export default function HelpdeskPage() {
                 {tickets.length === 0 ? (
                   <p className="text-sm text-neutral-500 text-center py-6">No tickets yet</p>
                 ) : (
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {Object.entries(byPriority).map(([p, count]) => {
                       const colors: Record<string, string> = { LOW: 'from-neutral-600 to-neutral-800', MEDIUM: 'from-blue-600 to-indigo-800', HIGH: 'from-orange-600 to-red-800', URGENT: 'from-red-600 to-rose-800' }
                       return (
@@ -191,7 +191,8 @@ export default function HelpdeskPage() {
                     View All <ArrowUpRight className="w-3 h-3" />
                   </Link>
                 </div>
-                <table className="w-full">
+                <div className="overflow-x-auto">
+<table className="w-full">
                   <thead className="bg-neutral-800">
                     <tr>
                       <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Subject</th>
@@ -221,6 +222,7 @@ export default function HelpdeskPage() {
                     ))}
                   </tbody>
                 </table>
+</div>
               </div>
             )}
 

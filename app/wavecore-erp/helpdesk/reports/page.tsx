@@ -189,7 +189,7 @@ export default function ReportsPage() {
                 <h3 className="text-sm font-bold uppercase tracking-wide text-orange-400 mb-4 flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" /> By Priority
                 </h3>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {Object.entries(byPriority).map(([p, count]) => {
                     const colors: Record<string, string> = { LOW: 'from-neutral-600 to-neutral-800', MEDIUM: 'from-blue-600 to-indigo-800', HIGH: 'from-orange-600 to-red-800', URGENT: 'from-red-600 to-rose-800' }
                     return (

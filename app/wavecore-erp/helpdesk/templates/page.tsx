@@ -138,7 +138,7 @@ export default function TemplatesPage() {
         {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
         {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
 
-        <div className="grid grid-cols-2 gap-3 mb-6 md:w-1/2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 md:w-1/2">
           <div className="p-4 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-800 text-white shadow-lg">
             <FileText className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.total || 0}</p><p className="text-xs opacity-90">Templates</p>
           </div>
@@ -210,7 +210,7 @@ export default function TemplatesPage() {
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Title *</label>
                 <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" placeholder="e.g. Welcome Response" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Category</label>
                   <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">

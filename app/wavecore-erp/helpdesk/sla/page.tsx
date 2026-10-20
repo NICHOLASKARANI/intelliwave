@@ -250,7 +250,7 @@ export default function SLAPage() {
                   {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">First Response (h)</label>
                   <input type="number" min="0.5" step="0.5" value={form.firstResponseHours} onChange={e => setForm({ ...form, firstResponseHours: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
