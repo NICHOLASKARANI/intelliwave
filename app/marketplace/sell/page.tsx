@@ -154,7 +154,7 @@ export default function SellPage() {
             <label className="text-xs font-medium text-muted-foreground mb-2 block">
               Product Images (800x800) *
             </label>
-            <div className="grid grid-cols-4 gap-3 mb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
               {images.map((img, index) => (
                 <div key={index} className="relative aspect-square rounded-xl overflow-hidden border group">
                   <img src={img} alt={`Product ${index + 1}`} className="w-full h-full object-cover" />

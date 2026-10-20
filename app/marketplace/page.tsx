@@ -323,7 +323,7 @@ export default function PublicMarketplacePage() {
                 See all <ChevronRight className="w-3 h-3" />
               </Link>
             </div>
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
               {TOP_CATEGORIES.map(c => (
                 <button
                   key={c.slug}
