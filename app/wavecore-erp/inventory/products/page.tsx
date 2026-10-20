@@ -218,7 +218,8 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-neutral-400">Product</th>
@@ -264,6 +265,7 @@ export default function ProductsPage() {
                 })}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </div>

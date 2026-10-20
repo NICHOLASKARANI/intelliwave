@@ -56,7 +56,7 @@ export default function AddProductPage() {
         <h1 className="text-2xl font-bold mb-6 flex items-center gap-2"><Package className="w-6 h-6 text-orange-500" /> Add Product</h1>
         {error && <div className="p-4 mb-6 rounded-xl bg-red-50 text-red-600 text-sm">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-4 bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium mb-2">Name *</label><input type="text" value={formData.name} onChange={(e) => update('name', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" required /></div>
             <div><label className="block text-sm font-medium mb-2">SKU *</label><input type="text" value={formData.sku} onChange={(e) => update('sku', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" required /></div>
             <div><label className="block text-sm font-medium mb-2">Barcode</label><input type="text" value={formData.barcode} onChange={(e) => update('barcode', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border" /></div>

@@ -105,7 +105,8 @@ export default function StockAgingPage() {
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-amber-500" /></div>
         ) : (
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden shadow-xl">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-800"><tr><th className="text-left p-4">Product</th><th className="text-right p-4">Stock</th><th className="text-right p-4">Days</th><th className="text-right p-4">Cost</th><th className="text-right p-4">Value</th><th className="text-left p-4">Status</th><th className="text-center p-4">Actions</th></tr></thead>
               <tbody>
                 {filtered.map((p: any) => (
@@ -121,6 +122,7 @@ export default function StockAgingPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </div>

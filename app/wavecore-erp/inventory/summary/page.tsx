@@ -51,7 +51,7 @@ export default function SummaryPage() {
           <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium"><Download className="w-4 h-4" /> PDF</button>
         </div>
         {loading ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900"><Package className="w-8 h-8 text-orange-500 mb-3" /><p className="text-3xl font-extrabold">{data.products || 0}</p><p className="text-xs text-muted-foreground">Products</p></div>
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900"><Warehouse className="w-8 h-8 text-blue-500 mb-3" /><p className="text-3xl font-extrabold">{data.warehouses || 0}</p><p className="text-xs text-muted-foreground">Warehouses</p></div>
             <div className="p-6 rounded-2xl border bg-white dark:bg-neutral-900"><ArrowRight className="w-8 h-8 text-green-500 mb-3" /><p className="text-3xl font-extrabold">{data.movements || 0}</p><p className="text-xs text-muted-foreground">Movements</p></div>

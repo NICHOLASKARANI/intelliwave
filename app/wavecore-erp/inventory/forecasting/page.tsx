@@ -164,7 +164,8 @@ export default function ForecastingPage() {
           </div>
         ) : (
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden shadow-xl">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-neutral-400 text-sm">Product</th>
@@ -192,6 +193,7 @@ export default function ForecastingPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </div>

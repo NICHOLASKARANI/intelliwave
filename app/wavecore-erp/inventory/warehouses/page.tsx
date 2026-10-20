@@ -334,7 +334,7 @@ export default function WarehousesPage() {
 
             <div className="p-5 border-b border-neutral-800 bg-neutral-900/50">
               <p className="text-sm font-bold mb-3 text-white">Add a new location</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="text" placeholder="Location name *" value={newLocation.name}
                   onChange={e => setNewLocation({ ...newLocation, name: e.target.value })}
                   className="px-3 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm" />

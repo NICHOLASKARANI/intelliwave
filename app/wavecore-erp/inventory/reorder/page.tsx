@@ -184,7 +184,7 @@ export default function ReorderPage() {
         {showForm && (
           <form onSubmit={createManualPO} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6 mb-6">
             <h2 className="font-bold text-lg text-white mb-4">New Purchase Order</h2>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <select value={form.productId} onChange={(e) => setForm({...form, productId: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
                 <option value="">Select product...</option>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -203,7 +203,8 @@ export default function ReorderPage() {
           <div className="text-center py-16 bg-neutral-900 rounded-2xl border border-neutral-800"><CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-green-500" /><p className="text-neutral-400">All products are adequately stocked</p></div>
         ) : (
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden shadow-xl">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-800"><tr><th className="text-left p-4 text-neutral-400 text-sm">Product</th><th className="text-right p-4 text-neutral-400 text-sm">Current</th><th className="text-right p-4 text-neutral-400 text-sm">Min</th><th className="text-right p-4 text-neutral-400 text-sm">Suggested</th><th className="text-right p-4 text-neutral-400 text-sm">Value</th><th className="text-left p-4 text-neutral-400 text-sm">Priority</th><th className="text-center p-4 text-neutral-400 text-sm">Actions</th></tr></thead>
               <tbody>
                 {filtered.map((r: any) => (
@@ -219,6 +220,7 @@ export default function ReorderPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
 

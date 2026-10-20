@@ -132,7 +132,8 @@ export default function CopilotPage() {
 
         {data.length > 0 && (
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden shadow-xl mb-6">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-800">
                 <tr>
                   {Object.keys(data[0]).slice(0, 5).map(key => (
@@ -154,6 +155,7 @@ export default function CopilotPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
 

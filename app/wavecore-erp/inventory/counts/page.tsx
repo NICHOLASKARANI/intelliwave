@@ -276,7 +276,8 @@ export default function CountsPage() {
           </div>
         ) : (
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden shadow-xl">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-neutral-400 text-sm">Number</th>
@@ -321,6 +322,7 @@ export default function CountsPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </div>

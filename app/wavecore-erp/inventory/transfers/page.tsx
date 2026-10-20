@@ -143,7 +143,7 @@ export default function TransfersPage() {
 
         {showForm && (
           <form onSubmit={createTransfer} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <select value={form.productId} onChange={(e) => setForm({...form, productId: e.target.value})} className="px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
                 <option value="">Select product...</option>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -158,7 +158,7 @@ export default function TransfersPage() {
           </form>
         )}
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           <button onClick={() => setActiveKpi('ALL')} className={'p-4 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-800 text-white shadow-lg ' + (activeKpi === 'ALL' ? 'ring-4 ring-violet-300' : '')}><Truck className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.totalTransfers || 0}</p><p className="text-xs">Total</p></button>
           <button onClick={() => setActiveKpi('PENDING')} className={'p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg ' + (activeKpi === 'PENDING' ? 'ring-4 ring-yellow-300' : '')}><Clock className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.pending || 0}</p><p className="text-xs">Pending</p></button>
           <button onClick={() => setActiveKpi('COMPLETED')} className={'p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg ' + (activeKpi === 'COMPLETED' ? 'ring-4 ring-green-300' : '')}><CheckCircle2 className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.completed || 0}</p><p className="text-xs">Completed</p></button>
@@ -168,7 +168,8 @@ export default function TransfersPage() {
           <div className="text-center py-16"><Loader2 className="w-12 h-12 animate-spin mx-auto text-violet-500" /></div>
         ) : (
           <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden shadow-xl">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-800"><tr><th className="text-left p-4">#</th><th className="text-left p-4">Product</th><th className="text-left p-4">From</th><th className="text-left p-4">To</th><th className="text-right p-4">Qty</th><th className="text-left p-4">Status</th><th className="text-center p-4">Actions</th></tr></thead>
               <tbody>
                 {filtered.map((t: any) => (
@@ -184,6 +185,7 @@ export default function TransfersPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </div>
