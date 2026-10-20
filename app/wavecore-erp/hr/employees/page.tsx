@@ -622,7 +622,8 @@ export default function EmployeesPage() {
                   </h4>
                   {detail.payrolls?.length > 0 ? (
                     <div className="bg-neutral-800 rounded-xl overflow-hidden">
-                      <table className="w-full text-sm">
+                      <div className="overflow-x-auto">
+<table className="w-full text-sm">
                         <thead className="bg-neutral-700"><tr>
                           <th className="text-left p-3 text-xs uppercase text-neutral-300">Period</th>
                           <th className="text-right p-3 text-xs uppercase text-neutral-300">Gross</th>
@@ -638,6 +639,7 @@ export default function EmployeesPage() {
                           ))}
                         </tbody>
                       </table>
+</div>
                     </div>
                   ) : <p className="text-sm text-neutral-500 text-center py-6">No payslips yet</p>}
                 </div>
@@ -650,7 +652,8 @@ export default function EmployeesPage() {
                     </h4>
                     {detail.leaves?.length > 0 ? (
                       <div className="bg-neutral-800 rounded-xl overflow-hidden">
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+<table className="w-full text-sm">
                           <thead className="bg-neutral-700"><tr>
                             <th className="text-left p-3 text-xs uppercase text-neutral-300">Start</th>
                             <th className="text-left p-3 text-xs uppercase text-neutral-300">End</th>
@@ -668,6 +671,7 @@ export default function EmployeesPage() {
                             ))}
                           </tbody>
                         </table>
+</div>
                       </div>
                     ) : <p className="text-sm text-neutral-500 text-center py-4">No leave history</p>}
                   </div>

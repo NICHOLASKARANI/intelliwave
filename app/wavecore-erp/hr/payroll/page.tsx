@@ -516,7 +516,7 @@ export default function PayrollPage() {
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Period Name *</label>
                 <input value={periodForm.name} onChange={e => setPeriodForm({ ...periodForm, name: e.target.value })} required className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" placeholder="e.g. September 2026" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Start</label>
                   <input type="date" value={periodForm.startDate} onChange={e => setPeriodForm({ ...periodForm, startDate: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />

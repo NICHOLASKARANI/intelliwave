@@ -435,7 +435,8 @@ export default function RecruitmentPage() {
               <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide mb-3">Applicants ({detail.applicants?.length || 0})</h3>
               {detail.applicants?.length > 0 ? (
                 <div className="bg-neutral-800 rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
+                  <div className="overflow-x-auto">
+<table className="w-full text-sm">
                     <thead className="bg-neutral-700"><tr>
                       <th className="text-left p-3 text-xs uppercase text-neutral-300">Name</th>
                       <th className="text-left p-3 text-xs uppercase text-neutral-300">Email</th>
@@ -453,6 +454,7 @@ export default function RecruitmentPage() {
                       ))}
                     </tbody>
                   </table>
+</div>
                 </div>
               ) : (
                 <p className="text-sm text-neutral-500 text-center py-8">No applicants yet</p>

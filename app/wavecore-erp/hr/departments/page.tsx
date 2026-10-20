@@ -342,7 +342,8 @@ export default function DepartmentsPage() {
               <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wide mb-3">Employee Roster</h3>
               {detail.employees?.length > 0 ? (
                 <div className="bg-neutral-800 rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
+                  <div className="overflow-x-auto">
+<table className="w-full text-sm">
                     <thead className="bg-neutral-700"><tr>
                       <th className="text-left p-3 text-xs uppercase text-neutral-300">Name</th>
                       <th className="text-left p-3 text-xs uppercase text-neutral-300">Employee ID</th>
@@ -360,6 +361,7 @@ export default function DepartmentsPage() {
                       ))}
                     </tbody>
                   </table>
+</div>
                 </div>
               ) : (
                 <p className="text-sm text-neutral-500 text-center py-8">No employees assigned to this department yet</p>
