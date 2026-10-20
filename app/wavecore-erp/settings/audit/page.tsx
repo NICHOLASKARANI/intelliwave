@@ -59,12 +59,14 @@ export default function AuditLogsPage() {
             <h1>Audit Logs</h1>
             <div>Generated: ${new Date().toLocaleString()}</div>
           </div>
-          <table>
+          <div className="overflow-x-auto">
+<table>
             <thead><tr><th>Action</th><th>Entity</th><th>User</th><th>Date</th></tr></thead>
             <tbody>
               ${logs.map(log => `<tr><td>${log.action}</td><td>${log.entityType}</td><td>${log.userId || 'System'}</td><td>${new Date(log.createdAt).toLocaleString()}</td></tr>`).join('')}
             </tbody>
           </table>
+</div>
           <script>window.print();</script>
         </body>
       </html>
@@ -124,7 +126,8 @@ export default function AuditLogsPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-sm">Action</th>
@@ -144,6 +147,7 @@ export default function AuditLogsPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </main>

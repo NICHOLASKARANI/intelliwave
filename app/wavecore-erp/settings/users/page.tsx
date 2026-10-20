@@ -107,7 +107,7 @@ export default function UsersPage() {
 
         {showForm && (
           <form onSubmit={addUser} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input type="text" placeholder="Full Name" required value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="px-4 py-2 rounded-xl border" />
@@ -144,7 +144,8 @@ export default function UsersPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-sm">Name</th>
@@ -166,6 +167,7 @@ export default function UsersPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </main>

@@ -96,7 +96,7 @@ export default function CurrencyPage() {
 
         {showForm && (
           <form onSubmit={addCurrency} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input type="text" placeholder="Code (e.g. USD)" required value={formData.code}
                 onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
                 className="px-4 py-2 rounded-xl border" />

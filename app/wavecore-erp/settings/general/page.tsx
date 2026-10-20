@@ -111,7 +111,7 @@ export default function GeneralSettingsPage() {
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-blue-500" /> Company Information
             </h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block">Company Name</label>
                 <input
@@ -170,7 +170,7 @@ export default function GeneralSettingsPage() {
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
               <Globe className="w-5 h-5 text-green-500" /> Localization
             </h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Timezone</label>
                 <select

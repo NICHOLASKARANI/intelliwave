@@ -97,7 +97,7 @@ export default function TaxesPage() {
 
         {showForm && (
           <form onSubmit={addTax} className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input type="text" placeholder="Tax Name" required value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="px-4 py-2 rounded-xl border" />
