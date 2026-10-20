@@ -101,7 +101,8 @@ export default function IncomeStatementPage() {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
             <div className="p-6">
               <h3 className="text-xs uppercase tracking-wide text-green-600 font-bold mb-3">Income</h3>
-              <table className="w-full text-sm mb-6">
+              <div className="overflow-x-auto">
+<table className="w-full text-sm mb-6">
                 <tbody>
                   {income.map(l => (
                     <tr key={l.accountId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
@@ -117,9 +118,11 @@ export default function IncomeStatementPage() {
                   </tr>
                 </tbody>
               </table>
+</div>
 
               <h3 className="text-xs uppercase tracking-wide text-red-600 font-bold mb-3">Expenses</h3>
-              <table className="w-full text-sm mb-6">
+              <div className="overflow-x-auto">
+<table className="w-full text-sm mb-6">
                 <tbody>
                   {expense.map(l => (
                     <tr key={l.accountId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
@@ -135,6 +138,7 @@ export default function IncomeStatementPage() {
                   </tr>
                 </tbody>
               </table>
+</div>
 
               <div className="border-t-2 border-neutral-900 dark:border-white pt-4 flex justify-between items-center">
                 <span className="text-lg font-bold">Net Profit</span>

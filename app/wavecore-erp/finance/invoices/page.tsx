@@ -155,7 +155,8 @@ export default function InvoicesPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-sm">Invoice #</th>
@@ -213,6 +214,7 @@ export default function InvoicesPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
 
@@ -245,7 +247,7 @@ export default function InvoicesPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                       <p className="text-xs text-muted-foreground">BILL TO</p>
                       <p className="font-bold">{selectedInvoice.customerName}</p>
@@ -257,7 +259,8 @@ export default function InvoicesPage() {
                     </div>
                   </div>
 
-                  <table className="w-full mb-4">
+                  <div className="overflow-x-auto">
+<table className="w-full mb-4">
                     <thead>
                       <tr className="bg-neutral-100">
                         <th className="text-left p-2">Description</th>
@@ -285,6 +288,7 @@ export default function InvoicesPage() {
                       )}
                     </tbody>
                   </table>
+</div>
 
                   <div className="text-right space-y-1">
                     <p>Subtotal: KSh {Number(selectedInvoice.subtotal || 0).toLocaleString()}</p>

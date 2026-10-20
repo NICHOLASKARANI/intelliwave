@@ -133,7 +133,8 @@ export default function ChartOfAccountsPage() {
           </div>
         ) : accounts.length > 0 ? (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+<table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-neutral-50 dark:bg-neutral-800">
                   <th className="text-left p-4">Code</th>
@@ -163,6 +164,7 @@ export default function ChartOfAccountsPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         ) : (
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">

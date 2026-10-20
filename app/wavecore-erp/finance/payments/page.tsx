@@ -106,7 +106,8 @@ export default function PaymentsPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+<table className="w-full">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
                   <th className="text-left p-4 text-sm">Receipt #</th>
@@ -143,6 +144,7 @@ export default function PaymentsPage() {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         )}
       </main>

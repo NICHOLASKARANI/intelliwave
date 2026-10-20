@@ -129,7 +129,8 @@ function downloadJournalPdf(id: string) {
           </div>
         ) : entries.length > 0 ? (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+<table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-neutral-50 dark:bg-neutral-800">
                   <th className="text-left p-4">Entry #</th>
@@ -169,6 +170,7 @@ function downloadJournalPdf(id: string) {
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         ) : (
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">

@@ -164,7 +164,8 @@ export default function FiscalPeriodsPage() {
                     </p>
                   </div>
                 </div>
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+<table className="w-full text-sm">
                   <thead className="bg-neutral-50 dark:bg-neutral-800/50">
                     <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
                       <th className="px-6 py-3">Period</th>
@@ -211,6 +212,7 @@ export default function FiscalPeriodsPage() {
                     ))}
                   </tbody>
                 </table>
+</div>
               </div>
             ))}
           </div>

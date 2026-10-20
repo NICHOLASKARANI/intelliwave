@@ -33,7 +33,7 @@ export default function RidePage() {
         </p>
 
         {/* Features Preview */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           <div className="p-4 rounded-2xl bg-white/5 text-center">
             <Bike className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
             <p className="text-xs text-neutral-300">Boda Rides</p>

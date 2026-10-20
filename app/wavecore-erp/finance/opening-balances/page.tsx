@@ -193,7 +193,8 @@ export default function OpeningBalancesPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+<table className="w-full text-sm">
               <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
                 <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 font-bold">
                   <th className="px-4 py-3 w-24">Code</th>
@@ -238,6 +239,7 @@ export default function OpeningBalancesPage() {
                 </tr>
               </tfoot>
             </table>
+</div>
           </div>
         )}
       </main>

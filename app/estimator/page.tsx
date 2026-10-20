@@ -30,7 +30,7 @@ export default function EstimatorPage() {
       <div className="grid gap-6 bg-card p-8 rounded-2xl border shadow-lg">
         <div>
           <label className="block text-sm mb-2 font-medium">Project Type</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {services.map(s => (
               <button
                 key={s.id}
