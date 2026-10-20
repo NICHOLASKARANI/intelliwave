@@ -160,20 +160,27 @@ export default function InboxPage() {
 
                   {/* Messages List */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {messages.map(msg => (
-                      <div key={msg.id} className={`flex ${msg.senderId === activeConversation.buyerId && msg.senderId !== activeConversation.sellerId ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[70%] p-3 rounded-2xl ${
-                          msg.senderId === activeConversation.buyerId
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-neutral-100 dark:bg-neutral-800'
-                        }`}>
-                          <p className="text-sm">{msg.content}</p>
-                          <p className={`text-xs mt-1 ${msg.senderId === activeConversation.buyerId ? 'text-white/70' : 'text-muted-foreground'}`}>
-                            {new Date(msg.createdAt).toLocaleTimeString()}
-                          </p>
+                    {messages.map(msg => {
+                      const isBuyer = msg.senderId === activeConversation.buyerId
+                      const displayName = msg.senderName || (isBuyer ? 'Buyer' : 'Seller')
+                      return (
+                        <div key={msg.id} className={`flex flex-col ${isBuyer ? 'items-start' : 'items-end'}`}>
+                          <span className={`text-[10px] font-semibold mb-1 px-1 ${isBuyer ? 'text-pink-600' : 'text-blue-600'}`}>
+                            {displayName}
+                          </span>
+                          <div className={`max-w-[70%] p-3 rounded-2xl ${
+                            isBuyer
+                              ? 'bg-pink-500 text-white rounded-bl-sm'
+                              : 'bg-blue-500 text-white rounded-br-sm'
+                          }`}>
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            <p className={`text-xs mt-1 ${isBuyer ? 'text-white/80' : 'text-white/80'}`}>
+                              {new Date(msg.createdAt).toLocaleTimeString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   {/* Message Input */}

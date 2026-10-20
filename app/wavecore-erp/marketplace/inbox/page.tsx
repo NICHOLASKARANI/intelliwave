@@ -230,37 +230,22 @@ export default function InboxPage() {
                     </div>
                   ) : (
                     messages.map(m => {
-                      // Determine if this is "my" message by checking receiverId
-                      const isMine = m.senderId === selected.senderId || !m.receiverId
-                    
-  if (subscriptionRequired) {
-    return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-neutral-900 rounded-2xl border border-neutral-800 p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Subscription Required</h1>
-          <p className="text-sm text-neutral-400 mb-6">
-            Messaging is available to subscribed users only. Activate a plan to message sellers and buyers.
-          </p>
-          <a
-            href="/wavecore-erp/subscription/pay"
-            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold hover:opacity-90"
-          >
-            Subscribe Now
-          </a>
-        </div>
-      </div>
-    )
-  }
-  return (
-                        <div key={m.id} className={'flex ' + (isMine ? 'justify-end' : 'justify-start')}>
-                          <div className={'max-w-[70%] p-3 rounded-2xl ' + (isMine ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-br-sm' : 'bg-neutral-800 text-neutral-200 rounded-bl-sm')}>
+                      const isBuyer = m.senderId === selected.buyerId
+                      const displayName = m.senderName || (isBuyer ? 'Buyer' : 'Seller')
+                      return (
+                        <div key={m.id} className={`flex flex-col ${isBuyer ? 'items-start' : 'items-end'}`}>
+                          <span className={`text-[10px] font-semibold mb-1 px-1 ${isBuyer ? 'text-pink-400' : 'text-blue-400'}`}>
+                            {displayName}
+                          </span>
+                          <div className={`max-w-[70%] p-3 rounded-2xl ${
+                            isBuyer
+                              ? 'bg-pink-500 text-white rounded-bl-sm'
+                              : 'bg-blue-500 text-white rounded-br-sm'
+                          }`}>
                             <p className="text-sm whitespace-pre-wrap">{m.content}</p>
-                            <div className={'flex items-center gap-1 mt-1 text-[10px] ' + (isMine ? 'text-white/70 justify-end' : 'text-neutral-500')}>
+                            <div className="flex items-center gap-1 mt-1 text-[10px] text-white/80">
                               {new Date(m.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                              {isMine && m.isRead && <CheckCheck className="w-3 h-3" />}
+                              {m.senderId === selected.buyerId && m.isRead && <CheckCheck className="w-3 h-3" />}
                             </div>
                           </div>
                         </div>
