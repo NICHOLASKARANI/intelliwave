@@ -115,6 +115,28 @@ export default function InboxPage() {
            (c.listingTitle || '').toLowerCase().includes(s) ||
            (c.lastMessage || '').toLowerCase().includes(s)
   })
+  if (subscriptionRequired) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-neutral-900 rounded-2xl border border-neutral-800 p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">Subscription Required</h1>
+          <p className="text-sm text-neutral-400 mb-6">
+            Messaging is available to subscribed users only. Activate a plan to message sellers and buyers.
+          </p>
+          <a
+            href="/wavecore-erp/subscription/pay"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold hover:opacity-90"
+          >
+            Subscribe Now
+          </a>
+        </div>
+      </div>
+    )
+  }
+
 
   return (
     <div className="min-h-screen bg-neutral-950">

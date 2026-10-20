@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MessageCircle, Send, Loader2, ChevronLeft, User, BadgeCheck } from 'lucide-react'
+import { MessageCircle, Send, Loader2, ChevronLeft, User, BadgeCheck, AlertCircle } from 'lucide-react'
 
 export default function InboxPage() {
   const [conversations, setConversations] = useState<any[]>([])
@@ -12,6 +12,7 @@ export default function InboxPage() {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [subscriptionRequired, setSubscriptionRequired] = useState(false)
 
   useEffect(() => {
     fetchConversations()
@@ -26,9 +27,15 @@ export default function InboxPage() {
   const fetchConversations = async () => {
     try {
       const res = await fetch('/api/marketplace/conversations')
+      if (res.status === 402) {
+        setSubscriptionRequired(true)
+        setConversations([])
+        return
+      }
       if (res.ok) {
         const data = await res.json()
         setConversations(data.conversations || [])
+        setSubscriptionRequired(false)
         if (data.conversations?.length > 0 && !activeConversation) {
           setActiveConversation(data.conversations[0])
         }
@@ -72,6 +79,28 @@ export default function InboxPage() {
     } finally {
       setSending(false)
     }
+  }
+
+  if (subscriptionRequired) {
+    return (
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-neutral-900 rounded-2xl border p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Subscription Required</h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Messaging is available to subscribed users only. Activate a plan to message sellers and buyers.
+          </p>
+          <a
+            href="/wavecore-erp/subscription/pay"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold hover:opacity-90"
+          >
+            Subscribe Now
+          </a>
+        </div>
+      </div>
+    )
   }
 
   return (
