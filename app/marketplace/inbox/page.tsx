@@ -203,8 +203,8 @@ export default function InboxPage() {
                               : 'bg-blue-500 text-white rounded-br-sm'
                           }`}>
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                            <p className={`text-xs mt-1 ${isBuyer ? 'text-white/80' : 'text-white/80'}`}>
-                              {new Date(msg.createdAt).toLocaleTimeString()}
+                            <p className="text-[10px] mt-1 text-white/80">
+                              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>

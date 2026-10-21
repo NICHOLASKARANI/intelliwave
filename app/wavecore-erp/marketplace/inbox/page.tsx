@@ -252,8 +252,10 @@ export default function InboxPage() {
                     </div>
                   ) : (
                     messages.map(m => {
+                      // Determine if this message is from the buyer
                       const isBuyer = m.senderId === selected.buyerId
                       const displayName = m.senderName || (isBuyer ? 'Buyer' : 'Seller')
+                      
                       return (
                         <div key={m.id} className={`flex flex-col ${isBuyer ? 'items-start' : 'items-end'}`}>
                           <span className={`text-[10px] font-semibold mb-1 px-1 ${isBuyer ? 'text-pink-400' : 'text-blue-400'}`}>
@@ -267,7 +269,6 @@ export default function InboxPage() {
                             <p className="text-sm whitespace-pre-wrap">{m.content}</p>
                             <div className="flex items-center gap-1 mt-1 text-[10px] text-white/80">
                               {new Date(m.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                              {m.senderId === selected.buyerId && m.isRead && <CheckCheck className="w-3 h-3" />}
                             </div>
                           </div>
                         </div>
