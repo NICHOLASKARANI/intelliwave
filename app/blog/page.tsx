@@ -212,7 +212,7 @@ export default function BlogPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {featuredPost && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <Link href={`/blog/${featuredPost.id}`} className="group block relative rounded-3xl overflow-hidden bg-slate-900 aspect-[16/9] lg:aspect-[21/9] shadow-2xl">
+              <Link href="/contact" className="group block relative rounded-3xl overflow-hidden bg-slate-900 aspect-[16/9] lg:aspect-[21/9] shadow-2xl">
                 <Image 
                   src={featuredPost.image} 
                   alt={featuredPost.title} 
@@ -261,7 +261,7 @@ export default function BlogPage() {
                 viewport={{ once: true }} 
                 transition={{ delay: i * 0.1 }}
               >
-                <Link href={`/blog/${post.id}`} className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-xl transition-all duration-300">
+                <Link href="/contact" className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-xl transition-all duration-300">
                   <div className="relative aspect-[16/10] overflow-hidden">
                     <Image 
                       src={post.image} 
