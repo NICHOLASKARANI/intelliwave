@@ -1,70 +1,85 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { 
-  ArrowRight, Search, Calendar, Clock, User, Tag, TrendingUp,
-  Sparkles, Globe, Shield, Zap, BarChart3, Rocket, Star,
-  ChevronRight, BookOpen, Award, Target, Eye, Heart, Users
- } from 'lucide-react'
+import { ArrowRight, Search, Calendar, Clock, User, Tag, BookOpen } from 'lucide-react'
 
-// Animated Counter Component
-function AnimatedCounter({ end, duration = 2500, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
-  const [count, setCount] = useState(0)
-  const [hasStarted, setHasStarted] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !hasStarted) {
-          setHasStarted(true)
-          let startTime: number
-          let animationId: number
-          const easeOutExpo = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t))
-          const animate = (timestamp: number) => {
-            if (!startTime) startTime = timestamp
-            const elapsed = timestamp - startTime
-            const progress = Math.min(elapsed / duration, 1)
-            setCount(Math.floor(easeOutExpo(progress) * end))
-            if (progress < 1) animationId = requestAnimationFrame(animate)
-          }
-          animationId = requestAnimationFrame(animate)
-          return () => cancelAnimationFrame(animationId)
-        }
-      },
-      { threshold: 0.3 }
-    )
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [end, duration, hasStarted])
-
-  return (
-    <div ref={ref} className="inline-flex">
-      {prefix}{count.toLocaleString()}{suffix}
-    </div>
-  )
-}
-
-const categories = ['All', 'AI & ML', 'Web Dev', 'Cloud', 'Business', 'Security', 'Career', 'IIoT', 'ERP']
+const categories = ['All', 'AI & ML', 'ERP', 'E-commerce', 'Cybersecurity', 'Cloud']
 
 const posts = [
-  { id: 1, title: 'The Future of AI in African Enterprise: 2026-2030 Vision', excerpt: 'How AI is transforming businesses across Africa.', date: '2026-08-18', readTime: '5 min', category: 'AI & ML', author: 'Nicholas Karani', featured: true, views: 12500, likes: 890, image: '/products/wavecore.png' },
-  { id: 2, title: 'Building Scalable SaaS Platforms for Millions in 2026', excerpt: 'Best practices for SaaS that scale to millions.', date: '2026-08-15', readTime: '7 min', category: 'Web Dev', author: 'Mark Mwangi', featured: true, views: 9800, likes: 756, image: '/products/wavveai.png' },
-  { id: 3, title: 'Cloud Infrastructure: Multi-Tenant ERP Architecture', excerpt: 'Neon PostgreSQL, Vercel Edge, 100+ connections.', date: '2026-08-12', readTime: '4 min', category: 'Cloud', author: 'IntelliWavve Team', featured: false, views: 7200, likes: 543, image: '/products/wavvemarket.png' },
-  { id: 4, title: 'Why Kenyan Companies Invest in AI: 2026 Stats', excerpt: 'KSh 500 ERP subscriptions democratizing access.', date: '2026-08-10', readTime: '6 min', category: 'AI & ML', author: 'Nicholas Karani', featured: false, views: 6300, likes: 421, image: '/products/custom-platforms.png' },
-  { id: 5, title: 'AI-Native ERP: Oracle, Epicor, Acumatica vs WaveCore', excerpt: 'Combining NetSuite + Kinetic + Acumatica + Fusion.', date: '2026-08-08', readTime: '8 min', category: 'ERP', author: 'Nicholas Karani', featured: false, views: 8500, likes: 634, image: '/products/intelliwavve-card.png' },
-  { id: 6, title: 'Cybersecurity 2026: Protecting Multi-Tenant SaaS', excerpt: 'SOC 2 Type II, ISO 27001, GDPR compliance.', date: '2026-08-05', readTime: '5 min', category: 'Security', author: 'IntelliWavve Team', featured: false, views: 5400, likes: 389, image: '/products/wavecore.png' },
-  { id: 7, title: 'From Idea to IPO: IntelliWavve Journey to 2030', excerpt: 'Becoming the world\'s largest AI-native ERP platform.', date: '2026-08-01', readTime: '10 min', category: 'Business', author: 'Nicholas Karani', featured: true, views: 15000, likes: 1200, image: '/products/wavveai.png' },
+  {
+    id: 1,
+    title: 'The Future of AI in African Enterprise',
+    excerpt: 'How artificial intelligence is reshaping the operational landscape for businesses across East Africa, from supply chain to customer experience.',
+    date: 'Aug 18, 2026',
+    readTime: '5 min read',
+    category: 'AI & ML',
+    author: 'Nicholas Karani',
+    featured: true,
+    image: '/images/blog/ai-automation.jpeg',
+  },
+  {
+    id: 2,
+    title: 'Building a High-Trust Marketplace',
+    excerpt: 'Lessons learned from scaling WavveMarket. How we balance buyer protection with frictionless seller onboarding.',
+    date: 'Aug 15, 2026',
+    readTime: '7 min read',
+    category: 'E-commerce',
+    author: 'Mark Mwangi',
+    featured: false,
+    image: '/images/blog/ecommerce.jpeg',
+  },
+  {
+    id: 3,
+    title: 'Multi-Tenant ERP: Architecture at Scale',
+    excerpt: 'Deep dive into the database architecture powering WaveCore ERP. Why we chose PostgreSQL, Neon, and strict tenant isolation.',
+    date: 'Aug 12, 2026',
+    readTime: '8 min read',
+    category: 'ERP',
+    author: 'IntelliWavve Team',
+    featured: false,
+    image: '/images/blog/cloud-devops.jpg',
+  },
+  {
+    id: 4,
+    title: 'Securing the Modern Enterprise',
+    excerpt: 'Beyond firewalls. How we approach security and data sovereignty for financial and healthcare clients in Kenya.',
+    date: 'Aug 10, 2026',
+    readTime: '6 min read',
+    category: 'Cybersecurity',
+    author: 'IntelliWavve Team',
+    featured: false,
+    image: '/images/blog/cybersecurity.jpg',
+  },
+  {
+    id: 5,
+    title: 'Digital Transformation for Real Estate',
+    excerpt: 'Moving away from spreadsheets. How property managers are using digital platforms to manage thousands of tenants.',
+    date: 'Aug 05, 2026',
+    readTime: '4 min read',
+    category: 'Business',
+    author: 'Nicholas Karani',
+    featured: false,
+    image: '/images/blog/real-estate.jpeg',
+  },
+  {
+    id: 6,
+    title: 'The Evolution of Kenyan SaaS',
+    excerpt: 'A look at the growing software ecosystem in Nairobi and the shift towards global-grade, locally-built platforms.',
+    date: 'Aug 01, 2026',
+    readTime: '10 min read',
+    category: 'Business',
+    author: 'Nicholas Karani',
+    featured: false,
+    image: '/images/blog/corporate.jpeg',
+  },
 ]
 
 export default function BlogPage() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
-  const [visiblePosts, setVisiblePosts] = useState(6)
 
   const filteredPosts = posts.filter(post => {
     const matchesCategory = activeCategory === 'All' || post.category === activeCategory
@@ -72,60 +87,52 @@ export default function BlogPage() {
     return matchesCategory && matchesSearch
   })
 
-  return (
-    <div className="min-h-screen bg-neutral-950 relative overflow-hidden">
-      {/* Starry Orbiting Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        {[...Array(50)].map((_, i) => (
-          <div key={i}
-            className="absolute rounded-full bg-white animate-pulse"
-            style={{
-              width: Math.random() * 3 + 1 + 'px',
-              height: Math.random() * 3 + 1 + 'px',
-              top: Math.random() * 100 + '%',
-              left: Math.random() * 100 + '%',
-              animationDuration: Math.random() * 3 + 2 + 's',
-              animationDelay: Math.random() * 2 + 's',
-              opacity: Math.random() * 0.5 + 0.3,
-            }}
-          />
-        ))}
-        {/* Orbiting rings */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-indigo-500/20 rounded-full animate-spin" style={{ animationDuration: '60s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-purple-500/10 rounded-full animate-spin" style={{ animationDuration: '80s', animationDirection: 'reverse' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] border border-pink-500/5 rounded-full animate-spin" style={{ animationDuration: '100s' }} />
-      </div>
+  const featuredPost = filteredPosts.find(p => p.featured)
+  const regularPosts = filteredPosts.filter(p => !p.featured)
 
-      {/* Hero */}
-      <section className="relative py-20">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm mb-6">
-            <Sparkles className="w-4 h-4 text-amber-400" /> IntelliWavve Insights
-          </span>
-          <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6">
-            Enterprise <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">AI Blog</span>
-          </h1>
-          <p className="text-xl text-neutral-300 max-w-3xl mx-auto mb-10">
-            Insights on AI, ERP, Cloud, and the Future of Enterprise Technology
-          </p>
-          <div className="max-w-2xl mx-auto relative">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-            <input type="text" placeholder="Search articles..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-neutral-400 focus:outline-none focus:border-indigo-400 text-lg" />
-          </div>
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+      
+      {/* ================= HERO ================= */}
+      <section className="relative pt-32 pb-16 lg:pt-40 lg:pb-24 overflow-hidden bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold text-sm mb-6 border border-blue-100">
+              <BookOpen className="w-4 h-4" /> IntelliWavve Insights
+            </span>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
+              Ideas for <span className="text-blue-600">What's Next</span>
+            </h1>
+            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10">
+              Thoughtful perspectives on AI, enterprise software, and the future of African business.
+            </p>
+            
+            <div className="max-w-xl mx-auto relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Search articles..." 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm" 
+              />
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="relative py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-wrap justify-center gap-3">
+      {/* ================= CATEGORIES ================= */}
+      <section className="sticky top-0 z-30 bg-slate-50/90 backdrop-blur-md border-b border-slate-200 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap justify-center gap-2">
             {categories.map(category => (
-              <button key={category} onClick={() => setActiveCategory(category)}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+              <button 
+                key={category} 
+                onClick={() => setActiveCategory(category)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                   activeCategory === category
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                    : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
                 }`}>
                 {category}
               </button>
@@ -134,87 +141,130 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* Posts */}
-      <section className="relative py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPosts.slice(0, visiblePosts).map(post => (
-              <motion.article key={post.id} whileHover={{ y: -5 }}
-                className={`bg-white/5 rounded-3xl overflow-hidden p-8 border border-white/10 ${
-                  post.featured ? 'lg:col-span-2' : ''
-                }`}>
-                <div className={`relative w-full ${post.featured ? 'aspect-[21/9]' : 'aspect-[16/9]'} overflow-hidden -m-8 mb-6`}>
-                  <Image
-                    src={post.image}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition-transform duration-700 hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
-                </div>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-400">
-                    {post.category}
-                  </span>
-                  {post.featured && (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 flex items-center gap-1">
-                      <Star className="w-3 h-3" /> Featured
+      {/* ================= FEATURED POST ================= */}
+      <section className="py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {featuredPost && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <Link href={`/blog/${featuredPost.id}`} className="group block relative rounded-3xl overflow-hidden bg-slate-900 aspect-[16/9] lg:aspect-[21/9] shadow-2xl">
+                <Image 
+                  src={featuredPost.image} 
+                  alt={featuredPost.title} 
+                  fill 
+                  className="object-cover opacity-60 group-hover:opacity-40 group-hover:scale-105 transition-all duration-700" 
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
+                
+                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white shadow-sm">
+                      Featured
                     </span>
-                  )}
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-sm">
+                      {featuredPost.category}
+                    </span>
+                  </div>
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight group-hover:text-blue-300 transition-colors">
+                    {featuredPost.title}
+                  </h2>
+                  <p className="text-lg text-slate-300 mb-8 max-w-2xl hidden md:block">
+                    {featuredPost.excerpt}
+                  </p>
+                  <div className="flex items-center gap-6 text-sm text-slate-400 font-medium">
+                    <span className="flex items-center gap-2"><User className="w-4 h-4" /> {featuredPost.author}</span>
+                    <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {featuredPost.date}</span>
+                    <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> {featuredPost.readTime}</span>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold mb-3 text-white">{post.title}</h2>
-                <p className="text-neutral-400 mb-6">{post.excerpt}</p>
-                <div className="flex items-center gap-4 text-sm text-neutral-500 mb-6">
-                  <span className="flex items-center gap-1"><User className="w-4 h-4" /> {post.author}</span>
-                  <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {post.date}</span>
-                  <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {post.readTime}</span>
-                </div>
-                <div className="flex items-center justify-end pt-2 border-t border-white/5">
-                  <Link href="/contact" className="flex items-center gap-2 text-indigo-400 font-medium hover:gap-3 transition-all">
-                    Read More <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
-          </div>
+              </Link>
+            </motion.div>
+          )}
         </div>
       </section>
 
-      {/* Newsletter */}
-      <section className="relative py-20 border-t border-white/10">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm mb-6">
-            <Sparkles className="w-4 h-4 text-amber-400" /> Editorial Newsletter
-          </span>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
-            Ideas for What&apos;s Next
-          </h2>
-          <p className="text-lg text-neutral-300 mb-10 max-w-2xl mx-auto">
-            Get thoughtful perspectives on AI, software engineering, enterprise transformation, and emerging technology.
-          </p>
-          <form
-            onSubmit={(e) => { e.preventDefault(); window.location.href = '/contact' }}
-            className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto"
-          >
-            <input
-              type="email"
-              required
-              placeholder="you@company.com"
-              className="flex-1 px-6 py-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-neutral-400 focus:outline-none focus:border-indigo-400"
-            />
-            <button
-              type="submit"
-              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:opacity-90 transition"
-            >
-              Subscribe
-            </button>
-          </form>
-          <p className="text-xs text-neutral-500 mt-4">
-            By subscribing you agree to receive editorial updates from IntelliWavve Insights.
-          </p>
+      {/* ================= GRID POSTS ================= */}
+      <section className="py-8 lg:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {regularPosts.map((post, i) => (
+              <motion.article 
+                key={post.id} 
+                initial={{ opacity: 0, y: 20 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                viewport={{ once: true }} 
+                transition={{ delay: i * 0.1 }}
+              >
+                <Link href={`/blog/${post.id}`} className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-xl transition-all duration-300">
+                  <div className="relative aspect-[16/10] overflow-hidden">
+                    <Image 
+                      src={post.image} 
+                      alt={post.title} 
+                      fill 
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+                    />
+                  </div>
+                  
+                  <div className="p-6 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                        {post.category}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="text-sm text-slate-600 mb-6 flex-1 line-clamp-2">
+                      {post.excerpt}
+                    </p>
+                    
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
+                      <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> {post.author}</span>
+                      <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {post.readTime}</span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.article>
+            ))}
+          </div>
+          
+          {filteredPosts.length === 0 && (
+            <div className="text-center py-20 bg-white rounded-2xl border border-slate-200">
+              <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">No articles found</h3>
+              <p className="text-slate-500">Try adjusting your search or category filter.</p>
+            </div>
+          )}
         </div>
       </section>
+
+      {/* ================= NEWSLETTER ================= */}
+      <section className="py-20 lg:py-28 bg-slate-900 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6">Stay ahead of the curve</h2>
+          <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
+            Join our newsletter for exclusive insights on AI, software engineering, and enterprise transformation.
+          </p>
+          <form 
+            onSubmit={(e) => { e.preventDefault(); window.location.href = '/contact' }}
+            className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto"
+          >
+            <input 
+              type="email" 
+              required 
+              placeholder="Enter your work email" 
+              className="flex-1 px-5 py-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+            />
+            <button 
+              type="submit" 
+              className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex items-center justify-center gap-2"
+            >
+              Subscribe <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      </section>
+
     </div>
   )
 }
