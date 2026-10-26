@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { ShoppingCart, X } from 'lucide-react'
 
 const MENU = {
+  All: ['View All'],
   Men: ['Shirts', 'Outerwear', 'View All'],
   Women: ['Shirts', 'Outerwear', 'View All'],
   Kids: ['Shirts', 'Outerwear', 'View All'],
@@ -13,7 +14,7 @@ const MENU = {
 
 export default function ShopWaveCoreERP() {
   const [products, setProducts] = useState<any[]>([])
-  const [activeCategory, setActiveCategory] = useState('Men')
+  const [activeCategory, setActiveCategory] = useState('All')
   const [activeSub, setActiveSub] = useState('View All')
   const [cart, setCart] = useState<any[]>([])
   const [isCartOpen, setIsCartOpen] = useState(false)
