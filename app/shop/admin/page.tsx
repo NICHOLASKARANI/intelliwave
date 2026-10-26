@@ -38,10 +38,15 @@ export default function AdminDashboard() {
     if (!confirm('Delete this product and its image?')) return
     setLoading(true)
     try {
-      const res = await fetch(`/api/shop/products/${id}?password=${password}`, { method: 'DELETE' })
+      const res = await fetch(`/api/shop/products/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-password': password },
+      })
       if (res.ok) {
         setMessage('Product deleted')
         fetchProducts()
+      } else {
+        setMessage('Delete failed: ' + (await res.json()).error)
       }
     } finally { setLoading(false) }
   }

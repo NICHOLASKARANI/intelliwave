@@ -7,27 +7,26 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { searchParams } = new URL(req.url)
-    const password = searchParams.get('password')
-    
+    // Read password from a header — avoids URL-encoding issues
+    const password = req.headers.get('x-admin-password')
+
     if (password !== process.env.SHOP_ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 1. Find the product to get its image URL
-    const res = await pool.query('SELECT "imageUrl" FROM "ShopProduct" WHERE id = $1', [params.id])
+    const res = await pool.query(
+      'SELECT "imageUrl" FROM "ShopProduct" WHERE id = $1',
+      [params.id]
+    )
     if (res.rows.length === 0) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
     const imageUrl = res.rows[0].imageUrl
-
-    // 2. Delete the image from Vercel Blob
     if (imageUrl && imageUrl.startsWith('http')) {
       await del(imageUrl).catch(err => console.error('Blob delete failed:', err))
     }
 
-    // 3. Delete the product from the database
     await pool.query('DELETE FROM "ShopProduct" WHERE id = $1', [params.id])
 
     return NextResponse.json({ success: true })
