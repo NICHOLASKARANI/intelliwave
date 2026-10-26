@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { upload } from '@vercel/blob/client'
 import { Upload, CheckCircle, AlertCircle, Image as ImageIcon } from 'lucide-react'
 
 export default function AdminDashboard() {
@@ -28,45 +27,12 @@ export default function AdminDashboard() {
 
     const form = e.currentTarget
     const formData = new FormData(form)
-    const file = formData.get('image') as File
-    const store = formData.get('store') as string
-    const name = formData.get('name') as string
-    const description = formData.get('description') as string
-    const price = formData.get('price') as string
-    const category = formData.get('category') as string
-    const subCategory = formData.get('subCategory') as string
-
-    if (!file || file.size === 0) {
-      setMessage('Please select an image file.')
-      setLoading(false)
-      return
-    }
+    formData.append('password', password)
 
     try {
-      // 1. Upload directly to Vercel Blob
-      // We use a simple filename to avoid issues
-      const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`
-      
-      const blob = await upload(safeName, file, {
-        access: 'public',
-        handleUploadUrl: '/api/shop/admin',
-        clientPayload: password, // Pass password for server validation
-      })
-
-      // 2. Save product details to database (using the blob URL)
-      const res = await fetch('/api/shop/products', {
+      const res = await fetch('/api/shop/admin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          password,
-          store,
-          name,
-          description,
-          price,
-          imageUrl: blob.url,
-          category,
-          subCategory,
-        }),
+        body: formData,
       })
 
       const data = await res.json()
