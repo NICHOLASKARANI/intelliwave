@@ -6,6 +6,7 @@ import { Menu, X, ChevronDown, Search, Sparkles, ArrowRight, Globe, Shield, Star
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { SocialIcons } from '@/components/ui/social-icons'
+import { ShopDropdown } from '@/components/ui/shop-dropdown'
 import { SearchPalette } from '@/components/ui/search-palette'
 
 const navigation = [
@@ -232,6 +233,7 @@ export function Navbar() {
                 </Link>
               )
             })}
+          <ShopDropdown />
           </div>
 
           {/* Right Actions */}
@@ -301,6 +303,7 @@ export function Navbar() {
                 </Link>
               )
             })}
+          <ShopDropdown />
             <Link
               href="/contact"
               onClick={() => setMobileMenuOpen(false)}
