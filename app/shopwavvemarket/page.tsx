@@ -88,13 +88,14 @@ export default function ShopWavveMarket() {
           {filtered.map(p => (
             <div key={p.id} className="bg-slate-900 rounded-2xl border border-white/10 overflow-hidden group hover:border-pink-500/50 transition-all duration-300">
               {/* Image Container — Large and Clear */}
-              <div className="relative aspect-square overflow-hidden bg-slate-800">
+              <div className="relative aspect-square overflow-hidden bg-slate-800 cursor-pointer">
                 <Image 
-                  src={p.imageurl} 
+                  src={p.imageUrl || p.imageurl} 
                   alt={p.name} 
                   fill 
                   className="object-cover group-hover:scale-105 transition-transform duration-500" 
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  onClick={() => window.open(p.imageUrl || p.imageurl, '_blank')}
                 />
               </div>
               
