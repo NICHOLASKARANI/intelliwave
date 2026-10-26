@@ -7,9 +7,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Read password from a header — avoids URL-encoding issues
     const password = req.headers.get('x-admin-password')
-
     if (password !== process.env.SHOP_ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -31,7 +29,27 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Delete error:', error)
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await req.json()
+    if (body.password !== process.env.SHOP_ADMIN_PASSWORD) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    await pool.query(
+      `UPDATE "ShopProduct" SET name = $1, description = $2, price = $3, category = $4, "subCategory" = $5 WHERE id = $6`,
+      [body.name, body.description, body.price, body.category, body.subCategory, params.id]
+    )
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Update failed: ' + (error as Error).message }, { status: 500 })
   }
 }
