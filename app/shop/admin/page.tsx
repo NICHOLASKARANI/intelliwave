@@ -44,6 +44,7 @@ export default function AdminDashboard() {
 
     try {
       // 1. Upload directly to Vercel Blob
+      // We use a simple filename to avoid issues
       const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`
       
       const blob = await upload(safeName, file, {

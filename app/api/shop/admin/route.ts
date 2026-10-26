@@ -14,25 +14,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const adminPassword = process.env.SHOP_ADMIN_PASSWORD
 
         if (!password || password !== adminPassword) {
-          throw new Error('Unauthorized')
+          throw new Error('Unauthorized: Invalid admin password')
         }
 
         return {
           allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp'],
-          maximumSizeInBytes: 10 * 1024 * 1024, // 10MB
+          maximumSizeInBytes: 10 * 1024 * 1024, // 10MB limit
           addRandomSuffix: true,
         }
       },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // This fires after the upload finishes.
-        // The client will handle saving the product details via a separate API call.
+      onUploadCompleted: async ({ blob }) => {
+        // This runs after the upload is complete
         console.log('Blob upload completed:', blob.url)
       },
     })
 
     return NextResponse.json(jsonResponse)
   } catch (error) {
-    console.error('Blob upload error:', error)
+    console.error('Blob upload token error:', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 400 })
   }
 }
