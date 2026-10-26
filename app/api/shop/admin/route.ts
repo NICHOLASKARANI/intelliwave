@@ -1,57 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { pool } from '@/lib/wavecore/db'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import crypto from 'crypto'
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const body = (await req.json()) as HandleUploadBody
+
   try {
-    const formData = await req.formData()
-    const password = formData.get('password') as string
-    const adminPassword = process.env.SHOP_ADMIN_PASSWORD
+    const jsonResponse = await handleUpload({
+      body,
+      request: req,
+      onBeforeGenerateToken: async (pathname, clientPayload) => {
+        // clientPayload is the password sent from the client
+        const password = clientPayload
+        const adminPassword = process.env.SHOP_ADMIN_PASSWORD
 
-    if (password !== adminPassword) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+        if (!password || password !== adminPassword) {
+          throw new Error('Unauthorized')
+        }
 
-    const store = formData.get('store') as string
-    const name = formData.get('name') as string
-    const description = formData.get('description') as string
-    const price = formData.get('price') as string
-    const category = formData.get('category') as string
-    const subCategory = formData.get('subCategory') as string
-    const image = formData.get('image') as File
+        return {
+          allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp'],
+          maximumSizeInBytes: 10 * 1024 * 1024, // 10MB
+          addRandomSuffix: true,
+        }
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // This fires after the upload finishes.
+        // The client will handle saving the product details via a separate API call.
+        console.log('Blob upload completed:', blob.url)
+      },
+    })
 
-    if (!image || !name || !price) {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
-    }
-
-    // 1. Save image to public folder
-    const bytes = await image.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    
-    // Ensure directory exists
-    const dir = join(process.cwd(), 'public', 'uploads', 'shop')
-    await mkdir(dir, { recursive: true })
-    
-    const ext = image.name.split('.').pop()
-    const filename = `${crypto.randomUUID()}.${ext}`
-    const filepath = join(dir, filename)
-    
-    await writeFile(filepath, buffer)
-    const imageUrl = `/uploads/shop/${filename}`
-
-    // 2. Save to Database
-    const id = crypto.randomUUID()
-    await pool.query(
-      `INSERT INTO "ShopProduct" (id, store, name, description, price, "imageUrl", category, "subCategory") 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, store, name, description, price, imageUrl, category, subCategory]
-    )
-
-    return NextResponse.json({ success: true, product: { id, name, imageUrl } })
+    return NextResponse.json(jsonResponse)
   } catch (error) {
-    console.error('Shop upload error:', error)
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+    console.error('Blob upload error:', error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 })
   }
 }

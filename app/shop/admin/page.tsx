@@ -17,11 +17,8 @@ export default function AdminDashboard() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setPreview(URL.createObjectURL(file))
-    } else {
-      setPreview(null)
-    }
+    if (file) setPreview(URL.createObjectURL(file))
+    else setPreview(null)
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -46,17 +43,16 @@ export default function AdminDashboard() {
     }
 
     try {
-      // 1. Upload image directly to Vercel Blob (Client-side)
-      // We use a simple filename to avoid issues
+      // 1. Upload directly to Vercel Blob
       const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`
       
       const blob = await upload(safeName, file, {
         access: 'public',
         handleUploadUrl: '/api/shop/admin',
-        clientPayload: password,
+        clientPayload: password, // Pass password for server validation
       })
 
-      // 2. Save product details to database
+      // 2. Save product details to database (using the blob URL)
       const res = await fetch('/api/shop/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,9 +76,9 @@ export default function AdminDashboard() {
       } else {
         setMessage(data.error || 'Failed to save product')
       }
-    } catch (err) {
-      console.error(err)
-      setMessage((err as Error).message || 'Upload failed. Check console.')
+    } catch (err: any) {
+      console.error('Upload error:', err)
+      setMessage(err.message || 'Upload failed. Check console for details.')
     } finally {
       setLoading(false)
     }
