@@ -1,5 +1,6 @@
 'use client'
 
+import { ShopDropdown } from '@/components/ui/shop-dropdown'
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
