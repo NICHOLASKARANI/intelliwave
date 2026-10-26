@@ -20,14 +20,27 @@ export default function ShopWavveMarket() {
   const [isCartOpen, setIsCartOpen] = useState(false)
 
   useEffect(() => {
-    fetch('/api/shop/products?store=wavvemarket')
-      .then(r => r.json())
-      .then(d => setProducts(d.products || []))
+    const load = () => {
+      fetch('/api/shop/products?store=wavvemarket', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => setProducts(d.products || []))
+        .catch(() => {})
+    }
+    load()
+    // Re-fetch when the tab becomes visible again
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
-  const filtered = products.filter(p => 
-    p.category === activeCategory && (activeSub === 'View All' || p.subcategory === activeSub)
-  )
+  const filtered = products.filter(p => {
+    if (activeCategory === 'All') return true
+    const cat = p.category || ''
+    const sub = p.subCategory || p.subcategory || ''
+    const matchCat = cat === activeCategory
+    const matchSub = activeSub === 'View All' || sub === activeSub
+    return matchCat && matchSub
+  })
 
   const addToCart = (p: any) => {
     setCart([...cart, { ...p, qty: 1 }])
