@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const [formKey, setFormKey] = useState(0)
 
   const fetchProducts = async () => {
-    const res = await fetch('/api/shop/products?store=all')
+    const res = await fetch('/api/shop/products?store=all', { cache: 'no-store' })
     const data = await res.json()
     setProducts(data.products || [])
   }
