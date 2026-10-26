@@ -45,7 +45,7 @@ export default function HomeHero() {
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/wavecore-erp/auth/signup"
               className="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 flex items-center gap-2">
-              <Shield className="w-4 h-4" /> Get Started <ArrowRight className="w-4 h-4" />
+              <Shield className="w-4 h-4" /> Shop <ArrowRight className="w-4 h-4" />
             </Link>
             <Link href="/marketplace"
               className="px-6 py-3 rounded-xl border font-medium hover:bg-neutral-100 flex items-center gap-2">

@@ -44,16 +44,16 @@ export default function ShopWavveMarket() {
   return (
     <div className="min-h-screen bg-slate-50 pt-24 pb-20">
       {/* Mega Menu */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
+      <div className="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-md">
         <div className="max-w-7xl mx-auto px-4 flex gap-8">
           {Object.keys(MENU).map(cat => (
             <div key={cat} className="relative group py-4">
-              <button onClick={() => { setActiveCategory(cat); setActiveSub('View All') }} className="font-bold text-slate-700 hover:text-pink-600">
+              <button onClick={() => { setActiveCategory(cat); setActiveSub('View All') }} className="font-bold text-white hover:text-pink-400 transition-colors">
                 {cat}
               </button>
               <div className="absolute top-full left-0 w-48 bg-white border border-slate-200 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 {MENU[cat as keyof typeof MENU].map(sub => (
-                  <button key={sub} onClick={() => { setActiveCategory(cat); setActiveSub(sub) }} className="block w-full text-left px-4 py-2 hover:bg-pink-50 text-sm">
+                  <button key={sub} onClick={() => { setActiveCategory(cat); setActiveSub(sub) }} className="block w-full text-left px-4 py-3 hover:bg-slate-800 text-sm text-slate-200">
                     {sub}
                   </button>
                 ))}

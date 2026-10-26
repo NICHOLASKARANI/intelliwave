@@ -41,9 +41,7 @@ export default function MainHeader() {
           <Link href="/wavecore-erp/auth/login" className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-neutral-100">
             Sign In
           </Link>
-          <Link href="/wavecore-erp/auth/signup" className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 flex items-center gap-1">
-            Get Started <ArrowRight className="w-3 h-3" />
-          </Link>
+          <ShopDropdown />
         </div>
 
         {/* Mobile Toggle */}
