@@ -160,8 +160,6 @@ export default function AdminDashboard() {
                   <option value="Women">Women</option>
                   <option value="Kids">Kids</option>
                   <option value="Accessories">Accessories</option>
-                  <option value="Wavvemarket">Wavvemarket</option>
-                  <option value="ERP Modules">ERP Modules</option>
                 </select>
               </div>
               <div>

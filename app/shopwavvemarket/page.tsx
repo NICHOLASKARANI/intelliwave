@@ -8,8 +8,7 @@ const MENU = {
   Men: ['Shirts', 'Outerwear', 'View All'],
   Women: ['Shirts', 'Outerwear', 'View All'],
   Kids: ['Shirts', 'Outerwear', 'View All'],
-  Accessories: ['Drones', 'Hats', 'View All'],
-  Wavvemarket: ['View All']
+  Accessories: ['Drones', 'Hats', 'View All']
 }
 
 export default function ShopWavveMarket() {

@@ -30,11 +30,9 @@ export function ShopDropdown() {
         <div className="absolute top-full right-0 mt-2 w-64 bg-black border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50">
           <a href="/shopwavvemarket"   className="block px-6 py-4 hover:bg-white/10 transition-colors border-b border-white/10">
             <span className="block text-white font-bold">Shop WavveMarket</span>
-            <span className="block text-xs text-gray-400 mt-1">Consumer & B2B Marketplace</span>
           </a>
           <a href="/shopwavecore-erp"   className="block px-6 py-4 hover:bg-white/10 transition-colors">
             <span className="block text-white font-bold">Shop WaveCore ERP</span>
-            <span className="block text-xs text-gray-400 mt-1">Enterprise Software Solutions</span>
           </a>
         </div>
       )}
