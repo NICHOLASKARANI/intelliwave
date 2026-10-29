@@ -133,7 +133,6 @@ export async function POST(req: NextRequest) {
                "mpesaReceipt" = $3, "endDate" = $4, "nextBillingAt" = $4, "updatedAt" = NOW()
            WHERE id = $5`,
           [
-            // Plan enum: use STARTER for all our durations to satisfy enum constraint
             'STARTER',
             Number(tx.amount || callbackAmount || 500),
             mpesaReceipt,
@@ -166,6 +165,37 @@ export async function POST(req: NextRequest) {
         [checkoutRequestId, tx.organizationId, tx.userId]
       ).catch(() => {})
     }
+
+    // ─── Executive Portal auto-verify (non-blocking, never breaks payment) ───
+    try {
+      if (success && mpesaReceipt && tx?.organizationId && tx.organizationId !== 'UNKNOWN') {
+        const userLookup = await pool.query(
+          `SELECT email FROM "User" WHERE id = $1 LIMIT 1`,
+          [tx.userId]
+        )
+        const userEmail = userLookup.rows[0]?.email || null
+
+        if (userEmail) {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.intelliwavve.com'
+          fetch(`${baseUrl}/api/executives/verify-payment`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-webhook-secret': process.env.SHOP_ADMIN_PASSWORD || '',
+            },
+            body: JSON.stringify({
+              customer_email: userEmail,
+              organization_id: tx.organizationId,
+              amount: Number(tx.amount || callbackAmount || 0),
+              status: 'SUCCESS',
+            }),
+          }).catch((e) => console.error('[mpesa→exec] verify-payment failed:', e?.message || e))
+        }
+      }
+    } catch (execError: any) {
+      console.error('[mpesa→exec] hook error:', execError?.message || execError)
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Safaricom expects 200 + ResultCode 0 to stop retries
     return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' }, { status: 200 })
