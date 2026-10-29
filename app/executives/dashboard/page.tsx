@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Crown, Users, DollarSign, Lightbulb, Plus, LogOut, Send } from 'lucide-react'
+import { Crown, Users, DollarSign, Lightbulb, Plus, LogOut, Send, Sparkles } from 'lucide-react'
 
 export default function ExecutiveDashboard() {
   const [data, setData] = useState<any>(null)
@@ -18,6 +18,10 @@ export default function ExecutiveDashboard() {
 
   // Section 3 form
   const [payoutForm, setPayoutForm] = useState({ payment_method: 'MPESA', payment_details: '' })
+  
+  // AI Copilot State
+  const [aiMessage, setAiMessage] = useState('')
+  const [aiLink, setAiLink] = useState('')
 
   const loadSession = async () => {
     const res = await fetch('/api/executives/session')
@@ -59,6 +63,19 @@ export default function ExecutiveDashboard() {
     const d = await res.json()
     if (res.ok) { setMessage(`Customer registered! Active users: ${d.active_users}. Level: ${d.level}`); setCustomerForm({ customer_name: '', customer_email: '', customer_phone: '', product: 'wavecore', subscription_amount: '500' }); loadSession() }
     else setMessage(d.error || 'Failed')
+  }
+
+  const generatePitch = async () => {
+    const res = await fetch('/api/executives/ai-copilot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_industry: 'Retail', product: 'wavecore' })
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setAiMessage(data.message)
+      setAiLink(data.whatsapp_link)
+    }
   }
 
   const requestPayout = async (e: React.FormEvent) => {
@@ -164,6 +181,26 @@ export default function ExecutiveDashboard() {
                 ))}
                 {ideas.length === 0 && <p className="text-slate-500 text-sm">No ideas submitted yet.</p>}
               </div>
+            </div>
+            
+            {/* AI Marketing Copilot */}
+            <div className="lg:col-span-2 bg-slate-900 rounded-2xl border border-blue-900/50 p-6 shadow-lg shadow-blue-900/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5 text-blue-400" />
+                <h2 className="text-xl font-bold text-white">AI Marketing Copilot</h2>
+              </div>
+              <p className="text-sm text-slate-400 mb-4">Generate a WhatsApp pitch for a customer instantly.</p>
+              <button onClick={generatePitch} className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold mb-4 hover:bg-blue-500 transition-colors">
+                Generate Pitch
+              </button>
+              {aiMessage && (
+                <div className="bg-slate-800 p-4 rounded-xl text-sm text-slate-200 border border-slate-700">
+                  <p className="mb-4 whitespace-pre-wrap">{aiMessage}</p>
+                  <a href={aiLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-400 transition-colors">
+                    <Send className="w-4 h-4" /> Send via WhatsApp
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )}
