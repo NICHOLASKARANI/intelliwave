@@ -1,4 +1,5 @@
-import { Pool } from 'pg'
+import nodemailer from 'nodemailer'
+import { pool } from '@/lib/wavecore/db'
 
 interface EmailPayload {
   to: string
@@ -9,32 +10,35 @@ interface EmailPayload {
   organizationId?: string
 }
 
-let emailPool: Pool | null = null
-
-function getEmailPool(): Pool {
-  if (!emailPool) {
-    emailPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
-      max: 2,
-    })
-  }
-  return emailPool
-}
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+})
 
 export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   try {
-    console.log(`[EMAIL] To: ${payload.to}, Subject: ${payload.subject}`)
-
-    const pool = getEmailPool()
+    // 1. Save to DB Notification
     await pool.query(
       `INSERT INTO "Notification" (id, "userId", "organizationId", type, title, content, "isRead", "createdAt")
        VALUES (gen_random_uuid()::text, $1, $2, 'EMAIL', $3, $4, false, NOW())`,
       [payload.userId || null, payload.organizationId || null, payload.subject, payload.text]
     )
 
-    // TODO: Integrate with actual email provider (SendGrid, Resend, SMTP)
-    // For now, notifications are stored in the database and logged
+    // 2. Send actual SMTP email
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      await transporter.sendMail({
+        from: `"IntelliWavve" <${process.env.SMTP_USER}>`,
+        to: payload.to,
+        subject: payload.subject,
+        text: payload.text,
+        html: payload.html,
+      })
+    }
 
     return true
   } catch (error) {
@@ -42,7 +46,6 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
     return false
   }
 }
-
 export const EmailTemplates = {
   welcome: (name: string, orgName: string) => ({
     subject: `Welcome to WaveCore ERP, ${name}!`,
