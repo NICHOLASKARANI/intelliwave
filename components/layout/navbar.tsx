@@ -26,14 +26,15 @@ const navigation = [
     ]
   },
   {
-    name: "Resources",
-    href: "/learning-center",
+    name: "Wavve ISRP",
+    href: "/isrp",
     children: [
-      { name: "Learning Center", href: "/learning-center", desc: "Courses & training" },
-      { name: "Knowledge Base", href: "/knowledge-base", desc: "Documentation" },
-      { name: "Webinars", href: "/webinars", desc: "Live events" },
-      { name: "API Docs", href: "/api-docs", desc: "Developer resources" },
-      { name: "ROI Calculator", href: "/roi-calculator", desc: "Calculate your ROI" },
+      { name: "Business & Commerce", href: "/isrp", desc: "Retail, pharmacy, hospitality" },
+      { name: "Institutions & Education", href: "/isrp", desc: "Schools, libraries, property" },
+      { name: "Government & Citizen", href: "/isrp", desc: "Complaints, civic participation" },
+      { name: "Operations & Industry", href: "/isrp", desc: "Supply chain, manufacturing" },
+      { name: "Cooperatives & Workforce", href: "/isrp", desc: "SACCOs, HR, payroll" },
+      { name: "Intelligence & Services", href: "/isrp", desc: "Healthcare, agriculture, AI" },
     ]
   },
   { name: "WaveCore ERP", href: "/wavecore-erp/auth/signup" },
@@ -47,10 +48,8 @@ const navigation = [
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [servicesOpen, setServicesOpen] = useState(false)
-  const [resourcesOpen, setResourcesOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const servicesRef = useRef<HTMLDivElement>(null)
-  const resourcesRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -58,9 +57,7 @@ export function Navbar() {
       if (servicesRef.current && !servicesRef.current.contains(event.target as Node)) {
         setServicesOpen(false)
       }
-      if (resourcesRef.current && !resourcesRef.current.contains(event.target as Node)) {
-        setResourcesOpen(false)
-      }
+
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -68,7 +65,6 @@ export function Navbar() {
 
   useEffect(() => {
     setServicesOpen(false)
-    setResourcesOpen(false)
   }, [pathname])
 
   useEffect(() => {
@@ -137,10 +133,10 @@ export function Navbar() {
           <div className="hidden lg:flex items-center gap-0.5">
             {navigation.map((item) => {
               if (item.children) {
-                const isOpen = item.name === "Services" ? servicesOpen : resourcesOpen
-                const setOpen = item.name === "Services" ? setServicesOpen : setResourcesOpen
-                const ref = item.name === "Services" ? servicesRef : resourcesRef
-                const isActive = item.name === "Services" ? isServiceActive : isResourceActive
+                const isOpen = item.name === "Services" ? servicesOpen : false
+                const setOpen = item.name === "Services" ? setServicesOpen : () => {}
+                const ref = item.name === "Services" ? servicesRef : undefined
+                const isActive = item.name === "Services" ? isServiceActive : pathname.startsWith(item.href)
                 
                 return (
                   <div key={item.name} ref={ref} className="relative">
