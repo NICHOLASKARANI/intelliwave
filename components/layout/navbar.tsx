@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, ChevronDown, Search, Sparkles, ArrowRight, Globe, Shield, Star } from "lucide-react"
+import { Menu, X, ChevronDown, Search, Sparkles, ArrowRight, Globe, Shield, Star , Crown } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { SocialIcons } from '@/components/ui/social-icons'
@@ -15,12 +15,12 @@ const navigation = [
     name: "Services",
     href: "/services",
     children: [
-      { name: "All Services", href: "/services", desc: "Complete service overview" },
+      { name: "AI Executive Leaders", href: "/executives/leaders", desc: "Earn KSh 3,000–20,000/month", icon: Crown, highlight: true },
       { name: "AI Engineering", href: "/ai-engineering", desc: "Custom AI solutions" },
       { name: "Software Development", href: "/software-development", desc: "Enterprise software" },
       { name: "Cybersecurity", href: "/cybersecurity", desc: "Security & compliance" },
       { name: "Cloud & DevOps", href: "/cloud-devops", desc: "Cloud infrastructure" },
-      { name: "Enterprise Solutions", href: "/enterprise-solutions", desc: "Enterprise platforms" },
+      { name: "Executive Program", href: "/executives", desc: "Apply to earn KSh 3,000–20,000/month", icon: Crown, highlight: true },
       { name: "IIoT Automation", href: "/iiot-automation", desc: "Industrial IoT" },
       { name: "Industry Solutions", href: "/industry-solutions", desc: "Industry-specific" },
     ]
