@@ -15,7 +15,7 @@ const navigation = [
     name: "Services",
     href: "/services",
     children: [
-      { name: "AI Executive Leaders", href: "/executives", desc: "Earn KSh 3,000–20,000/month", icon: Crown, highlight: true },
+      { name: "AI Executive Leaders", href: "/executives/leaders", desc: "Earn KSh 3,000–20,000/month", icon: Crown, highlight: true },
       { name: "AI Engineering", href: "/ai-engineering", desc: "Custom AI solutions" },
       { name: "Software Development", href: "/software-development", desc: "Enterprise software" },
       { name: "Cybersecurity", href: "/cybersecurity", desc: "Security & compliance" },
