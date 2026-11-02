@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .then(r => r.json())
       .then(data => {
         if (!data.authenticated) {
-          router.push('https://www.intelliwavve.com/wavecore-erp/auth/login')
+          router.push('https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/dashboard')
           return
         }
         if (!data.subscribed && data.subscriptionStatus !== 'TRIAL') {
@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setSubStatus(data.subscriptionStatus)
         setLoading(false)
       })
-      .catch(() => router.push('https://www.intelliwavve.com/wavecore-erp/auth/login'))
+      .catch(() => router.push('https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/dashboard'))
   }, [router])
 
   useEffect(() => {

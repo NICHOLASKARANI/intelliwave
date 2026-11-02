@@ -25,7 +25,7 @@ export default function RestaurantDashboardPage() {
     fetch('/api/wavve-si/restaurant/kpis', { cache: 'no-store' })
       .then(async r => {
         if (r.status === 401) {
-          window.location.href = 'https://www.intelliwavve.com/wavecore-erp/auth/login'
+          window.location.href = 'https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/modules/restaurant-hospitality'
           return
         }
         if (!r.ok) throw new Error('Failed to load KPIs')

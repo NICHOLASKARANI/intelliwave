@@ -62,7 +62,7 @@ export default function Page() {
             <span>Wavve SI · World-Class Enterprise Platform</span>
           </div>
           <div className="flex items-center gap-2">
-            <a href="https://www.intelliwavve.com/wavecore-erp/auth/login" className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-2">
+            <a href="https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/dashboard" className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-2">
               <LogIn className="w-4 h-4" /> Sign In
             </a>
             <a href="https://www.intelliwavve.com/wavecore-erp/auth/signup" className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center gap-2">
@@ -93,7 +93,7 @@ export default function Page() {
             <a href="https://www.intelliwavve.com/wavecore-erp/auth/signup" className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2">
               <UserPlus className="w-5 h-5" /> Create Account <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
-            <a href="https://www.intelliwavve.com/wavecore-erp/auth/login" className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 backdrop-blur transition-all flex items-center gap-2">
+            <a href="https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/dashboard" className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 backdrop-blur transition-all flex items-center gap-2">
               <LogIn className="w-5 h-5" /> Sign In
             </a>
             <a href="https://www.intelliwavve.com/wavecore-erp/auth/forgot-password" className="px-6 py-4 text-slate-400 hover:text-white font-semibold rounded-xl transition-all text-sm">
@@ -142,7 +142,7 @@ export default function Page() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((sys) => (
-            <a key={sys.id} href="https://www.intelliwavve.com/wavecore-erp/auth/login" className="block bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-white/10 transition-all group">
+            <a key={sys.id} href="https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/dashboard" className="block bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-white/10 transition-all group">
               <div className="flex items-start justify-between mb-3">
                 <span className="text-xs font-mono text-slate-500">#{String(sys.id).padStart(3, '0')}</span>
                 <span className="text-xs px-2 py-1 rounded bg-white/10 text-slate-300">{sys.category}</span>

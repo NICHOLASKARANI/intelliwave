@@ -47,7 +47,7 @@ export default function OrdersPage() {
       params.set('limit', '200')
       const res = await fetch(`/api/wavve-si/restaurant/orders?${params}`, { cache: 'no-store' })
       if (res.status === 401) {
-        window.location.href = 'https://www.intelliwavve.com/wavecore-erp/auth/login'
+        window.location.href = 'https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/modules/restaurant-hospitality/orders'
         return
       }
       if (!res.ok) throw new Error('Failed to load orders')
