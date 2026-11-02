@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { BookOpen, AlertCircle, RefreshCw, Package, Plus, Pencil, Trash2, Download } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
 import { ConfirmDialog } from '@/components/wavve-si/ConfirmDialog'
+import { EmptyState } from '@/components/wavve-si/EmptyState'
 
 interface Product {
   id: string
@@ -179,15 +180,27 @@ export default function MenuPage() {
         </div>
       )}
 
-      <DataTable<Product>
-        data={products}
-        columns={columns}
-        searchable={true}
-        searchKeys={['name', 'sku', 'category']}
-        pageSize={15}
-        emptyMessage="No menu items yet. Add products via WaveCoreERP Store first."
-        loading={loading}
-      />
+      {!loading && products.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl">
+          <EmptyState
+            icon={Package}
+            title="No menu items yet"
+            description="Add your first menu item to start taking orders."
+            actionLabel="Add First Item"
+            actionHref="/wavve-si/modules/restaurant-hospitality/menu/new"
+          />
+        </div>
+      ) : (
+        <DataTable<Product>
+          data={products}
+          columns={columns}
+          searchable={true}
+          searchKeys={['name', 'sku', 'category']}
+          pageSize={15}
+          emptyMessage="No menu items match your filters"
+          loading={loading}
+        />
+      )}
 
       <ConfirmDialog
         open={!!deleteTarget}

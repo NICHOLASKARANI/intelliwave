@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, AlertCircle, RefreshCw, Plus, Download } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
+import { EmptyState } from '@/components/wavve-si/EmptyState'
 
 interface Order {
   id: string
@@ -168,16 +169,28 @@ export default function OrdersPage() {
       )}
 
       {/* DataTable */}
-      <DataTable<Order>
-        data={orders}
-        columns={columns}
-        searchable={true}
-        searchKeys={['number', 'customer_name']}
-        pageSize={15}
-        emptyMessage={statusFilter === 'ALL' ? 'No orders yet. Orders will appear here once created.' : `No ${statusFilter.toLowerCase()} orders.`}
-        loading={loading}
-        onRowClick={(row) => router.push(`/wavve-si/modules/restaurant-hospitality/orders/${row.id}`)}
-      />
+      {!loading && orders.length === 0 && statusFilter === 'ALL' ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl">
+          <EmptyState
+            icon={ShoppingCart}
+            title="No orders yet"
+            description="Create your first order to start tracking sales and revenue."
+            actionLabel="Create First Order"
+            actionHref="/wavve-si/modules/restaurant-hospitality/orders/new"
+          />
+        </div>
+      ) : (
+        <DataTable<Order>
+          data={orders}
+          columns={columns}
+          searchable={true}
+          searchKeys={['number', 'customer_name']}
+          pageSize={15}
+          emptyMessage={statusFilter === 'ALL' ? 'No orders yet.' : `No ${statusFilter.toLowerCase()} orders.`}
+          loading={loading}
+          onRowClick={(row) => router.push(`/wavve-si/modules/restaurant-hospitality/orders/${row.id}`)}
+        />
+      )}
     </div>
   )
 }

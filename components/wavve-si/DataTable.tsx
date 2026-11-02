@@ -1,6 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { SkeletonTable } from './Skeleton'
 
 export interface Column<T> {
   key: keyof T | string
@@ -84,7 +85,7 @@ export function DataTable<T extends Record<string, any>>({
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={columns.length} className="text-center py-12 text-slate-500">Loading...</td></tr>
+              <SkeletonTable rows={5} cols={columns.length} />
             ) : paged.length === 0 ? (
               <tr><td colSpan={columns.length} className="text-center py-12 text-slate-500">{emptyMessage}</td></tr>
             ) : paged.map((row, i) => (

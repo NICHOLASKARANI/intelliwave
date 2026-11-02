@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { Users, AlertCircle, RefreshCw, Mail, Phone, Building2, Plus, Pencil, Trash2, Download } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
 import { ConfirmDialog } from '@/components/wavve-si/ConfirmDialog'
+import { EmptyState } from '@/components/wavve-si/EmptyState'
 
 interface Customer {
   id: string
@@ -176,15 +177,27 @@ export default function CustomersPage() {
         </div>
       )}
 
-      <DataTable<Customer>
-        data={customers}
-        columns={columns}
-        searchable={true}
-        searchKeys={['name', 'email', 'phone', 'company']}
-        pageSize={15}
-        emptyMessage="No customers yet. Add customers via WaveCoreERP CRM first."
-        loading={loading}
-      />
+      {!loading && customers.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl">
+          <EmptyState
+            icon={Users}
+            title="No customers yet"
+            description="Add your first customer to start tracking orders by customer."
+            actionLabel="Add First Customer"
+            actionHref="/wavve-si/modules/restaurant-hospitality/customers/new"
+          />
+        </div>
+      ) : (
+        <DataTable<Customer>
+          data={customers}
+          columns={columns}
+          searchable={true}
+          searchKeys={['name', 'email', 'phone', 'company']}
+          pageSize={15}
+          emptyMessage="No customers match your search"
+          loading={loading}
+        />
+      )}
 
       <ConfirmDialog
         open={!!deleteTarget}
