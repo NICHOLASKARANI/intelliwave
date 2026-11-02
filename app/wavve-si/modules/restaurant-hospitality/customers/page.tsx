@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { Users, AlertCircle, RefreshCw, Mail, Phone, Building2, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Users, AlertCircle, RefreshCw, Mail, Phone, Building2, Plus, Pencil, Trash2, Download } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
 import { ConfirmDialog } from '@/components/wavve-si/ConfirmDialog'
 
@@ -153,7 +153,10 @@ export default function CustomersPage() {
             <p className="text-sm text-slate-400">{total} customer{total === 1 ? '' : 's'}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <a href="/api/wavve-si/restaurant/customers/export" download className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors">
+            <Download className="w-4 h-4" /> Export CSV
+          </a>
           <Link href="/wavve-si/modules/restaurant-hospitality/customers/new" className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold transition-colors">
             <Plus className="w-4 h-4" /> New Customer
           </Link>

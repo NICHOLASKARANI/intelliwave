@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import {
   ArrowLeft, ShoppingCart, User, Mail, Phone, Building2,
   Clock, CheckCircle, XCircle, AlertCircle, Package,
-  Truck, ChefHat, FileText
+  Truck, ChefHat, FileText, Printer
 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/wavve-si/ConfirmDialog'
 
@@ -167,9 +167,14 @@ export default function OrderDetailPage() {
             </p>
           </div>
         </div>
-        <span className={`text-sm font-bold px-3 py-1.5 rounded-lg border ${STATUS_BADGE[order.status] || 'bg-slate-700 text-slate-300'}`}>
-          {order.status}
-        </span>
+        <div className="flex items-center gap-2">
+          <Link href={`/wavve-si/modules/restaurant-hospitality/orders/${order.id}/receipt`} className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold transition-colors">
+            <Printer className="w-3.5 h-3.5" /> Print Receipt
+          </Link>
+          <span className={`text-sm font-bold px-3 py-1.5 rounded-lg border ${STATUS_BADGE[order.status] || 'bg-slate-700 text-slate-300'}`}>
+            {order.status}
+          </span>
+        </div>
       </div>
 
       {!isCancelled && (
