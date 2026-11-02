@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { ShoppingCart, AlertCircle, RefreshCw } from 'lucide-react'
+import Link from 'next/link'
+import { ShoppingCart, AlertCircle, RefreshCw, Plus } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
 
 interface Order {
@@ -119,13 +120,18 @@ export default function OrdersPage() {
             <p className="text-sm text-slate-400">{total} order{total === 1 ? '' : 's'} total</p>
           </div>
         </div>
-        <button
-          onClick={loadOrders}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <Link href="/wavve-si/modules/restaurant-hospitality/orders/new" className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-semibold transition-colors">
+            <Plus className="w-4 h-4" /> New Order
+          </Link>
+          <button
+            onClick={loadOrders}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Status filter chips */}

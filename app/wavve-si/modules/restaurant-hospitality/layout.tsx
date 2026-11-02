@@ -2,12 +2,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { UtensilsCrossed, LayoutDashboard, ShoppingCart, ArrowLeft } from 'lucide-react'
+import { UtensilsCrossed, LayoutDashboard, ShoppingCart, BookOpen, Users, ArrowLeft } from 'lucide-react'
 
 const TABS = [
   { href: '/wavve-si/modules/restaurant-hospitality', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/wavve-si/modules/restaurant-hospitality/orders', label: 'Orders', icon: ShoppingCart },
-  // Menu and Customers tabs will be added in Phase 2b when those pages exist
+  { href: '/wavve-si/modules/restaurant-hospitality/menu', label: 'Menu', icon: BookOpen },
+  { href: '/wavve-si/modules/restaurant-hospitality/customers', label: 'Customers', icon: Users },
 ]
 
 export default function RestaurantLayout({ children }: { children: React.ReactNode }) {
