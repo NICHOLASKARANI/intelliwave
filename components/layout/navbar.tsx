@@ -25,18 +25,7 @@ const navigation = [
       { name: "Industry Solutions", href: "/industry-solutions", desc: "Industry-specific" },
     ]
   },
-  {
-    name: "Wavve SI",
-    href: "/isrp",
-    children: [
-      { name: "Business & Commerce", href: "/isrp", desc: "Retail, pharmacy, hospitality" },
-      { name: "Institutions & Education", href: "/isrp", desc: "Schools, libraries, property" },
-      { name: "Government & Citizen", href: "/isrp", desc: "Complaints, civic participation" },
-      { name: "Operations & Industry", href: "/isrp", desc: "Supply chain, manufacturing" },
-      { name: "Cooperatives & Workforce", href: "/isrp", desc: "SACCOs, HR, payroll" },
-      { name: "Intelligence & Services", href: "/isrp", desc: "Healthcare, agriculture, AI" },
-    ]
-  },
+  { name: "Wavve SI", href: "/wavve-si" },
   { name: "WaveCore ERP", href: "/wavecore-erp/auth/signup" },
   { name: "WavveMarket", href: "/marketplace" },
   { name: "Portfolio", href: "/portfolio" },
