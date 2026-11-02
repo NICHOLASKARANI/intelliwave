@@ -35,7 +35,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (res.ok) {
         setSuccess(true)
-        setTimeout(() => { window.location.href = '/wavecore-erp' }, 1500)
+        setTimeout(() => { const params = new URLSearchParams(window.location.search); const rt = params.get('returnTo'); const safe = rt && rt.startsWith('/') && !rt.startsWith('//'); window.location.href = safe ? rt : '/wavecore-erp' }, 1500)
       } else {
         setError(data.error || 'Login failed. Please try again.')
       }

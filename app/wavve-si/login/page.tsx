@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 
 export default function Page() {
   useEffect(() => {
-    window.location.href = 'https://www.intelliwavve.com/wavecore-erp/auth/login'
+    window.location.href = 'https://www.intelliwavve.com/wavecore-erp/auth/login?returnTo=/wavve-si/dashboard'
   }, [])
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
