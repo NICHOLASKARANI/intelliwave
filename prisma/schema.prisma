@@ -151,6 +151,7 @@ model Organization {
   fixedAssets          FixedAsset[]
   statutoryRates       StatutoryRate[]
   supplierInvoices     SupplierInvoice[]
+  restaurantTables     RestaurantTable[]
 }
 
 model Project {
@@ -2608,4 +2609,21 @@ model SupplierInvoice {
   @@index([organizationId, status])
   @@index([organizationId, supplierId])
   @@index([organizationId, dueDate])
+}
+
+// ─── Wavve SI: Restaurant Table Management ───
+model RestaurantTable {
+  id             String   @id @default(cuid())
+  name           String
+  capacity       Int      @default(4)
+  location       String?
+  status         String   @default("FREE") // FREE | OCCUPIED | RESERVED | CLEANING
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId], map: "idx_table_org")
+  @@unique([organizationId, name], map: "unique_table_name_per_org")
 }
