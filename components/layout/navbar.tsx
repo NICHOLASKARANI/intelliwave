@@ -26,7 +26,7 @@ const navigation = [
     ]
   },
   {
-    name: "Wavve ISRP",
+    name: "Wavve SI",
     href: "/isrp",
     children: [
       { name: "Business & Commerce", href: "/isrp", desc: "Retail, pharmacy, hospitality" },
