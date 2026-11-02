@@ -18,10 +18,11 @@ interface DataTableProps<T> {
   pageSize?: number
   emptyMessage?: string
   loading?: boolean
+  onRowClick?: (row: T) => void
 }
 
 export function DataTable<T extends Record<string, any>>({
-  data, columns, searchable = true, searchKeys = [], pageSize = 10, emptyMessage = 'No records found', loading,
+  data, columns, searchable = true, searchKeys = [], pageSize = 10, emptyMessage = 'No records found', loading, onRowClick,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState<string | null>(null)
@@ -87,7 +88,7 @@ export function DataTable<T extends Record<string, any>>({
             ) : paged.length === 0 ? (
               <tr><td colSpan={columns.length} className="text-center py-12 text-slate-500">{emptyMessage}</td></tr>
             ) : paged.map((row, i) => (
-              <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+              <tr key={i} onClick={() => onRowClick?.(row)} className={`border-b border-slate-800/50 transition-colors ${onRowClick ? 'cursor-pointer hover:bg-slate-800/50' : 'hover:bg-slate-800/30'}`}>
                 {columns.map(c => (
                   <td key={String(c.key)} className={`px-4 py-3 text-slate-300 ${c.className ?? ''}`}>
                     {c.render ? c.render(row) : String(row[c.key as keyof T] ?? '—')}

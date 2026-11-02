@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ShoppingCart, AlertCircle, RefreshCw, Plus } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
 
@@ -29,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_TABS = ['ALL', 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']
 
 export default function OrdersPage() {
+  const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -171,6 +173,7 @@ export default function OrdersPage() {
         pageSize={15}
         emptyMessage={statusFilter === 'ALL' ? 'No orders yet. Orders will appear here once created.' : `No ${statusFilter.toLowerCase()} orders.`}
         loading={loading}
+        onRowClick={(row) => router.push(`/wavve-si/modules/restaurant-hospitality/orders/${row.id}`)}
       />
     </div>
   )
