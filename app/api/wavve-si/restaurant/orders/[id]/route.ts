@@ -21,6 +21,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       `SELECT so.id, so.number, so.date, so.status,
               so.subtotal, so."taxAmount", so.total,
               so.notes, so."deliveryDate",
+              COALESCE(so."discountType", NULL) AS "discountType",
+              COALESCE(so."discountValue", 0) AS "discountValue",
+              COALESCE(so."tableId", NULL) AS "tableId",
               so."createdAt", so."updatedAt",
               c.id AS customer_id, c.name AS customer_name,
               c.email AS customer_email, c.phone AS customer_phone,
@@ -39,7 +42,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Get the line items
     const itemsResult = await pool.query(
-      `SELECT id, description, quantity, "unitPrice", total, "productId"
+      `SELECT id, description, quantity, "unitPrice", total, "productId",
+              COALESCE(note, NULL) AS note
        FROM "SalesOrderItem"
        WHERE "salesOrderId" = $1
        ORDER BY id ASC`,
@@ -55,6 +59,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         subtotal: Number(order.subtotal),
         taxAmount: Number(order.taxAmount),
         total: Number(order.total),
+        discountType: order.discountType,
+        discountValue: Number(order.discountValue) || 0,
+        tableId: order.tableId,
         notes: order.notes,
         deliveryDate: order.deliveryDate,
         createdAt: order.createdAt,
@@ -74,6 +81,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         unitPrice: Number(r.unitPrice),
         total: Number(r.total),
         productId: r.productId,
+        note: r.note,
       })),
     })
   } catch (err: any) {
@@ -93,28 +101,78 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const orderId = params.id
 
     const body = await request.json()
-    const { status } = body
-
-    if (!status || !VALID_STATUSES.includes(status)) {
-      return NextResponse.json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` }, { status: 400 })
-    }
+    const { status, discountType, discountValue, tableId } = body
 
     // Verify order belongs to this org
     const check = await pool.query(
-      'SELECT id FROM "SalesOrder" WHERE id = $1 AND "organizationId" = $2',
+      'SELECT id, subtotal, "taxAmount", total FROM "SalesOrder" WHERE id = $1 AND "organizationId" = $2',
       [orderId, orgId]
     )
     if (check.rows.length === 0) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
+    const current = check.rows[0]
 
-    // Update
+    // Build updates
+    const updates: string[] = []
+    const values: any[] = []
+    let idx = 1
+
+    if (status !== undefined) {
+      if (!VALID_STATUSES.includes(status)) {
+        return NextResponse.json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` }, { status: 400 })
+      }
+      updates.push(`status = $${idx++}`)
+      values.push(status)
+    }
+
+    if (discountType !== undefined) {
+      // discountType: null, 'PERCENT', 'FIXED'
+      if (discountType !== null && !['PERCENT', 'FIXED'].includes(discountType)) {
+        return NextResponse.json({ error: 'discountType must be PERCENT, FIXED, or null' }, { status: 400 })
+      }
+      updates.push(`"discountType" = $${idx++}`)
+      values.push(discountType)
+    }
+
+    if (discountValue !== undefined) {
+      updates.push(`"discountValue" = $${idx++}`)
+      values.push(Number(discountValue) || 0)
+    }
+
+    if (tableId !== undefined) {
+      updates.push(`"tableId" = $${idx++}`)
+      values.push(tableId || null)
+    }
+
+    // If discount changed, recompute total
+    if (discountType !== undefined || discountValue !== undefined) {
+      const finalType = discountType !== undefined ? discountType : null
+      const finalValue = discountValue !== undefined ? Number(discountValue) : 0
+      const subtotal = Number(current.subtotal)
+      const taxAmount = Number(current.taxAmount)
+      let discountAmount = 0
+      if (finalType === 'PERCENT') discountAmount = (subtotal * finalValue) / 100
+      else if (finalType === 'FIXED') discountAmount = finalValue
+      const newTotal = Math.max(0, subtotal + taxAmount - discountAmount)
+      updates.push(`total = $${idx++}`)
+      values.push(newTotal)
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    }
+
+    updates.push(`"updatedAt" = NOW()`)
+    values.push(orderId)
+    values.push(orgId)
+
     await pool.query(
-      `UPDATE "SalesOrder" SET status = $1, "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3`,
-      [status, orderId, orgId]
+      `UPDATE "SalesOrder" SET ${updates.join(', ')} WHERE id = $${idx} AND "organizationId" = $${idx + 1}`,
+      values
     )
 
-    return NextResponse.json({ success: true, status })
+    return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error('[wavve-si/restaurant/orders/[id]] PATCH error:', err?.message)
     return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })

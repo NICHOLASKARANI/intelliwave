@@ -6,9 +6,10 @@ import toast from 'react-hot-toast'
 import {
   ArrowLeft, ShoppingCart, User, Mail, Phone, Building2,
   Clock, CheckCircle, XCircle, AlertCircle, Package,
-  Truck, ChefHat, FileText, Printer
+  Truck, ChefHat, FileText, Printer, Percent, Users, LayoutGrid
 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/wavve-si/ConfirmDialog'
+import { DiscountSplitModal } from '@/components/wavve-si/DiscountSplitModal'
 
 interface OrderDetail {
   id: string
@@ -20,6 +21,9 @@ interface OrderDetail {
   total: number
   notes: string | null
   deliveryDate: string | null
+  discountType: string | null
+  discountValue: number
+  tableId: string | null
   createdAt: string
   updatedAt: string
   customer: {
@@ -38,6 +42,7 @@ interface OrderItem {
   unitPrice: number
   total: number
   productId: string | null
+  note: string | null
 }
 
 const STATUS_FLOW = [
@@ -71,6 +76,7 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [modalMode, setModalMode] = useState<'discount' | 'split' | null>(null)
 
   async function loadOrder() {
     setLoading(true)
@@ -116,6 +122,31 @@ export default function OrderDetailPage() {
     } finally {
       setUpdating(false)
     }
+  }
+
+  async function handleApplyDiscount(type: string | null, value: number) {
+    setUpdating(true)
+    try {
+      const res = await fetch(`/api/wavve-si/restaurant/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discountType: type, discountValue: value }),
+      })
+      if (!res.ok) throw new Error('Failed to apply discount')
+      toast.success('Discount applied')
+      setModalMode(null)
+      await loadOrder()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  async function handleSplit(parts: { amount: number; label: string }[]) {
+    // For now: log the split — full invoice generation in 2h phase
+    toast.success(`Split into ${parts.length} parts: ${parts.map(p => 'KSh ' + p.amount.toLocaleString()).join(', ')}`)
+    setModalMode(null)
   }
 
   useEffect(() => {
@@ -241,6 +272,9 @@ export default function OrderDetailPage() {
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4 text-slate-500" /> {item.description}
                         </div>
+                        {item.note && (
+                          <p className="text-xs text-amber-400 mt-1 ml-6 italic">Note: {item.note}</p>
+                        )}
                       </td>
                       <td className="px-5 py-3 text-sm text-slate-300 text-right">{item.quantity}</td>
                       <td className="px-5 py-3 text-sm text-slate-300 text-right">KSh {item.unitPrice.toLocaleString()}</td>
@@ -259,6 +293,18 @@ export default function OrderDetailPage() {
                 <span className="text-slate-400">Tax</span>
                 <span className="text-white">KSh {order.taxAmount.toLocaleString()}</span>
               </div>
+              {order.discountType && order.discountValue > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">
+                    Discount {order.discountType === 'PERCENT' ? `(${order.discountValue}%)` : ''}
+                  </span>
+                  <span className="text-red-400">− KSh {(
+                    order.discountType === 'PERCENT'
+                      ? (order.subtotal * order.discountValue) / 100
+                      : order.discountValue
+                  ).toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
                 <span className="font-bold text-white">Total</span>
                 <span className="text-lg font-bold text-green-400">KSh {order.total.toLocaleString()}</span>
@@ -280,6 +326,20 @@ export default function OrderDetailPage() {
                     {updating ? 'Updating...' : `Mark as ${STATUS_FLOW[currentStatusIndex + 1]?.label}`}
                   </button>
                 )}
+                <button
+                  onClick={() => setModalMode('discount')}
+                  disabled={updating || isDelivered || isCancelled}
+                  className="px-5 py-2.5 bg-blue-600/20 hover:bg-blue-600/30 disabled:opacity-50 text-blue-400 border border-blue-500/30 font-bold rounded-lg text-sm transition-colors flex items-center gap-2"
+                >
+                  <Percent className="w-4 h-4" /> Apply Discount
+                </button>
+                <button
+                  onClick={() => setModalMode('split')}
+                  disabled={updating || isDelivered || isCancelled}
+                  className="px-5 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 disabled:opacity-50 text-purple-400 border border-purple-500/30 font-bold rounded-lg text-sm transition-colors flex items-center gap-2"
+                >
+                  <Users className="w-4 h-4" /> Split Bill
+                </button>
                 <button
                   onClick={() => setConfirmCancel(true)}
                   disabled={updating}
@@ -340,6 +400,17 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      <DiscountSplitModal
+        open={modalMode !== null}
+        mode={modalMode || 'discount'}
+        subtotal={order.subtotal}
+        currentDiscountType={order.discountType}
+        currentDiscountValue={order.discountValue}
+        onClose={() => setModalMode(null)}
+        onApplyDiscount={handleApplyDiscount}
+        onSplit={handleSplit}
+      />
 
       <ConfirmDialog
         open={confirmCancel}

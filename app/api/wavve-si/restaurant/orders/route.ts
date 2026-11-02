@@ -130,9 +130,9 @@ export async function POST(request: NextRequest) {
       const itemId = 'c' + Math.random().toString(36).slice(2, 24)
       const lineTotal = Number(item.quantity) * Number(item.unitPrice)
       await client.query(
-        `INSERT INTO "SalesOrderItem" (id, description, quantity, "unitPrice", total, "salesOrderId", "createdAt")
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [itemId, item.description, Number(item.quantity), Number(item.unitPrice), lineTotal, orderId]
+        `INSERT INTO "SalesOrderItem" (id, description, quantity, "unitPrice", total, "salesOrderId", "createdAt", note)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)`,
+        [itemId, item.description, Number(item.quantity), Number(item.unitPrice), lineTotal, orderId, item.note?.trim() || null]
       )
     }
 

@@ -14,13 +14,14 @@ interface LineItem {
   description: string
   quantity: number
   unitPrice: number
+  note: string
 }
 
 export default function NewOrderPage() {
   const router = useRouter()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [customerId, setCustomerId] = useState('')
-  const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: 0 }])
+  const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: 0, note: '' }])
   const [taxRate, setTaxRate] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,7 +42,7 @@ export default function NewOrderPage() {
   const total = subtotal + taxAmount
 
   function addItem() {
-    setItems([...items, { description: '', quantity: 1, unitPrice: 0 }])
+    setItems([...items, { description: '', quantity: 1, unitPrice: 0, note: '' }])
   }
 
   function removeItem(i: number) {
@@ -75,6 +76,7 @@ export default function NewOrderPage() {
             description: i.description.trim(),
             quantity: Number(i.quantity),
             unitPrice: Number(i.unitPrice),
+            note: i.note.trim() || undefined,
           })),
           taxRate: Number(taxRate) || 0,
         }),
@@ -171,7 +173,14 @@ export default function NewOrderPage() {
                   step="0.01"
                   value={item.unitPrice}
                   onChange={e => updateItem(i, 'unitPrice', e.target.value)}
-                  className="col-span-3 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="col-span-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Note (e.g. no onions)"
+                  value={item.note}
+                  onChange={e => updateItem(i, 'note', e.target.value)}
+                  className="col-span-3 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-amber-300 placeholder-slate-500 focus:outline-none focus:border-amber-500"
                 />
                 <div className="col-span-1 text-sm text-slate-400 text-right">
                   {(Number(item.quantity) * Number(item.unitPrice)).toLocaleString()}
