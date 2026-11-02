@@ -1,7 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Users, AlertCircle, RefreshCw, Mail, Phone, Building2 } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { Users, AlertCircle, RefreshCw, Mail, Phone, Building2, Plus, Pencil, Trash2 } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
+import { ConfirmDialog } from '@/components/wavve-si/ConfirmDialog'
 
 interface Customer {
   id: string
@@ -23,6 +27,9 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function CustomersPage() {
+  const router = useRouter()
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -91,8 +98,49 @@ export default function CustomersPage() {
         </span>
       ),
     },
+    {
+      key: 'actions',
+      label: '',
+      render: (row) => (
+        <div className="flex items-center gap-1 justify-end">
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push(`/wavve-si/modules/restaurant-hospitality/customers/${row.id}/edit`) }}
+            className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded transition-colors"
+            title="Edit"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(row) }}
+            className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+            title="Deactivate"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+      className: 'text-right',
+    },
   ]
 
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/wavve-si/restaurant/customers/${deleteTarget.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to delete')
+      }
+      toast.success(`"${deleteTarget.name}" deactivated`)
+      setDeleteTarget(null)
+      loadCustomers()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -105,9 +153,14 @@ export default function CustomersPage() {
             <p className="text-sm text-slate-400">{total} customer{total === 1 ? '' : 's'}</p>
           </div>
         </div>
-        <button onClick={loadCustomers} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors">
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <Link href="/wavve-si/modules/restaurant-hospitality/customers/new" className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold transition-colors">
+            <Plus className="w-4 h-4" /> New Customer
+          </Link>
+          <button onClick={loadCustomers} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -128,6 +181,17 @@ export default function CustomersPage() {
         pageSize={15}
         emptyMessage="No customers yet. Add customers via WaveCoreERP CRM first."
         loading={loading}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Deactivate this customer?"
+        message={deleteTarget ? `"${deleteTarget.name}" will be marked as INACTIVE. Their order history is preserved.` : ''}
+        confirmLabel="Deactivate"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   )

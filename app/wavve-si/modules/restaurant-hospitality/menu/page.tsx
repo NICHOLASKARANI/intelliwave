@@ -1,7 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { BookOpen, AlertCircle, RefreshCw, Package } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { BookOpen, AlertCircle, RefreshCw, Package, Plus, Pencil, Trash2 } from 'lucide-react'
 import { DataTable, type Column } from '@/components/wavve-si/DataTable'
+import { ConfirmDialog } from '@/components/wavve-si/ConfirmDialog'
 
 interface Product {
   id: string
@@ -17,6 +21,9 @@ interface Product {
 }
 
 export default function MenuPage() {
+  const router = useRouter()
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,8 +101,49 @@ export default function MenuPage() {
         <span className="text-xs font-bold px-2 py-1 rounded bg-slate-700 text-slate-400">INACTIVE</span>
       ),
     },
+    {
+      key: 'actions',
+      label: '',
+      render: (row) => (
+        <div className="flex items-center gap-1 justify-end">
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push(`/wavve-si/modules/restaurant-hospitality/menu/${row.id}/edit`) }}
+            className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded transition-colors"
+            title="Edit"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(row) }}
+            className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+      className: 'text-right',
+    },
   ]
 
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/wavve-si/restaurant/menu/${deleteTarget.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to delete')
+      }
+      toast.success(`"${deleteTarget.name}" deleted`)
+      setDeleteTarget(null)
+      loadMenu()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -108,9 +156,14 @@ export default function MenuPage() {
             <p className="text-sm text-slate-400">{products.length} item{products.length === 1 ? '' : 's'}</p>
           </div>
         </div>
-        <button onClick={loadMenu} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors">
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <Link href="/wavve-si/modules/restaurant-hospitality/menu/new" className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg text-sm font-semibold transition-colors">
+            <Plus className="w-4 h-4" /> New Item
+          </Link>
+          <button onClick={loadMenu} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -131,6 +184,17 @@ export default function MenuPage() {
         pageSize={15}
         emptyMessage="No menu items yet. Add products via WaveCoreERP Store first."
         loading={loading}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this item?"
+        message={deleteTarget ? `"${deleteTarget.name}" will be marked as INACTIVE. Orders referencing it are preserved. You can reactivate it from WaveCoreERP.` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   )
