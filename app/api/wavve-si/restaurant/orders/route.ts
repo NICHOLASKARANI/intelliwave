@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       `SELECT COUNT(*) AS total
        FROM "SalesOrder" so
        LEFT JOIN "Customer" c ON c.id = so."customerId"
-       WHERE ${conditions.slice(0, -2).join(' AND ')}`,
+       WHERE ${conditions.join(' AND ')}`,
       params.slice(0, -2)
     )
 
