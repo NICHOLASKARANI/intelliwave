@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(
       `SELECT
          so.id, so.number, so.date, so.status,
-         so.subtotal, so.taxAmount, so.total,
+         so.subtotal, so."taxAmount", so.total,
          so."customerId",
          c.name AS customer_name,
          c.email AS customer_email,
