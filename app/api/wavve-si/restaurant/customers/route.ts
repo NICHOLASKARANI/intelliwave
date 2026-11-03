@@ -4,8 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 
-// GET /api/wavve-si/restaurant/customers
-// Query params: search, limit (default 50), offset (default 0)
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
@@ -17,32 +15,24 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 200)
     const offset = Math.max(parseInt(url.searchParams.get('offset') || '0'), 0)
 
-    const conditions = ['"organizationId" = $1']
+    let query = `SELECT id, name, email, phone, company, city, country, status, "createdAt"
+                 FROM "Customer"
+                 WHERE "organizationId" = $1`
+    let countQuery = `SELECT COUNT(*) AS total FROM "Customer" WHERE "organizationId" = $1`
     const params: any[] = [orgId]
 
     if (search) {
-      params.push(`%${search}%`)
-      conditions.push(`(name ILIKE $${params.length} OR email ILIKE $${params.length} OR phone ILIKE $${params.length} OR company ILIKE $${params.length})`)
+      const searchPattern = `%${search}%`
+      query += ` AND (name ILIKE $${params.length + 1} OR COALESCE(email, '') ILIKE $${params.length + 1} OR COALESCE(phone, '') ILIKE $${params.length + 1} OR COALESCE(company, '') ILIKE $${params.length + 1})`
+      countQuery += ` AND (name ILIKE $${params.length + 1} OR COALESCE(email, '') ILIKE $${params.length + 1} OR COALESCE(phone, '') ILIKE $${params.length + 1} OR COALESCE(company, '') ILIKE $${params.length + 1})`
+      params.push(searchPattern)
     }
 
-    params.push(limit)
-    const limitIdx = params.length
-    params.push(offset)
-    const offsetIdx = params.length
+    query += ` ORDER BY "createdAt" DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
+    params.push(limit, offset)
 
-    const result = await pool.query(
-      `SELECT id, name, email, phone, company, city, country, status, "createdAt"
-       FROM "Customer"
-       WHERE ${conditions.join(' AND ')}
-       ORDER BY "createdAt" DESC
-       LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
-      params
-    )
-
-    const countResult = await pool.query(
-      `SELECT COUNT(*) AS total FROM "Customer" WHERE ${conditions.slice(0, -2).join(' AND ')}`,
-      params.slice(0, -2)
-    )
+    const result = await pool.query(query, params)
+    const countResult = await pool.query(countQuery, params.slice(0, -2))
 
     return NextResponse.json({
       customers: result.rows.map(r => ({
@@ -60,33 +50,35 @@ export async function GET(request: NextRequest) {
       limit, offset,
     })
   } catch (err: any) {
-    console.error('[wavve-si/restaurant/customers] GET error:', err?.message)
+    console.error('[customers] GET error:', err?.message, err?.stack)
     return NextResponse.json({ error: 'Failed to load customers' }, { status: 500 })
   }
 }
 
-// POST /api/wavve-si/restaurant/customers
-// Body: { name, email?, phone?, company?, city?, country?, notes? }
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
     const session = await requireTenant(request)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) {
+      client.release()
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const body = await request.json()
     const { name, email, phone, company, city, country, notes } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      client.release()
       return NextResponse.json({ error: 'Customer name is required' }, { status: 400 })
     }
 
-    // Check email uniqueness within org (if provided)
     if (email && email.trim()) {
       const existing = await pool.query(
         'SELECT id FROM "Customer" WHERE email = $1 AND "organizationId" = $2',
         [email.trim(), session.organizationId]
       )
       if (existing.rows.length > 0) {
+        client.release()
         return NextResponse.json({ error: 'A customer with this email already exists' }, { status: 409 })
       }
     }
@@ -97,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     await client.query(
       `INSERT INTO "Customer" (id, name, email, phone, company, city, country, notes, type, status, "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'INDIVIDUAL', 'ACTIVE', $9, NOW(), NOW())`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'INDIVIDUAL'::"CustomerType", 'ACTIVE'::"CustomerStatus", $9, NOW(), NOW())`,
       [
         customerId,
         name.trim(),
@@ -118,12 +110,12 @@ export async function POST(request: NextRequest) {
       [customerId]
     )
 
+    client.release()
     return NextResponse.json({ success: true, customer: result.rows[0] }, { status: 201 })
   } catch (err: any) {
     await client.query('ROLLBACK').catch(() => {})
-    console.error('[wavve-si/restaurant/customers] POST error:', err?.message)
-    return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 })
-  } finally {
     client.release()
+    console.error('[customers] POST error:', err?.message, err?.stack)
+    return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 })
   }
 }
