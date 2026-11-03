@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import {
   Shield, CheckCircle2, Loader2, AlertCircle, Sparkles, Server,
   TrendingUp, Users, Clock, Globe, Building2, Check, X, Crown,
-  Calendar, Receipt, ArrowRight, Zap, Lock, BarChart3, Layers,
+  Calendar, Receipt, ArrowRight, Zap, Lock, BarChart3, Layers, Rocket,
 } from 'lucide-react'
 
 interface SubData {
@@ -194,6 +194,12 @@ export default function SubscriptionPage() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => router.push('/wavve-si/dashboard')}
+                    className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+                  >
+                    <Rocket className="w-5 h-5" /> Continue with Wavve SI
+                  </button>
                   <button
                     onClick={() => router.push('/wavecore-erp')}
                     className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"

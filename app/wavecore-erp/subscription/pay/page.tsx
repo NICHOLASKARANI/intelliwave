@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Smartphone, ArrowLeft, Loader2, CheckCircle2, XCircle, AlertTriangle,
-  Clock, Phone, Receipt, ShieldCheck, Sparkles, Calendar, Zap,
+  Clock, Phone, Receipt, ShieldCheck, Sparkles, Calendar, Zap, Rocket,
 } from 'lucide-react'
 
 type Stage = 'form' | 'sending' | 'waiting' | 'success' | 'failed'
@@ -299,6 +299,12 @@ export default function MpesaPayPage() {
               <div className="flex justify-between"><span className="text-neutral-500">Phone</span><span className="font-mono text-xs">{phoneNumber}</span></div>
             </div>
 
+            <button
+              onClick={() => router.push('/wavve-si/dashboard')}
+              className="w-full px-6 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2 mb-3"
+            >
+              <Rocket className="w-5 h-5" /> Continue with Wavve SI
+            </button>
             <button
               onClick={() => router.push('/wavecore-erp/subscription')}
               className="w-full px-6 py-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2"
