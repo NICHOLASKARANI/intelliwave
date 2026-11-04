@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Mail, Lock, Phone, Eye, EyeOff, Loader2, Shield, Globe, Zap,
   ArrowRight, User, CheckCircle2, XCircle, Sparkles, Server, Clock,
-  BadgeCheck, TrendingUp, Users, Award, Check,
+  BadgeCheck, TrendingUp, Users, Award, Check, Gift,
 } from 'lucide-react'
 
 export default function SignupPage() {
@@ -14,6 +14,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [referralCode, setReferralCode] = useState('')
   const [agreed, setAgreed] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -55,7 +56,7 @@ export default function SignupPage() {
       const res = await fetch('/api/wavecore/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, password }),
+        body: JSON.stringify({ name, email, phone, password, referralCode: referralCode.trim() || undefined }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -254,6 +255,23 @@ export default function SignupPage() {
                   </div>
                 </div>
 
+                {/* REFERRAL CODE (OPTIONAL) */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Referral Code <span className="text-xs text-slate-500 font-normal">(optional)</span>
+                  </label>
+                  <div className="relative">
+                    <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400" />
+                    <input
+                      type="text"
+                      value={referralCode}
+                      onChange={e => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="REF-XXXX-XXXX"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-600/50 bg-slate-800/50 text-white font-mono text-sm uppercase focus:border-amber-500 outline-none"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">From your Executive Leader — helps them earn rewards</p>
+                </div>
                 {/* PHONE */}
                 <div>
                   <label className="text-xs uppercase tracking-wide text-slate-400 font-bold mb-1.5 block">

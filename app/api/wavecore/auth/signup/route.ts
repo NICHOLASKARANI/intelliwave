@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { name, email, phone, password } = body
+    const { name, email, phone, password, referralCode } = body
 
     // Password strength check (server-side, no client hints)
     const pwCheck = validatePassword(password)
@@ -104,6 +104,64 @@ export async function POST(req: NextRequest) {
       [sessionToken, userId, sessionToken]
     )
 
+    // ─── REFERRAL CODE HANDLING ───
+    // If a referral code was provided, credit the executive leader
+    let referralCredited = false
+    let referralLeader = null
+    if (referralCode && typeof referralCode === 'string' && referralCode.trim()) {
+      const codeClean = referralCode.trim().toUpperCase()
+      // Look up in ExecutiveCustomer table
+      const refCustomer = await client.query(
+        'SELECT * FROM "ExecutiveCustomer" WHERE UPPER(referral_code) = $1 LIMIT 1',
+        [codeClean]
+      )
+      
+      if (refCustomer.rows.length > 0) {
+        const cust = refCustomer.rows[0]
+        // Only credit if not already verified (avoid double-credit)
+        if (!cust.is_paying) {
+          // Link the new organization to this customer record
+          await client.query(
+            `UPDATE "ExecutiveCustomer" 
+             SET organization_id = $1, 
+                 is_paying = TRUE,
+                 subscription_status = 'ACTIVE',
+                 verified_at = NOW(),
+                 verified_by = 'SIGNUP_AUTO'
+             WHERE id = $2`,
+            [orgId, cust.id]
+          )
+          
+          // Increment leader's total_active_users and re-level
+          const leaderCheck = await client.query(
+            'SELECT id, total_active_users, level FROM "ExecutiveLeader" WHERE id = $1',
+            [cust.leader_id]
+          )
+          
+          if (leaderCheck.rows.length > 0) {
+            const leader = leaderCheck.rows[0]
+            const newActiveUsers = (leader.total_active_users || 0) + 1
+            let newLevel = 0
+            if (newActiveUsers >= 100) newLevel = 3
+            else if (newActiveUsers >= 60) newLevel = 2
+            else if (newActiveUsers >= 30) newLevel = 1
+            
+            await client.query(
+              'UPDATE "ExecutiveLeader" SET total_active_users = $1, level = $2 WHERE id = $3',
+              [newActiveUsers, newLevel, leader.id]
+            )
+            
+            referralCredited = true
+            referralLeader = {
+              id: leader.id,
+              new_active_users: newActiveUsers,
+              new_level: newLevel,
+              leveled_up: newLevel > (leader.level || 0)
+            }
+          }
+        }
+      }
+    }
     await client.query('COMMIT')
 
     const jwtToken = generateToken(userId, orgId)
@@ -114,6 +172,8 @@ export async function POST(req: NextRequest) {
       organization: { id: orgId, name: name.trim() + "'s Business" },
       requiresPayment: true,
       subscriptionAmount: 500,
+      referral_credited: referralCredited,
+      referral_leader: referralLeader,
       token: jwtToken,
       tokenExpiresIn: '24h'
     })
