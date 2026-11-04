@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Crown, Users, Lightbulb, DollarSign, Gift, CheckCircle, XCircle } from 'lucide-react'
+import { Crown, Users, Lightbulb, DollarSign, Gift, CheckCircle, XCircle, KeyRound, Trash2, Copy, AlertCircle } from 'lucide-react'
 
 export default function CEOAdmin() {
   const [password, setPassword] = useState('')
@@ -9,6 +9,8 @@ export default function CEOAdmin() {
   const [tab, setTab] = useState<'leaders' | 'ideas' | 'customers' | 'payouts'>('leaders')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [resetInfo, setResetInfo] = useState<{ password: string; name: string; email: string; phone: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<any>(null)
 
   const loadData = async () => {
     setLoading(true)
@@ -46,6 +48,41 @@ export default function CEOAdmin() {
       setMessage(d.error || 'Failed')
     }
   }
+
+  const handleResetPassword = async (leader: any) => {
+    if (!confirm(`Reset password for ${leader.full_name}?`)) return
+    const res = await fetch('/api/executives/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ceo-password': password },
+      body: JSON.stringify({ action: 'reset_leader_password', target_id: leader.id }),
+    })
+    const d = await res.json()
+    if (res.ok && d.new_password) {
+      setResetInfo({ password: d.new_password, name: leader.full_name, email: leader.email, phone: leader.phone })
+    } else {
+      alert(d.error || 'Reset failed')
+    }
+  }
+
+  const handleDeleteLeader = async () => {
+    if (!deleteTarget) return
+    const res = await fetch('/api/executives/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ceo-password': password },
+      body: JSON.stringify({ action: 'delete_leader', target_id: deleteTarget.id }),
+    })
+    const d = await res.json()
+    if (res.ok) { setMessage(d.message || 'Leader deleted'); setDeleteTarget(null); loadData() }
+    else { alert(d.error || 'Delete failed'); setDeleteTarget(null) }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setMessage('Copied: ' + text)
+  }
+
+
+
 
   if (!auth) {
     return (
@@ -127,8 +164,16 @@ export default function CEOAdmin() {
                     <span className={`text-xs px-2 py-0.5 rounded-full ${l.status === 'APPROVED' ? 'bg-green-900/50 text-green-400' : l.status === 'PENDING' ? 'bg-amber-900/50 text-amber-400' : 'bg-red-900/50 text-red-400'}`}>{l.status}</span>
                     <span className="text-xs text-amber-400">Level {l.level}</span>
                   </div>
-                  <p className="text-sm text-slate-400">{l.email} · {l.phone} · {l.location}</p>
-                  <p className="text-xs text-slate-500 mt-1">Referral: <code className="text-amber-400">{l.referral_code}</code> · Active users: {l.total_active_users}</p>
+                  <p className="text-sm text-slate-400">{l.email} Â· {l.phone} Â· {l.location}</p>
+                  
+                  <div className="inline-flex items-center gap-2 mt-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-1.5">
+                    <span className="text-xs text-amber-400 font-bold uppercase">Referral</span>
+                    <code className="text-sm font-mono font-bold text-amber-300">{l.referral_code}</code>
+                    <button onClick={() => copyToClipboard(l.referral_code)} className="p-1 hover:bg-amber-500/20 rounded" title="Copy">
+                      <Copy className="w-3 h-3 text-amber-400" />
+                    </button>
+                    <span className="text-xs text-slate-500 ml-2">{l.total_active_users} users</span>
+                  </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {l.status === 'PENDING' && (
@@ -143,6 +188,16 @@ export default function CEOAdmin() {
                     </button>
                   )}
                   {l.gift_sent && <span className="text-xs text-green-400">✓ Gift sent</span>}
+                  {l.status === 'APPROVED' && (
+                    <button onClick={() => handleResetPassword(l)} className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 rounded-lg font-bold flex items-center gap-1" title="Generate new password">
+                      <KeyRound className="w-3 h-3" /> Reset
+                    </button>
+                  )}
+                  {l.status === 'REJECTED' && (
+                    <button onClick={() => setDeleteTarget(l)} className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-500 rounded-lg font-bold flex items-center gap-1" title="Delete permanently">
+                      <Trash2 className="w-3 h-3" /> Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -227,6 +282,32 @@ export default function CEOAdmin() {
           </div>
         )}
       </div>
+
+      {resetInfo && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full">
+            <h3 className="font-bold text-white mb-2">Password Reset: {resetInfo.name}</h3>
+            <p className="text-sm text-slate-300 mb-2">New password:</p>
+            <code className="block bg-slate-950 p-3 rounded-lg text-amber-300 font-mono text-lg select-all mb-3">{resetInfo.password}</code>
+            <div className="flex gap-2">
+              <button onClick={() => copyToClipboard(resetInfo.password)} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold">Copy</button>
+              <button onClick={() => setResetInfo(null)} className="flex-1 bg-slate-800 text-white py-2 rounded-lg font-bold">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-500/30 rounded-2xl p-6 max-w-md w-full">
+            <h3 className="font-bold text-white mb-2">Delete {deleteTarget.full_name}?</h3>
+            <p className="text-sm text-red-300 mb-4">Permanent. Cannot be undone.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 bg-slate-800 text-white py-2 rounded-lg font-bold">Cancel</button>
+              <button onClick={handleDeleteLeader} className="flex-1 bg-red-600 text-white py-2 rounded-lg font-bold">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

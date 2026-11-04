@@ -150,6 +150,63 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'Gift of KSh 200 sent' })
     }
 
+    // ─── Action: Reset leader password ───
+    if (action === 'reset_leader_password') {
+      const leaderRes = await pool.query('SELECT id, full_name, email, phone FROM "ExecutiveLeader" WHERE id = $1', [target_id])
+      if (leaderRes.rows.length === 0) {
+        return NextResponse.json({ error: 'Leader not found' }, { status: 404 })
+      }
+      const leader = leaderRes.rows[0]
+
+      // Generate a strong random password (14 chars, mixed case + digits + symbols)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*'
+      let newPassword = ''
+      const crypto = require('crypto')
+      for (let i = 0; i < 14; i++) {
+        newPassword += chars[crypto.randomInt(0, chars.length)]
+      }
+
+      const bcrypt = require('bcryptjs')
+      const hash = await bcrypt.hash(newPassword, 12)
+
+      await pool.query(
+        'UPDATE "ExecutiveLeader" SET password_hash = $1 WHERE id = $2',
+        [hash, target_id]
+      )
+
+      return NextResponse.json({
+        success: true,
+        message: `Password reset for ${leader.full_name}`,
+        new_password: newPassword,
+        leader_name: leader.full_name,
+        leader_email: leader.email,
+        leader_phone: leader.phone,
+      })
+    }
+
+    // ─── Action: Delete a REJECTED leader (hard delete) ───
+    if (action === 'delete_leader') {
+      const leaderRes = await pool.query('SELECT id, status, full_name FROM "ExecutiveLeader" WHERE id = $1', [target_id])
+      if (leaderRes.rows.length === 0) {
+        return NextResponse.json({ error: 'Leader not found' }, { status: 404 })
+      }
+      const leader = leaderRes.rows[0]
+      if (leader.status !== 'REJECTED') {
+        return NextResponse.json({ error: 'Only REJECTED leaders can be deleted. Current status: ' + leader.status }, { status: 400 })
+      }
+
+      // Delete dependent records first (foreign key constraints)
+      await pool.query('DELETE FROM "ExecutivePayout" WHERE leader_id = $1', [target_id]).catch(() => {})
+      await pool.query('DELETE FROM "ExecutiveIdea" WHERE leader_id = $1', [target_id]).catch(() => {})
+      await pool.query('DELETE FROM "ExecutiveCustomer" WHERE leader_id = $1', [target_id]).catch(() => {})
+      await pool.query('DELETE FROM "ExecutiveLeader" WHERE id = $1', [target_id])
+
+      return NextResponse.json({
+        success: true,
+        message: `Leader ${leader.full_name} deleted permanently`,
+      })
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
   } catch (error) {
     return NextResponse.json({ error: 'Action failed' }, { status: 500 })
