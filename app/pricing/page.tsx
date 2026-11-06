@@ -10,7 +10,7 @@ import {
 
 export const metadata: Metadata = {
   title: 'Pricing - Enterprise AI Solutions | Transparent Pricing Kenya',
-  description: 'Competitive pricing for AI development, web applications, e-commerce, and enterprise solutions. Pay via M-Pesa Till 4760783.',
+  description: 'Competitive pricing for AI development, web applications, e-commerce, and enterprise solutions. Pay via Co-operative Bank Lipa Na M-Pesa Business Number 400200.',
 }
 
 const pricingPlans = [
@@ -44,7 +44,7 @@ const pricingPlans = [
     features: [
       'Online store setup',
       'M-Pesa integration',
-      'Stripe payments',
+      'Bank payments',
       'Product management',
       'Order tracking',
       'Inventory system',
@@ -90,11 +90,11 @@ const addOns = [
 const faqs = [
   {
     question: 'What payment methods do you accept?',
-    answer: 'We accept Lipa Na M-Pesa (Till Number: 4760783), bank transfers, credit/debit cards via Stripe, and international wire transfers.',
+    answer: 'We accept Lipa Na M-Pesa via Co-operative Bank (Business Number: 400200, Account Number: 01103362733001), and direct bank transfers to Co-operative Bank Kenya. Contact us for other arrangements.',
   },
   {
     question: 'How do I pay via M-Pesa?',
-    answer: 'Go to M-Pesa → Lipa Na M-Pesa → Buy Goods and Services → Enter Till Number: 4760783 → Enter Amount → Enter PIN → Send. Then WhatsApp confirmation to +254 714 694 493.',
+    answer: 'Go to M-Pesa → Lipa Na M-Pesa → Buy Goods and Services → Enter Business Number: 400200 → Enter Amount → Enter PIN → Send. Then WhatsApp confirmation to +254 714 694 493.',
   },
   {
     question: 'How long does a typical project take?',
@@ -217,71 +217,126 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* PAYMENT SECTION WITH IMAGE */}
+        {/* WORLD-CLASS PAYMENT SECTION */}
         <div className="mb-16 rounded-3xl border-2 border-green-500/30 overflow-hidden bg-gradient-to-br from-background to-green-500/5">
-          <div className="grid lg:grid-cols-2">
-            {/* Payment Image - This will display your JPEG */}
-            <div className="relative min-h-[400px] bg-white dark:bg-neutral-900 flex items-center justify-center p-4">
-              <div className="relative w-full h-full min-h-[350px]">
-                <Image
-                  src="/payments/INTELLIWAVE PAYMENT.jpeg"
-                  alt="IntelliWave Payment Details - Lipa Na M-Pesa Till Number 4760783"
-                  fill
-                  className="object-contain rounded-xl"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
+          <div className="p-6 md:p-8 border-b border-green-500/20 bg-gradient-to-r from-green-500/10 to-transparent">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold">Pay Securely</h2>
+                <p className="text-sm text-muted-foreground">Via Co-operative Bank Lipa Na M-Pesa</p>
               </div>
             </div>
+          </div>
 
-            {/* Payment Info */}
-            <div className="p-8 md:p-12">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-green-500" />
-                </div>
-                <h2 className="text-3xl font-bold">Payment Details</h2>
+          <div className="p-6 md:p-8 bg-white dark:bg-neutral-900">
+            <div className="relative w-full max-w-3xl mx-auto aspect-[3/2]">
+              <Image
+                src="/payments/INTELLIWAVE PAYMENT.jpeg"
+                alt="IntelliWave Payment - Co-operative Bank Lipa Na M-Pesa Business Number 400200"
+                fill
+                className="object-contain rounded-2xl shadow-lg"
+                sizes="(max-width: 1024px) 100vw, 60vw"
+                priority
+              />
+            </div>
+          </div>
+
+          <div className="p-6 md:p-8 grid md:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border-2 border-green-300 dark:border-green-700">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">MPESA</span>
+                <h3 className="font-bold text-lg">Lipa Na M-Pesa</h3>
               </div>
-
-              {/* M-Pesa */}
-              <div className="p-6 rounded-2xl bg-green-50 dark:bg-green-950/30 border-2 border-green-300 dark:border-green-700 mb-4">
-                <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                  <span className="text-2xl">📱</span> Lipa Na M-Pesa
-                </h3>
-                <div className="text-center p-4 rounded-xl bg-white dark:bg-green-950/50 border border-green-200 dark:border-green-800 mb-3">
-                  <p className="text-sm text-muted-foreground mb-1">Till Number</p>
-                  <p className="text-4xl font-bold text-green-600 dark:text-green-400 tracking-wider">4760783</p>
-                  <p className="text-xs text-muted-foreground mt-1">IntelliWave Ltd</p>
+              <p className="text-xs text-muted-foreground mb-3">via Co-operative Bank Kenya</p>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground uppercase font-bold">Business Number</p>
+                    
+                  </div>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 tracking-wider font-mono">400200</p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Go to M-Pesa → Lipa Na M-Pesa → Buy Goods and Services → Enter Till: 4760783
-                </p>
-              </div>
-
-              {/* Other Methods */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-center text-sm">
-                  <span className="text-xl">🏦</span>
-                  <p className="font-bold mt-1">Bank Transfer</p>
-                  <p className="text-xs text-muted-foreground">Available on request</p>
+                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground uppercase font-bold">Account Number</p>
+                    
+                  </div>
+                  <p className="text-sm font-bold text-green-600 dark:text-green-400 tracking-wider font-mono break-all">01103362733001</p>
                 </div>
-                <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-center text-sm">
-                  <span className="text-xl">🌍</span>
-                  <p className="font-bold mt-1">International</p>
-                  <p className="text-xs text-muted-foreground">Stripe & Wire</p>
+                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+                  <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Account Name</p>
+                  <p className="text-sm font-bold text-green-600 dark:text-green-400">NIC NOVARANN LAUNCHPAD ENTERPRISES</p>
                 </div>
               </div>
+              <details className="mt-3 text-xs text-muted-foreground">
+                <summary className="cursor-pointer font-bold hover:text-foreground">How to pay</summary>
+                <ol className="mt-2 space-y-1 list-decimal list-inside pl-1">
+                  <li>Go to M-Pesa menu</li>
+                  <li>Select Lipa Na M-Pesa, then Pay Bill</li>
+                  <li>Enter Business No: 400200</li>
+                  <li>Enter Account: 01103362733001</li>
+                  <li>Enter Amount, then PIN, then Send</li>
+                </ol>
+              </details>
+            </div>
 
+            <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border-2 border-blue-300 dark:border-blue-700">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">CHAT</span>
+                <h3 className="font-bold text-lg">Confirm Payment</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">Send proof of payment via WhatsApp for instant verification</p>
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 mb-3">
+                <p className="text-xs text-muted-foreground uppercase font-bold mb-1">WhatsApp</p>
+                <p className="text-lg font-bold text-blue-600 dark:text-blue-400">+254 714 694 493</p>
+              </div>
               <a
                 href="https://wa.me/254714694493"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-colors text-sm"
               >
-                <Phone className="w-5 h-5" />
-                WhatsApp Confirmation: +254 714 694 493
+                <Phone className="w-4 h-4" />
+                Open WhatsApp
+              </a>
+              <p className="text-xs text-muted-foreground mt-3 text-center">Include your name, amount, and M-Pesa receipt code</p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border-2 border-purple-300 dark:border-purple-700">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">BANK</span>
+                <h3 className="font-bold text-lg">Bank Transfer</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">For larger projects, direct transfer to Co-operative Bank</p>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
+                  <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Bank</p>
+                  <p className="text-sm font-bold text-purple-600 dark:text-purple-400">Co-operative Bank Kenya</p>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
+                  <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Account Name</p>
+                  <p className="text-xs font-bold text-purple-600 dark:text-purple-400">NIC NOVARANN LAUNCHPAD ENTERPRISES</p>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
+                  <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Account Number</p>
+                  <p className="text-sm font-bold text-purple-600 dark:text-purple-400 font-mono break-all">01103362733001</p>
+                </div>
+              </div>
+              <a
+                href="mailto:sales@intelliwavve.com?subject=Bank Transfer Details Request"
+                className="flex items-center justify-center gap-2 w-full py-3 mt-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-bold transition-colors text-sm"
+              >
+                Request Full Bank Details
               </a>
             </div>
+          </div>
+
+          <div className="px-6 md:px-8 py-4 border-t border-green-500/20 bg-green-500/5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span>Powered by Co-operative Bank Kenya - Secure M-Pesa Integration</span>
           </div>
         </div>
 
@@ -324,7 +379,7 @@ export default function PricingPage() {
         <div className="text-center p-12 rounded-3xl bg-gradient-to-br from-primary to-accent text-white">
           <h2 className="text-3xl font-bold mb-4">Ready to Start?</h2>
           <p className="text-white/80 mb-8 max-w-2xl mx-auto">
-            Pay via M-Pesa Till <strong className="text-white">4760783</strong> or book a consultation.
+            Pay via Co-operative Bank Lipa Na M-Pesa <strong className="text-white">Business No: 400200</strong> or book a consultation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/contact">
