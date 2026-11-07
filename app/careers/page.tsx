@@ -66,9 +66,7 @@ export default function CareersPage() {
                   </span>
                 </div>
               </div>
-              <Link href={`/careers/${job.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                <Button>Apply Now</Button>
-              </Link>
+              <Link href="/careers/apply"><Button>Learn More</Button></Link>
             </div>
           ))}
         </div>
