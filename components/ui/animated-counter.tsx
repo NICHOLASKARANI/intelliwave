@@ -1,83 +1,58 @@
 'use client'
-
 import { useEffect, useState, useRef } from 'react'
+import { useInView } from 'framer-motion'
 
 interface AnimatedCounterProps {
-  end: number
-  duration?: number
+  target?: number
+  end?: number
   suffix?: string
   prefix?: string
+  decimals?: number
+  duration?: number
   className?: string
 }
 
-export function AnimatedCounter({ 
-  end, 
-  duration = 2000, 
-  suffix = '', 
+export function AnimatedCounter({
+  target,
+  end,
+  suffix = '',
   prefix = '',
-  className = ''
+  decimals = 0,
+  duration = 2000,
+  className,
 }: AnimatedCounterProps) {
+  const finalValue = target ?? end ?? 0
   const [count, setCount] = useState(0)
-  const [isVisible, setIsVisible] = useState(false)
-  const counterRef = useRef<HTMLDivElement>(null)
-  const hasAnimated = useRef(false)
+  const ref = useRef<HTMLSpanElement>(null)
+  const isInView = useInView(ref, { once: true, margin: '-50px' })
 
   useEffect(() => {
-    const element = counterRef.current
-    if (!element) return
+    if (!isInView) return
+    let rafId: number
+    const startTime = Date.now()
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated.current) {
-          setIsVisible(true)
-          hasAnimated.current = true
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.3 }
-    )
-
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    if (!isVisible) return
-
-    let startTime: number | null = null
-    let animationId: number
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const elapsed = timestamp - startTime
+    const animate = () => {
+      const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
-      
-      // Smooth easing
-      const eased = 1 - Math.pow(1 - progress, 4)
-      const current = Math.floor(eased * end)
-      
-      setCount(current)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(finalValue * eased)
 
       if (progress < 1) {
-        animationId = requestAnimationFrame(animate)
+        rafId = requestAnimationFrame(animate)
+      } else {
+        setCount(finalValue)
       }
     }
 
-    animationId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationId)
-  }, [isVisible, end, duration])
+    rafId = requestAnimationFrame(animate)
+    return () => { if (rafId) cancelAnimationFrame(rafId) }
+  }, [isInView, finalValue, duration])
 
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-    return num.toLocaleString()
-  }
+  const formatted = decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toString()
 
   return (
-    <div ref={counterRef} className={className}>
-      <span className="tabular-nums">
-        {prefix}{formatNumber(count)}{suffix}
-      </span>
-    </div>
+    <span ref={ref} className={className}>
+      {prefix}{formatted}{suffix}
+    </span>
   )
 }
