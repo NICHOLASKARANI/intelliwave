@@ -230,13 +230,13 @@ export default function HomePage() {
               Custom-built software and AI solutions tailored to your specific needs.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {servicesData.map((service, index) => (
               <motion.div key={service.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.04 }}
                 whileHover={{ y: -6 }} className="group relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 cursor-pointer">
                 <Link href={service.href}>
-                  <div className="relative h-64 overflow-hidden">
-                    <Image src={service.image} alt={service.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <Image src={service.image} alt={service.title} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-blue-500/20 via-transparent to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -263,11 +263,11 @@ export default function HomePage() {
               Production-grade systems built with rigorous engineering standards.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {engineeringImages.map((img) => (
               <div key={img.label} className="group relative rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all duration-500">
                 <div className="relative h-72">
-                  <Image src={img.src} alt={img.alt} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 25vw" />
+                  <Image src={img.src} alt={img.alt} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5">
                     <h3 className="text-white font-bold text-lg">{img.label}</h3>
@@ -312,11 +312,11 @@ export default function HomePage() {
               Real results across industries and technologies.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {businessImages.map((img) => (
               <div key={img.label} className="group relative rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all duration-500">
-                <div className="relative h-60">
-                  <Image src={img.src} alt={img.alt} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 25vw" />
+                <div className="relative aspect-[4/3]">
+                  <Image src={img.src} alt={img.alt} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5">
                     <h3 className="text-white font-bold text-lg">{img.label}</h3>
@@ -405,7 +405,7 @@ export default function HomePage() {
                 className="group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
                 <Link href={tech.href}>
                   <div className="relative h-72">
-                    <Image src={tech.image} alt={tech.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
+                    <Image src={tech.image} alt={tech.title} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6">
                       <h3 className="text-white font-bold text-2xl">{tech.title}</h3>
