@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
-import { TrustBadges } from '@/components/sections/trust-badges'
 import { EnterpriseArchitecture } from '@/components/sections/enterprise-architecture'
 import { DigitalTwin } from '@/components/sections/digital-twin'
 import { GlobalInfrastructure } from '@/components/sections/global-infrastructure'
@@ -212,8 +211,7 @@ export default function HomePage() {
       </section>
 
       {/* ========================================== TRUST BADGES + ACTIVITY ========================================== */}
-      <TrustBadges />
-      <section className="py-4 bg-white dark:bg-neutral-950 border-b">
+<section className="py-4 bg-white dark:bg-neutral-950 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><GlobalActivityFeed /></div>
       </section>
 
