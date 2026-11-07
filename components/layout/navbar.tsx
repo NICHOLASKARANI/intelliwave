@@ -27,7 +27,7 @@ const navigation = [
     ]
   },
   { name: "Wavve SI", href: "/wavve-si" },
-  { name: "WaveCore ERP", href: "/wavecore-erp/auth/signup" },
+  { name: "WaveCore", href: "/wavecore-erp/auth/signup" },
   { name: "WavveMarket", href: "/marketplace" },
   { name: "Portfolio", href: "/portfolio" },
   { name: "Blog", href: "/blog" },
@@ -77,15 +77,6 @@ export function Navbar() {
       <div className="hidden lg:block bg-gradient-to-r from-indigo-950 via-purple-900 to-indigo-950 text-white">
         <div className="container mx-auto px-4 py-1 flex items-center justify-between text-xs">
           <div className="flex items-center gap-5">
-            <span className="flex items-center gap-1.5 text-indigo-200">
-              <Sparkles className="w-3 h-3 text-amber-400" /> Enterprise AI Platform
-            </span>
-            <span className="flex items-center gap-1.5 text-indigo-200">
-              <Shield className="w-3 h-3 text-green-400" /> SOC 2 Type II
-            </span>
-            <span className="flex items-center gap-1.5 text-indigo-200">
-              <Globe className="w-3 h-3 text-blue-400" /> 100+ Countries
-            </span>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-indigo-200">Building the Intelligent Operating System</span>
@@ -169,35 +160,7 @@ export function Navbar() {
                 )
               }
 
-              if (item.name === "WavveMarket") {
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="relative ml-1 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105"
-                  >
-                    <Star className="w-3.5 h-3.5" />
-                    {item.name}
-                  </Link>
-                )
-              }
 
-              if (item.name === "WaveCore ERP") {
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`ml-2 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 ${
-                      isWaveCoreActive
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/30 hover:scale-105'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    {item.name}
-                  </Link>
-                )
-              }
 
               const isActive = pathname === item.href
               return (
@@ -252,31 +215,7 @@ export function Navbar() {
         <div className="lg:hidden bg-white dark:bg-neutral-950 border-t max-h-[80vh] overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200">
           <div className="p-4 space-y-1">
             {navigation.map((item) => {
-              if (item.name === "WavveMarket") {
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="relative ml-1 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105"
-                  >
-                    <Star className="w-3.5 h-3.5" />
-                    {item.name}
-                  </Link>
-                )
-              }
 
-              if (item.name === "WaveCore ERP") {
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold"
-                  >
-                    <Sparkles className="w-4 h-4" /> {item.name}
-                  </Link>
-                )
-              }
 
               return (
                 <Link
