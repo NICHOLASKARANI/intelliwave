@@ -9,6 +9,7 @@ import {
   MessageSquare, CheckCircle2, AlertCircle, TrendingUp, Eye,
 } from 'lucide-react'
 import { LikeButton } from '@/components/marketplace/LikeButton'
+import { CommentSection } from '@/components/marketplace/CommentSection'
 
 interface Listing {
   id: number
@@ -371,6 +372,8 @@ export default function ListingDetailPage() {
             </div>
           )}
         </div>
+
+        <CommentSection listingId={listing.id} />
       </div>
     </div>
   )
