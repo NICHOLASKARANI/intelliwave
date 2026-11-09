@@ -2666,6 +2666,9 @@ model MarketplaceListing {
 
   conversations MarketplaceConversation[]
   savedEntries  MarketplaceSaved[]
+  likes         MarketplaceLike[]
+  comments      MarketplaceComment[]
+  shares        MarketplaceShare[]
 
   @@index([category], map: "MarketplaceListing_category_idx")
   @@index([category], map: "idx_listing_category")
@@ -2932,4 +2935,92 @@ model WalletTransaction {
   @@index([sellerId], map: "WalletTransaction_seller_idx")
   @@index([type], map: "WalletTransaction_type_idx")
   @@map("WalletTransaction")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WAVVEMARKET — Social Engagement Models (Tier 1)
+// Added: 2026-11-09
+// These tables are NEW — created by migration, not existing
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── MarketplaceLike — user likes a listing ───
+model MarketplaceLike {
+  id         String    @id @default(cuid())
+  userId     String
+  listingId  Int
+  createdAt  DateTime  @default(now())
+
+  listing MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId], map: "MarketplaceLike_userId_listingId_key")
+  @@index([listingId], map: "MarketplaceLike_listing_idx")
+  @@index([userId], map: "MarketplaceLike_user_idx")
+  @@map("MarketplaceLike")
+}
+
+// ─── MarketplaceComment — user comments on listings (with nested replies) ───
+model MarketplaceComment {
+  id         String    @id @default(cuid())
+  userId     String
+  listingId  Int
+  parentId   String?
+  body       String
+  isDeleted  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  listing MarketplaceListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  parent  MarketplaceComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies MarketplaceComment[] @relation("CommentReplies")
+  likes   MarketplaceCommentLike[]
+
+  @@index([listingId], map: "MarketplaceComment_listing_idx")
+  @@index([userId], map: "MarketplaceComment_user_idx")
+  @@index([parentId], map: "MarketplaceComment_parent_idx")
+  @@index([createdAt], map: "MarketplaceComment_created_idx")
+  @@map("MarketplaceComment")
+}
+
+// ─── MarketplaceCommentLike — user likes a comment ───
+model MarketplaceCommentLike {
+  id         String    @id @default(cuid())
+  userId     String
+  commentId  String
+  createdAt  DateTime  @default(now())
+
+  comment MarketplaceComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId], map: "MarketplaceCommentLike_userId_commentId_key")
+  @@index([commentId], map: "MarketplaceCommentLike_comment_idx")
+  @@map("MarketplaceCommentLike")
+}
+
+// ─── MarketplaceFollow — user follows a seller ───
+model MarketplaceFollow {
+  id         String    @id @default(cuid())
+  userId     String
+  sellerId   String
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, sellerId], map: "MarketplaceFollow_userId_sellerId_key")
+  @@index([sellerId], map: "MarketplaceFollow_seller_idx")
+  @@index([userId], map: "MarketplaceFollow_user_idx")
+  @@map("MarketplaceFollow")
+}
+
+// ─── MarketplaceShare — track product shares ───
+model MarketplaceShare {
+  id         String    @id @default(cuid())
+  listingId  Int
+  userId     String?
+  channel    String    // "whatsapp" | "facebook" | "x" | "copy_link" | "native"
+  ipHash     String?
+  createdAt  DateTime  @default(now())
+
+  listing MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId], map: "MarketplaceShare_listing_idx")
+  @@index([userId], map: "MarketplaceShare_user_idx")
+  @@index([channel], map: "MarketplaceShare_channel_idx")
+  @@map("MarketplaceShare")
 }
