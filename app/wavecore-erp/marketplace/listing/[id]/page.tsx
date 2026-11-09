@@ -8,6 +8,7 @@ import {
   ArrowLeft, ShoppingCart, Heart, Star, MapPin, Loader2, Package,
   MessageSquare, CheckCircle2, AlertCircle, TrendingUp, Eye,
 } from 'lucide-react'
+import { LikeButton } from '@/components/marketplace/LikeButton'
 
 interface Listing {
   id: number
@@ -214,9 +215,12 @@ export default function ListingDetailPage() {
                 <span className="text-xs font-bold uppercase text-cyan-400">{listing.category}</span>
                 <h1 className="text-3xl lg:text-4xl font-bold mt-1">{listing.title}</h1>
               </div>
-              <button onClick={toggleSave} className={saved ? "p-3 rounded-xl bg-red-500/20 text-red-400" : "p-3 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white"}>
-                <Heart className={saved ? "w-5 h-5 fill-current" : "w-5 h-5"} />
-              </button>
+              <div className="flex items-center gap-2">
+                <LikeButton listingId={listing.id} initialCount={listing.saves || 0} variant="default" />
+                <button onClick={toggleSave} className={saved ? "p-3 rounded-xl bg-red-500/20 text-red-400" : "p-3 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white"}>
+                  <Heart className={saved ? "w-5 h-5 fill-current" : "w-5 h-5"} />
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 mb-6 text-sm text-neutral-400">
