@@ -1,296 +1,287 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
 import {
-  Package, ArrowLeft, Loader2, CheckCircle2, Truck, MapPin, CreditCard,
-  Clock, AlertTriangle, Store, Tag, RefreshCw, X, Trash2, Printer,
+  ArrowLeft, Package, MapPin, CreditCard, Clock, CheckCircle2,
+  XCircle, Truck, Loader2, AlertCircle, MessageSquare, Copy
 } from 'lucide-react'
-import { authedFetch, redirectToLogin } from '@/lib/wavecore/csrf-client'
 
-const BUYER_ACTIONS: Record<string, { label: string; nextStatus: string; color: string }[]> = {
-  PENDING: [{ label: 'Cancel Order', nextStatus: 'CANCELLED', color: 'bg-red-600' }],
-  CONFIRMED: [{ label: 'Cancel Order', nextStatus: 'CANCELLED', color: 'bg-red-600' }],
-  SHIPPED: [{ label: 'Confirm Delivered', nextStatus: 'DELIVERED', color: 'bg-green-600' }],
-  DELIVERED: [],
+interface Order {
+  id: string
+  orderNumber: string
+  buyerId: string
+  buyerName: string
+  buyerEmail: string
+  buyerPhone: string
+  shippingAddress: string
+  subtotal: number
+  deliveryFee: number
+  platformFee: number
+  total: number
+  currency: string
+  status: string
+  paymentMethod: string
+  paymentStatus: string
+  paymentReference: string
+  notes: string
+  createdAt: string
+  updatedAt: string
 }
 
-const SELLER_ACTIONS: Record<string, { label: string; nextStatus: string; color: string }[]> = {
-  PENDING: [{ label: 'Confirm Order', nextStatus: 'CONFIRMED', color: 'bg-blue-600' }],
-  CONFIRMED: [{ label: 'Mark Shipped', nextStatus: 'SHIPPED', color: 'bg-purple-600' }],
-  SHIPPED: [{ label: 'Mark Delivered', nextStatus: 'DELIVERED', color: 'bg-cyan-600' }],
-  DELIVERED: [],
+interface OrderItem {
+  id: string
+  orderId: string
+  listingId: number
+  sellerId: string
+  sellerName: string
+  title: string
+  quantity: number
+  unitPrice: number
+  lineTotal: number
+  commissionRate: number
+  commissionAmount: number
+  sellerPayout: number
+  fulfillmentStatus: string
+  trackingNumber: string
+  images: string[]
+}
+
+const STATUS_STEPS = [
+  { key: 'PENDING', label: 'Order Placed', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  { key: 'CONFIRMED', label: 'Confirmed', icon: CheckCircle2, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  { key: 'SHIPPED', label: 'Shipped', icon: Truck, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+  { key: 'DELIVERED', label: 'Delivered', icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-500/10' },
+]
+
+const STATUS_ORDER: Record<string, number> = {
+  PENDING: 0, CONFIRMED: 1, SHIPPED: 2, DELIVERED: 3, CANCELLED: -1,
 }
 
 export default function OrderDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const id = params.id as string
+  const orderId = params?.id as string
 
-  const [order, setOrder] = useState<any>(null)
-  const [items, setItems] = useState<any[]>([])
+  const [order, setOrder] = useState<Order | null>(null)
+  const [items, setItems] = useState<OrderItem[]>([])
   const [role, setRole] = useState<string>('buyer')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [acting, setActing] = useState(false)
+  const [updating, setUpdating] = useState(false)
 
-  const fetchOrder = async () => {
-    setLoading(true)
+  const loadOrder = async () => {
+    if (!orderId) return
     try {
-      const res = await fetch('/api/marketplace/orders?id=' + id)
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Failed'); return }
-      setOrder(data.order)
-      setItems(data.items || [])
-      setRole(data.role || 'buyer')
-    } catch { setError('Network error') }
-    finally { setLoading(false) }
-  }
-  useEffect(() => { if (id) fetchOrder() }, [id])
-
-  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 2500) }
-
-  const updateStatus = async (newStatus: string) => {
-    if (!confirm(`Change status to ${newStatus}?`)) return
-    setActing(true)
-    setError('')
-    try {
-      const res = await authedFetch('/api/marketplace/orders', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: order.id, status: newStatus }),
-      })
-      if (res.ok) {
-        flash('Status updated to ' + newStatus)
-        fetchOrder()
-      } else if (res.needsLogin) {
-        redirectToLogin()
-      } else {
-        const msg = (res.data && res.data.error) || ('Update failed (' + res.status + ')')
-        setError(msg)
+      const res = await fetch('/api/marketplace/orders?id=' + orderId)
+      if (res.status === 401) {
+        router.push('/wavecore-erp/auth/login?returnTo=/wavecore-erp/marketplace/orders/' + orderId)
+        return
       }
-    } catch (e) {
-      setError('Network error: ' + (e as Error).message)
-    } finally { setActing(false) }
-  }
-
-  const markPaid = async () => {
-    setActing(true)
-    setError('')
-    try {
-      const reference = prompt('Payment reference (M-Pesa receipt #):')
-      if (!reference) { setActing(false); return }
-      const res = await authedFetch('/api/marketplace/orders', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: order.id, paymentStatus: 'PAID', paymentReference: reference }),
-      })
-      if (res.ok) {
-        flash('Payment confirmed')
-        fetchOrder()
-      } else if (res.needsLogin) {
-        redirectToLogin()
-      } else {
-        const msg = (res.data && res.data.error) || ('Update failed (' + res.status + ')')
-        setError(msg)
-      }
-    } catch (e) {
-      setError('Network error: ' + (e as Error).message)
-    } finally { setActing(false) }
-  }
-
-  const statusStyle = (s: string) => {
-    switch (s) {
-      case 'PENDING': return 'bg-yellow-900/40 text-yellow-300 border border-yellow-700'
-      case 'CONFIRMED': return 'bg-blue-900/40 text-blue-300 border border-blue-700'
-      case 'SHIPPED': return 'bg-purple-900/40 text-purple-300 border border-purple-700'
-      case 'DELIVERED': return 'bg-cyan-900/40 text-cyan-300 border border-cyan-700'
-      case 'COMPLETED': return 'bg-green-900/40 text-green-300 border border-green-700'
-      case 'CANCELLED': return 'bg-red-900/40 text-red-300 border border-red-700'
-      default: return 'bg-neutral-800 text-neutral-400'
+      if (res.status === 404) { setError('Order not found'); return }
+      if (res.status === 403) { setError('You do not have access to this order'); return }
+      if (!res.ok) throw new Error('Failed to load')
+      const d = await res.json()
+      setOrder(d.order)
+      setItems(d.items || [])
+      setRole(d.role || 'buyer')
+    } catch {
+      setError('Failed to load order')
+    } finally {
+      setLoading(false)
     }
   }
 
-  if (loading) return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-      <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-    </div>
-  )
+  useEffect(() => { loadOrder() }, [orderId])
 
-  if (error || !order) return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-      <div className="text-center">
-        <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-red-500" />
-        <p className="text-red-300">{error || 'Order not found'}</p>
-        <Link href="/wavecore-erp/marketplace/orders" className="mt-4 inline-block px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold">Back to Orders</Link>
+  const updateStatus = async (newStatus: string) => {
+    setUpdating(true)
+    try {
+      const res = await fetch('/api/marketplace/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: orderId, status: newStatus }),
+      })
+      if (!res.ok) throw new Error('Failed to update')
+      await loadOrder()
+    } catch {
+      alert('Failed to update order')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const copyOrderNumber = () => {
+    if (order) navigator.clipboard.writeText(order.orderNumber)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
       </div>
-    </div>
-  )
+    )
+  }
 
-  const actions = role === 'seller' ? SELLER_ACTIONS[order.status] || [] : BUYER_ACTIONS[order.status] || []
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center text-white">
+        <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
+        <p className="text-xl mb-2">{error || 'Order not found'}</p>
+        <Link href="/wavecore-erp/marketplace/orders" className="text-indigo-400 hover:underline mt-4">
+          Back to Orders
+        </Link>
+      </div>
+    )
+  }
+
+  const currentStep = STATUS_ORDER[order.status] ?? 0
+  const isCancelled = order.status === 'CANCELLED'
 
   return (
-    <div className="min-h-screen bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-800">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp/marketplace" className="flex items-center gap-3">
-            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={36} height={36} className="rounded-xl object-cover" />
-            <span className="font-bold text-white">WaveMarket</span>
-          </Link>
-          <span className="text-sm text-neutral-400">Order Detail</span>
-        </div>
-      </header>
+    <div className="min-h-screen bg-neutral-950 text-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Link href="/wavecore-erp/marketplace/orders" className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Orders
+        </Link>
 
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <button onClick={() => router.back()} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 mb-4">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
-
-        {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
-        {success && <div className="mb-4 p-4 rounded-xl bg-green-900/50 text-green-300 border border-green-800 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {success}</div>}
-
-        {/* Header */}
-        <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+        <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-              <Package className="w-7 h-7 text-indigo-400" /> {order.orderNumber}
-            </h1>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + statusStyle(order.status)}>{order.status}</span>
-              <span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + (order.paymentStatus === 'PAID' ? 'bg-green-900/40 text-green-300' : 'bg-yellow-900/40 text-yellow-300')}>
-                Payment: {order.paymentStatus}
-              </span>
-              <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-400">Role: {role.toUpperCase()}</span>
+            <p className="text-xs uppercase text-neutral-500 font-bold mb-1">Order</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold font-mono">{order.orderNumber}</h1>
+              <button onClick={copyOrderNumber} className="p-1.5 hover:bg-neutral-800 rounded-lg transition-colors" title="Copy">
+                <Copy className="w-4 h-4 text-neutral-500" />
+              </button>
             </div>
+            <p className="text-sm text-neutral-400 mt-1">{new Date(order.createdAt).toLocaleString('en-GB')}</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={fetchOrder} className="p-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white" title="Refresh">
-              <RefreshCw className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1.5 rounded-lg text-sm font-bold border bg-indigo-500/10 text-indigo-400 border-indigo-500/30">
+              {order.paymentStatus}
+            </span>
+            <span className="px-3 py-1.5 rounded-lg text-sm font-bold border bg-indigo-500/10 text-indigo-400 border-indigo-500/30">
+              {order.status}
+            </span>
           </div>
         </div>
 
-        {/* Actions bar */}
-        {(actions.length > 0 || (role === 'seller' && order.paymentStatus !== 'PAID') || role === 'admin') && (
-          <div className="mb-6 p-4 rounded-2xl bg-neutral-900 border border-neutral-800 flex flex-wrap gap-2 items-center">
-            <span className="text-xs uppercase text-neutral-500 font-bold mr-2">Actions:</span>
-            {actions.map(a => (
-              <button
-                key={a.nextStatus}
-                onClick={() => updateStatus(a.nextStatus)}
-                disabled={acting}
-                className={'px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1 ' + a.color + ' disabled:opacity-50'}
-              >
-                {acting ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                {a.label}
-              </button>
-            ))}
-            {(role === 'seller' || role === 'admin') && order.paymentStatus !== 'PAID' && (
-              <button onClick={markPaid} disabled={acting} className="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs flex items-center gap-1">
-                <CreditCard className="w-3 h-3" /> Confirm Payment
-              </button>
-            )}
+        {!isCancelled && (
+          <div className="p-6 rounded-2xl bg-neutral-900 border border-neutral-800 mb-6">
+            <h3 className="text-sm font-bold uppercase text-neutral-500 mb-4">Order Progress</h3>
+            <div className="flex items-center justify-between gap-1">
+              {STATUS_STEPS.map((step, i) => {
+                const Icon = step.icon
+                const isCompleted = i <= currentStep
+                return (
+                  <div key={step.key} className="flex-1 flex items-center">
+                    <div className="flex flex-col items-center gap-2 flex-1">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center border-2 bg-neutral-800 border-neutral-700 text-neutral-600">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-semibold text-neutral-600">{step.label}</span>
+                    </div>
+                    {i < STATUS_STEPS.length - 1 && (
+                      <div className="h-0.5 flex-1 bg-neutral-800" />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
 
-        <div className="grid lg:grid-cols-[2fr_1fr] gap-6">
-          {/* Items */}
-          <div className="space-y-4">
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
-              <div className="p-5 border-b border-neutral-800">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-white flex items-center gap-2">
-                  <Package className="w-4 h-4 text-indigo-400" /> Items ({items.length})
-                </h3>
+        {isCancelled && (
+          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 mb-6 flex items-center gap-3">
+            <XCircle className="w-6 h-6 text-red-400" />
+            <div>
+              <p className="font-bold text-red-300">Order Cancelled</p>
+              <p className="text-sm text-red-400/70">This order has been cancelled.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-2xl bg-neutral-900 border border-neutral-800 overflow-hidden">
+              <div className="px-5 py-4 border-b border-neutral-800">
+                <h3 className="font-bold">Items ({items.length})</h3>
               </div>
               <div className="divide-y divide-neutral-800">
                 {items.map(item => (
-                  <div key={item.id} className="p-5 flex gap-4">
-                    <div className="w-20 h-20 rounded-xl bg-neutral-800 overflow-hidden flex-shrink-0">
+                  <div key={item.id} className="p-4 flex items-center gap-4">
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-neutral-800 flex-shrink-0">
                       {item.images?.[0] ? (
-                        <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+                        <Image src={item.images[0]} alt={item.title} fill className="object-cover" sizes="80px" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-6 h-6 text-neutral-600" />
-                        </div>
+                        <Package className="w-8 h-8 text-neutral-600 absolute inset-0 m-auto" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-white">{item.title}</p>
-                      <div className="flex flex-wrap gap-3 text-xs text-neutral-500 mt-1">
-                        <span className="flex items-center gap-1"><Store className="w-3 h-3" />{item.sellerName || 'Seller'}</span>
-                        <span>Qty: {item.quantity}</span>
-                        <span>KES {Number(item.unitPrice).toLocaleString()} each</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className={'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (item.fulfillmentStatus === 'SETTLED' ? 'bg-green-900/40 text-green-300' : item.fulfillmentStatus === 'SHIPPED' ? 'bg-purple-900/40 text-purple-300' : 'bg-yellow-900/40 text-yellow-300')}>
-                          {item.fulfillmentStatus}
-                        </span>
-                        <span className="font-bold text-amber-400">KES {Number(item.lineTotal).toLocaleString()}</span>
-                      </div>
+                      <Link href={'/wavecore-erp/marketplace/listing/' + item.listingId} className="font-bold hover:text-indigo-400 transition-colors line-clamp-1">
+                        {item.title}
+                      </Link>
+                      <p className="text-sm text-neutral-400">Qty: {item.quantity} x KSh {Number(item.unitPrice).toLocaleString()}</p>
+                      <p className="text-xs text-neutral-500 mt-1">Seller: {item.sellerName}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-cyan-400">KSh {Number(item.lineTotal).toLocaleString()}</p>
+                      <p className="text-xs text-neutral-500 mt-1">{item.fulfillmentStatus}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {!isCancelled && role === 'buyer' && order.status === 'PENDING' && (
+              <button onClick={() => updateStatus('CANCELLED')} disabled={updating} className="w-full px-5 py-3 bg-red-600/20 hover:bg-red-600/30 disabled:opacity-50 text-red-400 border border-red-500/30 font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                <XCircle className="w-5 h-5" /> Cancel Order
+              </button>
+            )}
+            {!isCancelled && role === 'seller' && order.status === 'PENDING' && (
+              <button onClick={() => updateStatus('CONFIRMED')} disabled={updating} className="w-full px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-5 h-5" /> Confirm Order
+              </button>
+            )}
+            {!isCancelled && role === 'seller' && order.status === 'CONFIRMED' && (
+              <button onClick={() => updateStatus('SHIPPED')} disabled={updating} className="w-full px-5 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                <Truck className="w-5 h-5" /> Mark as Shipped
+              </button>
+            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* Totals */}
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-3">Order Total</h3>
+          <div className="space-y-6">
+            <div className="rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
+              <h3 className="font-bold mb-3 flex items-center gap-2"><MapPin className="w-4 h-4 text-purple-400" /> Shipping</h3>
+              <p className="text-sm">{order.buyerName}</p>
+              <p className="text-xs text-neutral-400 mt-1">{order.buyerPhone}</p>
+              <p className="text-xs text-neutral-400 mt-2 whitespace-pre-line">{order.shippingAddress}</p>
+            </div>
+
+            <div className="rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
+              <h3 className="font-bold mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4 text-green-400" /> Payment</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-neutral-400">Subtotal</span><span className="text-white">KES {Number(order.subtotal || 0).toLocaleString()}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-400">Delivery</span><span className="text-white">KES {Number(order.deliveryFee || 0).toLocaleString()}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-400">Platform fee</span><span className="text-neutral-500 text-xs">KES {Number(order.platformFee || 0).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-neutral-400">Subtotal</span><span>KSh {Number(order.subtotal).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-neutral-400">Delivery</span><span>KSh {Number(order.deliveryFee).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-neutral-400">Platform Fee</span><span>KSh {Number(order.platformFee).toLocaleString()}</span></div>
+                <div className="flex justify-between border-t border-neutral-800 pt-2 font-bold"><span>Total</span><span className="text-green-400">KSh {Number(order.total).toLocaleString()}</span></div>
               </div>
-              <div className="border-t border-neutral-800 pt-3 mt-3 flex justify-between">
-                <span className="font-bold text-white">Total</span>
-                <span className="text-xl font-bold text-amber-400">KES {Number(order.total || 0).toLocaleString()}</span>
+              <div className="mt-4 pt-4 border-t border-neutral-800 text-xs text-neutral-500 space-y-1">
+                <p>Method: {order.paymentMethod}</p>
+                {order.paymentReference && <p>Reference: <span className="font-mono">{order.paymentReference}</span></p>}
               </div>
             </div>
 
-            {/* Delivery */}
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-3 flex items-center gap-2"><MapPin className="w-3 h-3" /> Delivery</h3>
-              <p className="text-sm text-white">{order.shippingAddress || 'No address'}</p>
-              {order.buyerPhone && <p className="text-xs text-neutral-400 mt-1">{order.buyerPhone}</p>}
-            </div>
-
-            {/* Payment */}
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-3 flex items-center gap-2"><CreditCard className="w-3 h-3" /> Payment</h3>
-              <p className="text-sm text-white">{order.paymentMethod || 'MPESA'}</p>
-              {order.paymentReference && <p className="text-xs text-cyan-400 font-mono mt-1">{order.paymentReference}</p>}
-            </div>
-
-            {/* Timeline */}
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-3 flex items-center gap-2"><Clock className="w-3 h-3" /> Timeline</h3>
-              <div className="space-y-3">
-                <TimelineRow label="Created" value={new Date(order.createdAt).toLocaleString('en-GB')} done />
-                <TimelineRow label="Paid" value={order.paymentStatus === 'PAID' ? 'Confirmed' : 'Pending'} done={order.paymentStatus === 'PAID'} />
-                <TimelineRow label="Shipped" value={order.status === 'SHIPPED' || order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'Yes' : 'Pending'} done={['SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status)} />
-                <TimelineRow label="Delivered" value={['DELIVERED', 'COMPLETED'].includes(order.status) ? 'Yes' : 'Pending'} done={['DELIVERED', 'COMPLETED'].includes(order.status)} />
-              </div>
+            <div className="rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
+              <h3 className="font-bold mb-3 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Need Help?</h3>
+              <button className="w-full px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-sm font-bold transition-colors">
+                Contact Seller
+              </button>
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  )
-}
-
-function TimelineRow({ label, value, done }: { label: string; value: string; done?: boolean }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className={'w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ' + (done ? 'bg-green-500' : 'bg-neutral-700')}></div>
-      <div>
-        <p className="text-xs font-bold text-white">{label}</p>
-        <p className="text-[10px] text-neutral-500">{value}</p>
       </div>
     </div>
   )

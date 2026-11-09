@@ -19,6 +19,18 @@ export default function SellerDashboardPage() {
   const [error, setError] = useState('')
 
   const fetchAll = async () => {
+    try {
+      const sessionRes = await fetch('/api/wavecore/auth/session', { cache: 'no-store' })
+      const session = await sessionRes.json()
+      if (!session.authenticated) {
+        window.location.href = '/wavecore-erp/auth/login?returnTo=/wavecore-erp/marketplace/seller'
+        return
+      }
+      if (!session.subscribed) {
+        window.location.href = '/wavecore-erp/subscription'
+        return
+      }
+    } catch {}
     setLoading(true)
     try {
       const [profileRes, walletRes, listingsRes, ordersRes] = await Promise.all([
