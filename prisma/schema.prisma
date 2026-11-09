@@ -1273,14 +1273,14 @@ model PipelineStage {
 }
 
 model PurchaseOrder {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   number         String?
-  date           DateTime @default(now())
-  status         String   @default("DRAFT")
-  subtotal       Float    @default(0)
-  taxAmount      Float    @default(0)
-  total          Float    @default(0)
-  amount         Float    @default(0)
+  date           DateTime  @default(now())
+  status         String    @default("DRAFT")
+  subtotal       Float     @default(0)
+  taxAmount      Float     @default(0)
+  total          Float     @default(0)
+  amount         Float     @default(0)
   supplierId     String?
   supplier       Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   supplierName   String?
@@ -1288,8 +1288,8 @@ model PurchaseOrder {
   productName    String?
   notes          String?
   organizationId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   items PurchaseOrderItem[]
 
@@ -1300,14 +1300,14 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   description     String
-  quantity        Int      @default(1)
-  unitPrice       Float    @default(0)
-  total           Float    @default(0)
+  quantity        Int           @default(1)
+  unitPrice       Float         @default(0)
+  total           Float         @default(0)
   purchaseOrderId String
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
+  createdAt       DateTime      @default(now())
 
   @@index([purchaseOrderId])
 }
@@ -1558,7 +1558,6 @@ enum PayrollStatus {
   PAID
 }
 
-
 // ============================================================
 // PROCUREMENT MODULE — Source-to-Pay (S2P) / Procure-to-Pay (P2P)
 // Added: P0 schema expansion — 49 models
@@ -1567,7 +1566,7 @@ enum PayrollStatus {
 
 // ---------- SUPPLIER ----------
 model Supplier {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   organizationId     String
   code               String?
   name               String?
@@ -1577,8 +1576,8 @@ model Supplier {
   tradingName        String?
   registrationNumber String?
   taxPin             String?
-  vatStatus          String?  @default("NOT_REGISTERED")
-  country            String?  @default("KE")
+  vatStatus          String?   @default("NOT_REGISTERED")
+  country            String?   @default("KE")
   county             String?
   address            String?
   city               String?
@@ -1586,33 +1585,33 @@ model Supplier {
   website            String?
   primaryEmail       String?
   primaryPhone       String?
-  currency           String   @default("KES")
-  paymentTerms       Int      @default(30)
-  creditLimit        Decimal? @default(0) @db.Decimal(18, 2)
-  status             String   @default("ACTIVE")
-  isPreferred        Boolean  @default(false)
-  isBlacklisted      Boolean  @default(false)
+  currency           String    @default("KES")
+  paymentTerms       Int       @default(30)
+  creditLimit        Decimal?  @default(0) @db.Decimal(18, 2)
+  status             String    @default("ACTIVE")
+  isPreferred        Boolean   @default(false)
+  isBlacklisted      Boolean   @default(false)
   blacklistReason    String?
   category           String?
   notes              String?
-  riskScore          Int?     @default(0)
-  riskLevel          String?  @default("LOW")
-  rating             Int?     @default(0)
+  riskScore          Int?      @default(0)
+  riskLevel          String?   @default("LOW")
+  rating             Int?      @default(0)
   onboardedAt        DateTime?
   createdBy          String?
   updatedBy          String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  contacts     SupplierContact[]
-  bankAccounts SupplierBankAccount[]
-  documents    SupplierDocument[]
+  contacts       SupplierContact[]
+  bankAccounts   SupplierBankAccount[]
+  documents      SupplierDocument[]
   qualifications SupplierQualification[]
-  scorecards   SupplierScorecard[]
-  risks        SupplierRisk[]
+  scorecards     SupplierScorecard[]
+  risks          SupplierRisk[]
   purchaseOrders PurchaseOrder[]
-  rfqInvites   RFQSupplier[]
-  quotations   SupplierQuotation[]
+  rfqInvites     RFQSupplier[]
+  quotations     SupplierQuotation[]
 
   @@index([organizationId])
   @@index([organizationId, status])
@@ -1621,37 +1620,14 @@ model Supplier {
 }
 
 model SupplierContact {
-  id           String   @id @default(cuid())
-  organizationId String
-  supplierId   String
-  name         String
-  role         String?
-  email        String?
-  phone        String?
-  isPrimary    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([supplierId])
-}
-
-model SupplierBankAccount {
   id             String   @id @default(cuid())
   organizationId String
   supplierId     String
-  bankName       String
-  accountName    String
-  accountNumber  String
-  branchCode     String?
-  swiftCode      String?
-  currency       String   @default("KES")
+  name           String
+  role           String?
+  email          String?
+  phone          String?
   isPrimary      Boolean  @default(false)
-  isVerified     Boolean  @default(false)
-  verifiedAt     DateTime?
-  verifiedBy     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -1661,8 +1637,31 @@ model SupplierBankAccount {
   @@index([supplierId])
 }
 
+model SupplierBankAccount {
+  id             String    @id @default(cuid())
+  organizationId String
+  supplierId     String
+  bankName       String
+  accountName    String
+  accountNumber  String
+  branchCode     String?
+  swiftCode      String?
+  currency       String    @default("KES")
+  isPrimary      Boolean   @default(false)
+  isVerified     Boolean   @default(false)
+  verifiedAt     DateTime?
+  verifiedBy     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([supplierId])
+}
+
 model SupplierDocument {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   supplierId     String
   documentType   String
@@ -1672,12 +1671,12 @@ model SupplierDocument {
   mimeType       String?
   issueDate      DateTime?
   expiryDate     DateTime?
-  status         String   @default("PENDING")
+  status         String    @default("PENDING")
   verifiedAt     DateTime?
   verifiedBy     String?
   notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
@@ -1687,19 +1686,19 @@ model SupplierDocument {
 }
 
 model SupplierQualification {
-  id             String   @id @default(cuid())
-  organizationId String
-  supplierId     String
+  id                String    @id @default(cuid())
+  organizationId    String
+  supplierId        String
   qualificationType String
-  status         String   @default("PENDING")
-  score          Int?     @default(0)
-  validFrom      DateTime?
-  validUntil     DateTime?
-  assessedBy     String?
-  assessedAt     DateTime?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  status            String    @default("PENDING")
+  score             Int?      @default(0)
+  validFrom         DateTime?
+  validUntil        DateTime?
+  assessedBy        String?
+  assessedAt        DateTime?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
@@ -1708,23 +1707,23 @@ model SupplierQualification {
 }
 
 model SupplierScorecard {
-  id             String   @id @default(cuid())
-  organizationId String
-  supplierId     String
-  periodStart    DateTime
-  periodEnd      DateTime
-  deliveryScore  Int      @default(0)
-  qualityScore   Int      @default(0)
-  priceScore     Int      @default(0)
-  responsivenessScore Int @default(0)
-  complianceScore Int     @default(0)
-  overallScore   Int      @default(0)
-  onTimeDeliveryPct Decimal? @db.Decimal(5, 2)
-  fillRatePct       Decimal? @db.Decimal(5, 2)
-  defectRatePct     Decimal? @db.Decimal(5, 2)
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  organizationId      String
+  supplierId          String
+  periodStart         DateTime
+  periodEnd           DateTime
+  deliveryScore       Int      @default(0)
+  qualityScore        Int      @default(0)
+  priceScore          Int      @default(0)
+  responsivenessScore Int      @default(0)
+  complianceScore     Int      @default(0)
+  overallScore        Int      @default(0)
+  onTimeDeliveryPct   Decimal? @db.Decimal(5, 2)
+  fillRatePct         Decimal? @db.Decimal(5, 2)
+  defectRatePct       Decimal? @db.Decimal(5, 2)
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
@@ -1733,21 +1732,21 @@ model SupplierScorecard {
 }
 
 model SupplierRisk {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   supplierId     String
   riskType       String
-  severity       String   @default("LOW")
+  severity       String    @default("LOW")
   title          String
   description    String?
-  detectedAt     DateTime @default(now())
-  detectedBy     String?  @default("SYSTEM")
-  status         String   @default("OPEN")
+  detectedAt     DateTime  @default(now())
+  detectedBy     String?   @default("SYSTEM")
+  status         String    @default("OPEN")
   resolvedAt     DateTime?
   resolvedBy     String?
   resolution     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
@@ -1758,42 +1757,43 @@ model SupplierRisk {
 
 // ---------- REQUISITION ----------
 model PurchaseRequisition {
-  id             String   @id @default(cuid())
-  organizationId String
-  requisitionNumber String?
-  title          String?
-  description    String?
-  category       String   @default("GENERAL")
-  priority       String   @default("NORMAL")
-  type           String   @default("STANDARD")
-  requestedBy    String?
-  requestedByName String?
-  departmentId   String?
-  projectId      String?
-  costCenter     String?
-  location       String?
-  currency       String   @default("KES")
-  subtotal       Decimal  @default(0) @db.Decimal(18, 2)
-  taxAmount      Decimal  @default(0) @db.Decimal(18, 2)
-  totalAmount    Decimal  @default(0) @db.Decimal(18, 2)
-  budgetId       String?
-  neededBy       DateTime?
-  status         String   @default("DRAFT")
-  currentApprovalStep Int @default(0)
-  totalApprovalSteps  Int @default(0)
-  submittedAt    DateTime?
-  approvedAt     DateTime?
-  rejectedAt     DateTime?
-  rejectionReason String?
-  convertedToPOId String?
-  isEmergency    Boolean  @default(false)
-  isRecurring    Boolean  @default(false)
-  recurrenceRule String?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  lines     PurchaseRequisitionLine[]
-  approvals PurchaseRequisitionApproval[]
+  id                  String                        @id @default(cuid())
+  organizationId      String
+  requisitionNumber   String?
+  title               String?
+  description         String?
+  category            String                        @default("GENERAL")
+  priority            String                        @default("NORMAL")
+  type                String                        @default("STANDARD")
+  requestedBy         String?
+  requestedByName     String?
+  departmentId        String?
+  projectId           String?
+  costCenter          String?
+  location            String?
+  currency            String                        @default("KES")
+  subtotal            Decimal                       @default(0) @db.Decimal(18, 2)
+  taxAmount           Decimal                       @default(0) @db.Decimal(18, 2)
+  totalAmount         Decimal                       @default(0) @db.Decimal(18, 2)
+  budgetId            String?
+  neededBy            DateTime?
+  status              String                        @default("DRAFT")
+  currentApprovalStep Int                           @default(0)
+  totalApprovalSteps  Int                           @default(0)
+  submittedAt         DateTime?
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectionReason     String?
+  convertedToPOId     String?
+  isEmergency         Boolean                       @default(false)
+  isRecurring         Boolean                       @default(false)
+  recurrenceRule      String?
+  notes               String?
+  createdAt           DateTime                      @default(now())
+  updatedAt           DateTime                      @updatedAt
+  lines               PurchaseRequisitionLine[]
+  approvals           PurchaseRequisitionApproval[]
+
   @@index([organizationId, requisitionNumber])
   @@index([organizationId])
   @@index([organizationId, status])
@@ -1802,49 +1802,49 @@ model PurchaseRequisition {
 }
 
 model PurchaseRequisitionLine {
-  id             String   @id @default(cuid())
-  organizationId String
-  requisitionId  String
-  lineNumber     Int
-  description    String
-  productId      String?
-  category       String?
-  quantity       Decimal  @db.Decimal(18, 3)
-  unitOfMeasure  String   @default("UNIT")
-  unitPrice      Decimal  @default(0) @db.Decimal(18, 2)
-  taxRate        Decimal  @default(0) @db.Decimal(5, 2)
-  lineTotal      Decimal  @default(0) @db.Decimal(18, 2)
-  specifications String?
+  id                  String   @id @default(cuid())
+  organizationId      String
+  requisitionId       String
+  lineNumber          Int
+  description         String
+  productId           String?
+  category            String?
+  quantity            Decimal  @db.Decimal(18, 3)
+  unitOfMeasure       String   @default("UNIT")
+  unitPrice           Decimal  @default(0) @db.Decimal(18, 2)
+  taxRate             Decimal  @default(0) @db.Decimal(5, 2)
+  lineTotal           Decimal  @default(0) @db.Decimal(18, 2)
+  specifications      String?
   preferredSupplierId String?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  requisition   PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  requisition PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([requisitionId])
 }
 
 model PurchaseRequisitionApproval {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   requisitionId  String
   stepNumber     Int
   approverId     String
   approverRole   String?
-  status         String   @default("PENDING")
+  status         String    @default("PENDING")
   decision       String?
   comment        String?
   decidedAt      DateTime?
   dueAt          DateTime?
-  slaHours       Int      @default(48)
+  slaHours       Int       @default(48)
   delegatedTo    String?
   delegatedAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  requisition   PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  requisition PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([requisitionId, stepNumber])
@@ -1853,34 +1853,35 @@ model PurchaseRequisitionApproval {
 
 // ---------- RFQ / RFx ----------
 model RFQ {
-  id             String   @id @default(cuid())
-  organizationId String
-  rfqNumber      String?
-  title          String
-  description    String?
-  type           String   @default("RFQ") // RFQ | RFP | RFI
-  category       String?
-  status         String   @default("DRAFT")
-  requisitionId  String?
-  currency       String   @default("KES")
-  issueDate      DateTime?
-  closingDate    DateTime?
-  deliveryDate   DateTime?
-  deliveryLocation String?
-  paymentTerms   String?
+  id                 String    @id @default(cuid())
+  organizationId     String
+  rfqNumber          String?
+  title              String
+  description        String?
+  type               String    @default("RFQ") // RFQ | RFP | RFI
+  category           String?
+  status             String    @default("DRAFT")
+  requisitionId      String?
+  currency           String    @default("KES")
+  issueDate          DateTime?
+  closingDate        DateTime?
+  deliveryDate       DateTime?
+  deliveryLocation   String?
+  paymentTerms       String?
   evaluationCriteria Json?
-  createdBy      String?
-  createdByName  String?
-  publishedAt    DateTime?
-  awardedAt      DateTime?
-  awardedBidId   String?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdBy          String?
+  createdByName      String?
+  publishedAt        DateTime?
+  awardedAt          DateTime?
+  awardedBidId       String?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  lines    RFQLine[]
-  suppliers RFQSupplier[]
+  lines      RFQLine[]
+  suppliers  RFQSupplier[]
   quotations SupplierQuotation[]
+
   @@index([organizationId, rfqNumber])
   @@index([organizationId])
   @@index([organizationId, status])
@@ -1908,17 +1909,17 @@ model RFQLine {
 }
 
 model RFQSupplier {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   rfqId          String
   supplierId     String
-  invitedAt      DateTime @default(now())
+  invitedAt      DateTime  @default(now())
   invitedBy      String?
-  status         String   @default("INVITED") // INVITED | VIEWED | QUOTED | DECLINED
+  status         String    @default("INVITED") // INVITED | VIEWED | QUOTED | DECLINED
   respondedAt    DateTime?
   declineReason  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   rfq      RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
@@ -1930,33 +1931,33 @@ model RFQSupplier {
 
 // ---------- QUOTATION / BID ----------
 model Bid {
-  id             String   @id @default(cuid())
-  organizationId String
-  bidNumber      String
-  rfqId          String?
-  supplierId     String
-  version        Int      @default(1)
-  status         String   @default("DRAFT")
-  currency       String   @default("KES")
-  subtotal       Decimal  @default(0) @db.Decimal(18, 2)
-  taxAmount      Decimal  @default(0) @db.Decimal(18, 2)
-  discount       Decimal  @default(0) @db.Decimal(18, 2)
-  totalAmount    Decimal  @default(0) @db.Decimal(18, 2)
-  deliveryDays   Int?
-  warrantyMonths Int?
-  validityDays   Int?
-  paymentTerms   String?
-  technicalScore Int?
+  id              String    @id @default(cuid())
+  organizationId  String
+  bidNumber       String
+  rfqId           String?
+  supplierId      String
+  version         Int       @default(1)
+  status          String    @default("DRAFT")
+  currency        String    @default("KES")
+  subtotal        Decimal   @default(0) @db.Decimal(18, 2)
+  taxAmount       Decimal   @default(0) @db.Decimal(18, 2)
+  discount        Decimal   @default(0) @db.Decimal(18, 2)
+  totalAmount     Decimal   @default(0) @db.Decimal(18, 2)
+  deliveryDays    Int?
+  warrantyMonths  Int?
+  validityDays    Int?
+  paymentTerms    String?
+  technicalScore  Int?
   commercialScore Int?
-  overallScore   Int?
+  overallScore    Int?
   evaluationNotes String?
-  submittedAt    DateTime?
-  evaluatedAt    DateTime?
-  evaluatedBy    String?
-  isAwarded      Boolean  @default(false)
-  awardedAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  submittedAt     DateTime?
+  evaluatedAt     DateTime?
+  evaluatedBy     String?
+  isAwarded       Boolean   @default(false)
+  awardedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   lines BidLine[]
 
@@ -2021,24 +2022,24 @@ model BidAward {
 
 // ---------- AUCTION ----------
 model Auction {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   auctionNumber  String
   title          String
   description    String?
-  status         String   @default("DRAFT")
-  currency       String   @default("KES")
-  startingPrice  Decimal  @db.Decimal(18, 2)
-  minDecrement   Decimal  @db.Decimal(18, 2)
-  currentPrice   Decimal? @db.Decimal(18, 2)
-  reservePrice   Decimal? @db.Decimal(18, 2)
+  status         String    @default("DRAFT")
+  currency       String    @default("KES")
+  startingPrice  Decimal   @db.Decimal(18, 2)
+  minDecrement   Decimal   @db.Decimal(18, 2)
+  currentPrice   Decimal?  @db.Decimal(18, 2)
+  reservePrice   Decimal?  @db.Decimal(18, 2)
   startAt        DateTime?
   endAt          DateTime?
-  isAnonymous    Boolean  @default(false)
-  isSealed       Boolean  @default(false)
+  isAnonymous    Boolean   @default(false)
+  isSealed       Boolean   @default(false)
   createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   bids AuctionBid[]
 
@@ -2066,35 +2067,35 @@ model AuctionBid {
 
 // ---------- CONTRACT ----------
 model Contract {
-  id             String   @id @default(cuid())
-  organizationId String
-  contractNumber String
-  title          String
-  description    String?
-  type           String   @default("SUPPLY")
-  status         String   @default("DRAFT")
-  supplierId     String
-  rfqId          String?
-  purchaseOrderId String?
-  currency       String   @default("KES")
-  value          Decimal  @default(0) @db.Decimal(18, 2)
-  startDate      DateTime?
-  endDate        DateTime?
-  signedDate     DateTime?
-  signedBy       String?
-  signedBySupplier String?
-  autoRenew      Boolean  @default(false)
-  renewalNoticeDays Int   @default(30)
-  documentUrl    String?
-  terms          String?
-  slaTerms       String?
-  penalties      String?
-  notes          String?
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String    @id @default(cuid())
+  organizationId    String
+  contractNumber    String
+  title             String
+  description       String?
+  type              String    @default("SUPPLY")
+  status            String    @default("DRAFT")
+  supplierId        String
+  rfqId             String?
+  purchaseOrderId   String?
+  currency          String    @default("KES")
+  value             Decimal   @default(0) @db.Decimal(18, 2)
+  startDate         DateTime?
+  endDate           DateTime?
+  signedDate        DateTime?
+  signedBy          String?
+  signedBySupplier  String?
+  autoRenew         Boolean   @default(false)
+  renewalNoticeDays Int       @default(30)
+  documentUrl       String?
+  terms             String?
+  slaTerms          String?
+  penalties         String?
+  notes             String?
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  lines ContractLine[]
+  lines      ContractLine[]
   milestones ContractMilestone[]
 
   @@unique([organizationId, contractNumber])
@@ -2126,18 +2127,18 @@ model ContractLine {
 }
 
 model ContractMilestone {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   contractId     String
   title          String
   description    String?
   dueDate        DateTime
   completedAt    DateTime?
-  status         String   @default("PENDING")
-  amount         Decimal? @db.Decimal(18, 2)
+  status         String    @default("PENDING")
+  amount         Decimal?  @db.Decimal(18, 2)
   notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
@@ -2147,30 +2148,31 @@ model ContractMilestone {
 
 // ---------- GOODS RECEIPT ----------
 model GoodsReceipt {
-  id             String   @id @default(cuid())
-  organizationId String
-  grnNumber      String?
-  purchaseOrderId String?
-  receivedBy     String?
-  receivedByName String?
-  status         String   @default("DRAFT")
-  receivedAt     DateTime?
+  id                 String    @id @default(cuid())
+  organizationId     String
+  grnNumber          String?
+  purchaseOrderId    String?
+  receivedBy         String?
+  receivedByName     String?
+  status             String    @default("DRAFT")
+  receivedAt         DateTime?
   deliveryNoteNumber String?
-  deliveryNoteUrl String?
-  vehicleNumber  String?
-  driverName     String?
-  warehouseId    String?
-  locationId     String?
-  currency       String   @default("KES")
-  totalReceived  Decimal  @default(0) @db.Decimal(18, 2)
-  quantity       Float?
-  hasVariance    Boolean  @default(false)
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  deliveryNoteUrl    String?
+  vehicleNumber      String?
+  driverName         String?
+  warehouseId        String?
+  locationId         String?
+  currency           String    @default("KES")
+  totalReceived      Decimal   @default(0) @db.Decimal(18, 2)
+  quantity           Float?
+  hasVariance        Boolean   @default(false)
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  lines GoodsReceiptLine[]
+  lines       GoodsReceiptLine[]
   inspections QualityInspection[]
+
   @@index([organizationId, grnNumber])
   @@index([organizationId])
   @@index([organizationId, purchaseOrderId])
@@ -2178,27 +2180,27 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptLine {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   goodsReceiptId String
   poLineId       String?
   lineNumber     Int
   description    String
   productId      String?
-  orderedQty     Decimal  @db.Decimal(18, 3)
-  receivedQty    Decimal  @db.Decimal(18, 3)
-  rejectedQty    Decimal  @default(0) @db.Decimal(18, 3)
-  damagedQty     Decimal  @default(0) @db.Decimal(18, 3)
-  unitPrice      Decimal  @db.Decimal(18, 2)
-  lineTotal      Decimal  @default(0) @db.Decimal(18, 2)
+  orderedQty     Decimal   @db.Decimal(18, 3)
+  receivedQty    Decimal   @db.Decimal(18, 3)
+  rejectedQty    Decimal   @default(0) @db.Decimal(18, 3)
+  damagedQty     Decimal   @default(0) @db.Decimal(18, 3)
+  unitPrice      Decimal   @db.Decimal(18, 2)
+  lineTotal      Decimal   @default(0) @db.Decimal(18, 2)
   serialNumbers  String?
   batchNumber    String?
   lotNumber      String?
   expiryDate     DateTime?
-  condition      String   @default("GOOD")
+  condition      String    @default("GOOD")
   notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
 
@@ -2207,21 +2209,21 @@ model GoodsReceiptLine {
 }
 
 model QualityInspection {
-  id             String   @id @default(cuid())
-  organizationId String
-  goodsReceiptId String?
-  purchaseOrderId String?
-  inspectorId    String?
-  inspectorName  String?
-  status         String   @default("PENDING")
-  inspectedAt    DateTime?
-  sampleSize     Int?
-  passedQty      Decimal? @db.Decimal(18, 3)
-  failedQty      Decimal? @db.Decimal(18, 3)
-  findings       String?
+  id               String    @id @default(cuid())
+  organizationId   String
+  goodsReceiptId   String?
+  purchaseOrderId  String?
+  inspectorId      String?
+  inspectorName    String?
+  status           String    @default("PENDING")
+  inspectedAt      DateTime?
+  sampleSize       Int?
+  passedQty        Decimal?  @db.Decimal(18, 3)
+  failedQty        Decimal?  @db.Decimal(18, 3)
+  findings         String?
   correctiveAction String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   goodsReceipt GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id], onDelete: SetNull)
 
@@ -2231,26 +2233,26 @@ model QualityInspection {
 
 // ---------- THREE-WAY MATCH / INVOICE MATCH ----------
 model ThreeWayMatch {
-  id             String   @id @default(cuid())
-  organizationId String
-  purchaseOrderId String
-  goodsReceiptId String?
+  id                String    @id @default(cuid())
+  organizationId    String
+  purchaseOrderId   String
+  goodsReceiptId    String?
   supplierInvoiceId String?
-  invoiceNumber  String?
-  invoiceDate    DateTime?
-  invoiceAmount  Decimal  @db.Decimal(18, 2)
-  poAmount       Decimal  @db.Decimal(18, 2)
-  receivedAmount Decimal  @db.Decimal(18, 2)
-  varianceAmount Decimal  @default(0) @db.Decimal(18, 2)
-  variancePct    Decimal  @default(0) @db.Decimal(8, 2)
-  status         String   @default("PENDING")
-  matchType      String   @default("THREE_WAY")
-  matchedAt      DateTime?
-  matchedBy      String?
-  exceptionId    String?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  invoiceNumber     String?
+  invoiceDate       DateTime?
+  invoiceAmount     Decimal   @db.Decimal(18, 2)
+  poAmount          Decimal   @db.Decimal(18, 2)
+  receivedAmount    Decimal   @db.Decimal(18, 2)
+  varianceAmount    Decimal   @default(0) @db.Decimal(18, 2)
+  variancePct       Decimal   @default(0) @db.Decimal(8, 2)
+  status            String    @default("PENDING")
+  matchType         String    @default("THREE_WAY")
+  matchedAt         DateTime?
+  matchedBy         String?
+  exceptionId       String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([organizationId, status])
@@ -2258,22 +2260,22 @@ model ThreeWayMatch {
 }
 
 model ProcurementException {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   exceptionType  String
-  severity       String   @default("MEDIUM")
+  severity       String    @default("MEDIUM")
   referenceType  String?
   referenceId    String?
   title          String
   description    String?
-  status         String   @default("OPEN")
-  detectedAt     DateTime @default(now())
-  detectedBy     String?  @default("SYSTEM")
+  status         String    @default("OPEN")
+  detectedAt     DateTime  @default(now())
+  detectedBy     String?   @default("SYSTEM")
   resolvedAt     DateTime?
   resolvedBy     String?
   resolution     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([organizationId, status])
@@ -2282,22 +2284,22 @@ model ProcurementException {
 
 // ---------- LANDED COST ----------
 model LandedCost {
-  id             String   @id @default(cuid())
-  organizationId String
+  id              String   @id @default(cuid())
+  organizationId  String
   purchaseOrderId String
-  currency       String   @default("KES")
-  purchasePrice  Decimal  @default(0) @db.Decimal(18, 2)
-  freight        Decimal  @default(0) @db.Decimal(18, 2)
-  insurance      Decimal  @default(0) @db.Decimal(18, 2)
-  customsDuty    Decimal  @default(0) @db.Decimal(18, 2)
-  taxes          Decimal  @default(0) @db.Decimal(18, 2)
-  handling       Decimal  @default(0) @db.Decimal(18, 2)
-  otherCharges   Decimal  @default(0) @db.Decimal(18, 2)
-  totalLandedCost Decimal @default(0) @db.Decimal(18, 2)
-  incoterms      String?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  currency        String   @default("KES")
+  purchasePrice   Decimal  @default(0) @db.Decimal(18, 2)
+  freight         Decimal  @default(0) @db.Decimal(18, 2)
+  insurance       Decimal  @default(0) @db.Decimal(18, 2)
+  customsDuty     Decimal  @default(0) @db.Decimal(18, 2)
+  taxes           Decimal  @default(0) @db.Decimal(18, 2)
+  handling        Decimal  @default(0) @db.Decimal(18, 2)
+  otherCharges    Decimal  @default(0) @db.Decimal(18, 2)
+  totalLandedCost Decimal  @default(0) @db.Decimal(18, 2)
+  incoterms       String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([organizationId])
   @@index([organizationId, purchaseOrderId])
@@ -2343,43 +2345,43 @@ model SpendAnalysis {
 }
 
 model ProcurementBudget {
-  id             String   @id @default(cuid())
-  organizationId String
-  name           String
-  fiscalYear     String?
-  departmentId   String?
-  categoryId     String?
-  costCenter     String?
-  currency       String   @default("KES")
-  budgetAmount   Decimal  @default(0) @db.Decimal(18, 2)
-  committedAmount Decimal @default(0) @db.Decimal(18, 2)
-  actualAmount   Decimal  @default(0) @db.Decimal(18, 2)
-  availableAmount Decimal @default(0) @db.Decimal(18, 2)
-  periodStart    DateTime?
-  periodEnd      DateTime?
-  status         String   @default("ACTIVE")
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String    @id @default(cuid())
+  organizationId  String
+  name            String
+  fiscalYear      String?
+  departmentId    String?
+  categoryId      String?
+  costCenter      String?
+  currency        String    @default("KES")
+  budgetAmount    Decimal   @default(0) @db.Decimal(18, 2)
+  committedAmount Decimal   @default(0) @db.Decimal(18, 2)
+  actualAmount    Decimal   @default(0) @db.Decimal(18, 2)
+  availableAmount Decimal   @default(0) @db.Decimal(18, 2)
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  status          String    @default("ACTIVE")
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([organizationId, fiscalYear])
 }
 
 model ProcurementCommitment {
-  id             String   @id @default(cuid())
-  organizationId String
-  budgetId       String?
+  id              String    @id @default(cuid())
+  organizationId  String
+  budgetId        String?
   purchaseOrderId String?
-  requisitionId  String?
-  amount         Decimal  @db.Decimal(18, 2)
-  currency       String   @default("KES")
-  status         String   @default("ACTIVE")
-  committedAt    DateTime @default(now())
-  releasedAt     DateTime?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  requisitionId   String?
+  amount          Decimal   @db.Decimal(18, 2)
+  currency        String    @default("KES")
+  status          String    @default("ACTIVE")
+  committedAt     DateTime  @default(now())
+  releasedAt      DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([organizationId, budgetId])
@@ -2431,22 +2433,22 @@ model ProcurementApprovalRule {
 }
 
 model ProcurementApproval {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   entityType     String
   entityId       String
   stepNumber     Int
   approverId     String
   approverRole   String?
-  status         String   @default("PENDING")
+  status         String    @default("PENDING")
   decision       String?
   comment        String?
   decidedAt      DateTime?
   dueAt          DateTime?
   delegatedTo    String?
   delegatedAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([organizationId, entityType, entityId])
@@ -2526,44 +2528,44 @@ model SupplierQuotation {
 // ============================================================
 
 model FixedAsset {
-  id                                String    @id @default(cuid())
-  code                              String
-  name                              String
-  category                          String?
-  purchaseDate                      DateTime
-  purchaseCost                      Float     @default(0)
-  residualValue                     Float     @default(0)
-  usefulLifeMonths                  Int       @default(12)
-  method                            String    @default("STRAIGHT_LINE")
-  accumulatedDepreciation           Float     @default(0)
-  lastDepreciatedAt                 DateTime?
-  status                            String    @default("ACTIVE")
-  disposalDate                      DateTime?
-  disposalProceeds                  Float?
-  assetAccountId                    String?
-  depreciationExpenseAccountId      String?
-  accumulatedDepreciationAccountId  String?
-  organizationId                    String
-  createdAt                         DateTime  @default(now())
-  updatedAt                         DateTime  @default(now())
+  id                               String    @id @default(cuid())
+  code                             String
+  name                             String
+  category                         String?
+  purchaseDate                     DateTime
+  purchaseCost                     Float     @default(0)
+  residualValue                    Float     @default(0)
+  usefulLifeMonths                 Int       @default(12)
+  method                           String    @default("STRAIGHT_LINE")
+  accumulatedDepreciation          Float     @default(0)
+  lastDepreciatedAt                DateTime?
+  status                           String    @default("ACTIVE")
+  disposalDate                     DateTime?
+  disposalProceeds                 Float?
+  assetAccountId                   String?
+  depreciationExpenseAccountId     String?
+  accumulatedDepreciationAccountId String?
+  organizationId                   String
+  createdAt                        DateTime  @default(now())
+  updatedAt                        DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id])
 
+  @@unique([organizationId, code])
   @@index([organizationId])
   @@index([organizationId, status])
-  @@unique([organizationId, code])
 }
 
 model StatutoryRate {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   code           String
   label          String
-  bandMin        Float?   @default(0)
+  bandMin        Float?    @default(0)
   bandMax        Float?
-  rate           Float?   @default(0)
-  fixedAmount    Float?   @default(0)
-  sortOrder      Int?     @default(0)
+  rate           Float?    @default(0)
+  fixedAmount    Float?    @default(0)
+  sortOrder      Int?      @default(0)
   notes          String?
   createdAt      DateTime? @default(now())
   updatedAt      DateTime? @default(now())
@@ -2575,33 +2577,33 @@ model StatutoryRate {
 }
 
 model SupplierInvoice {
-  id                  String    @id @default(cuid())
-  organizationId      String
-  invoiceNumber       String?
-  supplierInvoiceRef  String?
-  purchaseOrderId     String?
-  goodsReceiptId      String?
-  supplierId          String?
-  supplierName        String?
-  invoiceDate         DateTime?
-  dueDate             DateTime?
-  currency            String?   @default("KES")
-  subtotal            Decimal?  @default(0) @db.Decimal(14, 2)
-  taxAmount           Decimal?  @default(0) @db.Decimal(14, 2)
-  total               Decimal?  @default(0) @db.Decimal(14, 2)
-  status              String?   @default("DRAFT")
-  matchStatus         String?   @default("UNMATCHED")
-  matchNotes          String?
-  approvedAt          DateTime?
-  approvedBy          String?
-  approvedByName      String?
-  paidAt              DateTime?
-  paymentReference    String?
-  receivedBy          String?
-  receivedByName      String?
-  notes               String?
-  createdAt           DateTime? @default(now())
-  updatedAt           DateTime? @default(now())
+  id                 String    @id @default(cuid())
+  organizationId     String
+  invoiceNumber      String?
+  supplierInvoiceRef String?
+  purchaseOrderId    String?
+  goodsReceiptId     String?
+  supplierId         String?
+  supplierName       String?
+  invoiceDate        DateTime?
+  dueDate            DateTime?
+  currency           String?   @default("KES")
+  subtotal           Decimal?  @default(0) @db.Decimal(14, 2)
+  taxAmount          Decimal?  @default(0) @db.Decimal(14, 2)
+  total              Decimal?  @default(0) @db.Decimal(14, 2)
+  status             String?   @default("DRAFT")
+  matchStatus        String?   @default("UNMATCHED")
+  matchNotes         String?
+  approvedAt         DateTime?
+  approvedBy         String?
+  approvedByName     String?
+  paidAt             DateTime?
+  paymentReference   String?
+  receivedBy         String?
+  receivedByName     String?
+  notes              String?
+  createdAt          DateTime? @default(now())
+  updatedAt          DateTime? @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id])
 
@@ -2624,6 +2626,310 @@ model RestaurantTable {
 
   organization Organization @relation(fields: [organizationId], references: [id])
 
-  @@index([organizationId], map: "idx_table_org")
   @@unique([organizationId, name], map: "unique_table_name_per_org")
+  @@index([organizationId], map: "idx_table_org")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WAVVEMARKET — Marketplace Models
+// Mirrors existing production DB structure. Zero migrations needed.
+// Added: 2026-11-09
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── MarketplaceListing — 25 columns, public product listings ───
+model MarketplaceListing {
+  id              Int       @id @default(autoincrement())
+  sellerId        String
+  title           String
+  description     String?
+  price           Decimal   @db.Decimal(12, 2)
+  currency        String?   @default("KES")
+  category        String
+  condition       String?   @default("Used")
+  location        String?
+  images          String[]  @default([])
+  status          String?   @default("ACTIVE")
+  views           Int?      @default(0)
+  saves           Int?      @default(0)
+  createdAt       DateTime? @default(now())
+  updatedAt       DateTime? @default(now())
+  organizationId  String?
+  sku             String?
+  stock           Int?      @default(1)
+  warehouseId     String?
+  fulfillmentType String?   @default("SELLER_SHIP")
+  slaHours        Float?    @default(48)
+  commissionRate  Float?    @default(0.08)
+  publishedAt     DateTime?
+  latitude        Float?
+  longitude       Float?
+
+  conversations MarketplaceConversation[]
+  savedEntries  MarketplaceSaved[]
+
+  @@index([category], map: "MarketplaceListing_category_idx")
+  @@index([category], map: "idx_listing_category")
+  @@index([organizationId], map: "MarketplaceListing_org_idx")
+  @@index([sellerId], map: "idx_listing_seller")
+  @@index([status], map: "MarketplaceListing_status_idx")
+  @@index([status], map: "idx_listing_status")
+  @@index([createdAt(sort: Desc)], map: "idx_listing_created")
+  @@map("MarketplaceListing")
+}
+
+// ─── MarketplaceOrder — 22 columns, buyer orders ───
+model MarketplaceOrder {
+  id                String    @id
+  orderNumber       String
+  buyerId           String
+  buyerName         String?
+  buyerEmail        String?
+  buyerPhone        String?
+  shippingAddress   String?
+  shippingLatitude  Float?
+  shippingLongitude Float?
+  subtotal          Float?    @default(0)
+  deliveryFee       Float?    @default(0)
+  platformFee       Float?    @default(0)
+  total             Float?    @default(0)
+  currency          String?   @default("KES")
+  status            String?   @default("PENDING")
+  paymentMethod     String?   @default("MPESA")
+  paymentStatus     String?   @default("PENDING")
+  paymentReference  String?
+  notes             String?
+  organizationId    String?
+  createdAt         DateTime? @default(now())
+  updatedAt         DateTime? @default(now())
+
+  @@unique([organizationId, orderNumber], map: "MarketplaceOrder_orderNumber_organizationId_key")
+  @@index([buyerId], map: "MarketplaceOrder_buyer_idx")
+  @@index([paymentStatus], map: "MarketplaceOrder_payment_idx")
+  @@index([status], map: "MarketplaceOrder_status_idx")
+  @@map("MarketplaceOrder")
+}
+
+// ─── MarketplaceOrderItem — 17 columns ───
+model MarketplaceOrderItem {
+  id                 String    @id
+  orderId            String
+  listingId          Int
+  sellerId           String
+  sellerName         String?
+  title              String?
+  quantity           Int       @default(1)
+  unitPrice          Float
+  lineTotal          Float
+  commissionRate     Float?    @default(0.08)
+  commissionAmount   Float?    @default(0)
+  sellerPayout       Float?    @default(0)
+  fulfillmentStatus  String?   @default("PENDING")
+  fulfillmentPartner String?
+  trackingNumber     String?
+  warehouseId        String?
+  createdAt          DateTime? @default(now())
+
+  @@index([listingId], map: "MarketplaceOrderItem_listing_idx")
+  @@index([orderId], map: "MarketplaceOrderItem_order_idx")
+  @@index([sellerId], map: "MarketplaceOrderItem_seller_idx")
+  @@map("MarketplaceOrderItem")
+}
+
+// ─── MarketplaceCategory — 5 columns, 32 categories exist ───
+model MarketplaceCategory {
+  id           Int       @id @default(autoincrement())
+  name         String
+  icon         String?
+  listingCount Int?      @default(0)
+  createdAt    DateTime? @default(now())
+
+  @@unique([name], map: "MarketplaceCategory_name_key")
+  @@map("MarketplaceCategory")
+}
+
+// ─── MarketplaceConversation — 7 columns, buyer-seller chat ───
+model MarketplaceConversation {
+  id            Int       @id @default(autoincrement())
+  listingId     Int?
+  buyerId       String
+  sellerId      String
+  lastMessage   String?
+  createdAt     DateTime? @default(now())
+  lastMessageAt DateTime? @default(now())
+
+  listing  MarketplaceListing?  @relation(fields: [listingId], references: [id])
+  messages MarketplaceMessage[]
+
+  @@index([lastMessageAt(sort: Desc)], map: "MarketplaceConversation_lastMessageAt_idx")
+  @@index([buyerId], map: "idx_conv_buyer")
+  @@index([sellerId], map: "idx_conv_seller")
+  @@map("MarketplaceConversation")
+}
+
+// ─── MarketplaceMessage — 7 columns, chat messages ───
+model MarketplaceMessage {
+  id             Int       @id @default(autoincrement())
+  conversationId Int?
+  senderId       String
+  content        String
+  createdAt      DateTime? @default(now())
+  receiverId     String?
+  isRead         Boolean?  @default(false)
+
+  conversation MarketplaceConversation? @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId], map: "idx_msg_conv")
+  @@index([receiverId, isRead], map: "MarketplaceMessage_receiver_isRead_idx")
+  @@map("MarketplaceMessage")
+}
+
+// ─── MarketplaceReview — 12 columns, 0 rows currently ───
+model MarketplaceReview {
+  id           String    @id
+  listingId    Int?
+  sellerId     String?
+  orderId      String?
+  reviewerId   String?
+  reviewerName String?
+  rating       Int
+  title        String?
+  body         String?
+  isVerified   Boolean?  @default(false)
+  helpfulCount Int?      @default(0)
+  createdAt    DateTime? @default(now())
+
+  @@index([listingId], map: "MarketplaceReview_listing_idx")
+  @@index([sellerId], map: "MarketplaceReview_seller_idx")
+  @@map("MarketplaceReview")
+}
+
+// ─── MarketplaceSaved — 4 columns, wishlist ───
+model MarketplaceSaved {
+  id        Int       @id @default(autoincrement())
+  userId    String
+  listingId Int?
+  createdAt DateTime? @default(now())
+
+  listing MarketplaceListing? @relation(fields: [listingId], references: [id])
+
+  @@unique([userId, listingId], map: "MarketplaceSaved_userId_listingId_key")
+  @@map("MarketplaceSaved")
+}
+
+// ─── Cart — 6 columns, 2 active carts ───
+model Cart {
+  id             String    @id
+  userId         String
+  organizationId String?
+  status         String?   @default("ACTIVE")
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now())
+
+  @@index([userId], map: "Cart_user_idx")
+  @@map("Cart")
+}
+
+// ─── CartItem — 6 columns ───
+model CartItem {
+  id        String    @id
+  cartId    String
+  listingId Int
+  quantity  Int       @default(1)
+  unitPrice Float
+  createdAt DateTime? @default(now())
+
+  @@index([cartId], map: "CartItem_cart_idx")
+  @@index([listingId], map: "CartItem_listing_idx")
+  @@map("CartItem")
+}
+
+// ─── SellerProfile — 22 columns ───
+model SellerProfile {
+  id             String    @id
+  userId         String    @unique(map: "SellerProfile_userId_unique")
+  organizationId String
+  storeName      String
+  storeSlug      String?   @unique
+  storeBanner    String?
+  storeLogo      String?
+  description    String?
+  businessType   String?   @default("INDIVIDUAL")
+  taxId          String?
+  bankAccount    String?
+  mpesaNumber    String?
+  commissionRate Float?    @default(0.08)
+  totalSales     Float?    @default(0)
+  totalOrders    Int?      @default(0)
+  averageRating  Float?    @default(0)
+  totalReviews   Int?      @default(0)
+  trustScore     Int?      @default(50)
+  verification   String?   @default("UNVERIFIED")
+  status         String?   @default("ACTIVE")
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now())
+
+  @@index([organizationId], map: "SellerProfile_org_idx")
+  @@index([status], map: "SellerProfile_status_idx")
+  @@index([userId], map: "SellerProfile_user_idx")
+  @@map("SellerProfile")
+}
+
+// ─── SellerWallet — 12 columns ───
+model SellerWallet {
+  id                 String    @id
+  sellerId           String
+  organizationId     String?
+  availableBalance   Float?    @default(0)
+  pendingBalance     Float?    @default(0)
+  reserveBalance     Float?    @default(0)
+  lifetimeEarnings   Float?    @default(0)
+  lifetimeCommission Float?    @default(0)
+  lastPayoutAt       DateTime?
+  currency           String?   @default("KES")
+  createdAt          DateTime? @default(now())
+  updatedAt          DateTime? @default(now())
+
+  @@unique([sellerId], map: "SellerWallet_sellerId_key")
+  @@unique([sellerId], map: "SellerWallet_sellerId_unique")
+  @@index([sellerId], map: "SellerWallet_seller_idx")
+  @@map("SellerWallet")
+}
+
+// ─── Settlement — 10 columns, payout records ───
+model Settlement {
+  id             String    @id
+  number         String?
+  amount         Decimal?  @default(0) @db.Decimal(15, 2)
+  method         String?   @default("MPESA")
+  status         String?   @default("PENDING")
+  customerName   String?
+  organizationId String
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now())
+  locationId     String?
+
+  @@unique([organizationId, number], map: "Settlement_number_organizationId_key")
+  @@index([organizationId], map: "idx_settlement_org")
+  @@map("Settlement")
+}
+
+// ─── WalletTransaction — 12 columns ───
+model WalletTransaction {
+  id             String    @id
+  sellerId       String
+  walletId       String
+  type           String
+  amount         Float
+  balance        Float
+  description    String?
+  referenceId    String?
+  orderId        String?
+  status         String?   @default("COMPLETED")
+  createdAt      DateTime? @default(now())
+  organizationId String
+
+  @@index([organizationId], map: "WalletTransaction_organizationId_idx")
+  @@index([sellerId], map: "WalletTransaction_seller_idx")
+  @@index([type], map: "WalletTransaction_type_idx")
+  @@map("WalletTransaction")
 }
