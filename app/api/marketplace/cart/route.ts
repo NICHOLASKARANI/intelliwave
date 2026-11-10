@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
-import { guardHR } from '@/lib/wavecore/guard'
 
 // Get or create active cart for user
 async function getOrCreateCart(userId: string, organizationId: string): Promise<string> {
@@ -29,8 +28,6 @@ export async function GET(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_READ')
-    if (guard.deny) return guard.response!
 
     const cartId = await getOrCreateCart(session.userId, session.organizationId)
 
@@ -85,8 +82,6 @@ export async function POST(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_WRITE')
-    if (guard.deny) return guard.response!
 
     const body = await req.json()
     if (!body.listingId) return NextResponse.json({ error: 'listingId required' }, { status: 400 })
@@ -139,8 +134,6 @@ export async function PATCH(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_WRITE')
-    if (guard.deny) return guard.response!
 
     const body = await req.json()
     if (!body.itemId || body.quantity === undefined) return NextResponse.json({ error: 'itemId and quantity required' }, { status: 400 })
@@ -176,8 +169,6 @@ export async function DELETE(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_WRITE')
-    if (guard.deny) return guard.response!
 
     const { searchParams } = new URL(req.url)
     const itemId = searchParams.get('itemId')
