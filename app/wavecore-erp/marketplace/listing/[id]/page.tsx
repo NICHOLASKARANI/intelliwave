@@ -11,6 +11,7 @@ import {
 import { LikeButton } from '@/components/marketplace/LikeButton'
 import { CommentSection } from '@/components/marketplace/CommentSection'
 import { WhatsAppButton } from '@/components/marketplace/WhatsAppButton'
+import { FollowButton } from '@/components/marketplace/FollowButton'
 
 interface Listing {
   id: number
@@ -256,7 +257,10 @@ export default function ListingDetailPage() {
                     )}
                   </div>
                 </div>
-                <WhatsAppButton listingId={listing.id} listingTitle={listing.title} variant="secondary" size="sm" />
+                <div className="flex items-center gap-2">
+                  <FollowButton sellerId={listing.sellerId} size="sm" variant="ghost" />
+                  <WhatsAppButton listingId={listing.id} listingTitle={listing.title} variant="secondary" size="sm" />
+                </div>
               </div>
             </div>
 
