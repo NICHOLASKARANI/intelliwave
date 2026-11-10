@@ -61,7 +61,15 @@ export default function SignupPage() {
       const data = await res.json()
       if (res.ok) {
         setSuccess(true)
-        setTimeout(() => { window.location.href = '/wavecore-erp/subscription' }, 2000)
+        setTimeout(() => {
+          const params = new URLSearchParams(window.location.search)
+          const rt = params.get('returnTo') || params.get('redirect')
+          const safe = rt && rt.startsWith('/') && !rt.startsWith('//')
+          const dest = safe
+            ? '/wavecore-erp/subscription?returnTo=' + encodeURIComponent(rt)
+            : '/wavecore-erp/subscription'
+          window.location.href = dest
+        }, 2000)
       } else {
         setError(data.error || 'Signup failed. Please try again.')
       }

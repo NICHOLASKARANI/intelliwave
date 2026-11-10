@@ -29,6 +29,11 @@ const PLANS: Plan[] = [
 
 export default function MpesaPayPage() {
   const router = useRouter()
+  const [returnTo, setReturnTo] = useState<string | null>(null)
+  useEffect(() => {
+    const rt = new URLSearchParams(window.location.search).get('returnTo')
+    if (rt && rt.startsWith('/') && !rt.startsWith('//')) setReturnTo(rt)
+  }, [])
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>(PLANS[1]) // default to 3 months
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -300,13 +305,13 @@ export default function MpesaPayPage() {
             </div>
 
             <button
-              onClick={() => router.push('/wavve-si/dashboard')}
+              onClick={() => router.push(returnTo || '/wavve-si/dashboard')}
               className="w-full px-6 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2 mb-3"
             >
               <Rocket className="w-5 h-5" /> Continue with Wavve SI
             </button>
             <button
-              onClick={() => router.push('/wavecore-erp/subscription')}
+              onClick={() => router.push(returnTo || '/wavecore-erp/subscription')}
               className="w-full px-6 py-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2"
             >
               <Receipt className="w-5 h-5" /> View My Subscription

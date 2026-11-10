@@ -38,6 +38,7 @@ function hasSession(request: NextRequest): boolean {
 function redirectToLogin(request: NextRequest, pathname: string) {
   const loginUrl = new URL('/wavecore-erp/auth/login', request.url)
   loginUrl.searchParams.set('redirect', pathname)
+  loginUrl.searchParams.set('returnTo', pathname)
   return NextResponse.redirect(loginUrl)
 }
 
@@ -86,7 +87,11 @@ export function middleware(request: NextRequest) {
     // Subscription gate — applies to ALL ERP modules
     const subscribed = request.cookies.get('wavecore_subscribed')?.value
     if (subscribed === 'false') {
-      return NextResponse.redirect(new URL('/wavecore-erp/subscription', request.url))
+      {
+        const subUrl = new URL('/wavecore-erp/subscription', request.url)
+        subUrl.searchParams.set('returnTo', pathname)
+        return NextResponse.redirect(subUrl)
+      }
     }
   }
 
@@ -103,7 +108,11 @@ export function middleware(request: NextRequest) {
     // Subscription gate for authenticated marketplace sellers/buyers
     const subscribed = request.cookies.get('wavecore_subscribed')?.value
     if (subscribed === 'false') {
-      return NextResponse.redirect(new URL('/wavecore-erp/subscription', request.url))
+      {
+        const subUrl = new URL('/wavecore-erp/subscription', request.url)
+        subUrl.searchParams.set('returnTo', pathname)
+        return NextResponse.redirect(subUrl)
+      }
     }
   }
 

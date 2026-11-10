@@ -44,6 +44,12 @@ export default function SubscriptionPage() {
   const [data, setData] = useState<SubData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [returnTo, setReturnTo] = useState<string | null>(null)
+
+  useEffect(() => {
+    const rt = new URLSearchParams(window.location.search).get('returnTo')
+    if (rt && rt.startsWith('/') && !rt.startsWith('//')) setReturnTo(rt)
+  }, [])
 
   useEffect(() => {
     fetchStatus()
@@ -194,20 +200,31 @@ export default function SubscriptionPage() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => router.push('/wavve-si/dashboard')}
-                    className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
-                  >
-                    <Rocket className="w-5 h-5" /> Continue with Wavve SI
-                  </button>
-                  <button
-                    onClick={() => router.push('/wavecore-erp')}
-                    className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
-                  >
-                    <Layers className="w-5 h-5" /> Continue to Dashboard
-                  </button>
+                  {returnTo ? (
+                    <button
+                      onClick={() => router.push(returnTo)}
+                      className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+                    >
+                      <ArrowRight className="w-5 h-5" /> Continue to {returnTo.startsWith('/marketplace') ? 'WaveMarket' : 'Dashboard'}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => router.push('/wavve-si/dashboard')}
+                        className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+                      >
+                        <Rocket className="w-5 h-5" /> Continue with Wavve SI
+                      </button>
+                      <button
+                        onClick={() => router.push('/wavecore-erp')}
+                        className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+                      >
+                        <Layers className="w-5 h-5" /> Continue to Dashboard
+                      </button>
+                    </>
+                  )}
                   <Link
-                    href="/wavecore-erp/subscription/pay"
+                    href={returnTo ? `/wavecore-erp/subscription/pay?returnTo=${encodeURIComponent(returnTo)}` : '/wavecore-erp/subscription/pay'}
                     className="flex-1 min-w-[200px] px-6 py-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white font-bold text-base flex items-center justify-center gap-2 transition-all"
                   >
                     <Zap className="w-5 h-5" /> {isPaid ? 'Renew Plan' : 'Activate Plan'}
