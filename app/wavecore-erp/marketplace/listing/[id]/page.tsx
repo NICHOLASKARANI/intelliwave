@@ -246,7 +246,7 @@ export default function ListingDetailPage() {
                   <span className="text-white font-bold">{listing.storeName?.charAt(0) || listing.sellerName?.charAt(0) || 'S'}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold truncate">{listing.storeName || listing.sellerName}</p>
+                  <Link href={'/wavecore-erp/marketplace/seller/' + listing.sellerId} className="font-bold truncate hover:text-cyan-400 transition-colors block">{listing.storeName || listing.sellerName}</Link>
                   {listing.sellerFollowerCount !== null && listing.sellerFollowerCount > 0 && (
                     <p className="text-xs text-neutral-500">{listing.sellerFollowerCount} follower{listing.sellerFollowerCount === 1 ? '' : 's'}</p>
                   )}
