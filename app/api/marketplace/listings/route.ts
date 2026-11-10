@@ -53,7 +53,8 @@ export async function GET(req: NextRequest) {
     if (id) {
       const result = await pool.query(
         `SELECT l.*, u.name as "sellerName", u.image as "sellerImage",
-                sp."storeName", sp."storeLogo", sp."averageRating", sp."totalReviews", sp."trustScore", sp.verification
+                sp."storeName", sp."storeLogo", sp."averageRating", sp."totalReviews", sp."trustScore", sp.verification,
+                (SELECT COUNT(*)::int FROM "MarketplaceFollow" f WHERE f."sellerId" = l."sellerId") AS "sellerFollowerCount"
          FROM "MarketplaceListing" l
          JOIN "User" u ON l."sellerId" = u.id
          LEFT JOIN "SellerProfile" sp ON sp."userId" = l."sellerId"
@@ -66,7 +67,8 @@ export async function GET(req: NextRequest) {
     }
 
     let query = `SELECT l.*, u.name as "sellerName", u.image as "sellerImage",
-                 sp."storeName", sp."averageRating", sp."totalReviews", sp."trustScore"
+                 sp."storeName", sp."averageRating", sp."totalReviews", sp."trustScore",
+                 (SELECT COUNT(*)::int FROM "MarketplaceFollow" f WHERE f."sellerId" = l."sellerId") AS "sellerFollowerCount"
                  FROM "MarketplaceListing" l
                  JOIN "User" u ON l."sellerId" = u.id
                  LEFT JOIN "SellerProfile" sp ON sp."userId" = l."sellerId"

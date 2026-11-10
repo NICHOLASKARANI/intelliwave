@@ -39,6 +39,7 @@ interface Listing {
   totalReviews: number | null
   trustScore: number | null
   verification: string | null
+  sellerFollowerCount: number | null
 }
 
 interface Review {
@@ -246,6 +247,9 @@ export default function ListingDetailPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold truncate">{listing.storeName || listing.sellerName}</p>
+                  {listing.sellerFollowerCount !== null && listing.sellerFollowerCount > 0 && (
+                    <p className="text-xs text-neutral-500">{listing.sellerFollowerCount} follower{listing.sellerFollowerCount === 1 ? '' : 's'}</p>
+                  )}
                   <div className="flex items-center gap-2 text-xs">
                     {listing.averageRating && (
                       <span className="flex items-center gap-1 text-amber-400">
