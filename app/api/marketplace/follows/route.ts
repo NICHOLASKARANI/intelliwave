@@ -1,8 +1,9 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { notifyNewFollower } from '@/lib/marketplace/notifications'
 
 // GET: Get follow status + follower count for a seller OR user's followed sellers
 export async function GET(req: NextRequest) {
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get follower count
+
     const countRes = await pool.query(
       'SELECT COUNT(*)::int AS count FROM "MarketplaceFollow" WHERE "sellerId" = $1',
       [sellerId]
@@ -125,6 +127,8 @@ export async function POST(req: NextRequest) {
         'INSERT INTO "MarketplaceFollow" (id, "userId", "sellerId", "createdAt") VALUES ($1, $2, $3, NOW())',
         [followId, session.userId, sellerId]
       )
+      // Trigger notification (fire and forget) - only on NEW follow
+      notifyNewFollower(sellerId, session.userId, session.name || 'A user').catch(() => {})
     }
 
     const countRes = await pool.query(
@@ -160,6 +164,7 @@ export async function DELETE(req: NextRequest) {
       'DELETE FROM "MarketplaceFollow" WHERE "userId" = $1 AND "sellerId" = $2',
       [session.userId, sellerId]
     )
+
 
     const countRes = await pool.query(
       'SELECT COUNT(*)::int AS count FROM "MarketplaceFollow" WHERE "sellerId" = $1',
