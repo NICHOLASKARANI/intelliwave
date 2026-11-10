@@ -9,6 +9,7 @@ import {
   ChevronRight, Star, Truck, Clock, Users, Award, Flame, Percent,
   ArrowRight, Grid3x3, List, Filter, X,
 } from 'lucide-react'
+import { NotificationBell } from '@/components/marketplace/NotificationBell'
 
 const TOP_CATEGORIES = [
   { name: 'Electronics', slug: 'Electronics', emoji: '💻', color: 'from-blue-500 to-indigo-600' },
@@ -170,6 +171,7 @@ export default function PublicMarketplacePage() {
               <Link href={session ? "/wavecore-erp/marketplace/inbox" : "/wavecore-erp/auth/login"} className="p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 relative">
                 <MessageCircle className="w-5 h-5" />
               </Link>
+              {session && <NotificationBell />}
               <button onClick={goToCart} className="p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 relative">
                 <ShoppingCart className="w-5 h-5" />
               </button>
