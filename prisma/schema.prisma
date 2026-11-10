@@ -2860,6 +2860,7 @@ model SellerProfile {
   taxId          String?
   bankAccount    String?
   mpesaNumber    String?
+  whatsappNumber String?
   commissionRate Float?    @default(0.08)
   totalSales     Float?    @default(0)
   totalOrders    Int?      @default(0)
@@ -2945,10 +2946,10 @@ model WalletTransaction {
 
 // ─── MarketplaceLike — user likes a listing ───
 model MarketplaceLike {
-  id         String    @id @default(cuid())
-  userId     String
-  listingId  Int
-  createdAt  DateTime  @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  listingId Int
+  createdAt DateTime @default(now())
 
   listing MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
@@ -2960,18 +2961,18 @@ model MarketplaceLike {
 
 // ─── MarketplaceComment — user comments on listings (with nested replies) ───
 model MarketplaceComment {
-  id         String    @id @default(cuid())
-  userId     String
-  listingId  Int
-  parentId   String?
-  body       String
-  isDeleted  Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  listingId Int
+  parentId  String?
+  body      String
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  listing MarketplaceListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  parent  MarketplaceComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies MarketplaceComment[] @relation("CommentReplies")
+  listing MarketplaceListing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  parent  MarketplaceComment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies MarketplaceComment[]     @relation("CommentReplies")
   likes   MarketplaceCommentLike[]
 
   @@index([listingId], map: "MarketplaceComment_listing_idx")
@@ -2983,10 +2984,10 @@ model MarketplaceComment {
 
 // ─── MarketplaceCommentLike — user likes a comment ───
 model MarketplaceCommentLike {
-  id         String    @id @default(cuid())
-  userId     String
-  commentId  String
-  createdAt  DateTime  @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
 
   comment MarketplaceComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
@@ -2997,10 +2998,10 @@ model MarketplaceCommentLike {
 
 // ─── MarketplaceFollow — user follows a seller ───
 model MarketplaceFollow {
-  id         String    @id @default(cuid())
-  userId     String
-  sellerId   String
-  createdAt  DateTime  @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  sellerId  String
+  createdAt DateTime @default(now())
 
   @@unique([userId, sellerId], map: "MarketplaceFollow_userId_sellerId_key")
   @@index([sellerId], map: "MarketplaceFollow_seller_idx")
@@ -3010,12 +3011,12 @@ model MarketplaceFollow {
 
 // ─── MarketplaceShare — track product shares ───
 model MarketplaceShare {
-  id         String    @id @default(cuid())
-  listingId  Int
-  userId     String?
-  channel    String    // "whatsapp" | "facebook" | "x" | "copy_link" | "native"
-  ipHash     String?
-  createdAt  DateTime  @default(now())
+  id        String   @id @default(cuid())
+  listingId Int
+  userId    String?
+  channel   String // "whatsapp" | "facebook" | "x" | "copy_link" | "native"
+  ipHash    String?
+  createdAt DateTime @default(now())
 
   listing MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 

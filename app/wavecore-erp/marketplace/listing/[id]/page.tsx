@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { LikeButton } from '@/components/marketplace/LikeButton'
 import { CommentSection } from '@/components/marketplace/CommentSection'
+import { WhatsAppButton } from '@/components/marketplace/WhatsAppButton'
 
 interface Listing {
   id: number
@@ -255,9 +256,7 @@ export default function ListingDetailPage() {
                     )}
                   </div>
                 </div>
-                <button className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sm font-bold flex items-center gap-1.5 transition-colors">
-                  <MessageSquare className="w-4 h-4" /> Chat
-                </button>
+                <WhatsAppButton listingId={listing.id} listingTitle={listing.title} variant="secondary" size="sm" />
               </div>
             </div>
 

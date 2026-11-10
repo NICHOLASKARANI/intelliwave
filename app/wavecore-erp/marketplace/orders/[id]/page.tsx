@@ -8,6 +8,7 @@ import {
   ArrowLeft, Package, MapPin, CreditCard, Clock, CheckCircle2,
   XCircle, Truck, Loader2, AlertCircle, MessageSquare, Copy
 } from 'lucide-react'
+import { WhatsAppButton } from '@/components/marketplace/WhatsAppButton'
 
 interface Order {
   id: string
@@ -276,9 +277,7 @@ export default function OrderDetailPage() {
 
             <div className="rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
               <h3 className="font-bold mb-3 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Need Help?</h3>
-              <button className="w-full px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-sm font-bold transition-colors">
-                Contact Seller
-              </button>
+              <WhatsAppButton listingId={items[0]?.listingId || 0} listingTitle={items[0]?.title || ""} variant="primary" size="md" />
             </div>
           </div>
         </div>
