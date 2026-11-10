@@ -264,7 +264,7 @@ export default function LoginPage() {
               <div className="mt-6 text-center">
                 <p className="text-sm text-slate-400">
                   Don&apos;t have an account?{' '}
-                  <Link href="/wavecore-erp/auth/signup" className="text-indigo-400 hover:text-indigo-300 font-bold">
+                  <Link href={`/wavecore-erp/auth/signup${typeof window !== 'undefined' && window.location.search ? window.location.search : ''}`} className="text-indigo-400 hover:text-indigo-300 font-bold">
                     Create Account
                   </Link>
                 </p>
