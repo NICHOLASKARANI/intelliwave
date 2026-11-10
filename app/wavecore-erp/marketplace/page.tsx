@@ -8,6 +8,7 @@ import {
   Sparkles, Shield, BadgeCheck, Eye, TrendingUp, Zap, Package, Tag,
   RefreshCw, Filter, ArrowUpDown, Route,
 } from 'lucide-react'
+import { NotificationBell } from '@/components/marketplace/NotificationBell'
 
 const TOP_CATEGORIES = [
   { name: 'Electronics', slug: 'Electronics', color: 'from-blue-500 to-indigo-600' },
@@ -107,6 +108,7 @@ export default function MarketplacePage() {
               <Link href="/wavecore-erp/marketplace/inbox" className="p-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white relative">
                 <MessageCircle className="w-4 h-4" />
               </Link>
+              <NotificationBell />
               <Link href="/wavecore-erp/marketplace/cart" className="p-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white relative">
                 <ShoppingCart className="w-4 h-4" />
                 {cartCount > 0 && (
