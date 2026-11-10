@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
-import { guardHR } from '@/lib/wavecore/guard'
 
 // GET: List orders (as buyer or as seller)
 export async function GET(req: NextRequest) {
@@ -11,8 +10,6 @@ export async function GET(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_READ')
-    if (guard.deny) return guard.response!
 
     const { searchParams } = new URL(req.url)
     const view = searchParams.get('view') || 'buyer'
@@ -97,8 +94,6 @@ export async function PATCH(req: NextRequest) {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const guard = await guardHR(req, 'HR_WRITE')
-    if (guard.deny) return guard.response!
 
     const body = await req.json()
     if (!body.id) return NextResponse.json({ error: 'Order id required' }, { status: 400 })
