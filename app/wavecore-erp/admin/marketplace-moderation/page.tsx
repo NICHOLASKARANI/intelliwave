@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Shield, Lock, Search, Loader2, Trash2, Eye, EyeOff, AlertTriangle,
   CheckCircle2, X, Ban, Flag, Image as ImageIcon, Download,
-  Filter, RefreshCw, Activity, KeyRound, ArrowLeft, User, MapPin,
+  Filter, RefreshCw, Activity, KeyRound, ArrowLeft, User, MapPin, Star,
 } from 'lucide-react'
 
 const SESSION_KEY = 'wavvemarket_admin_session'
@@ -244,6 +244,13 @@ export default function MarketplaceModerationPage() {
             <p className="text-2xl font-bold">{listings.filter(l => l.status === 'BLOCKED').length}</p>
             <p className="text-xs opacity-80">Blocked</p>
           </div>
+        </div>
+
+        {/* Cross-link to Reviews moderation */}
+        <div className="mb-4">
+          <Link href="/wavecore-erp/admin/marketplace-moderation/reviews" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold hover:bg-red-500/20 transition">
+            <Star className="w-3.5 h-3.5" /> Open Reviews Moderation
+          </Link>
         </div>
 
         {/* FILTERS */}
