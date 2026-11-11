@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const { listingId, rating, title, body: reviewBody } = body
+    const { listingId, rating, title, body: reviewBody, photos, videos, productQuality, deliveryExperience, sellerService } = body
 
     if (!listingId) {
       return NextResponse.json({ error: 'listingId required' }, { status: 400 })
@@ -115,9 +115,23 @@ export async function POST(req: NextRequest) {
       // Update existing review
       await pool.query(
         `UPDATE "MarketplaceReview"
-         SET rating = $1, title = $2, body = $3, "isVerified" = $4
-         WHERE id = $5`,
-        [parseInt(rating), title || '', reviewBody || '', isVerified, existingRes.rows[0].id]
+         SET rating = $1, title = $2, body = $3, "isVerified" = $4,
+             photos = COALESCE($5, photos),
+             videos = COALESCE($6, videos),
+             "productQuality" = COALESCE($7, "productQuality"),
+             "deliveryExperience" = COALESCE($8, "deliveryExperience"),
+             "sellerService" = COALESCE($9, "sellerService"),
+             "editedAt" = NOW(), "updatedAt" = NOW()
+         WHERE id = $10`,
+        [
+          parseInt(rating), title || '', reviewBody || '', isVerified,
+          Array.isArray(photos) ? photos : null,
+          Array.isArray(videos) ? videos : null,
+          typeof productQuality === 'number' ? productQuality : null,
+          typeof deliveryExperience === 'number' ? deliveryExperience : null,
+          typeof sellerService === 'number' ? sellerService : null,
+          existingRes.rows[0].id,
+        ]
       )
       return NextResponse.json({ success: true, updated: true, id: existingRes.rows[0].id })
     }
@@ -125,8 +139,8 @@ export async function POST(req: NextRequest) {
     // Insert new review
     await pool.query(
       `INSERT INTO "MarketplaceReview"
-       (id, "listingId", "sellerId", "reviewerId", "reviewerName", rating, title, body, "isVerified", "helpfulCount", "createdAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, NOW())`,
+       (id, "listingId", "sellerId", "reviewerId", "reviewerName", rating, title, body, "isVerified", "helpfulCount", photos, videos, "productQuality", "deliveryExperience", "sellerService", status, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10, $11, $12, $13, $14, 'VISIBLE', NOW(), NOW())`,
       [
         reviewId,
         parseInt(listingId),
@@ -137,6 +151,11 @@ export async function POST(req: NextRequest) {
         title || '',
         reviewBody || '',
         isVerified,
+        Array.isArray(photos) ? photos : [],
+        Array.isArray(videos) ? videos : [],
+        typeof productQuality === 'number' ? productQuality : null,
+        typeof deliveryExperience === 'number' ? deliveryExperience : null,
+        typeof sellerService === 'number' ? sellerService : null,
       ]
     )
 
@@ -152,6 +171,29 @@ export async function POST(req: NextRequest) {
        SET "averageRating" = $1, "totalReviews" = $2
        WHERE "userId" = $3`,
       [avg || 0, total || 0, sellerId]
+    ).catch(() => {})
+
+    // Recompute listing aggregate (SEO data)
+    const listAgg = await pool.query(
+      `SELECT
+         COUNT(*)::int AS cnt,
+         COALESCE(AVG(rating), 0)::float AS avg,
+         COUNT(*) FILTER (WHERE rating = 1)::int AS r1,
+         COUNT(*) FILTER (WHERE rating = 2)::int AS r2,
+         COUNT(*) FILTER (WHERE rating = 3)::int AS r3,
+         COUNT(*) FILTER (WHERE rating = 4)::int AS r4,
+         COUNT(*) FILTER (WHERE rating = 5)::int AS r5
+       FROM "MarketplaceReview"
+       WHERE "listingId" = $1 AND (status IS NULL OR status = 'VISIBLE')`,
+      [parseInt(listingId)]
+    )
+    const la = listAgg.rows[0]
+    const ldist = { '1': la.r1, '2': la.r2, '3': la.r3, '4': la.r4, '5': la.r5 }
+    await pool.query(
+      `UPDATE "MarketplaceListing"
+       SET "ratingsAvg" = $1, "ratingsCount" = $2, "ratingDistribution" = $3
+       WHERE id = $4`,
+      [Math.round((la.avg || 0) * 100) / 100, la.cnt || 0, JSON.stringify(ldist), parseInt(listingId)]
     ).catch(() => {})
 
     return NextResponse.json({ success: true, id: reviewId }, { status: 201 })
