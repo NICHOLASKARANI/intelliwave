@@ -2663,6 +2663,9 @@ model MarketplaceListing {
   publishedAt     DateTime?
   latitude        Float?
   longitude       Float?
+  ratingsAvg          Float?    @default(0)
+  ratingsCount        Int?      @default(0)
+  ratingDistribution  Json?
 
   conversations MarketplaceConversation[]
   savedEntries  MarketplaceSaved[]
@@ -2788,21 +2791,33 @@ model MarketplaceMessage {
 
 // ─── MarketplaceReview — 12 columns, 0 rows currently ───
 model MarketplaceReview {
-  id           String    @id
-  listingId    Int?
-  sellerId     String?
-  orderId      String?
-  reviewerId   String?
-  reviewerName String?
-  rating       Int
-  title        String?
-  body         String?
-  isVerified   Boolean?  @default(false)
-  helpfulCount Int?      @default(0)
-  createdAt    DateTime? @default(now())
+  id                 String    @id
+  listingId          Int?
+  sellerId           String?
+  orderId            String?
+  reviewerId         String?
+  reviewerName       String?
+  rating             Int
+  title              String?
+  body               String?
+  isVerified         Boolean?  @default(false)
+  helpfulCount       Int?      @default(0)
+  photos             String[]  @default([])
+  videos             String[]  @default([])
+  sellerReply        String?
+  sellerReplyAt      DateTime?
+  productQuality     Int?
+  deliveryExperience Int?
+  sellerService      Int?
+  status             String?   @default("VISIBLE")
+  editedAt           DateTime?
+  editHistory        Json?
+  createdAt          DateTime? @default(now())
+  updatedAt          DateTime? @default(now())
 
   @@index([listingId], map: "MarketplaceReview_listing_idx")
   @@index([sellerId], map: "MarketplaceReview_seller_idx")
+  @@index([status], map: "MarketplaceReview_status_idx")
   @@map("MarketplaceReview")
 }
 
@@ -3024,4 +3039,31 @@ model MarketplaceShare {
   @@index([userId], map: "MarketplaceShare_user_idx")
   @@index([channel], map: "MarketplaceShare_channel_idx")
   @@map("MarketplaceShare")
+}
+
+model MarketplaceReviewHelpful {
+  id         String    @id
+  reviewId   String
+  userId     String
+  createdAt  DateTime? @default(now())
+
+  @@unique([reviewId, userId], map: "MarketplaceReviewHelpful_reviewId_userId_key")
+  @@index([reviewId], map: "MRH_review_idx")
+  @@map("MarketplaceReviewHelpful")
+}
+
+model MarketplaceReviewReport {
+  id          String    @id
+  reviewId    String
+  reporterId  String
+  reason      String
+  details     String?
+  status      String?   @default("PENDING")
+  createdAt   DateTime? @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  String?
+
+  @@unique([reviewId, reporterId], map: "MarketplaceReviewReport_reviewId_reporterId_key")
+  @@index([status], map: "MRR_status_idx")
+  @@map("MarketplaceReviewReport")
 }
