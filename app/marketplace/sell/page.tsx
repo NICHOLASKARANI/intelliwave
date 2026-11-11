@@ -30,7 +30,8 @@ export default function SellPage() {
   ]
 
   // Resize image to 800x800 and return base64
-  const resizeImage = (file: File): Promise<string> => {
+  // Resize image to 800x800 and return a Blob (JPEG compressed)
+  const resizeImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       if (file.size > 10 * 1024 * 1024) {
         reject('Image must be less than 10MB')
@@ -45,15 +46,21 @@ export default function SellPage() {
           canvas.width = 800
           canvas.height = 800
           const ctx = canvas.getContext('2d')
-          
+
           const size = Math.min(img.width, img.height)
           const sx = (img.width - size) / 2
           const sy = (img.height - size) / 2
-          
+
           ctx?.drawImage(img, sx, sy, size, size, 0, 0, 800, 800)
-          
-          const resizedImage = canvas.toDataURL('image/jpeg', 0.85)
-          resolve(resizedImage)
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) { reject('Failed to encode image'); return }
+              resolve(blob)
+            },
+            'image/jpeg',
+            0.85
+          )
         }
         img.onerror = () => reject('Invalid image')
         img.src = event.target?.result as string
@@ -71,11 +78,28 @@ export default function SellPage() {
     try {
       for (const file of Array.from(files)) {
         if (images.length >= 8) break
-        const resized = await resizeImage(file)
-        setImages(prev => [...prev, resized])
+        const resizedBlob = await resizeImage(file)
+
+        // Upload to Vercel Blob via our marketplace endpoint
+        const fd = new FormData()
+        fd.append('file', new File([resizedBlob], file.name || 'image.jpg', { type: 'image/jpeg' }))
+        fd.append('title', title || file.name || 'listing')
+
+        const uploadRes = await fetch('/api/marketplace/upload', {
+          method: 'POST',
+          body: fd,
+        })
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({ error: 'Upload failed' }))
+          throw new Error(errData.error || 'Upload failed')
+        }
+
+        const { url } = await uploadRes.json()
+        if (url) setImages(prev => [...prev, url])
       }
-    } catch (error) {
-      alert(error)
+    } catch (error: any) {
+      alert(error?.message || 'Upload failed')
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
