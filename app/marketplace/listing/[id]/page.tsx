@@ -8,6 +8,7 @@ import {
   Heart, Share2, Loader2, ChevronLeft, Shield,
   BadgeCheck, User, Phone, CheckCircle
 } from 'lucide-react'
+import ReviewsSection from '@/components/marketplace/ReviewsSection'
 
 export default function ListingDetailPage({ params }: { params: { id: string } }) {
   const [listing, setListing] = useState<any>(null)
@@ -231,6 +232,9 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
             )}
           </div>
         </div>
+
+        {/* Reviews */}
+        <ReviewsSection listingId={params.id} sellerId={listing?.sellerId} />
       </main>
     </div>
   )
