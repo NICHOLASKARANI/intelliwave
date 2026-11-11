@@ -7,12 +7,12 @@ import {
   Shield, Lock, Search, Loader2, Trash2, Eye, EyeOff, AlertTriangle,
   CheckCircle2, X, Ban, Flag, Image as ImageIcon, Download,
   Filter, RefreshCw, Activity, KeyRound, ArrowLeft, User, MapPin, Star,
-  Store, Users as UsersIcon, FileText, MessageSquareOff,
+    Store, Users as UsersIcon, FileText, MessageSquareOff,
 } from 'lucide-react'
 
 const SESSION_KEY = 'wavvemarket_admin_session'
 
-type TabId = 'listings' | 'reviews'
+type TabId = 'listings' | 'reviews' | 'sellers'
 
 export default function MarketplaceModerationPage() {
   const [authenticated, setAuthenticated] = useState(false)
@@ -43,6 +43,15 @@ export default function MarketplaceModerationPage() {
   const [reviewModNote, setReviewModNote] = useState('')
   const [reviewActioning, setReviewActioning] = useState<string | null>(null)
   const [reviewMessage, setReviewMessage] = useState('')
+
+  // ===== SELLERS STATE =====
+  const [sellers, setSellers] = useState<any[]>([])
+  const [sellerKpi, setSellerKpi] = useState({ total: 0, verified: 0, trusted: 0, ready: 0 })
+  const [sellersLoading, setSellersLoading] = useState(false)
+  const [sellerSearch, setSellerSearch] = useState('')
+  const [sellerFilter, setSellerFilter] = useState<'ALL' | 'VERIFIED' | 'TRUSTED' | 'UNVERIFIED' | 'SUSPENDED' | 'READY'>('ALL')
+  const [sellerActioning, setSellerActioning] = useState<string | null>(null)
+  const [sellerMessage, setSellerMessage] = useState('')
 
   // ===== AUTH =====
   useEffect(() => {
@@ -226,6 +235,56 @@ export default function MarketplaceModerationPage() {
     return list
   }, [reviews, reviewSearch])
 
+  // ===== SELLERS LOGIC =====
+  const fetchSellers = async () => {
+    setSellersLoading(true)
+    try {
+      const url = `/api/marketplace/admin/sellers?filter=${sellerFilter}&search=${encodeURIComponent(sellerSearch)}`
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        setSellers(data.sellers || [])
+        setSellerKpi(data.kpi || { total: 0, verified: 0, trusted: 0, ready: 0 })
+      }
+    } finally { setSellersLoading(false) }
+  }
+
+  useEffect(() => {
+    if (authenticated && activeTab === 'sellers') fetchSellers()
+  }, [authenticated, activeTab, sellerFilter])
+
+  const sellerAction = async (sellerId: string, action: string) => {
+    setSellerActioning(sellerId)
+    try {
+      const res = await fetch('/api/marketplace/admin/sellers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sellerId, action }),
+      })
+      if (res.ok) {
+        setSellerMessage(`Seller ${action}ed`)
+        fetchSellers()
+        setTimeout(() => setSellerMessage(''), 3000)
+      } else {
+        const d = await res.json()
+        setSellerMessage(d.error || 'Failed')
+      }
+    } finally { setSellerActioning(null) }
+  }
+
+  const filteredSellers = useMemo(() => {
+    let list = sellers
+    if (sellerSearch.trim()) {
+      const q = sellerSearch.toLowerCase()
+      list = list.filter(s =>
+        (s.storeName || '').toLowerCase().includes(q) ||
+        (s.ownerName || '').toLowerCase().includes(q) ||
+        (s.ownerEmail || '').toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [sellers, sellerSearch])
+
   // ===== RENDER =====
   if (!authenticated) {
     return (
@@ -318,6 +377,16 @@ export default function MarketplaceModerationPage() {
             }`}
           >
             <Star className="w-3.5 h-3.5" /> Reviews
+          </button>
+          <button
+            onClick={() => setActiveTab('sellers')}
+            className={`px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition ${
+              activeTab === 'sellers'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-neutral-500 hover:text-white'
+            }`}
+          >
+            <Store className="w-3.5 h-3.5" /> Sellers
           </button>
         </div>
       </header>
@@ -654,6 +723,167 @@ export default function MarketplaceModerationPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </>
+        )}
+        {/* ============ TAB: SELLERS ============ */}
+        {activeTab === 'sellers' && (
+          <>
+            {sellerMessage && (
+              <div className="p-3 rounded-xl bg-green-900/50 text-green-300 border border-green-800 text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {sellerMessage}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-800 text-white">
+                <Store className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{sellerKpi.total}</p>
+                <p className="text-xs opacity-80">Total Sellers</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white">
+                <CheckCircle2 className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{sellerKpi.verified}</p>
+                <p className="text-xs opacity-80">Verified</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-700 text-white">
+                <Star className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{sellerKpi.trusted}</p>
+                <p className="text-xs opacity-80">Trusted</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-800 text-white">
+                <Activity className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{sellerKpi.ready}</p>
+                <p className="text-xs opacity-80">Ready to Verify (1K+)</p>
+              </div>
+            </div>
+
+            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                <input
+                  value={sellerSearch}
+                  onChange={e => setSellerSearch(e.target.value)}
+                  placeholder="Search store, owner, email..."
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm"
+                />
+              </div>
+              <div className="flex gap-1 bg-neutral-800 rounded-xl p-1 flex-wrap">
+                {(['ALL', 'VERIFIED', 'TRUSTED', 'UNVERIFIED', 'SUSPENDED', 'READY'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setSellerFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${sellerFilter === f ? 'bg-purple-600 text-white' : 'text-neutral-400 hover:text-white'}`}
+                  >
+                    {f === 'READY' ? 'Ready' : f}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-neutral-500">{filteredSellers.length} shown</span>
+            </div>
+
+            {sellersLoading && sellers.length === 0 ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+              </div>
+            ) : filteredSellers.length === 0 ? (
+              <div className="text-center py-20 text-neutral-500">
+                <Store className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-bold">No sellers match</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredSellers.map(s => {
+                  const readyToVerify = (s.verification === 'UNVERIFIED' || !s.verification) && s.followerCount >= 1000
+                  const isSuspended = s.status === 'SUSPENDED'
+                  return (
+                    <div key={s.id} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-bold text-lg">{s.storeName}</h3>
+                            {s.verification === 'VERIFIED' && (
+                              <span className="text-[10px] uppercase font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                              </span>
+                            )}
+                            {s.verification === 'TRUSTED_SELLER' && (
+                              <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Star className="w-2.5 h-2.5" /> Trusted
+                              </span>
+                            )}
+                            {readyToVerify && (
+                              <span className="text-[10px] uppercase font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full animate-pulse">
+                                🎯 Ready to verify
+                              </span>
+                            )}
+                            {isSuspended && (
+                              <span className="text-[10px] uppercase font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                                Suspended
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-400 mb-2">
+                            {s.ownerName || 'Unknown'} · {s.ownerEmail || '—'}
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
+                            <span className="flex items-center gap-1"><UsersIcon className="w-3 h-3" />{s.followerCount} followers</span>
+                            <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{s.activeListings} listings</span>
+                            <span className="flex items-center gap-1"><Star className="w-3 h-3" />{s.averageRating || 0} rating</span>
+                            <span>KES {Number(s.totalSales || 0).toLocaleString()} sales</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-neutral-800">
+                        {s.verification !== 'VERIFIED' && s.verification !== 'TRUSTED_SELLER' && (
+                          <button
+                            onClick={() => sellerAction(s.id, 'verify')}
+                            disabled={sellerActioning === s.id}
+                            className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> Verify
+                          </button>
+                        )}
+                        {s.verification === 'VERIFIED' && (
+                          <button
+                            onClick={() => sellerAction(s.id, 'trust')}
+                            disabled={sellerActioning === s.id}
+                            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <Star className="w-3 h-3" /> Promote to Trusted
+                          </button>
+                        )}
+                        {(s.verification === 'VERIFIED' || s.verification === 'TRUSTED_SELLER') && (
+                          <button
+                            onClick={() => sellerAction(s.id, 'unverify')}
+                            disabled={sellerActioning === s.id}
+                            className="px-3 py-1.5 rounded-lg bg-neutral-700 hover:bg-neutral-600 text-white text-xs font-bold disabled:opacity-50"
+                          >
+                            Unverify
+                          </button>
+                        )}
+                        {!isSuspended ? (
+                          <button
+                            onClick={() => sellerAction(s.id, 'suspend')}
+                            disabled={sellerActioning === s.id}
+                            className="px-3 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-800 text-red-300 text-xs font-bold disabled:opacity-50 ml-auto"
+                          >
+                            Suspend
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => sellerAction(s.id, 'reactivate')}
+                            disabled={sellerActioning === s.id}
+                            className="px-3 py-1.5 rounded-lg bg-green-900/40 hover:bg-green-800 text-green-300 text-xs font-bold disabled:opacity-50 ml-auto"
+                          >
+                            Reactivate
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </>
