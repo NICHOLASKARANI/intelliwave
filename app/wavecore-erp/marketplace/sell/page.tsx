@@ -113,7 +113,7 @@ export default function SellPage() {
     setImageUrl('')
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setImageError('')
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -122,26 +122,43 @@ export default function SellPage() {
       return
     }
     setUploading(true)
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) {
-        setImageError('Only image files allowed')
-        return
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        setImageError('Each image must be under 2MB (got ' + Math.round(file.size / 1024) + 'KB)')
-        return
-      }
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string
-        if (dataUrl) {
-          setForm(prev => ({ ...prev, images: [...prev.images, dataUrl] }))
+
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) {
+          setImageError('Only image files allowed')
+          continue
         }
+        if (file.size > MAX_FILE_SIZE) {
+          setImageError('Each image must be under 2MB (got ' + Math.round(file.size / 1024) + 'KB)')
+          continue
+        }
+
+        // Upload to Vercel Blob via the marketplace upload endpoint
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('title', form.title || file.name || 'listing')
+
+        const uploadRes = await fetch('/api/marketplace/upload', {
+          method: 'POST',
+          body: fd,
+        })
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({ error: 'Upload failed' }))
+          setImageError(errData.error || 'Upload failed')
+          continue
+        }
+
+        const { url } = await uploadRes.json()
+        if (url) setForm(prev => ({ ...prev, images: [...prev.images, url] }))
       }
-      reader.readAsDataURL(file)
-    })
-    setTimeout(() => setUploading(false), 500)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    } catch (err: any) {
+      setImageError(err?.message || 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   const openFilePicker = () => {
@@ -277,7 +294,7 @@ export default function SellPage() {
     setImageUrl('')
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setImageError('')
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -286,26 +303,43 @@ export default function SellPage() {
       return
     }
     setUploading(true)
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) {
-        setImageError('Only image files allowed')
-        return
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        setImageError('Each image must be under 2MB (got ' + Math.round(file.size / 1024) + 'KB)')
-        return
-      }
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string
-        if (dataUrl) {
-          setForm(prev => ({ ...prev, images: [...prev.images, dataUrl] }))
+
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) {
+          setImageError('Only image files allowed')
+          continue
         }
+        if (file.size > MAX_FILE_SIZE) {
+          setImageError('Each image must be under 2MB (got ' + Math.round(file.size / 1024) + 'KB)')
+          continue
+        }
+
+        // Upload to Vercel Blob via the marketplace upload endpoint
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('title', form.title || file.name || 'listing')
+
+        const uploadRes = await fetch('/api/marketplace/upload', {
+          method: 'POST',
+          body: fd,
+        })
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({ error: 'Upload failed' }))
+          setImageError(errData.error || 'Upload failed')
+          continue
+        }
+
+        const { url } = await uploadRes.json()
+        if (url) setForm(prev => ({ ...prev, images: [...prev.images, url] }))
       }
-      reader.readAsDataURL(file)
-    })
-    setTimeout(() => setUploading(false), 500)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    } catch (err: any) {
+      setImageError(err?.message || 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   const openFilePicker = () => {
