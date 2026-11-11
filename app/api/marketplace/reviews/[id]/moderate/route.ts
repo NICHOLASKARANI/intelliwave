@@ -19,6 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const reviewId = params.id
     const action = (body.action || '').toString().trim()
+    const resolutionReason = (body.reason || '').toString().trim().slice(0, 50)
+    const resolutionNote = (body.note || '').toString().trim().slice(0, 500)
     if (!reviewId) return NextResponse.json({ error: 'reviewId required' }, { status: 400 })
     if (!VALID_ACTIONS.includes(action)) {
       return NextResponse.json({ error: 'Invalid action. Use: ' + VALID_ACTIONS.join(', ') }, { status: 400 })
@@ -41,6 +43,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         `UPDATE "MarketplaceReview" SET status = $1, "updatedAt" = NOW() WHERE id = $2`,
         [newStatus, reviewId]
       )
+
+    // Resolve any pending reports with reason/note
+    await pool.query(
+      `UPDATE "MarketplaceReviewReport"
+       SET status = 'RESOLVED', "resolvedAt" = NOW(), "resolvedBy" = 'admin',
+           "resolutionReason" = $1, "resolutionNote" = $2
+       WHERE "reviewId" = $3 AND status = 'PENDING'`,
+      [resolutionReason || null, resolutionNote || null, reviewId]
+    ).catch(() => {})
     }
 
     if (listingId) {

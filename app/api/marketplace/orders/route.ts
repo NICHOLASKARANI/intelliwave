@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { requestReviewsForOrder } from '@/lib/marketplace/reviews-request'
 
 // GET: List orders (as buyer or as seller)
 export async function GET(req: NextRequest) {
@@ -145,6 +146,11 @@ export async function PATCH(req: NextRequest) {
       `UPDATE "MarketplaceOrder" SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`,
       values
     )
+
+    // Auto-request reviews when order is marked DELIVERED
+    if (body.status === 'DELIVERED' && body.id) {
+      requestReviewsForOrder(body.id).catch(() => {})
+    }
     return NextResponse.json({ order: result.rows[0] })
   } catch (error) {
     console.error('Orders PATCH error:', error)
