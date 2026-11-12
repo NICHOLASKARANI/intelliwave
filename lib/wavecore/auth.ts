@@ -48,6 +48,24 @@ export async function getSessionFromToken(sessionToken: string): Promise<WaveCor
 
     if (result.rows.length === 0) return null
 
+    // Block suspended sellers from logging in (but not admins)
+    const userRole = result.rows[0].role
+    const isAdmin = userRole === 'OWNER' || userRole === 'TENANT_ADMIN'
+    if (!isAdmin) {
+      try {
+        const sellerCheck = await pool.query(
+          `SELECT status FROM "SellerProfile" WHERE "userId" = $1 LIMIT 1`,
+          [result.rows[0].userId]
+        )
+        if (sellerCheck.rows.length > 0 && sellerCheck.rows[0].status === 'SUSPENDED') {
+          console.warn('[auth] Suspended seller blocked:', result.rows[0].userId)
+          return null
+        }
+      } catch (e) {
+        // SellerProfile lookup failed (table missing, etc.) — fail open, don't block
+      }
+    }
+
     const row = result.rows[0]
     const bypass = row.subscriptionBypass === true
 

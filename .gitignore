@@ -64,3 +64,16 @@ _gen.log
 _backups/
 **/_backups/
 !prisma/_backups/procurement-p0-safe-V2.sql
+# Backups
+*.backup-*
+
+# Extended backup patterns (added by deploy C)
+*.bak
+*.backup
+*.PRE-*
+*.BACKUP
+
+# Script / audit temp files
+/check-result-*.txt
+/.tmp-*.sql
+/.check-*.sql
