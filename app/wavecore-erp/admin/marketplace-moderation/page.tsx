@@ -520,6 +520,49 @@ export default function MarketplaceModerationPage() {
               <span className="text-xs text-neutral-500">{filteredListings.length} shown</span>
             </div>
 
+            {/* Backfill Images button */}
+            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="font-bold text-white flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-cyan-400" /> Migrate Old Images to Blob
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Converts legacy base64 images in listings to Vercel Blob URLs (SEO-friendly, saves DB space). Safe to run in batches.
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    const status = await fetch("/api/marketplace/admin/backfill-images")
+                    if (status.ok) {
+                      const d = await status.json()
+                      if (d.base64_listings === 0) {
+                        alert("✅ All listings already use Blob URLs. Nothing to migrate.")
+                        return
+                      }
+                      if (!confirm(`Migrate ${d.base64_listings} listing(s) with ${d.base64_image_count} base64 image(s)?`)) return
+                    }
+                    const res = await fetch("/api/marketplace/admin/backfill-images", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ password: prompt("Admin password"), batchSize: 10 }),
+                    })
+                    if (res.ok) {
+                      const r = await res.json()
+                      alert(`Processed ${r.processed} listing(s)\\nMigrated ${r.migrated} image(s)\\nRemaining: ${r.remaining}`)
+                      fetchListings()
+                    } else {
+                      const e = await res.json()
+                      alert("Failed: " + (e.error || "unknown"))
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold flex items-center gap-2 flex-shrink-0"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Migrate Now
+                </button>
+              </div>
+            </div>
+
             {/* Listings list */}
             {loading ? (
               <div className="flex justify-center py-20">
