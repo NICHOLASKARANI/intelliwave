@@ -49,6 +49,12 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200)
     const sellerId = searchParams.get('sellerId')
     const inStock = searchParams.get('inStock') === 'true'
+    const condition = searchParams.get('condition') || ''
+    const location = searchParams.get('location') || ''
+    const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null
+    const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null
+    const minRating = searchParams.get('minRating') ? Number(searchParams.get('minRating')) : null
+    const sort = searchParams.get('sort') || 'newest'
 
     if (id) {
       const result = await pool.query(
@@ -63,6 +69,16 @@ export async function GET(req: NextRequest) {
       )
       if (result.rows.length === 0) return NextResponse.json({ listing: null })
       await pool.query(`UPDATE "MarketplaceListing" SET views = views + 1 WHERE id = $1`, [parseInt(id)])
+      // Auto-track recently viewed (fire-and-forget)
+      if (session) {
+        const crypto = require('crypto')
+        pool.query(
+          `INSERT INTO "RecentlyViewed" (id, "userId", "listingId", "viewedAt")
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT ("userId", "listingId") DO UPDATE SET "viewedAt" = NOW()`,
+          [crypto.randomUUID(), session.userId, parseInt(id)]
+        ).catch(() => {})
+      }
       return NextResponse.json({ listing: result.rows[0] })
     }
 
@@ -83,7 +99,21 @@ export async function GET(req: NextRequest) {
     if (sellerId) { query += ` AND l."sellerId" = $${params.length + 1}`; params.push(sellerId) }
     if (inStock) { query += ` AND l.stock > 0` }
 
-    query += ` ORDER BY l."createdAt" DESC LIMIT $${params.length + 1}`
+    if (condition) { query += ` AND l.condition = $${params.length + 1}`; params.push(condition) }
+    if (location) { query += ` AND l.location ILIKE $${params.length + 1}`; params.push(`%${location}%`) }
+    if (minPrice !== null && !Number.isNaN(minPrice)) { query += ` AND l.price >= $${params.length + 1}`; params.push(minPrice) }
+    if (maxPrice !== null && !Number.isNaN(maxPrice)) { query += ` AND l.price <= $${params.length + 1}`; params.push(maxPrice) }
+    if (minRating !== null && !Number.isNaN(minRating)) { query += ` AND sp."averageRating" >= $${params.length + 1}`; params.push(minRating) }
+
+    const sortMap: Record<string, string> = {
+      newest: 'l."createdAt" DESC',
+      oldest: 'l."createdAt" ASC',
+      price_asc: 'l.price ASC',
+      price_desc: 'l.price DESC',
+      popular: 'l.views DESC, l."createdAt" DESC',
+      rating: 'sp."averageRating" DESC NULLS LAST, l."createdAt" DESC',
+    }
+    query += ` ORDER BY ${sortMap[sort] || sortMap.newest} LIMIT $${params.length + 1}`
     params.push(limit)
 
     const result = await pool.query(query, params)

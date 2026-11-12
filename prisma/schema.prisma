@@ -3107,3 +3107,26 @@ model WishlistPriceAlert {
   @@index([userId], map: "WPA_userId_idx")
   @@map("WishlistPriceAlert")
 }
+
+model SearchHistory {
+  id            String    @id
+  userId        String?
+  query         String
+  resultCount   Int?      @default(0)
+  createdAt     DateTime? @default(now())
+
+  @@index([userId, createdAt(sort: Desc)], map: "SH_userId_created_idx")
+  @@map("SearchHistory")
+}
+
+model RecentlyViewed {
+  id         String    @id
+  userId     String
+  listingId  Int
+  viewedAt   DateTime? @default(now())
+
+  @@unique([userId, listingId], map: "RV_user_listing_key")
+  @@index([userId, viewedAt(sort: Desc)], map: "RV_userId_viewed_idx")
+  @@index([listingId], map: "RV_listingId_idx")
+  @@map("RecentlyViewed")
+}
