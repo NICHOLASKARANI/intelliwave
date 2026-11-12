@@ -160,7 +160,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-    const check = await pool.query(`SELECT "sellerId" FROM "MarketplaceListing" WHERE id = $1`, [parseInt(body.id)])
+    const check = await pool.query(`SELECT "sellerId", price, stock FROM "MarketplaceListing" WHERE id = $1`, [parseInt(body.id)])
     if (check.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const isOwner = check.rows[0].sellerId === session.userId
@@ -187,6 +187,23 @@ export async function PATCH(req: NextRequest) {
       `UPDATE "MarketplaceListing" SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`,
       values
     )
+
+    // Fire wishlist notifications (fire-and-forget)
+    const oldPrice = Number(check.rows[0].price)
+    const oldStock = Number(check.rows[0].stock)
+    const newPrice = body.price !== undefined ? Number(body.price) : oldPrice
+    const newStock = body.stock !== undefined ? Number(body.stock) : oldStock
+    const listingId = parseInt(body.id)
+
+    if (body.price !== undefined && newPrice < oldPrice) {
+      const { notifyPriceDrop } = await import('@/lib/marketplace/wishlist-alerts')
+      notifyPriceDrop(listingId, newPrice).catch(() => {})
+    }
+
+    if (body.stock !== undefined && oldStock === 0 && newStock > 0) {
+      const { notifyBackInStock } = await import('@/lib/marketplace/wishlist-alerts')
+      notifyBackInStock(listingId).catch(() => {})
+    }
     return NextResponse.json({ listing: result.rows[0] })
   } catch (error) {
     console.error('Listings PATCH error:', error)

@@ -8,6 +8,7 @@ import {
   Heart, Share2, Loader2, ChevronLeft, Shield,
   BadgeCheck, User, Phone, CheckCircle
 } from 'lucide-react'
+import SaveModal from '@/components/marketplace/SaveModal'
 import ReviewsSection from '@/components/marketplace/ReviewsSection'
 
 export default function ListingDetailPage({ params }: { params: { id: string } }) {
@@ -16,6 +17,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [showSaveModal, setShowSaveModal] = useState(false)
   const [activeImage, setActiveImage] = useState(0)
   const [showContact, setShowContact] = useState(false)
   const [conversationCreated, setConversationCreated] = useState(false)
@@ -43,12 +45,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
       await fetch(`/api/marketplace/saved?listingId=${params.id}`, { method: 'DELETE' })
       setSaved(false)
     } else {
-      await fetch('/api/marketplace/saved', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listingId: params.id })
-      })
-      setSaved(true)
+      setShowSaveModal(true)
     }
   }
 
@@ -235,6 +232,15 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
 
         {/* Reviews */}
         <ReviewsSection listingId={params.id} sellerId={listing?.sellerId} />
+
+        {showSaveModal && listing && (
+          <SaveModal
+            listingId={parseInt(params.id)}
+            currentPrice={Number(listing.price)}
+            onClose={() => setShowSaveModal(false)}
+            onSaved={() => { setSaved(true) }}
+          />
+        )}
       </main>
     </div>
   )
