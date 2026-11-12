@@ -20,6 +20,7 @@ const TYPE_ICONS: Record<string, any> = {
   order_status: Package,
   price_alert: DollarSign,
   stock_alert: Package,
+  new_message: MessageSquare,
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -30,6 +31,7 @@ const TYPE_COLORS: Record<string, string> = {
   order_status: 'text-purple-400 bg-purple-500/10',
   price_alert: 'text-green-400 bg-green-500/10',
   stock_alert: 'text-blue-400 bg-blue-500/10',
+  new_message: 'text-purple-400 bg-purple-500/10',
 }
 
 export function NotificationBell() {

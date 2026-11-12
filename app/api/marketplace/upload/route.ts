@@ -6,7 +6,12 @@ import { requireTenant } from '@/lib/wavecore/auth'
 import crypto from 'crypto'
 
 const MAX_SIZE = 10 * 1024 * 1024  // 10 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'application/pdf', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain', 'text/csv'
+]
 
 function slugify(input: string): string {
   return (input || 'item')
@@ -35,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Only JPG, PNG, WebP, or GIF allowed' }, { status: 400 })
+      return NextResponse.json({ error: 'Only images (JPG, PNG, WebP, GIF) and documents (PDF, DOC, DOCX, TXT, CSV) allowed' }, { status: 400 })
     }
     if (file.size > MAX_SIZE) {
       return NextResponse.json({ error: 'Max 10 MB per image' }, { status: 400 })

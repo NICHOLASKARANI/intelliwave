@@ -13,6 +13,7 @@ export type NotificationType =
   | 'order_status'
   | 'price_alert'
   | 'stock_alert'
+  | 'new_message'
 
 interface CreateNotificationParams {
   userId: string          // Recipient
@@ -191,5 +192,25 @@ export async function notifyOrderStatus(params: {
     link: '/wavecore-erp/marketplace/orders/' + params.orderId,
     actorId: params.updatedBy,
     metadata: { orderId: params.orderId, orderNumber: params.orderNumber, status: params.newStatus },
+  })
+}
+
+/**
+ * Notify receiver of a new marketplace message
+ */
+export async function notifyNewMessage(params: {
+  receiverId: string
+  senderId: string
+  senderName: string
+  preview: string
+  conversationId: number | string
+}): Promise<void> {
+  await createNotification({
+    userId: params.receiverId,
+    type: 'new_message',
+    title: 'New message from ' + params.senderName,
+    body: params.preview.slice(0, 120),
+    link: `/marketplace/inbox?c=${params.conversationId}`,
+    actorId: params.senderId,
   })
 }

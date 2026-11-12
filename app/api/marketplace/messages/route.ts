@@ -111,17 +111,35 @@ export async function POST(req: NextRequest) {
     const conversation = convCheck.rows[0]
     const receiverId = conversation.buyerId === session.userId ? conversation.sellerId : conversation.buyerId
 
+    const attachments = Array.isArray(body.attachments) ? body.attachments.filter((x: any) => typeof x === 'string') : []
+    const messageType = (body.messageType || (attachments.length > 0 ? 'mixed' : 'text')).toString()
     const result = await pool.query(
-      `INSERT INTO "MarketplaceMessage" ("conversationId", "senderId", "receiverId", content, "isRead", "createdAt")
-       VALUES ($1, $2, $3, $4, false, NOW())
+      `INSERT INTO "MarketplaceMessage" ("conversationId", "senderId", "receiverId", content, attachments, "messageType", "isRead", "createdAt")
+       VALUES ($1, $2, $3, $4, $5, $6, false, NOW())
        RETURNING *`,
-      [body.conversationId, session.userId, receiverId, body.content]
+      [body.conversationId, session.userId, receiverId, body.content || '', attachments, messageType]
     )
 
     await pool.query(
       `UPDATE "MarketplaceConversation" SET "lastMessage" = $1, "lastMessageAt" = NOW() WHERE id = $2`,
       [body.content, body.conversationId]
     )
+
+
+    // Notify receiver (fire-and-forget)
+    try {
+      const { notifyNewMessage } = await import('@/lib/marketplace/notifications')
+      const preview = attachments.length > 0
+        ? (body.content || '📎 Sent an attachment')
+        : (body.content || '')
+      notifyNewMessage({
+        receiverId,
+        senderId: session.userId,
+        senderName: session.name || 'Someone',
+        preview,
+        conversationId: body.conversationId,
+      }).catch(() => {})
+    } catch {}
 
     return NextResponse.json({ message: result.rows[0] }, { status: 201 })
   } catch (error) {

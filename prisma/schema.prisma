@@ -2778,6 +2778,8 @@ model MarketplaceMessage {
   conversationId Int?
   senderId       String
   content        String
+  attachments    String[]  @default([])
+  messageType    String?   @default("text")
   createdAt      DateTime? @default(now())
   receiverId     String?
   isRead         Boolean?  @default(false)
