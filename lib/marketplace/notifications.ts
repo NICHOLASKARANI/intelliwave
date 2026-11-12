@@ -11,6 +11,8 @@ export type NotificationType =
   | 'new_comment'
   | 'new_review'
   | 'order_status'
+  | 'price_alert'
+  | 'stock_alert'
 
 interface CreateNotificationParams {
   userId: string          // Recipient

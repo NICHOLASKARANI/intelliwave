@@ -1,7 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Bell, X, Loader2, UserPlus, ShoppingCart, MessageSquare, Star, Package, Check } from 'lucide-react'
+import { DollarSign,  Bell, X, Loader2, UserPlus, ShoppingCart, MessageSquare, Star, Package, Check } from 'lucide-react'
 
 interface Notification {
   id: string
@@ -18,6 +18,8 @@ const TYPE_ICONS: Record<string, any> = {
   new_comment: MessageSquare,
   new_review: Star,
   order_status: Package,
+  price_alert: DollarSign,
+  stock_alert: Package,
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -26,6 +28,8 @@ const TYPE_COLORS: Record<string, string> = {
   new_comment: 'text-blue-400 bg-blue-500/10',
   new_review: 'text-amber-400 bg-amber-500/10',
   order_status: 'text-purple-400 bg-purple-500/10',
+  price_alert: 'text-green-400 bg-green-500/10',
+  stock_alert: 'text-blue-400 bg-blue-500/10',
 }
 
 export function NotificationBell() {

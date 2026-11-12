@@ -41,11 +41,13 @@ export async function POST(req: NextRequest) {
     if (!body.listingId) return NextResponse.json({ error: 'listingId required' }, { status: 400 })
 
     const result = await pool.query(
-      `INSERT INTO "MarketplaceSaved" ("userId", "listingId", "createdAt")
-       VALUES ($1, $2, NOW())
-       ON CONFLICT ("userId", "listingId") DO NOTHING
+      `INSERT INTO "MarketplaceSaved" ("userId", "listingId", "collectionId", note, "createdAt")
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT ("userId", "listingId") DO UPDATE
+         SET "collectionId" = COALESCE($3, "MarketplaceSaved"."collectionId"),
+             note = COALESCE($4, "MarketplaceSaved".note)
        RETURNING *`,
-      [session.userId, body.listingId]
+      [session.userId, body.listingId, body.collectionId || null, (body.note || '').toString().trim().slice(0, 300) || null]
     )
 
     return NextResponse.json({ saved: result.rows[0], success: true }, { status: 201 })
