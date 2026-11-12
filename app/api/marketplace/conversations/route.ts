@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       FROM "MarketplaceConversation" c
       JOIN "MarketplaceListing" l ON c."listingId" = l.id
       JOIN "User" u ON (CASE WHEN c."buyerId" = $1 THEN c."sellerId" ELSE c."buyerId" END) = u.id
-      WHERE c."buyerId" = $1 OR c."sellerId" = $1
+      WHERE (c."buyerId" = $1 OR c."sellerId" = $1) AND (CASE WHEN c."buyerId" = $1 THEN c."sellerId" ELSE c."buyerId" END) NOT IN (SELECT "blockedId" FROM "MarketplaceUserBlock" WHERE "blockerId" = $1)
       ORDER BY c."lastMessageAt" DESC NULLS LAST`,
       [session.userId]
     )

@@ -2892,6 +2892,10 @@ model SellerProfile {
   status         String?   @default("ACTIVE")
   createdAt      DateTime? @default(now())
   updatedAt      DateTime? @default(now())
+  awayMessage    String?
+  autoReplyEnabled Boolean? @default(false)
+  autoReplyMessage String?
+  responseRate   Int?      @default(0)
 
   @@index([organizationId], map: "SellerProfile_org_idx")
   @@index([status], map: "SellerProfile_status_idx")
@@ -3131,4 +3135,34 @@ model RecentlyViewed {
   @@index([userId, viewedAt(sort: Desc)], map: "RV_userId_viewed_idx")
   @@index([listingId], map: "RV_listingId_idx")
   @@map("RecentlyViewed")
+}
+
+model MarketplaceUserBlock {
+  id         String    @id
+  blockerId  String
+  blockedId  String
+  reason     String?
+  createdAt  DateTime? @default(now())
+
+  @@unique([blockerId, blockedId], map: "MUB_blocker_blocked_key")
+  @@index([blockerId], map: "MUB_blocker_idx")
+  @@index([blockedId], map: "MUB_blocked_idx")
+  @@map("MarketplaceUserBlock")
+}
+
+model MarketplaceMessageReport {
+  id          String    @id
+  messageId   Int
+  reporterId  String
+  reason      String
+  details     String?
+  status      String?   @default("PENDING")
+  createdAt   DateTime? @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  String?
+
+  @@unique([messageId, reporterId], map: "MMR_msg_reporter_key")
+  @@index([status], map: "MMR_status_idx")
+  @@index([reporterId], map: "MMR_reporter_idx")
+  @@map("MarketplaceMessageReport")
 }

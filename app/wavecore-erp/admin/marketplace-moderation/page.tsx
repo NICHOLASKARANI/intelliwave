@@ -9,10 +9,11 @@ import {
   Filter, RefreshCw, Activity, KeyRound, ArrowLeft, User, MapPin, Star,
     Store, Users as UsersIcon, FileText, MessageSquareOff,
 } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 
 const SESSION_KEY = 'wavvemarket_admin_session'
 
-type TabId = 'listings' | 'reviews' | 'sellers' | 'users'
+type TabId = 'listings' | 'reviews' | 'sellers' | 'users' | 'messages'
 
 export default function MarketplaceModerationPage() {
   const [authenticated, setAuthenticated] = useState(false)
@@ -61,6 +62,14 @@ export default function MarketplaceModerationPage() {
   const [userFilter, setUserFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'SELLERS'>('ALL')
   const [userActioning, setUserActioning] = useState<string | null>(null)
   const [userMessage, setUserMessage] = useState('')
+
+  // ===== MESSAGES STATE =====
+  const [messageReports, setMessageReports] = useState<any[]>([])
+  const [messagesKpi, setMessagesKpi] = useState({ total: 0, pending: 0, resolved: 0, blockers: 0 })
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [messagesFilter, setMessagesFilter] = useState<'ALL' | 'PENDING' | 'RESOLVED'>('ALL')
+  const [messagesSearch, setMessagesSearch] = useState('')
+  const [messagesMsg, setMessagesMsg] = useState('')
 
   // ===== AUTH =====
   useEffect(() => {
@@ -345,6 +354,37 @@ export default function MarketplaceModerationPage() {
     return list
   }, [users, userSearch])
 
+  // ===== MESSAGES LOGIC =====
+  const fetchMessagesReports = async () => {
+    setMessagesLoading(true)
+    try {
+      const url = `/api/marketplace/admin/messages?filter=${messagesFilter}&search=${encodeURIComponent(messagesSearch)}`
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        setMessageReports(data.reports || [])
+        setMessagesKpi(data.kpi || { total: 0, pending: 0, resolved: 0, blockers: 0 })
+      }
+    } finally { setMessagesLoading(false) }
+  }
+
+  useEffect(() => {
+    if (authenticated && activeTab === 'messages') fetchMessagesReports()
+  }, [authenticated, activeTab, messagesFilter])
+
+  const resolveReport = async (reportId: string, action: 'resolve' | 'dismiss') => {
+    const res = await fetch('/api/marketplace/admin/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportId, action }),
+    })
+    if (res.ok) {
+      setMessagesMsg(`Report ${action}d`)
+      fetchMessagesReports()
+      setTimeout(() => setMessagesMsg(''), 3000)
+    }
+  }
+
   // ===== RENDER =====
   if (!authenticated) {
     return (
@@ -457,6 +497,16 @@ export default function MarketplaceModerationPage() {
             }`}
           >
             <UsersIcon className="w-3.5 h-3.5" /> Users
+          </button>
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition ${
+              activeTab === 'messages'
+                ? 'border-pink-500 text-pink-400'
+                : 'border-transparent text-neutral-500 hover:text-white'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" /> Messages
           </button>
         </div>
       </header>
@@ -1152,6 +1202,86 @@ export default function MarketplaceModerationPage() {
                     </div>
                   )
                 })}
+              </div>
+            )}
+          </>
+        )}
+        {/* ============ TAB: MESSAGES ============ */}
+        {activeTab === 'messages' && (
+          <>
+            {messagesMsg && (
+              <div className="p-3 rounded-xl bg-green-900/50 text-green-300 border border-green-800 text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {messagesMsg}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-800 text-white">
+                <Flag className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{messagesKpi.total}</p>
+                <p className="text-xs opacity-80">Total Reports</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 text-white">
+                <AlertTriangle className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{messagesKpi.pending}</p>
+                <p className="text-xs opacity-80">Pending</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white">
+                <CheckCircle2 className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{messagesKpi.resolved}</p>
+                <p className="text-xs opacity-80">Resolved</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-800 text-white">
+                <User className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{messagesKpi.blockers}</p>
+                <p className="text-xs opacity-80">Users Blocking</p>
+              </div>
+            </div>
+
+            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                <input value={messagesSearch} onChange={e => setMessagesSearch(e.target.value)} placeholder="Search message content, users..." className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm" />
+              </div>
+              <div className="flex gap-1 bg-neutral-800 rounded-xl p-1">
+                {(['ALL', 'PENDING', 'RESOLVED'] as const).map(f => (
+                  <button key={f} onClick={() => setMessagesFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${messagesFilter === f ? 'bg-pink-600 text-white' : 'text-neutral-400 hover:text-white'}`}>{f}</button>
+                ))}
+              </div>
+              <span className="text-xs text-neutral-500">{messageReports.length} shown</span>
+            </div>
+
+            {messagesLoading && messageReports.length === 0 ? (
+              <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-pink-500" /></div>
+            ) : messageReports.length === 0 ? (
+              <div className="text-center py-20 text-neutral-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-bold">No message reports</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {messageReports.map(r => (
+                  <div key={r.id} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${r.status === 'PENDING' ? 'bg-red-500/10 text-red-400' : r.status === 'RESOLVED' ? 'bg-green-500/10 text-green-400' : 'bg-neutral-700 text-neutral-400'}`}>{r.status}</span>
+                          <span className="text-xs text-neutral-500">Reason: {r.reason}</span>
+                        </div>
+                        <p className="text-xs text-neutral-500 mb-2">From <b>{r.senderName}</b> · reported by <b>{r.reporterName}</b></p>
+                        <p className="text-sm text-white bg-neutral-950 rounded-lg p-2 mb-2 border border-neutral-800 italic">"{r.messageContent}"</p>
+                        {r.details && <p className="text-xs text-neutral-400 mb-2">Details: {r.details}</p>}
+                      </div>
+                      <span className="text-xs text-neutral-500">{new Date(r.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    {r.status === 'PENDING' && (
+                      <div className="flex gap-2 pt-2 border-t border-neutral-800">
+                        <button onClick={() => resolveReport(r.id, 'resolve')} className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold">Resolve</button>
+                        <button onClick={() => resolveReport(r.id, 'dismiss')} className="px-3 py-1.5 rounded-lg bg-neutral-700 hover:bg-neutral-600 text-white text-xs font-bold">Dismiss</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </>
