@@ -9,6 +9,8 @@ import {
   ChevronRight, Star, Truck, Clock, Users, Award, Flame, Percent,
   ArrowRight, Grid3x3, List, Filter, X,
 } from 'lucide-react'
+import RecommendedForYou from '@/components/marketplace/RecommendedForYou'
+import CompareBar from '@/components/marketplace/CompareBar'
 import DiscoveryFeed from '@/components/marketplace/DiscoveryFeed'
 import TrendingSearches from '@/components/marketplace/TrendingSearches'
 import RecentlyViewedStrip from '@/components/marketplace/RecentlyViewedStrip'
@@ -392,6 +394,9 @@ export default function PublicMarketplacePage() {
           </>
         )}
 
+
+        {/* RECOMMENDED FOR YOU */}
+        {!activeCategory && !search && <RecommendedForYou />}
         {/* BROWSE */}
         <section id="browse">
           <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
@@ -557,6 +562,7 @@ export default function PublicMarketplacePage() {
             </div>
           </div>
         </section>
+        <CompareBar />
       </main>
 
       {/* FOOTER */}
