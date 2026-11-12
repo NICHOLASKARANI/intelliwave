@@ -2707,6 +2707,10 @@ model MarketplaceOrder {
   organizationId    String?
   createdAt         DateTime? @default(now())
   updatedAt         DateTime? @default(now())
+  sellerAcceptedAt         DateTime?
+  sellerDeclinedAt         DateTime?
+  sellerDeclineReason      String?
+  paymentDetailsRevealedAt DateTime?
 
   @@unique([organizationId, orderNumber], map: "MarketplaceOrder_orderNumber_organizationId_key")
   @@index([buyerId], map: "MarketplaceOrder_buyer_idx")
@@ -2892,6 +2896,11 @@ model SellerProfile {
   status         String?   @default("ACTIVE")
   createdAt      DateTime? @default(now())
   updatedAt      DateTime? @default(now())
+  paymentPaybill           String?
+  paymentPaybillAccount    String?
+  paymentTill              String?
+  paymentPersonal          String?
+  preferredPaymentMethod   String?
   awayMessage    String?
   autoReplyEnabled Boolean? @default(false)
   autoReplyMessage String?

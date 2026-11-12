@@ -106,9 +106,28 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
           setCartToast('Added to cart!')
           setTimeout(() => setCartToast(''), 3000)
         }
+
       } else {
         const d = await res.json()
         alert(d.error || 'Failed to add to cart')
+      }
+    } finally { setAddToCartLoading(false) }
+  }
+
+  const handleBuyNow = async () => {
+    setAddToCartLoading(true)
+    try {
+      const res = await fetch('/api/marketplace/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'buynow', listingId: parseInt(params.id), quantity: 1 }),
+      })
+      if (res.ok) {
+        const d = await res.json()
+        if (d.redirectUrl) window.location.href = d.redirectUrl
+      } else {
+        const d = await res.json()
+        alert(d.error || 'Failed to create order')
       }
     } finally { setAddToCartLoading(false) }
   }
@@ -237,7 +256,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
                 {listing.stock !== null && listing.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
               </button>
               <button
-                onClick={() => handleAddToCart(true)}
+                onClick={handleBuyNow}
                 disabled={addToCartLoading || listing.status !== 'ACTIVE' || (listing.stock !== null && listing.stock <= 0)}
                 className="py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition shadow-lg"
               >

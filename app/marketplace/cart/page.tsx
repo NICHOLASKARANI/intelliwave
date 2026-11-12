@@ -9,6 +9,27 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
 
+  const handlePlaceOrders = async () => {
+    if (!confirm('Place order request? Sellers will confirm stock before you pay.')) return
+    try {
+      const res = await fetch('/api/marketplace/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'cart' }),
+      })
+      if (res.ok) {
+        const d = await res.json()
+        window.dispatchEvent(new Event('cart-updated'))
+        if (d.redirectUrl) window.location.href = d.redirectUrl
+      } else {
+        const d = await res.json()
+        alert(d.error || 'Failed to place orders')
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Network error')
+    }
+  }
+
   useEffect(() => { fetchCart() }, [])
 
   const fetchCart = async () => {
@@ -169,12 +190,12 @@ export default function CartPage() {
                     <span className="font-bold text-green-600">KES {data.subtotal.toLocaleString()}</span>
                   </div>
                 </div>
-                <Link
-                  href="/marketplace/checkout"
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-center flex items-center justify-center gap-2"
-                >
-                  Proceed to Checkout <ArrowRight className="w-4 h-4" />
-                </Link>
+              <button
+                onClick={handlePlaceOrders}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-center flex items-center justify-center gap-2"
+              >
+                Place Orders <ArrowRight className="w-4 h-4" />
+              </button>
                 <p className="text-xs text-neutral-500 text-center mt-3">
                   Secure payment · M-Pesa supported
                 </p>
