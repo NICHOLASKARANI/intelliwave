@@ -21,6 +21,7 @@ export default function SellerOrdersPage() {
   const [declineReason, setDeclineReason] = useState('')
   const [showShipFor, setShowShipFor] = useState<string | null>(null)
   const [trackingNumber, setTrackingNumber] = useState('')
+  const [sellerFilter, setSellerFilter] = useState<string>('ALL')
 
   const fetchOrders = () => {
     fetch('/api/marketplace/orders?view=seller')
@@ -91,6 +92,14 @@ export default function SellerOrdersPage() {
     } finally { setActioning(null) }
   }
 
+
+  const needsActionCount = orders.filter(o => o.status === 'AWAITING_SELLER_ACCEPT').length
+  const filteredOrders = sellerFilter === 'ALL'
+    ? orders
+    : sellerFilter === 'NEEDS_ACTION'
+      ? orders.filter(o => o.status === 'AWAITING_SELLER_ACCEPT')
+      : orders.filter(o => o.status === sellerFilter)
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
@@ -101,11 +110,27 @@ export default function SellerOrdersPage() {
           <span className="font-bold text-lg flex items-center gap-2">
             <Store className="w-5 h-5 text-cyan-400" /> Seller Orders
           </span>
+          <Link href="/marketplace/seller/dashboard" className="text-xs text-cyan-400 hover:text-cyan-300 mr-3">Dashboard</Link>
           <Link href="/marketplace/seller/payment-settings" className="text-xs text-cyan-400 hover:text-cyan-300">Payment Settings</Link>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-4 lg:p-6">
+        {/* Filters */}
+        {!loading && orders.length > 0 && (
+          <div className="mb-4 flex gap-1 flex-wrap">
+            {['ALL','NEEDS_ACTION','CONFIRMED','SHIPPED','DELIVERED'].map(f => (
+              <button
+                key={f}
+                onClick={() => setSellerFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${sellerFilter === f ? 'bg-cyan-500 text-white' : 'bg-neutral-800 text-neutral-400'}`}
+              >
+                {f === 'NEEDS_ACTION' ? `Needs Action${needsActionCount > 0 ? ' (' + needsActionCount + ')' : ''}` : f.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+              </button>
+            ))}
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin mx-auto text-cyan-500" /></div>
         ) : orders.length === 0 ? (
@@ -116,7 +141,7 @@ export default function SellerOrdersPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map((order: any) => {
+            {filteredOrders.map((order: any) => {
               const status = STATUS_LABELS[order.status] || { label: order.status, color: 'bg-neutral-700 text-neutral-400' }
               const needsAction = order.status === 'AWAITING_SELLER_ACCEPT'
               const canShip = order.status === 'CONFIRMED'
