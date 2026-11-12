@@ -119,8 +119,8 @@ export default function SellerOrdersPage() {
             {orders.map((order: any) => {
               const status = STATUS_LABELS[order.status] || { label: order.status, color: 'bg-neutral-700 text-neutral-400' }
               const needsAction = order.status === 'AWAITING_SELLER_ACCEPT'
-        const canShip = order.status === 'CONFIRMED'
-        const canDeliver = order.status === 'SHIPPED'
+              const canShip = order.status === 'CONFIRMED'
+              const canDeliver = order.status === 'SHIPPED'
               return (
                 <div key={order.id} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
                   <div className="flex items-start justify-between gap-4 mb-3">
@@ -177,6 +177,50 @@ export default function SellerOrdersPage() {
                         </button>
                       </div>
                     )
+                  )}
+                  {canShip && (
+                    showShipFor === order.id ? (
+                      <div className="pt-3 border-t border-neutral-800 space-y-2">
+                        <input
+                          value={trackingNumber}
+                          onChange={e => setTrackingNumber(e.target.value)}
+                          placeholder="Tracking number (optional)"
+                          className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-white text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => ship(order.id)}
+                            disabled={actioning === order.id}
+                            className="flex-1 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold disabled:opacity-50"
+                          >
+                            {actioning === order.id ? 'Shipping...' : 'Confirm Shipment'}
+                          </button>
+                          <button
+                            onClick={() => { setShowShipFor(null); setTrackingNumber('') }}
+                            className="px-4 py-2 rounded-lg bg-neutral-700 text-xs font-bold"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowShipFor(order.id)}
+                        disabled={actioning === order.id}
+                        className="w-full py-2 mt-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1"
+                      >
+                        📦 Mark as Shipped
+                      </button>
+                    )
+                  )}
+                  {canDeliver && (
+                    <button
+                      onClick={() => deliver(order.id)}
+                      disabled={actioning === order.id}
+                      className="w-full py-2 mt-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      ✅ Mark as Delivered
+                    </button>
                   )}
                 </div>
               )
