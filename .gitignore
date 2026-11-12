@@ -77,3 +77,12 @@ _backups/
 /check-result-*.txt
 /.tmp-*.sql
 /.check-*.sql
+
+# Debug / broken file backups (should never be committed)
+*.broken-*
+*.broken
+*_broken.*
+
+# Temporary check scripts from apply operations
+*.check-*.sql
+check-result-*.txt
