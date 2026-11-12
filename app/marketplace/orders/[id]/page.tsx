@@ -163,6 +163,12 @@ export default function OrderDetailPage() {
                 <span className="text-right max-w-[60%]">{order.shippingAddress}</span>
               </div>
             )}
+            {order.notes && order.notes.includes('Tracking') && (
+              <div className="flex justify-between">
+                <span className="text-neutral-400">Tracking</span>
+                <span className="text-right max-w-[60%] font-mono text-xs">{order.notes.split('Tracking:')[1]?.split(']')[0]?.trim() || '—'}</span>
+              </div>
+            )}
           </div>
         </div>
 
