@@ -19,6 +19,8 @@ export default function SellerOrdersPage() {
   const [actioning, setActioning] = useState<string | null>(null)
   const [showDeclineFor, setShowDeclineFor] = useState<string | null>(null)
   const [declineReason, setDeclineReason] = useState('')
+  const [showShipFor, setShowShipFor] = useState<string | null>(null)
+  const [trackingNumber, setTrackingNumber] = useState('')
 
   const fetchOrders = () => {
     fetch('/api/marketplace/orders?view=seller')
@@ -56,6 +58,39 @@ export default function SellerOrdersPage() {
     } finally { setActioning(null) }
   }
 
+  const ship = async (orderId: string) => {
+    setActioning(orderId)
+    try {
+      const res = await fetch(`/api/marketplace/orders/${orderId}/ship`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackingNumber }),
+      })
+      if (res.ok) {
+        setShowShipFor(null)
+        setTrackingNumber('')
+        fetchOrders()
+      } else {
+        const d = await res.json()
+        alert(d.error || 'Failed')
+      }
+    } finally { setActioning(null) }
+  }
+
+  const deliver = async (orderId: string) => {
+    if (!confirm('Mark as delivered?')) return
+    setActioning(orderId)
+    try {
+      const res = await fetch(`/api/marketplace/orders/${orderId}/deliver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (res.ok) fetchOrders()
+      else { const d = await res.json(); alert(d.error || 'Failed') }
+    } finally { setActioning(null) }
+  }
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
@@ -84,6 +119,8 @@ export default function SellerOrdersPage() {
             {orders.map((order: any) => {
               const status = STATUS_LABELS[order.status] || { label: order.status, color: 'bg-neutral-700 text-neutral-400' }
               const needsAction = order.status === 'AWAITING_SELLER_ACCEPT'
+        const canShip = order.status === 'CONFIRMED'
+        const canDeliver = order.status === 'SHIPPED'
               return (
                 <div key={order.id} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
                   <div className="flex items-start justify-between gap-4 mb-3">

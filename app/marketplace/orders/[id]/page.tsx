@@ -121,6 +121,30 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
+
+        {/* Order Timeline */}
+        <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
+          <h3 className="text-xs uppercase font-bold text-neutral-500 mb-3">Order Timeline</h3>
+          <div className="space-y-3">
+            {[
+              { key: 'AWAITING_SELLER_ACCEPT', label: 'Order placed', check: ['AWAITING_SELLER_ACCEPT','SELLER_ACCEPTED','SELLER_DECLINED','AWAITING_SELLER_VERIFICATION','CONFIRMED','SHIPPED','DELIVERED'] },
+              { key: 'SELLER_ACCEPTED', label: 'Seller accepted', check: ['SELLER_ACCEPTED','AWAITING_SELLER_VERIFICATION','CONFIRMED','SHIPPED','DELIVERED'] },
+              { key: 'CONFIRMED', label: 'Payment verified', check: ['CONFIRMED','SHIPPED','DELIVERED'] },
+              { key: 'SHIPPED', label: 'Shipped', check: ['SHIPPED','DELIVERED'] },
+              { key: 'DELIVERED', label: 'Delivered', check: ['DELIVERED'] },
+            ].map((step, i) => {
+              const done = step.check.includes(order.status)
+              return (
+                <div key={step.key} className="flex items-center gap-3">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-neutral-700 text-neutral-400'}`}>
+                    {done ? '✓' : i + 1}
+                  </div>
+                  <span className={done ? 'text-white font-bold text-sm' : 'text-neutral-500 text-sm'}>{step.label}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
         {/* Order info */}
         <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
           <h3 className="text-xs uppercase font-bold text-neutral-500 mb-3">Order Details</h3>
