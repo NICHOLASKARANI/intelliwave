@@ -6,8 +6,9 @@ import Link from 'next/link'
 import {
   MessageCircle, Send, MapPin, Tag, Clock, Eye,
   Heart, Share2, Loader2, ChevronLeft, Shield,
-  BadgeCheck, User, Phone, CheckCircle
+    BadgeCheck, User, Phone, CheckCircle, Zap, ShoppingCart,
 } from 'lucide-react'
+import CartButton from '@/components/marketplace/CartButton'
 import FrequentlyBoughtTogether from '@/components/marketplace/FrequentlyBoughtTogether'
 import CompareBar from '@/components/marketplace/CompareBar'
 import RelatedProducts from '@/components/marketplace/RelatedProducts'
@@ -21,6 +22,8 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
   const [sending, setSending] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
+  const [addToCartLoading, setAddToCartLoading] = useState(false)
+  const [cartToast, setCartToast] = useState('')
   const [activeImage, setActiveImage] = useState(0)
   const [showContact, setShowContact] = useState(false)
   const [conversationCreated, setConversationCreated] = useState(false)
@@ -85,6 +88,29 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
       navigator.clipboard.writeText(window.location.href)
       alert('Link copied to clipboard!')
     }
+  }
+
+  const handleAddToCart = async (redirect: boolean = false) => {
+    setAddToCartLoading(true)
+    try {
+      const res = await fetch('/api/marketplace/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId: parseInt(params.id), quantity: 1 }),
+      })
+      if (res.ok) {
+        window.dispatchEvent(new Event('cart-updated'))
+        if (redirect) {
+          window.location.href = '/marketplace/cart'
+        } else {
+          setCartToast('Added to cart!')
+          setTimeout(() => setCartToast(''), 3000)
+        }
+      } else {
+        const d = await res.json()
+        alert(d.error || 'Failed to add to cart')
+      }
+    } finally { setAddToCartLoading(false) }
   }
 
   if (loading) {
@@ -200,6 +226,25 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
               </div>
             </div>
 
+            {/* Cart Actions */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button
+                onClick={() => handleAddToCart(false)}
+                disabled={addToCartLoading || listing.status !== 'ACTIVE' || (listing.stock !== null && listing.stock <= 0)}
+                className="py-4 rounded-2xl border-2 border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {listing.stock !== null && listing.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+              </button>
+              <button
+                onClick={() => handleAddToCart(true)}
+                disabled={addToCartLoading || listing.status !== 'ACTIVE' || (listing.stock !== null && listing.stock <= 0)}
+                className="py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition shadow-lg"
+              >
+                <Zap className="w-5 h-5" /> Buy Now
+              </button>
+            </div>
+
             {/* Contact Button */}
             {conversationCreated ? (
               <div className="p-4 rounded-2xl bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-center">
@@ -251,6 +296,13 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
           />
         )}
         <CompareBar />
+      {/* Cart toast */}
+      {cartToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-2">
+          <CheckCircle className="w-5 h-5" /> {cartToast}
+        </div>
+      )}
+
       </main>
     </div>
   )

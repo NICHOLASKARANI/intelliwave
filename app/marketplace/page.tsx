@@ -9,6 +9,7 @@ import {
   ChevronRight, Star, Truck, Clock, Users, Award, Flame, Percent,
   ArrowRight, Grid3x3, List, Filter, X,
 } from 'lucide-react'
+import CartButton from '@/components/marketplace/CartButton'
 import RecommendedForYou from '@/components/marketplace/RecommendedForYou'
 import CompareBar from '@/components/marketplace/CompareBar'
 import DiscoveryFeed from '@/components/marketplace/DiscoveryFeed'
@@ -180,6 +181,7 @@ export default function PublicMarketplacePage() {
               <button onClick={goToCart} className="p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 relative">
                 <ShoppingCart className="w-5 h-5" />
               </button>
+              <CartButton />
               <Link href={session ? "/wavecore-erp/marketplace/seller" : "/wavecore-erp/auth/login"} className="hidden md:flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 text-xs font-bold">
                 <Store className="w-4 h-4" /> Seller Hub
               </Link>

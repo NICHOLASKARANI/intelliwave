@@ -3,8 +3,9 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import crypto from 'crypto'
 
-// Get or create active cart for user
+// Get or create the active cart for the current user
 async function getOrCreateCart(userId: string, organizationId: string): Promise<string> {
   const existing = await pool.query(
     `SELECT id FROM "Cart" WHERE "userId" = $1 AND status = 'ACTIVE' LIMIT 1`,
@@ -12,184 +13,143 @@ async function getOrCreateCart(userId: string, organizationId: string): Promise<
   )
   if (existing.rows.length > 0) return existing.rows[0].id
 
-  const crypto = require('crypto')
   const id = crypto.randomUUID()
   await pool.query(
     `INSERT INTO "Cart" (id, "userId", "organizationId", status, "createdAt", "updatedAt")
-     VALUES ($1,$2,$3,'ACTIVE',NOW(),NOW())`,
+     VALUES ($1, $2, $3, 'ACTIVE', NOW(), NOW())`,
     [id, userId, organizationId]
   )
   return id
 }
 
-// GET: Return cart with items
+// GET: list cart with items joined with listing data, grouped by seller
 export async function GET(req: NextRequest) {
   try {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-
     const cartId = await getOrCreateCart(session.userId, session.organizationId)
 
     const res = await pool.query(
-      `SELECT ci.id, ci."listingId", ci.quantity, ci."unitPrice",
-              l.title, l.images, l.category, l.condition, l.location, l.status AS "listingStatus",
-              l.stock, l."fulfillmentType", l."slaHours",
-              l."sellerId", u.name AS "sellerName"
+      `SELECT
+         ci.id AS "itemId",
+         ci."listingId",
+         ci.quantity,
+         ci."unitPrice",
+         ci."createdAt" AS "addedAt",
+         l.title, l.images, l."sellerId", l.stock, l.status AS "listingStatus",
+         u.name AS "sellerName"
        FROM "CartItem" ci
-       JOIN "MarketplaceListing" l ON ci."listingId" = l.id
-       LEFT JOIN "User" u ON l."sellerId" = u.id
+       JOIN "MarketplaceListing" l ON l.id = ci."listingId"
+       LEFT JOIN "User" u ON u.id = l."sellerId"
        WHERE ci."cartId" = $1
-       ORDER BY ci."createdAt" DESC`,
+       ORDER BY l."sellerId", ci."createdAt" DESC`,
       [cartId]
     )
 
-    const items = res.rows.map(r => ({
-      ...r,
-      lineTotal: Math.round(Number(r.unitPrice) * Number(r.quantity) * 100) / 100,
-      unavailable: r.listingStatus !== 'ACTIVE' || Number(r.stock || 0) <= 0,
-    }))
+    // Group by seller
+    const bySeller: Record<string, any> = {}
+    for (const row of res.rows) {
+      const sid = row.sellerId || 'unknown'
+      if (!bySeller[sid]) {
+        bySeller[sid] = {
+          sellerId: sid,
+          sellerName: row.sellerName || 'Seller',
+          items: [],
+          subtotal: 0,
+        }
+      }
+      const lineTotal = Number(row.unitPrice) * row.quantity
+      bySeller[sid].items.push({ ...row, lineTotal })
+      bySeller[sid].subtotal += lineTotal
+    }
 
-    const subtotal = items.reduce((s, i) => s + i.lineTotal, 0)
-    const availableItems = items.filter(i => !i.unavailable)
-    const itemCount = items.reduce((s, i) => s + Number(i.quantity), 0)
-
-    // Estimate delivery: flat KES 300 per unique seller
-    const uniqueSellers = new Set(availableItems.map(i => i.sellerId))
-    const deliveryFee = uniqueSellers.size * 300
+    const groups = Object.values(bySeller)
+    const itemCount = res.rows.reduce((s: number, r: any) => s + r.quantity, 0)
+    const subtotal = groups.reduce((s: number, g: any) => s + g.subtotal, 0)
 
     return NextResponse.json({
       cartId,
-      items,
-      summary: {
-        itemCount,
-        subtotal: Math.round(subtotal * 100) / 100,
-        deliveryFee,
-        total: Math.round((subtotal + deliveryFee) * 100) / 100,
-        sellerCount: uniqueSellers.size,
-        unavailableCount: items.filter(i => i.unavailable).length,
-      },
+      items: res.rows,
+      groups,
+      itemCount,
+      subtotal,
+      currency: 'KES',
     })
-  } catch (error) {
-    console.error('Cart GET error:', error)
-    return NextResponse.json({ items: [], summary: {}, error: 'Something went wrong. Please try again.' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Cart GET error:', error?.message)
+    return NextResponse.json({ items: [], groups: [], itemCount: 0, subtotal: 0, error: 'Failed' }, { status: 500 })
   }
 }
 
-// POST: Add item to cart
+// POST: add item to cart
 export async function POST(req: NextRequest) {
   try {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-
     const body = await req.json()
-    if (!body.listingId) return NextResponse.json({ error: 'listingId required' }, { status: 400 })
-    const qty = Math.max(1, Number(body.quantity || 1))
+    const listingId = parseInt(body.listingId, 10)
+    const quantity = Math.max(1, parseInt(body.quantity, 10) || 1)
 
-    const listingRes = await pool.query(
-      `SELECT id, price, stock, status FROM "MarketplaceListing" WHERE id = $1`,
-      [parseInt(body.listingId)]
+    if (!listingId) return NextResponse.json({ error: 'listingId required' }, { status: 400 })
+
+    // Verify listing exists, active, in stock
+    const listing = await pool.query(
+      `SELECT id, price, stock, "sellerId", status FROM "MarketplaceListing" WHERE id = $1`,
+      [listingId]
     )
-    if (listingRes.rows.length === 0) return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
-    const listing = listingRes.rows[0]
-    if (listing.status !== 'ACTIVE') return NextResponse.json({ error: 'Listing not available' }, { status: 400 })
-    if (Number(listing.stock || 0) < qty) return NextResponse.json({ error: 'Not enough stock' }, { status: 400 })
+    if (listing.rows.length === 0) return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    const l = listing.rows[0]
+    if (l.status !== 'ACTIVE') return NextResponse.json({ error: 'Listing not available' }, { status: 400 })
+    if (l.stock !== null && l.stock <= 0) return NextResponse.json({ error: 'Out of stock' }, { status: 400 })
+    if (l.sellerId === session.userId) return NextResponse.json({ error: 'Cannot buy your own listing' }, { status: 400 })
 
     const cartId = await getOrCreateCart(session.userId, session.organizationId)
-    const crypto = require('crypto')
 
-    // Upsert: if exists, bump quantity
-    const existing = await pool.query(
-      `SELECT id, quantity FROM "CartItem" WHERE "cartId" = $1 AND "listingId" = $2`,
-      [cartId, parseInt(body.listingId)]
-    )
-
-    if (existing.rows.length > 0) {
-      const newQty = existing.rows[0].quantity + qty
-      await pool.query(
-        `UPDATE "CartItem" SET quantity = $1 WHERE id = $2`,
-        [newQty, existing.rows[0].id]
-      )
-      return NextResponse.json({ itemId: existing.rows[0].id, quantity: newQty, updated: true })
-    }
-
+    // Upsert item
     const itemId = crypto.randomUUID()
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO "CartItem" (id, "cartId", "listingId", quantity, "unitPrice", "createdAt")
-       VALUES ($1,$2,$3,$4,$5,NOW())`,
-      [itemId, cartId, parseInt(body.listingId), qty, Number(listing.price)]
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       ON CONFLICT DO NOTHING
+       RETURNING *`,
+      [itemId, cartId, listingId, quantity, Number(l.price)]
     )
 
-    return NextResponse.json({ itemId, quantity: qty, created: true }, { status: 201 })
-  } catch (error) {
-    console.error('Cart POST error:', error)
-    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
-  }
-}
-
-// PATCH: Update item quantity
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = await requireTenant(req)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-
-    const body = await req.json()
-    if (!body.itemId || body.quantity === undefined) return NextResponse.json({ error: 'itemId and quantity required' }, { status: 400 })
-
-    const qty = Number(body.quantity)
-    if (qty <= 0) {
-      // Delete
-      await pool.query(`DELETE FROM "CartItem" WHERE id = $1 AND "cartId" IN (SELECT id FROM "Cart" WHERE "userId" = $2)`, [body.itemId, session.userId])
-      return NextResponse.json({ deleted: true })
+    // If item already existed (no conflict clause), update quantity instead
+    if (result.rows.length === 0) {
+      await pool.query(
+        `UPDATE "CartItem" SET quantity = quantity + $1 WHERE "cartId" = $2 AND "listingId" = $3`,
+        [quantity, cartId, listingId]
+      )
     }
 
-    const itemRes = await pool.query(
-      `SELECT ci.id, l.stock FROM "CartItem" ci
-       JOIN "MarketplaceListing" l ON ci."listingId" = l.id
-       JOIN "Cart" c ON ci."cartId" = c.id
-       WHERE ci.id = $1 AND c."userId" = $2`,
-      [body.itemId, session.userId]
-    )
-    if (itemRes.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    if (qty > Number(itemRes.rows[0].stock || 0)) return NextResponse.json({ error: 'Not enough stock' }, { status: 400 })
+    await pool.query(`UPDATE "Cart" SET "updatedAt" = NOW() WHERE id = $1`, [cartId])
 
-    await pool.query(`UPDATE "CartItem" SET quantity = $1 WHERE id = $2`, [qty, body.itemId])
-    return NextResponse.json({ itemId: body.itemId, quantity: qty, updated: true })
-  } catch (error) {
-    console.error('Cart PATCH error:', error)
-    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+    return NextResponse.json({ success: true, cartId }, { status: 201 })
+  } catch (error: any) {
+    console.error('Cart POST error:', error?.message)
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }
 
-// DELETE: Remove item
+// DELETE: clear entire cart
 export async function DELETE(req: NextRequest) {
   try {
     const session = await requireTenant(req)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-
-    const { searchParams } = new URL(req.url)
-    const itemId = searchParams.get('itemId')
-    const clear = searchParams.get('clear') === 'true'
-
-    if (clear) {
-      await pool.query(
-        `DELETE FROM "CartItem" WHERE "cartId" IN (SELECT id FROM "Cart" WHERE "userId" = $1)`,
-        [session.userId]
-      )
-      return NextResponse.json({ success: true, cleared: true })
-    }
-
-    if (!itemId) return NextResponse.json({ error: 'itemId required' }, { status: 400 })
-    await pool.query(
-      `DELETE FROM "CartItem" WHERE id = $1 AND "cartId" IN (SELECT id FROM "Cart" WHERE "userId" = $2)`,
-      [itemId, session.userId]
+    const cart = await pool.query(
+      `SELECT id FROM "Cart" WHERE "userId" = $1 AND status = 'ACTIVE' LIMIT 1`,
+      [session.userId]
     )
+    if (cart.rows.length === 0) return NextResponse.json({ success: true })
+
+    await pool.query(`DELETE FROM "CartItem" WHERE "cartId" = $1`, [cart.rows[0].id])
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Cart DELETE error:', error)
-    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Cart DELETE error:', error?.message)
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }
