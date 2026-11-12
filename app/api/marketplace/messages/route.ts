@@ -56,14 +56,24 @@ export async function GET(req: NextRequest) {
     )
     if (convCheck.rows.length === 0) return NextResponse.json({ error: 'Access denied' }, { status: 403 })
 
-    const result = await pool.query(
-      `SELECT m.*, u.name as "senderName", u.image as "senderImage"
-       FROM "MarketplaceMessage" m
-       JOIN "User" u ON m."senderId" = u.id
-       WHERE m."conversationId" = $1
-       ORDER BY m."createdAt" ASC`,
-      [conversationId]
-    )
+    // Support ?sinceId to only get new messages (for polling)
+    const sinceIdParam = searchParams.get('sinceId')
+    const sinceId = sinceIdParam ? parseInt(sinceIdParam, 10) : 0
+
+    let msgQuery = `SELECT m.*, u.name as "senderName", u.image as "senderImage"
+                    FROM "MarketplaceMessage" m
+                    JOIN "User" u ON m."senderId" = u.id
+                    WHERE m."conversationId" = $1`
+    const msgParams: any[] = [conversationId]
+
+    if (sinceId > 0) {
+      msgParams.push(sinceId)
+      msgQuery += ` AND m.id > $${msgParams.length}`
+    }
+
+    msgQuery += ` ORDER BY m."createdAt" ASC LIMIT 500`
+
+    const result = await pool.query(msgQuery, msgParams)
 
     // Mark as read for current user
     await pool.query(
@@ -72,7 +82,7 @@ export async function GET(req: NextRequest) {
       [conversationId, session.userId]
     ).catch(() => {})
 
-    return NextResponse.json({ messages: result.rows })
+    return NextResponse.json({ messages: result.rows, count: result.rows.length })
   } catch (error) {
     console.error('Messages GET error:', error)
     return NextResponse.json({ messages: [], error: 'Something went wrong. Please try again.' }, { status: 500 })
