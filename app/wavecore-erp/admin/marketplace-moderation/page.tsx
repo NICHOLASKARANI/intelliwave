@@ -12,7 +12,7 @@ import {
 
 const SESSION_KEY = 'wavvemarket_admin_session'
 
-type TabId = 'listings' | 'reviews' | 'sellers'
+type TabId = 'listings' | 'reviews' | 'sellers' | 'users'
 
 export default function MarketplaceModerationPage() {
   const [authenticated, setAuthenticated] = useState(false)
@@ -52,6 +52,15 @@ export default function MarketplaceModerationPage() {
   const [sellerFilter, setSellerFilter] = useState<'ALL' | 'VERIFIED' | 'TRUSTED' | 'UNVERIFIED' | 'SUSPENDED' | 'READY'>('ALL')
   const [sellerActioning, setSellerActioning] = useState<string | null>(null)
   const [sellerMessage, setSellerMessage] = useState('')
+
+  // ===== USERS STATE =====
+  const [users, setUsers] = useState<any[]>([])
+  const [userKpi, setUserKpi] = useState({ total: 0, active: 0, suspended: 0, sellers: 0 })
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [userSearch, setUserSearch] = useState('')
+  const [userFilter, setUserFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'SELLERS'>('ALL')
+  const [userActioning, setUserActioning] = useState<string | null>(null)
+  const [userMessage, setUserMessage] = useState('')
 
   // ===== AUTH =====
   useEffect(() => {
@@ -285,6 +294,57 @@ export default function MarketplaceModerationPage() {
     return list
   }, [sellers, sellerSearch])
 
+  // ===== USERS LOGIC =====
+  const fetchUsers = async () => {
+    setUsersLoading(true)
+    try {
+      const url = `/api/marketplace/admin/users?filter=${userFilter}&search=${encodeURIComponent(userSearch)}`
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data.users || [])
+        setUserKpi(data.kpi || { total: 0, active: 0, suspended: 0, sellers: 0 })
+      }
+    } finally { setUsersLoading(false) }
+  }
+
+  useEffect(() => {
+    if (authenticated && activeTab === 'users') fetchUsers()
+  }, [authenticated, activeTab, userFilter])
+
+  const userAction = async (userId: string, action: string) => {
+    if (action === 'delete' && !confirm('Soft-delete this user? They cannot log in again, their email is anonymized, and this cannot be undone from the UI.')) return
+    setUserActioning(userId)
+    try {
+      const res = await fetch('/api/marketplace/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action }),
+      })
+      if (res.ok) {
+        setUserMessage(`User ${action}d`)
+        fetchUsers()
+        setTimeout(() => setUserMessage(''), 3000)
+      } else {
+        const d = await res.json()
+        setUserMessage(d.error || 'Failed')
+      }
+    } finally { setUserActioning(null) }
+  }
+
+  const filteredUsers = useMemo(() => {
+    let list = users
+    if (userSearch.trim()) {
+      const q = userSearch.toLowerCase()
+      list = list.filter(u =>
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.phone || '').toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [users, userSearch])
+
   // ===== RENDER =====
   if (!authenticated) {
     return (
@@ -387,6 +447,16 @@ export default function MarketplaceModerationPage() {
             }`}
           >
             <Store className="w-3.5 h-3.5" /> Sellers
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2.5 text-xs font-bold flex items-center gap-2 border-b-2 transition ${
+              activeTab === 'users'
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-neutral-500 hover:text-white'
+            }`}
+          >
+            <UsersIcon className="w-3.5 h-3.5" /> Users
           </button>
         </div>
       </header>
@@ -879,6 +949,161 @@ export default function MarketplaceModerationPage() {
                           >
                             Reactivate
                           </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+        {/* ============ TAB: USERS ============ */}
+        {activeTab === 'users' && (
+          <>
+            {userMessage && (
+              <div className="p-3 rounded-xl bg-green-900/50 text-green-300 border border-green-800 text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {userMessage}
+              </div>
+            )}
+
+            {/* Users KPI cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-800 text-white">
+                <UsersIcon className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{userKpi.total}</p>
+                <p className="text-xs opacity-80">Total Users</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white">
+                <CheckCircle2 className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{userKpi.active}</p>
+                <p className="text-xs opacity-80">Active</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-red-600 to-rose-800 text-white">
+                <Ban className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{userKpi.suspended}</p>
+                <p className="text-xs opacity-80">Suspended</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-800 text-white">
+                <Store className="w-5 h-5 mb-2" />
+                <p className="text-2xl font-bold">{userKpi.sellers}</p>
+                <p className="text-xs opacity-80">Sellers</p>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                <input
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                  placeholder="Search name, email, phone..."
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm"
+                />
+              </div>
+              <div className="flex gap-1 bg-neutral-800 rounded-xl p-1 flex-wrap">
+                {(['ALL', 'ACTIVE', 'SUSPENDED', 'SELLERS'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setUserFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${userFilter === f ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}
+                  >
+                    {f === 'SELLERS' ? 'Sellers Only' : f}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-neutral-500">{filteredUsers.length} shown</span>
+            </div>
+
+            {/* Users list */}
+            {usersLoading && users.length === 0 ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-20 text-neutral-500">
+                <UsersIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-bold">No users match</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredUsers.map(u => {
+                  const isSuspended = !u.isActive
+                  const isDeleted = u.email && u.email.endsWith('@deleted.local')
+                  return (
+                    <div key={u.id} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-bold text-lg">{u.name || 'Unnamed'}</h3>
+                            {u.role && (
+                              <span className="text-[10px] uppercase font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded-full">
+                                {u.role}
+                              </span>
+                            )}
+                            {u.isSeller && (
+                              <span className="text-[10px] uppercase font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Store className="w-2.5 h-2.5" /> {u.sellerVerification === 'TRUSTED_SELLER' ? 'Trusted' : u.sellerVerification === 'VERIFIED' ? 'Verified Seller' : 'Seller'}
+                              </span>
+                            )}
+                            {isDeleted && (
+                              <span className="text-[10px] uppercase font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                                Deleted
+                              </span>
+                            )}
+                            {isSuspended && !isDeleted && (
+                              <span className="text-[10px] uppercase font-bold text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full">
+                                Suspended
+                              </span>
+                            )}
+                            {!isSuspended && (
+                              <span className="text-[10px] uppercase font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-400 mb-1">{u.email}</p>
+                          {u.phone && <p className="text-xs text-neutral-500 mb-1">{u.phone}</p>}
+                          <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
+                            <span>Joined: {new Date(u.createdAt).toLocaleDateString()}</span>
+                            {u.lastLogin && <span>Last login: {new Date(u.lastLogin).toLocaleDateString()}</span>}
+                            <span>{u.ordersAsBuyer} orders</span>
+                            <span>{u.reviewsWritten} reviews</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-neutral-800">
+                        {!isDeleted && (
+                          <>
+                            {!isSuspended ? (
+                              <button
+                                onClick={() => userAction(u.id, 'suspend')}
+                                disabled={userActioning === u.id}
+                                className="px-3 py-1.5 rounded-lg bg-yellow-900/40 hover:bg-yellow-800 text-yellow-300 text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+                              >
+                                <Ban className="w-3 h-3" /> Suspend
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => userAction(u.id, 'reactivate')}
+                                disabled={userActioning === u.id}
+                                className="px-3 py-1.5 rounded-lg bg-green-900/40 hover:bg-green-800 text-green-300 text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Reactivate
+                              </button>
+                            )}
+                            <button
+                              onClick={() => userAction(u.id, 'delete')}
+                              disabled={userActioning === u.id}
+                              className="px-3 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-800 text-red-300 text-xs font-bold disabled:opacity-50 flex items-center gap-1 ml-auto"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete (soft)
+                            </button>
+                          </>
+                        )}
+                        {isDeleted && (
+                          <span className="text-xs text-neutral-600 italic">Account deleted — cannot be reactivated</span>
                         )}
                       </div>
                     </div>
