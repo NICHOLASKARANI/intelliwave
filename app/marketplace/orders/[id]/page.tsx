@@ -181,6 +181,28 @@ export default function OrderDetailPage() {
               <span className="text-green-400">KES {Number(order.total).toLocaleString()}</span>
             </div>
           </div>
+
+        {/* Invoice + Receipt download */}
+        <div className="flex gap-2">
+          <a
+            href={`/api/marketplace/orders/${id}/invoice`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-center flex items-center justify-center gap-2"
+          >
+            📄 Download Invoice
+          </a>
+          {order.paymentStatus === 'PAID' && (
+            <a
+              href={`/api/marketplace/orders/${id}/receipt`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-center flex items-center justify-center gap-2"
+            >
+              ✓ View Receipt
+            </a>
+          )}
+        </div>
         </div>
 
         {/* Seller Payment Details — visible to buyer after seller accepts */}
