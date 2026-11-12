@@ -9,6 +9,7 @@ import {
   ChevronRight, Star, Truck, Clock, Users, Award, Flame, Percent,
   ArrowRight, Grid3x3, List, Filter, X,
 } from 'lucide-react'
+import DiscoveryFeed from '@/components/marketplace/DiscoveryFeed'
 import TrendingSearches from '@/components/marketplace/TrendingSearches'
 import RecentlyViewedStrip from '@/components/marketplace/RecentlyViewedStrip'
 import { NotificationBell } from '@/components/marketplace/NotificationBell'
@@ -380,6 +381,15 @@ export default function PublicMarketplacePage() {
               ))}
             </div>
           </section>
+        )}
+
+        {/* DISCOVERY FEEDS */}
+        {!activeCategory && !search && (
+          <>
+            <DiscoveryFeed type="bestsellers" limit={8} subtitle="Top 30 days" />
+            <DiscoveryFeed type="new" limit={8} subtitle="Last 30 days" />
+            <DiscoveryFeed type="featured" limit={8} subtitle="Top-rated sellers" />
+          </>
         )}
 
         {/* BROWSE */}

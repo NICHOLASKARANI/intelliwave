@@ -8,6 +8,7 @@ import {
   Heart, Share2, Loader2, ChevronLeft, Shield,
   BadgeCheck, User, Phone, CheckCircle
 } from 'lucide-react'
+import RelatedProducts from '@/components/marketplace/RelatedProducts'
 import SaveModal from '@/components/marketplace/SaveModal'
 import ReviewsSection from '@/components/marketplace/ReviewsSection'
 
@@ -232,6 +233,9 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
 
         {/* Reviews */}
         <ReviewsSection listingId={params.id} sellerId={listing?.sellerId} />
+
+        {/* Related Products */}
+        {listing && <RelatedProducts listingId={parseInt(params.id)} category={listing.category} />}
 
         {showSaveModal && listing && (
           <SaveModal
