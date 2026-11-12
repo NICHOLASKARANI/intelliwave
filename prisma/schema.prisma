@@ -2823,14 +2823,18 @@ model MarketplaceReview {
 
 // ─── MarketplaceSaved — 4 columns, wishlist ───
 model MarketplaceSaved {
-  id        Int       @id @default(autoincrement())
-  userId    String
-  listingId Int?
-  createdAt DateTime? @default(now())
+  id           Int       @id @default(autoincrement())
+  userId       String
+  listingId    Int?
+  collectionId String?
+  note         String?
+  createdAt    DateTime? @default(now())
 
-  listing MarketplaceListing? @relation(fields: [listingId], references: [id])
+  listing      MarketplaceListing? @relation(fields: [listingId], references: [id])
+  collection   WishlistCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
 
   @@unique([userId, listingId], map: "MarketplaceSaved_userId_listingId_key")
+  @@index([collectionId], map: "MS_collectionId_idx")
   @@map("MarketplaceSaved")
 }
 
@@ -3066,4 +3070,40 @@ model MarketplaceReviewReport {
   @@unique([reviewId, reporterId], map: "MarketplaceReviewReport_reviewId_reporterId_key")
   @@index([status], map: "MRR_status_idx")
   @@map("MarketplaceReviewReport")
+}
+
+model WishlistCollection {
+  id           String    @id
+  userId       String
+  name         String
+  description  String?
+  slug         String    @unique
+  isPublic     Boolean   @default(false)
+  coverImage   String?
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @default(now())
+
+  savedItems   MarketplaceSaved[]
+
+  @@index([userId], map: "WC_userId_idx")
+  @@index([slug], map: "WC_slug_idx")
+  @@index([userId, updatedAt(sort: Desc)], map: "WC_userId_updated_idx")
+  @@map("WishlistCollection")
+}
+
+model WishlistPriceAlert {
+  id               String    @id
+  userId           String
+  listingId        Int
+  targetPrice      Float
+  originalPrice    Float
+  lastNotifiedAt   DateTime?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime? @default(now())
+
+  @@unique([userId, listingId], map: "WPA_user_listing_key")
+  @@index([isActive], map: "WPA_active_idx")
+  @@index([listingId], map: "WPA_listingId_idx")
+  @@index([userId], map: "WPA_userId_idx")
+  @@map("WishlistPriceAlert")
 }
