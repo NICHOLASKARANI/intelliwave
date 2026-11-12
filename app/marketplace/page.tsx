@@ -9,6 +9,8 @@ import {
   ChevronRight, Star, Truck, Clock, Users, Award, Flame, Percent,
   ArrowRight, Grid3x3, List, Filter, X,
 } from 'lucide-react'
+import TrendingSearches from '@/components/marketplace/TrendingSearches'
+import RecentlyViewedStrip from '@/components/marketplace/RecentlyViewedStrip'
 import { NotificationBell } from '@/components/marketplace/NotificationBell'
 
 const TOP_CATEGORIES = [
@@ -340,6 +342,12 @@ export default function PublicMarketplacePage() {
           </section>
         )}
 
+
+        {/* TRENDING SEARCHES */}
+        {!activeCategory && !search && <TrendingSearches />}
+
+        {/* RECENTLY VIEWED */}
+        {!activeCategory && !search && <RecentlyViewedStrip />}
         {/* TRENDING */}
         {!activeCategory && !search && trending.length > 0 && (
           <section className="mb-8">
