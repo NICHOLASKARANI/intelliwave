@@ -8,12 +8,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const adminPassword = process.env.MARKETPLACE_ADMIN_PASSWORD
-
-    if (!adminPassword) {
+    const nuclearPassword = process.env.NUCLEAR_ADMIN_PASSWORD
+    const validPasswords = [adminPassword, nuclearPassword].filter(Boolean)
+    if (validPasswords.length === 0) {
       return NextResponse.json({ error: 'Admin gate not configured' }, { status: 500 })
     }
 
-    if (body.password === adminPassword) {
+    
+
+    if (validPasswords.includes(body.password)) {
       return NextResponse.json({ success: true })
     }
     return NextResponse.json({ error: 'Access denied' }, { status: 401 })

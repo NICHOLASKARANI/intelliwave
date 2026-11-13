@@ -42,6 +42,22 @@ export default function SecurityAdminPage() {
     }
   }, [])
 
+  // NUCLEAR_UNLOCK: auto-authenticate when accessed via Nuclear Command Center
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const nuclearParam = new URLSearchParams(window.location.search).get('nuclear')
+    if (!nuclearParam) return
+    setPassword(nuclearParam)
+    fetch('/api/wavecore/security/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: nuclearParam }),
+    }).then(r => {
+      if (r.ok) setAuthenticated(true)
+    }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (authenticated) {
       fetchSecurityData()

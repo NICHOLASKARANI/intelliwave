@@ -72,6 +72,25 @@ export default function MarketplaceModerationPage() {
   const [messagesMsg, setMessagesMsg] = useState('')
 
   // ===== AUTH =====
+  // NUCLEAR_UNLOCK: auto-authenticate when accessed via Nuclear Command Center
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const nuclearParam = new URLSearchParams(window.location.search).get('nuclear')
+    if (!nuclearParam) return
+    fetch('/api/marketplace/admin-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: nuclearParam }),
+    }).then(r => {
+      if (r.ok) {
+        setPassword(nuclearParam)
+        setAuthenticated(true)
+        sessionStorage.setItem('wavvemarket_admin_session', 'true')
+      }
+    }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY)
     if (saved === 'true') {

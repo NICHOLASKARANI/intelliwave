@@ -8,12 +8,14 @@ export async function POST(req: NextRequest) {
     const { password } = body
     
     const adminPassword = process.env.SECURITY_ADMIN_PASSWORD
+    const nuclearPassword = process.env.NUCLEAR_ADMIN_PASSWORD
+    const validPasswords = [adminPassword, nuclearPassword].filter(Boolean)
     
-    if (!adminPassword) {
+    if (validPasswords.length === 0) {
       return NextResponse.json({ error: 'Security password not configured' }, { status: 500 })
     }
     
-    if (password === adminPassword) {
+    if (validPasswords.includes(password)) {
       // Set an HttpOnly session cookie so subsequent security API calls
       // are authenticated without re-sending the password manually.
       const res = NextResponse.json({ success: true })

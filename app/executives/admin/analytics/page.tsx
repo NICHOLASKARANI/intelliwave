@@ -5,6 +5,24 @@ import { TrendingUp, Users, DollarSign, Activity, X, ArrowLeft } from 'lucide-re
 
 export default function AnalyticsDashboard() {
   const [password, setPassword] = useState('')
+  // NUCLEAR_UNLOCK: auto-authenticate when accessed via Nuclear Command Center
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const nuclearParam = new URLSearchParams(window.location.search).get('nuclear')
+    if (!nuclearParam) return
+    setPassword(nuclearParam)
+    setTimeout(() => {
+      const btns = document.querySelectorAll('button')
+      for (const btn of btns) {
+        if (btn.textContent && (btn.textContent.includes('Access') || btn.textContent.includes('Unlock'))) {
+          btn.click()
+          break
+        }
+      }
+    }, 100)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [auth, setAuth] = useState(false)
   const [data, setData] = useState<any>(null)
   const [leaders, setLeaders] = useState<any[]>([])

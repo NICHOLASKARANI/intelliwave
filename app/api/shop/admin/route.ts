@@ -7,9 +7,9 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
     const password = formData.get('password') as string
-    const adminPassword = process.env.SHOP_ADMIN_PASSWORD
+    const validPasswords = [process.env.SHOP_ADMIN_PASSWORD, process.env.NUCLEAR_ADMIN_PASSWORD].filter(Boolean)
 
-    if (password !== adminPassword) {
+    if (!validPasswords.includes(password)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

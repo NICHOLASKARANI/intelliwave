@@ -19,6 +19,16 @@ export default function AdminDashboard() {
     setProducts(data.products || [])
   }
 
+  // NUCLEAR_UNLOCK: auto-authenticate when accessed via Nuclear Command Center
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const nuclearParam = new URLSearchParams(window.location.search).get('nuclear')
+    if (!nuclearParam) return
+    setPassword(nuclearParam)
+    setAuth(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (auth) fetchProducts()
   }, [auth])

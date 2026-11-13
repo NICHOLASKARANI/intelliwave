@@ -4,7 +4,10 @@ import { pool } from '@/lib/wavecore/db'
 import { ExecutiveNotifications } from '@/lib/executives/notify'
 
 function isAdmin(req: NextRequest): boolean {
-  return req.headers.get('x-ceo-password') === process.env.SHOP_ADMIN_PASSWORD
+  const provided = req.headers.get('x-ceo-password')
+  if (!provided) return false
+  const validPasswords = [process.env.SHOP_ADMIN_PASSWORD, process.env.NUCLEAR_ADMIN_PASSWORD].filter(Boolean)
+  return validPasswords.includes(provided)
 }
 
 export async function GET(req: NextRequest) {
