@@ -14,6 +14,7 @@ import CompareBar from '@/components/marketplace/CompareBar'
 import RelatedProducts from '@/components/marketplace/RelatedProducts'
 import SaveModal from '@/components/marketplace/SaveModal'
 import ReviewsSection from '@/components/marketplace/ReviewsSection'
+import ProductQA from '@/components/marketplace/ProductQA'
 
 export default function ListingDetailPage({ params }: { params: { id: string } }) {
   const [listing, setListing] = useState<any>(null)
@@ -296,6 +297,9 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
             )}
           </div>
         </div>
+
+        {/* Q&A */}
+        {listing && <ProductQA listingId={parseInt(params.id)} sellerId={listing?.sellerId} />}
 
         {/* Reviews */}
         <ReviewsSection listingId={params.id} sellerId={listing?.sellerId} />

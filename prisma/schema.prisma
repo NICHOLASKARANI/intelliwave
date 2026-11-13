@@ -2672,6 +2672,7 @@ model MarketplaceListing {
   likes         MarketplaceLike[]
   comments      MarketplaceComment[]
   shares        MarketplaceShare[]
+  qaQuestions   MarketplaceQA[]
 
   @@index([category], map: "MarketplaceListing_category_idx")
   @@index([category], map: "idx_listing_category")
@@ -3174,4 +3175,38 @@ model MarketplaceMessageReport {
   @@index([status], map: "MMR_status_idx")
   @@index([reporterId], map: "MMR_reporter_idx")
   @@map("MarketplaceMessageReport")
+}
+
+model MarketplaceQA {
+  id          String    @id
+  listingId   Int
+  askerId     String
+  askerName   String?
+  question    String
+  createdAt   DateTime? @default(now())
+
+  listing     MarketplaceListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  answers     MarketplaceQAAnswer[]
+
+  @@index([listingId], map: "MQA_listingId_idx")
+  @@index([askerId], map: "MQA_askerId_idx")
+  @@index([createdAt(sort: Desc)], map: "MQA_createdAt_idx")
+  @@map("MarketplaceQA")
+}
+
+model MarketplaceQAAnswer {
+  id              String    @id
+  qaId            String
+  answererId      String
+  answererName    String?
+  answer          String
+  isSellerAnswer  Boolean?  @default(false)
+  createdAt       DateTime? @default(now())
+
+  qa              MarketplaceQA @relation(fields: [qaId], references: [id], onDelete: Cascade)
+
+  @@index([qaId], map: "MQAA_qaId_idx")
+  @@index([answererId], map: "MQAA_answererId_idx")
+  @@index([createdAt(sort: Desc)], map: "MQAA_createdAt_idx")
+  @@map("MarketplaceQAAnswer")
 }
