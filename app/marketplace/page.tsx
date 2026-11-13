@@ -9,6 +9,7 @@ import {
   ChevronRight, Star, Truck, Clock, Users, Award, Flame, Percent,
   ArrowRight, Grid3x3, List, Filter, X,
 } from 'lucide-react'
+import AIChatWidget from '@/components/marketplace/AIChatWidget'
 import CartButton from '@/components/marketplace/CartButton'
 import RecommendedForYou from '@/components/marketplace/RecommendedForYou'
 import CompareBar from '@/components/marketplace/CompareBar'
@@ -608,6 +609,7 @@ export default function PublicMarketplacePage() {
           </div>
         </div>
       </footer>
+      <AIChatWidget />
     </div>
   )
 }
