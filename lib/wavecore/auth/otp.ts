@@ -71,35 +71,69 @@ export async function deliverOtp(
 ): Promise<{ delivered: boolean; reason: string }> {
   const message =
     channel === 'email'
-      ? `Your WaveCore ERP verification code is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes. If you did not request this, ignore this message.`
+      ? `Hi ${userName},\n\nYour WaveCore ERP verification code is: ${otp}\n\nThis code expires in ${OTP_TTL_MINUTES} minutes. If you did not request this, ignore this email.`
       : `Your WaveCore verification code is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`
 
   if (channel === 'email') {
-    const key = process.env.RESEND_API_KEY
-    if (!key) {
-      // No provider configured — log to server console only (never to client)
-      console.log(`[OTP][email:dev] to=${destination} otp=${otp}`)
-      return { delivered: false, reason: 'Email provider not configured; OTP logged server-side only.' }
-    }
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL || 'WaveCore <noreply@intelliwavve.com>',
-          to: [destination],
-          subject: 'WaveCore ERP — Password Reset Code',
+    const hasSMTP = !!(process.env.SMTP_HOST || process.env.SMTP_USER)
+
+    if (hasSMTP) {
+      try {
+        const { sendEmail } = await import('../email')
+        const html = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; background: #ffffff;">
+            <div style="text-align: center; padding-bottom: 24px; border-bottom: 2px solid #f59e0b; margin-bottom: 32px;">
+              <h1 style="margin: 0; color: #f59e0b; font-size: 24px; font-weight: 800;">IntelliWavve</h1>
+              <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px;">WaveCore ERP</p>
+            </div>
+            <h2 style="color: #111827; font-size: 20px; margin: 0 0 8px 0;">Password Reset Verification</h2>
+            <p style="color: #374151; line-height: 1.6;">Hi ${userName},</p>
+            <p style="color: #374151; line-height: 1.6;">Use the code below to reset your WaveCore password. This code expires in <strong>${OTP_TTL_MINUTES} minutes</strong>.</p>
+            <div style="background: #f3f4f6; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
+              <p style="margin: 0; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Your verification code</p>
+              <p style="margin: 8px 0 0 0; color: #111827; font-family: monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px;">${otp}</p>
+            </div>
+            <p style="color: #6b7280; font-size: 13px; line-height: 1.6;">If you did not request this code, you can safely ignore this email.</p>
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 11px;">
+              IntelliWavve WaveCore ERP<br>
+              Questions? Contact support@intelliwavve.com
+            </div>
+          </div>
+        `
+        const ok = await sendEmail({
+          to: destination,
+          subject: 'Your WaveCore password reset code',
           text: message,
-        }),
-      })
-      if (res.ok) return { delivered: true, reason: 'sent' }
-      const err = await res.text()
-      console.error('Resend error:', err)
-      return { delivered: false, reason: 'Email send failed' }
-    } catch (e) {
-      console.error('Email send exception:', e)
-      return { delivered: false, reason: 'Email service unavailable' }
+          html,
+        })
+        if (ok) return { delivered: true, reason: 'sent via SMTP' }
+        return { delivered: false, reason: 'SMTP send failed' }
+      } catch (err: any) {
+        console.error('[OTP] SMTP send failed:', err?.message)
+      }
     }
+
+    const resendKey = process.env.RESEND_API_KEY
+    if (resendKey) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+          body: JSON.stringify({
+            from: process.env.RESEND_FROM_EMAIL || 'WaveCore <noreply@intelliwavve.com>',
+            to: [destination],
+            subject: 'Your WaveCore password reset code',
+            text: message,
+          }),
+        })
+        if (res.ok) return { delivered: true, reason: 'sent via Resend' }
+      } catch (e) {
+        console.error('[OTP] Resend failed:', e)
+      }
+    }
+
+    console.log(`[OTP][email:dev] to=${destination} otp=${otp}`)
+    return { delivered: false, reason: 'No email provider configured. Configure SMTP_HOST/SMTP_USER/SMTP_PASS.' }
   }
 
   if (channel === 'sms') {
@@ -107,7 +141,7 @@ export async function deliverOtp(
     const user = process.env.AT_USERNAME
     if (!key || !user) {
       console.log(`[OTP][sms:dev] to=${destination} otp=${otp}`)
-      return { delivered: false, reason: 'SMS provider not configured; OTP logged server-side only.' }
+      return { delivered: false, reason: 'SMS provider not configured' }
     }
     try {
       const params = new URLSearchParams()
@@ -120,10 +154,10 @@ export async function deliverOtp(
         headers: { 'Content-Type': 'application/x-www-form-urlencoded', apiKey: key, Accept: 'application/json' },
         body: params.toString(),
       })
-      if (res.ok) return { delivered: true, reason: 'sent' }
+      if (res.ok) return { delivered: true, reason: 'sent via SMS' }
       return { delivered: false, reason: 'SMS send failed' }
     } catch (e) {
-      console.error('SMS send exception:', e)
+      console.error('[OTP] SMS send failed:', e)
       return { delivered: false, reason: 'SMS service unavailable' }
     }
   }
