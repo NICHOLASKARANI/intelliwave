@@ -101,7 +101,7 @@ export default function AIChatWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-24 right-6 z-[60] w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-2xl hover:scale-110 transition-transform flex items-center justify-center"
+          className="fixed bottom-6 left-6 z-[60] w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-2xl hover:scale-110 transition-transform flex items-center justify-center"
           title="Ask WaveMarket AI"
         >
           <Bot className="w-6 h-6" />
@@ -110,7 +110,7 @@ export default function AIChatWidget() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-0 right-0 sm:bottom-24 sm:right-6 z-[60] w-full sm:w-[420px] h-[80vh] sm:h-[600px] bg-neutral-950 sm:rounded-2xl border sm:border border-neutral-800 shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-0 left-0 sm:bottom-6 sm:left-6 z-[60] w-full sm:w-[420px] h-[80vh] sm:h-[600px] bg-neutral-950 sm:rounded-2xl border sm:border border-neutral-800 shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
           <div className="p-4 border-b border-neutral-800 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 flex items-center justify-between">
             <div className="flex items-center gap-2">
