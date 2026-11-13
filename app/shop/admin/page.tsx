@@ -22,7 +22,9 @@ export default function AdminDashboard() {
   // NUCLEAR_UNLOCK: auto-authenticate when accessed via Nuclear Command Center
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const nuclearParam = new URLSearchParams(window.location.search).get('nuclear')
+    const nuclearParam =
+      (typeof window !== 'undefined' ? sessionStorage.getItem('nuclear_pwd') : null) ||
+      new URLSearchParams(window.location.search).get('nuclear')
     if (!nuclearParam) return
     setPassword(nuclearParam)
     setAuth(true)

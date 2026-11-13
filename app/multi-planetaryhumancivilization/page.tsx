@@ -45,9 +45,9 @@ export default function NuclearCommandCenterPage() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        setMasterPassword(data.masterPassword)
+        setMasterPassword(password)
         setAuthenticated(true)
-        sessionStorage.setItem('nuclear_pwd', data.masterPassword)
+        sessionStorage.setItem('nuclear_pwd', password)
       } else {
         setError(data.error || 'Access denied')
       }
@@ -120,9 +120,8 @@ export default function NuclearCommandCenterPage() {
   }
 
   const activeTabObj = TABS.find(t => t.id === activeTab)!
-  const iframeUrl = masterPassword
-    ? `${activeTabObj.url}?nuclear=${encodeURIComponent(masterPassword)}`
-    : activeTabObj.url
+  const iframeUrl = activeTabObj.url
+
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -177,6 +176,8 @@ export default function NuclearCommandCenterPage() {
           src={iframeUrl}
           className="w-full h-full border-0"
           style={{ minHeight: 'calc(100vh - 106px)' }}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+          referrerPolicy="strict-origin-when-cross-origin"
           title={activeTabObj.label}
         />
       </main>
