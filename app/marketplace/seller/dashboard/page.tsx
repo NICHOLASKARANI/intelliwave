@@ -74,6 +74,7 @@ export default function SellerDashboardPage() {
           </span>
           <div className="flex items-center gap-2 text-xs">
             <Link href="/marketplace/seller/orders" className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold">Orders</Link>
+            <Link href="/marketplace/seller/inventory" className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold">Inventory</Link>
             <Link href="/marketplace/seller/payment-settings" className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold">Settings</Link>
           </div>
         </div>
