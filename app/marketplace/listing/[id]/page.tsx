@@ -15,6 +15,7 @@ import RelatedProducts from '@/components/marketplace/RelatedProducts'
 import SaveModal from '@/components/marketplace/SaveModal'
 import ReviewsSection from '@/components/marketplace/ReviewsSection'
 import ProductQA from '@/components/marketplace/ProductQA'
+import CustomersAlsoBought from '@/components/marketplace/CustomersAlsoBought'
 
 export default function ListingDetailPage({ params }: { params: { id: string } }) {
   const [listing, setListing] = useState<any>(null)
@@ -308,6 +309,9 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
 
         {/* Frequently Bought Together */}
         {listing && <FrequentlyBoughtTogether listingId={parseInt(params.id)} currentListing={listing} />}
+
+        {/* Customers Also Bought */}
+        {listing && <CustomersAlsoBought listingId={parseInt(params.id)} />}
         {listing && <RelatedProducts listingId={parseInt(params.id)} category={listing.category} />}
 
         {showSaveModal && listing && (
