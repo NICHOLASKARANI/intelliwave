@@ -197,6 +197,63 @@ export async function POST(req: NextRequest) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ─── Send subscription confirmation email ───
+    try {
+      if (success && tx && tx.purpose === 'SUBSCRIPTION' && tx.userId && tx.organizationId && tx.organizationId !== 'UNKNOWN') {
+        const { sendEmail } = await import('@/lib/wavecore/email')
+        const userLookup = await pool.query(
+          `SELECT name, email FROM "User" WHERE id = $1 LIMIT 1`,
+          [tx.userId]
+        )
+        const userInfo = userLookup.rows[0]
+        const orgLookup = await pool.query(
+          `SELECT name FROM "Organization" WHERE id = $1 LIMIT 1`,
+          [tx.organizationId]
+        )
+        const orgInfo = orgLookup.rows[0]
+        const subLookup = await pool.query(
+          `SELECT plan, "endDate" FROM "Subscription" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+          [tx.organizationId]
+        )
+        const subInfo = subLookup.rows[0]
+        const endDateStr = subInfo?.endDate ? new Date(subInfo.endDate).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'
+        const planLabel = subInfo?.plan === 'PROFESSIONAL' ? 'WaveCore Pro' : subInfo?.plan === 'ENTERPRISE' ? 'WaveCore Enterprise' : 'WaveCore ERP'
+
+        if (userInfo && userInfo.email) {
+          await sendEmail({
+            to: userInfo.email,
+            subject: 'Your WaveCore subscription is active',
+            text: `Hi ${userInfo.name || 'there'},` + "`n`n" + `Your payment of KES ${Number(tx.amount || 0).toLocaleString()} has been received (M-Pesa receipt: ${mpesaReceipt || '—'}).` + "`n`n" + `Your subscription is now active until ${endDateStr}.` + "`n`n" + `Plan: ${planLabel}` + "`n" + `Organization: ${orgInfo?.name || '—'}` + "`n`n" + `Log in: https://www.intelliwavve.com/wavecore-erp` + "`n`n" + `Questions? Contact support@intelliwavve.com.`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+                <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #10b981; margin-bottom: 24px;">
+                  <h1 style="color: #10b981; font-size: 24px; margin: 0;">✓ Payment Confirmed</h1>
+                </div>
+                <p>Hi ${userInfo.name || 'there'},</p>
+                <p>Your payment of <strong>KES ${Number(tx.amount || 0).toLocaleString()}</strong> has been received successfully.</p>
+                <div style="background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px; padding: 20px; margin: 24px 0;">
+                  <p style="margin: 0 0 8px 0;"><strong>Plan:</strong> ${planLabel}</p>
+                  <p style="margin: 0 0 8px 0;"><strong>Active until:</strong> ${endDateStr}</p>
+                  <p style="margin: 0 0 8px 0;"><strong>M-Pesa Receipt:</strong> ${mpesaReceipt || '—'}</p>
+                  <p style="margin: 0;"><strong>Organization:</strong> ${orgInfo?.name || '—'}</p>
+                </div>
+                <p style="text-align: center; margin: 32px 0;">
+                  <a href="https://www.intelliwavve.com/wavecore-erp" style="display: inline-block; padding: 14px 32px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Log In to WaveCore</a>
+                </p>
+                <p style="color: #6b7280; font-size: 12px;">Questions? Contact support@intelliwavve.com.</p>
+              </div>
+            `,
+            userId: tx.userId,
+            organizationId: tx.organizationId,
+          }).catch((e: any) => console.error('[mpesa/callback] confirmation email failed:', e?.message))
+        }
+      }
+    } catch (emailErr: any) {
+      console.error('[mpesa/callback] email block error:', emailErr?.message)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Safaricom expects 200 + ResultCode 0 to stop retries
     return NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' }, { status: 200 })
   } catch (error) {

@@ -25,8 +25,5 @@
       ]
     }
   ],
-  "crons": [
-    
-    { "path": "/api/cron/price-alerts", "schedule": "0 0 * * *" },{ "path": "/api/cron/monthly-payouts", "schedule": "0 0 1 * *" }
-  ]
+  "crons": [{ "path": "/api/cron/daily", "schedule": "0 0 * * *" }]
 }
