@@ -94,11 +94,11 @@ export async function GET(req: NextRequest) {
         : null
     if (cacheKey) {
       console.log('[listings] canCache=true, key=', cacheKey)
-      const cached = await cacheGet(cacheKey)
+      const cached = await cacheGet<any[]>(cacheKey)
       if (cached) {
         try {
           return NextResponse.json(
-            { listings: JSON.parse(cached), cached: true },
+            { listings: cached, cached: true },
             {
               headers: {
                 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
 
     const result = await pool.query(query, params)
     if (cacheKey && result.rows.length > 0) {
-      await cacheSet(cacheKey, JSON.stringify(result.rows), 30)
+      await cacheSet(cacheKey, result.rows, 30)
     }
     return NextResponse.json(
       { listings: result.rows, cached: false },

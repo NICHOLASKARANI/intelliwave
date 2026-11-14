@@ -1,20 +1,24 @@
 import { kv } from '@vercel/kv'
 
-export async function cacheGet(key: string): Promise<string | null> {
+export async function cacheGet<T = any>(key: string): Promise<T | null> {
   try {
-    const raw = await kv.get(key)
-    console.log('[cache] get', key, raw ? 'HIT' : 'MISS')
-    return (raw as string | null) ?? null
+    const raw = await kv.get<T>(key)
+    if (raw === null || raw === undefined) {
+      console.log('[cache] get', key, 'MISS')
+      return null
+    }
+    console.log('[cache] get', key, 'HIT')
+    return raw as T
   } catch (err) {
     console.error('[cache] get FAILED', key, (err as Error).message)
     return null
   }
 }
 
-export async function cacheSet(key: string, value: string, ttlSeconds: number): Promise<void> {
+export async function cacheSet(key: string, value: any, ttlSeconds: number): Promise<void> {
   try {
     await kv.set(key, value, { ex: ttlSeconds })
-    console.log('[cache] set OK', key, value.length, 'bytes, ttl', ttlSeconds)
+    console.log('[cache] set OK', key, 'ttl', ttlSeconds)
   } catch (err) {
     console.error('[cache] set FAILED', key, (err as Error).message)
   }
