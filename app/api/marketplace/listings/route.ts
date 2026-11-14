@@ -96,9 +96,17 @@ export async function GET(req: NextRequest) {
       const cached = await cacheGet(cacheKey)
       if (cached) {
         try {
-          return NextResponse.json({ listings: JSON.parse(cached), cached: true })
-        } catch {
-          // fall through to DB
+          return NextResponse.json(
+            { listings: JSON.parse(cached), cached: true },
+            {
+              headers: {
+                'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+                'X-Cache': 'HIT',
+              },
+            }
+          )
+        } catch (err) {
+          console.warn('[listings] cache parse failed:', (err as Error).message)
         }
       }
     }
@@ -140,7 +148,14 @@ export async function GET(req: NextRequest) {
     if (cacheKey && result.rows.length > 0) {
       cacheSet(cacheKey, JSON.stringify(result.rows), 30).catch(() => {})
     }
-    return NextResponse.json({ listings: result.rows })
+    return NextResponse.json(
+      { listings: result.rows, cached: false },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      }
+    )
   } catch (error) {
     console.error('Listings GET error:', error)
     return NextResponse.json({ listings: [], error: 'Something went wrong. Please try again.' }, { status: 500 })
