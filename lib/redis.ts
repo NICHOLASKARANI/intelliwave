@@ -11,7 +11,8 @@ import { kv } from '@vercel/kv'
 
 export async function cacheGet(key: string): Promise<string | null> {
   try {
-    const value = await kv.get<string>(key)
+    const rawValue = await kv.get(key)
+    const value = rawValue as string | null
     return value ?? null
   } catch (err) {
     console.warn('[cache] get failed:', (err as Error).message)
