@@ -6,7 +6,6 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { LiveChatWidget } from '@/components/features/live-chat-widget'
 import { FloatingWhatsApp } from '@/components/features/floating-whatsapp'
-import { AICopilot } from '@/components/features/ai-copilot'
 import { CookieConsent } from '@/components/ui/cookie-consent'
 import { BackToTop } from '@/components/ui/back-to-top'
 import { FloatingActions } from '@/components/ui/floating-actions'
@@ -137,7 +136,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Floating UI Components */}
           <LiveChatWidget />
           <FloatingWhatsApp />
-          <AICopilot />
           <FloatingActions />
           <BackToTop />
           <CookieConsent />

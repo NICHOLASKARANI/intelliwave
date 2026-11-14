@@ -120,7 +120,6 @@ export default function DashboardPage() {
               { name: 'Command Center', href: '/dashboard', status: 'live' },
               { name: 'AI Estimator', href: '/estimator', status: 'live' },
               { name: 'Mission & Vision', href: '/mission-vision', status: 'live' },
-              { name: 'Management', href: '/management', status: 'live' },
               { name: 'Careers', href: '/careers', status: 'live' },
               { name: 'Events', href: '/events', status: 'live' },
               { name: 'Insights', href: '/insights', status: 'live' },

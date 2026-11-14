@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Paperclip, Smile } from 'lucide-react'
+import Image from 'next/image'
 
 interface Message {
   id: number
@@ -55,7 +56,17 @@ export function LiveChatWidget() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
-        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
+        {isOpen ? (
+          <X size={24} />
+        ) : (
+          <Image
+            src="/images/Wavecore.jpeg"
+            alt="IntelliWavve"
+            width={28}
+            height={28}
+            className="rounded-full object-cover"
+          />
+        )}
       </motion.button>
 
       <AnimatePresence>
