@@ -167,45 +167,75 @@ export default function HomePage() {
           )
         })}
 
+        {/* ═══ CINEMATIC ENHANCEMENT LAYERS (additive) ═══ */}
+
+        {/* Vignette — dark corners */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_30%,_rgba(0,0,0,0.6)_100%)] pointer-events-none" />
+
+        {/* Diagonal light beam */}
+        <motion.div
+          animate={{ opacity: [0.15, 0.3, 0.15] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-0 left-1/4 w-[800px] h-[1200px] bg-gradient-to-b from-blue-400/20 via-cyan-300/10 to-transparent blur-3xl -rotate-12 pointer-events-none"
+          style={{ transformOrigin: 'top left' }}
+        />
+
+        {/* Perspective grid horizon */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-64 pointer-events-none opacity-[0.08]"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(96,165,250,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(96,165,250,0.5) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+            maskImage: 'linear-gradient(to top, black 0%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 0%, transparent 100%)',
+          }}
+        />
+
+        {/* Starfield */}
+        {[...Array(40)].map((_, i) => {
+          const top = (i * 37) % 100
+          const left = (i * 53) % 100
+          const delay = (i % 5) * 0.8
+          return (
+            <motion.div
+              key={i}
+              className="absolute w-0.5 h-0.5 bg-white rounded-full pointer-events-none"
+              style={{ top: top + '%', left: left + '%' }}
+              animate={{ opacity: [0.1, 0.7, 0.1] }}
+              transition={{ duration: 3 + (i % 4), repeat: Infinity, delay, ease: 'easeInOut' }}
+            />
+          )
+        })}
+
+        {/* Letterbox bands */}
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+
         {/* Main Content */}
         <motion.div style={{ opacity: heroOpacity, scale: heroScale }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 relative z-10 w-full">
           <div className="text-center max-w-4xl mx-auto">
-            {/* Enterprise Badge */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/3 backdrop-blur-xl border border-white/5 mb-10">
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              <span className="text-sm text-blue-300 font-medium tracking-wide">Enterprise AI Platform</span>
-            </motion.div>
 
             {/* Main Headline */}
+            {/* Main Headline */}
             <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.9 }}
-              className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white mb-8 leading-[1.08]">
+              className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white mb-8 leading-[1.08] uppercase">
               Building the{' '}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400">
-                Intelligent Operating System
+                Intelligent Infrastructure
+              </span>
+              <br className="hidden md:block" />
+              <span className="text-white/90">
+                for a Multiplanetary Future.
               </span>
             </motion.h1>
 
             {/* Subheadline */}
+            {/* Subheadline */}
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.9 }}
               className="text-xl md:text-2xl text-gray-400 mb-14 max-w-3xl mx-auto leading-relaxed font-light">
-              For Governments, Global Enterprises, Financial Institutions, Healthcare Systems, 
-              Universities, and the Industries of Tomorrow.
+              Engineering the intelligent systems, enterprise platforms and digital foundations that will power the next era of human civilization — on Earth and beyond.
             </motion.p>
 
-            {/* CTAs */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/contact">
-                <Button size="lg" className="bg-white text-slate-900 hover:bg-gray-200 px-8 py-6 text-lg rounded-2xl font-semibold shadow-2xl shadow-white/10 group">
-                  Start a Project <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link href="/services">
-                <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-2xl border-white/15 text-white hover:bg-white/5 backdrop-blur-xl font-semibold">
-                  Explore Services
-                </Button>
-              </Link>
-            </motion.div>
           </div>
         </motion.div>
       </section>
