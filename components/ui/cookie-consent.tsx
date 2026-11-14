@@ -16,11 +16,13 @@ export function CookieConsent() {
 
   const acceptAll = () => {
     localStorage.setItem('cookie-consent', 'all')
+    window.dispatchEvent(new Event('consent-changed'))
     setShow(false)
   }
 
   const acceptEssential = () => {
     localStorage.setItem('cookie-consent', 'essential')
+    window.dispatchEvent(new Event('consent-changed'))
     setShow(false)
   }
 

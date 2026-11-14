@@ -1,6 +1,10 @@
+﻿const { withSentryConfig } = require('@sentry/nextjs')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['undici', '@vercel/blob'],
+  experimental: {
+    serverComponentsExternalPackages: ['undici', '@vercel/blob'],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
@@ -52,4 +56,18 @@ const nextConfig = {
   reactStrictMode: true,
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  org: 'intelliwavve',
+  project: 'intelliwavve-web',
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+  sourcemaps: {
+    disable: process.env.VERCEL !== '1',
+  },
+})
