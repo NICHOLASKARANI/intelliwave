@@ -1,7 +1,8 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { cacheGet, cacheSet } from '@/lib/redis'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
 
@@ -82,6 +83,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ listing: result.rows[0] })
     }
 
+
+    // Cache only public browse (no filters that change result set)
+    const canCache =
+      !search && !sellerId && !condition && !location &&
+      minPrice === null && maxPrice === null && minRating === null && !inStock
+    const cacheKey =
+      canCache
+        ? 'marketplace:listings:v1:' + (category || 'all') + ':' + sort + ':' + limit
+        : null
+    if (cacheKey) {
+      const cached = await cacheGet(cacheKey)
+      if (cached) {
+        try {
+          return NextResponse.json({ listings: JSON.parse(cached), cached: true })
+        } catch {
+          // fall through to DB
+        }
+      }
+    }
     let query = `SELECT l.*, u.name as "sellerName", u.image as "sellerImage",
                  sp."storeName", sp."averageRating", sp."totalReviews", sp."trustScore",
                  (SELECT COUNT(*)::int FROM "MarketplaceFollow" f WHERE f."sellerId" = l."sellerId") AS "sellerFollowerCount"
@@ -117,6 +137,9 @@ export async function GET(req: NextRequest) {
     params.push(limit)
 
     const result = await pool.query(query, params)
+    if (cacheKey && result.rows.length > 0) {
+      cacheSet(cacheKey, JSON.stringify(result.rows), 30).catch(() => {})
+    }
     return NextResponse.json({ listings: result.rows })
   } catch (error) {
     console.error('Listings GET error:', error)
@@ -124,7 +147,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: Auth required — create listing
+// POST: Auth required â€” create listing
 export async function POST(req: NextRequest) {
   try {
     const session = await requireTenant(req)
