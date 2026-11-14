@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Quote, Linkedin, Mail } from 'lucide-react'
+import { ArrowRight, Quote, Linkedin, Mail, Building2, Rocket, GraduationCap } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'About IntelliWavve — Global Technology Company',
@@ -177,7 +177,7 @@ export default function AboutPage() {
                 description:
                   'Integrated global business operations — finance, procurement, inventory, HR, CRM, manufacturing, and analytics in one intelligent platform.',
                 image: '/products/wavecore.png',
-                href: '/products/wavecore',
+                href: '/wavecore-erp/auth/signup',
               },
               {
                 name: 'WavveMarket',
@@ -185,7 +185,7 @@ export default function AboutPage() {
                 description:
                   'Commerce infrastructure for sellers and marketplaces worldwide — with payments, logistics, and analytics built in.',
                 image: '/products/wavvemarket.png',
-                href: '/products/wavvemarket',
+                href: '/marketplace',
               },
               {
                 name: 'Wavve SI',
@@ -193,7 +193,7 @@ export default function AboutPage() {
                 description:
                   'Enterprise AI solutions — document processing, decision support, automation, and intelligent assistants for global business.',
                 image: '/products/wavveai.png',
-                href: '/products',
+                href: '/wavve-si',
               },
               {
                 name: 'Custom Platforms',
@@ -201,7 +201,7 @@ export default function AboutPage() {
                 description:
                   'Bespoke software, cloud infrastructure, and integration engineering delivered by IntelliWavve engineering teams worldwide.',
                 image: '/products/custom-platforms.png',
-                href: '/contact',
+                href: '/executives',
               },
             ].map((product) => (
               <div
@@ -337,6 +337,75 @@ export default function AboutPage() {
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
+        </div>
+        {/* Strategic Partnerships */}
+        <div className="mt-24">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Strategic{' '}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                Partnerships
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Building the intelligent infrastructure for a global economy — with partners who
+              share our ambition.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {[
+              {
+                icon: Building2,
+                title: 'Enterprise Clients',
+                description:
+                  'IntelliWavve partners with large enterprises to deploy WaveCore ERP across their operations — unifying finance, HR, procurement, manufacturing, and analytics into a single intelligent platform. Whether you operate across multiple subsidiaries, multiple markets, or multiple currencies, our enterprise team collaborates on deployment, integration, and continuous optimization.',
+              },
+              {
+                icon: Rocket,
+                title: 'Technology Partners',
+                description:
+                  'We collaborate with cloud providers, infrastructure operators, payment networks, logistics platforms, and systems integrators to extend the reach of WavveMarket, Wavve SI, and WaveCore ERP. Technology partners join our ecosystem to integrate their services and co-deliver enterprise-grade solutions at scale.',
+              },
+              {
+                icon: GraduationCap,
+                title: 'Institutions & Public Sector',
+                description:
+                  'Governments, universities, financial institutions, healthcare organizations, and development agencies partner with IntelliWavve to modernize their operations, digitize services, and unlock AI-driven decision-making. We design solutions aligned with institutional governance, compliance, and long-term sustainability.',
+              },
+            ].map((partner) => (
+              <div
+                key={partner.title}
+                className="rounded-2xl border border-border/60 bg-card p-8 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
+                  <partner.icon className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{partner.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {partner.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Ecosystem Expansion */}
+          <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 p-8 md:p-12">
+            <div className="max-w-4xl mx-auto text-center">
+              <h3 className="text-2xl md:text-3xl font-bold mb-4">Ecosystem Expansion</h3>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                WaveCore ERP, WavveMarket, and Wavve SI are expanding beyond their African origins
+                into a wider international footprint. Today, IntelliWavve serves enterprises,
+                sellers, institutions, and consumers across industries — with a technology
+                ecosystem engineered from Africa, designed for the world.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                As the IntelliWavve ecosystem continues to grow, we welcome partnerships that
+                extend our reach, deepen our capabilities, and strengthen the intelligent
+                infrastructure available to organizations worldwide.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
