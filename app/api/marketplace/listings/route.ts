@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
         ? 'marketplace:listings:v1:' + (category || 'all') + ':' + sort + ':' + limit
         : null
     if (cacheKey) {
+      console.log('[listings] canCache=true, key=', cacheKey)
       const cached = await cacheGet(cacheKey)
       if (cached) {
         try {
