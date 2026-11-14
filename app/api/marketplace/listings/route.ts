@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
 
     const result = await pool.query(query, params)
     if (cacheKey && result.rows.length > 0) {
-      cacheSet(cacheKey, JSON.stringify(result.rows), 30).catch(() => {})
+      await cacheSet(cacheKey, JSON.stringify(result.rows), 30)
     }
     return NextResponse.json(
       { listings: result.rows, cached: false },
