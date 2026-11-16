@@ -3316,3 +3316,83 @@ model PosSaleItem {
 
   @@index([saleId])
 }
+// ══════════════════════════════════════════════════════════════
+// HELPDESK MODULE
+// ══════════════════════════════════════════════════════════════
+
+model HelpdeskTicket {
+  id              String    @id @default(cuid())
+  organizationId  String
+  ticketNumber    String    @unique
+  subject         String
+  description     String?
+  priority        String    @default("MEDIUM")
+  status          String    @default("OPEN")
+  category        String?
+  requesterId     String?
+  requesterEmail  String?
+  requesterName   String?
+  assigneeId      String?
+  assigneeName    String?
+  dueAt           DateTime?
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  slaBreached     Boolean   @default(false)
+  tags            String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([assigneeId])
+  @@index([createdAt])
+}
+
+model HelpdeskComment {
+  id          String   @id @default(cuid())
+  ticketId    String
+  authorId    String?
+  authorName  String?
+  authorEmail String?
+  content     String
+  isInternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+model HelpdeskSLA {
+  id                   String   @id @default(cuid())
+  organizationId       String
+  priority             String
+  firstResponseMinutes Int      @default(60)
+  resolutionMinutes    Int      @default(1440)
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([organizationId, priority])
+}
+
+model KnowledgeArticle {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  content        String
+  category       String?
+  tags           String?
+  isPublished    Boolean  @default(false)
+  viewCount      Int      @default(0)
+  helpfulCount   Int      @default(0)
+  authorId       String?
+  authorName     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([isPublished])
+}
