@@ -74,7 +74,7 @@ export default function SubscriptionPage() {
   }
 
   const formatDate = (iso: string | null) => {
-    if (!iso) return '—'
+    if (!iso) return 'Ã¢â‚¬â€'
     return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
@@ -163,7 +163,7 @@ export default function SubscriptionPage() {
                       {data.currency} {Number(data.amount || 0).toLocaleString()}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      {isPaid ? 'Paid' : isTrial ? 'Trial period' : '—'}
+                      {isPaid ? 'Paid' : isTrial ? 'Trial period' : 'Ã¢â‚¬â€'}
                     </p>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function SubscriptionPage() {
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Subscription Plans</h2>
-              <p className="text-sm text-neutral-500">Pay via M-Pesa · Instant activation</p>
+              <p className="text-sm text-neutral-500">Pay via M-Pesa Ã‚Â· Instant activation</p>
             </div>
             <Link
               href="/wavecore-erp/subscription/pay"
@@ -321,6 +321,72 @@ export default function SubscriptionPage() {
                 <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">{f.a}</p>
               </details>
             ))}
+          </div>
+        </div>
+
+        {/* Alternative Payment — Bank Transfer */}
+        <div className="mt-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 rounded-3xl border-2 border-blue-200 dark:border-blue-800 p-6 lg:p-8">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <span className="text-2xl">🏦</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Alternative Payment Method</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">M-Pesa not working? Pay via bank transfer instead.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+            <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-blue-100 dark:border-blue-900">
+              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Account Name</p>
+              <p className="font-mono font-bold text-sm text-neutral-900 dark:text-white break-words">NIC NOVARANN LAUNCHPAD ENTERPRISES</p>
+            </div>
+            <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-blue-100 dark:border-blue-900">
+              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Business Number</p>
+              <p className="font-mono font-bold text-xl text-neutral-900 dark:text-white">400200</p>
+            </div>
+            <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-blue-100 dark:border-blue-900">
+              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Account Number</p>
+              <p className="font-mono font-bold text-xl text-neutral-900 dark:text-white">01103362733001</p>
+            </div>
+          </div>
+
+          <div className="bg-white/60 dark:bg-neutral-900/60 rounded-xl p-4 mb-4">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-3">
+              <strong className="font-bold text-neutral-900 dark:text-white">How it works:</strong>
+            </p>
+            <ol className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2 ml-4 list-decimal">
+              <li>Send payment to the account above (any bank, any country)</li>
+              <li>Contact us with your transaction reference</li>
+              <li>Your subscription unlocks within <strong className="font-bold text-emerald-600 dark:text-emerald-400">10 minutes</strong> of verification</li>
+            </ol>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <a
+              href="tel:0714694493"
+              className="flex items-center gap-3 bg-white dark:bg-neutral-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-4 transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
+                <span className="text-lg">📞</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase">Call / WhatsApp</p>
+                <p className="font-bold text-neutral-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">0714694493</p>
+              </div>
+            </a>
+            <a
+              href="mailto:support@intelliwavve.com"
+              className="flex items-center gap-3 bg-white dark:bg-neutral-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4 transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                <span className="text-lg">✉️</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase">Email</p>
+                <p className="font-bold text-neutral-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors break-words">support@intelliwavve.com</p>
+              </div>
+            </a>
           </div>
         </div>
 
