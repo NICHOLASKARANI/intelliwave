@@ -74,7 +74,7 @@ export default function SubscriptionPage() {
   }
 
   const formatDate = (iso: string | null) => {
-    if (!iso) return 'Ã¢â‚¬â€'
+    if (!iso) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'
     return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
@@ -163,7 +163,7 @@ export default function SubscriptionPage() {
                       {data.currency} {Number(data.amount || 0).toLocaleString()}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      {isPaid ? 'Paid' : isTrial ? 'Trial period' : 'Ã¢â‚¬â€'}
+                      {isPaid ? 'Paid' : isTrial ? 'Trial period' : 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}
                     </p>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function SubscriptionPage() {
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Subscription Plans</h2>
-              <p className="text-sm text-neutral-500">Pay via M-Pesa Ã‚Â· Instant activation</p>
+              <p className="text-sm text-neutral-500">Pay via M-Pesa Ãƒâ€šÃ‚Â· Instant activation</p>
             </div>
             <Link
               href="/wavecore-erp/subscription/pay"
@@ -324,11 +324,11 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
-        {/* Alternative Payment — Bank Transfer */}
+        {/* Alternative Payment â€” Bank Transfer */}
         <div className="mt-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 rounded-3xl border-2 border-blue-200 dark:border-blue-800 p-6 lg:p-8">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <span className="text-2xl">🏦</span>
+              <span className="text-2xl">ðŸ¦</span>
             </div>
             <div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Alternative Payment Method</h3>
@@ -368,7 +368,7 @@ export default function SubscriptionPage() {
               className="flex items-center gap-3 bg-white dark:bg-neutral-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-4 transition-colors group"
             >
               <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
-                <span className="text-lg">📞</span>
+                <span className="text-lg">ðŸ“ž</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase">Call / WhatsApp</p>
@@ -380,7 +380,7 @@ export default function SubscriptionPage() {
               className="flex items-center gap-3 bg-white dark:bg-neutral-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4 transition-colors group"
             >
               <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
-                <span className="text-lg">✉️</span>
+                <span className="text-lg">âœ‰ï¸</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase">Email</p>
@@ -389,6 +389,97 @@ export default function SubscriptionPage() {
             </a>
           </div>
         </div>
+
+          {/* Bank Payment Reference Submission */}
+          <div className="mt-5 pt-5 border-t-2 border-blue-200 dark:border-blue-800">
+            <p className="text-sm font-bold text-neutral-900 dark:text-white mb-3">
+              Already paid via bank? Submit your transaction reference below
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <select
+                id="bank-plan-select"
+                className="px-4 py-3 rounded-xl border-2 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-medium focus:outline-none focus:border-blue-500"
+              >
+                <option value="MONTHLY">Monthly — KSh 500 (30 days)</option>
+                <option value="QUARTERLY">3 Months — KSh 1,350 (90 days)</option>
+                <option value="HALF_YEARLY">6 Months — KSh 2,750 (180 days)</option>
+                <option value="YEARLY">1 Year — KSh 5,000 (365 days)</option>
+              </select>
+              <input
+                id="bank-txn-input"
+                type="text"
+                placeholder="Transaction reference (e.g., EQUITY-20261116-ABC123)"
+                className="px-4 py-3 rounded-xl border-2 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-mono focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <button
+              id="bank-submit-btn"
+              type="button"
+              onClick={async (e) => {
+                const btn = e.currentTarget as HTMLButtonElement
+                const planSelect = document.getElementById('bank-plan-select') as HTMLSelectElement
+                const txnInput = document.getElementById('bank-txn-input') as HTMLInputElement
+                const statusDiv = document.getElementById('bank-status')
+                const txnRef = txnInput.value.trim()
+                const planId = planSelect.value
+                if (!txnRef || txnRef.length < 6) {
+                  if (statusDiv) statusDiv.textContent = '⚠️ Please enter a valid transaction reference (min 6 chars)'
+                  return
+                }
+                btn.disabled = true
+                btn.textContent = 'Submitting...'
+                if (statusDiv) statusDiv.textContent = ''
+                try {
+                  const res = await fetch('/api/wavecore/bank-payment/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ txnReference: txnRef, planId }),
+                  })
+                  const data = await res.json()
+                  if (!res.ok) {
+                    if (statusDiv) statusDiv.textContent = '❌ ' + (data.error || 'Submission failed')
+                    btn.disabled = false
+                    btn.textContent = 'Submit Reference'
+                    return
+                  }
+                  if (statusDiv) statusDiv.textContent = '⏳ Submitted. Checking approval...'
+                  btn.textContent = 'Awaiting Approval...'
+                  let polls = 0
+                  const poll = async () => {
+                    polls++
+                    try {
+                      const sRes = await fetch('/api/wavecore/bank-payment/status?id=' + data.pendingId)
+                      const sData = await sRes.json()
+                      if (sData.approved) {
+                        if (statusDiv) statusDiv.textContent = '✅ Approved! Subscription active. Reloading...'
+                        setTimeout(() => window.location.reload(), 1500)
+                        return
+                      }
+                      if (sData.rejected) {
+                        if (statusDiv) statusDiv.textContent = '❌ Payment rejected: ' + (sData.rejectionNote || 'Contact support')
+                        btn.disabled = false
+                        btn.textContent = 'Submit Reference'
+                        return
+                      }
+                      if (statusDiv) statusDiv.textContent = '⏳ Awaiting approval (' + polls + '/60 — ' + (polls * 10) + 's)'
+                      if (polls < 60) setTimeout(poll, 10000)
+                    } catch {
+                      if (polls < 60) setTimeout(poll, 10000)
+                    }
+                  }
+                  setTimeout(poll, 5000)
+                } catch {
+                  if (statusDiv) statusDiv.textContent = '❌ Network error. Try again.'
+                  btn.disabled = false
+                  btn.textContent = 'Submit Reference'
+                }
+              }}
+              className="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-lg transition-all disabled:opacity-50"
+            >
+              Submit Reference
+            </button>
+            <div id="bank-status" className="mt-3 text-sm text-neutral-700 dark:text-neutral-300"></div>
+          </div>
 
         <div className="mt-8 text-center text-xs text-neutral-500">
           Need help? <Link href="/contact" className="text-emerald-600 hover:underline font-bold">Contact Support</Link>

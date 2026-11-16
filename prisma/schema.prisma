@@ -1255,6 +1255,7 @@ model Notification {
   type           String   @default("SYSTEM")
   title          String
   content        String?
+  link           String?
   isRead         Boolean  @default(false)
   createdAt      DateTime @default(now())
 
@@ -1560,8 +1561,8 @@ enum PayrollStatus {
 }
 
 // ============================================================
-// PROCUREMENT MODULE â€” Source-to-Pay (S2P) / Procure-to-Pay (P2P)
-// Added: P0 schema expansion â€” 49 models
+// PROCUREMENT MODULE Ã¢â‚¬â€ Source-to-Pay (S2P) / Procure-to-Pay (P2P)
+// Added: P0 schema expansion Ã¢â‚¬â€ 49 models
 // Every model is tenant-isolated via organizationId
 // ============================================================
 
@@ -2495,7 +2496,7 @@ model ProcurementAuditLog {
 }
 
 // ============================================================
-// SupplierQuotation â€” bridges live /api/wavecore/quotes route
+// SupplierQuotation Ã¢â‚¬â€ bridges live /api/wavecore/quotes route
 // (DB table: "SupplierQuote") into the ORM
 // ============================================================
 model SupplierQuotation {
@@ -2521,7 +2522,7 @@ model SupplierQuotation {
 }
 
 // ============================================================
-// FIN-14 â€” Schema reconciliation
+// FIN-14 Ã¢â‚¬â€ Schema reconciliation
 // These tables exist in the runtime DB via CREATE TABLE IF NOT
 // EXISTS in the app code. Declaring them here so a fresh
 // `prisma db push` against an empty database produces the same
@@ -2614,7 +2615,7 @@ model SupplierInvoice {
   @@index([organizationId, dueDate])
 }
 
-// â”€â”€â”€ Wavve SI: Restaurant Table Management â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Wavve SI: Restaurant Table Management Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model RestaurantTable {
   id             String   @id @default(cuid())
   name           String
@@ -2631,13 +2632,13 @@ model RestaurantTable {
   @@index([organizationId], map: "idx_table_org")
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// WAVVEMARKET â€” Marketplace Models
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// WAVVEMARKET Ã¢â‚¬â€ Marketplace Models
 // Mirrors existing production DB structure. Zero migrations needed.
 // Added: 2026-11-09
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
-// â”€â”€â”€ MarketplaceListing â€” 25 columns, public product listings â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceListing Ã¢â‚¬â€ 25 columns, public product listings Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceListing {
   id              Int       @id @default(autoincrement())
   sellerId        String
@@ -2685,7 +2686,7 @@ model MarketplaceListing {
   @@map("MarketplaceListing")
 }
 
-// â”€â”€â”€ MarketplaceOrder â€” 22 columns, buyer orders â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceOrder Ã¢â‚¬â€ 22 columns, buyer orders Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceOrder {
   id                String    @id
   orderNumber       String
@@ -2721,7 +2722,7 @@ model MarketplaceOrder {
   @@map("MarketplaceOrder")
 }
 
-// â”€â”€â”€ MarketplaceOrderItem â€” 17 columns â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceOrderItem Ã¢â‚¬â€ 17 columns Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceOrderItem {
   id                 String    @id
   orderId            String
@@ -2747,7 +2748,7 @@ model MarketplaceOrderItem {
   @@map("MarketplaceOrderItem")
 }
 
-// â”€â”€â”€ MarketplaceCategory â€” 5 columns, 32 categories exist â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceCategory Ã¢â‚¬â€ 5 columns, 32 categories exist Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceCategory {
   id           Int       @id @default(autoincrement())
   name         String
@@ -2759,7 +2760,7 @@ model MarketplaceCategory {
   @@map("MarketplaceCategory")
 }
 
-// â”€â”€â”€ MarketplaceConversation â€” 7 columns, buyer-seller chat â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceConversation Ã¢â‚¬â€ 7 columns, buyer-seller chat Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceConversation {
   id            Int       @id @default(autoincrement())
   listingId     Int?
@@ -2778,7 +2779,7 @@ model MarketplaceConversation {
   @@map("MarketplaceConversation")
 }
 
-// â”€â”€â”€ MarketplaceMessage â€” 7 columns, chat messages â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceMessage Ã¢â‚¬â€ 7 columns, chat messages Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceMessage {
   id             Int       @id @default(autoincrement())
   conversationId Int?
@@ -2797,7 +2798,7 @@ model MarketplaceMessage {
   @@map("MarketplaceMessage")
 }
 
-// â”€â”€â”€ MarketplaceReview â€” 12 columns, 0 rows currently â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceReview Ã¢â‚¬â€ 12 columns, 0 rows currently Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceReview {
   id                 String    @id
   listingId          Int?
@@ -2829,7 +2830,7 @@ model MarketplaceReview {
   @@map("MarketplaceReview")
 }
 
-// â”€â”€â”€ MarketplaceSaved â€” 4 columns, wishlist â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceSaved Ã¢â‚¬â€ 4 columns, wishlist Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceSaved {
   id           Int       @id @default(autoincrement())
   userId       String
@@ -2846,7 +2847,7 @@ model MarketplaceSaved {
   @@map("MarketplaceSaved")
 }
 
-// â”€â”€â”€ Cart â€” 6 columns, 2 active carts â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Cart Ã¢â‚¬â€ 6 columns, 2 active carts Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model Cart {
   id             String    @id
   userId         String
@@ -2859,7 +2860,7 @@ model Cart {
   @@map("Cart")
 }
 
-// â”€â”€â”€ CartItem â€” 6 columns â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ CartItem Ã¢â‚¬â€ 6 columns Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model CartItem {
   id        String    @id
   cartId    String
@@ -2873,7 +2874,7 @@ model CartItem {
   @@map("CartItem")
 }
 
-// â”€â”€â”€ SellerProfile â€” 22 columns â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SellerProfile Ã¢â‚¬â€ 22 columns Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model SellerProfile {
   id             String    @id
   userId         String    @unique(map: "SellerProfile_userId_unique")
@@ -2914,7 +2915,7 @@ model SellerProfile {
   @@map("SellerProfile")
 }
 
-// â”€â”€â”€ SellerWallet â€” 12 columns â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SellerWallet Ã¢â‚¬â€ 12 columns Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model SellerWallet {
   id                 String    @id
   sellerId           String
@@ -2935,7 +2936,7 @@ model SellerWallet {
   @@map("SellerWallet")
 }
 
-// â”€â”€â”€ Settlement â€” 10 columns, payout records â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Settlement Ã¢â‚¬â€ 10 columns, payout records Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model Settlement {
   id             String    @id
   number         String?
@@ -2953,7 +2954,7 @@ model Settlement {
   @@map("Settlement")
 }
 
-// â”€â”€â”€ WalletTransaction â€” 12 columns â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ WalletTransaction Ã¢â‚¬â€ 12 columns Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model WalletTransaction {
   id             String    @id
   sellerId       String
@@ -2974,13 +2975,13 @@ model WalletTransaction {
   @@map("WalletTransaction")
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// WAVVEMARKET â€” Social Engagement Models (Tier 1)
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// WAVVEMARKET Ã¢â‚¬â€ Social Engagement Models (Tier 1)
 // Added: 2026-11-09
-// These tables are NEW â€” created by migration, not existing
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// These tables are NEW Ã¢â‚¬â€ created by migration, not existing
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
-// â”€â”€â”€ MarketplaceLike â€” user likes a listing â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceLike Ã¢â‚¬â€ user likes a listing Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceLike {
   id        String   @id @default(cuid())
   userId    String
@@ -2995,7 +2996,7 @@ model MarketplaceLike {
   @@map("MarketplaceLike")
 }
 
-// â”€â”€â”€ MarketplaceComment â€” user comments on listings (with nested replies) â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceComment Ã¢â‚¬â€ user comments on listings (with nested replies) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceComment {
   id        String   @id @default(cuid())
   userId    String
@@ -3018,7 +3019,7 @@ model MarketplaceComment {
   @@map("MarketplaceComment")
 }
 
-// â”€â”€â”€ MarketplaceCommentLike â€” user likes a comment â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceCommentLike Ã¢â‚¬â€ user likes a comment Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceCommentLike {
   id        String   @id @default(cuid())
   userId    String
@@ -3032,7 +3033,7 @@ model MarketplaceCommentLike {
   @@map("MarketplaceCommentLike")
 }
 
-// â”€â”€â”€ MarketplaceFollow â€” user follows a seller â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceFollow Ã¢â‚¬â€ user follows a seller Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceFollow {
   id        String   @id @default(cuid())
   userId    String
@@ -3045,7 +3046,7 @@ model MarketplaceFollow {
   @@map("MarketplaceFollow")
 }
 
-// â”€â”€â”€ MarketplaceShare â€” track product shares â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MarketplaceShare Ã¢â‚¬â€ track product shares Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 model MarketplaceShare {
   id        String   @id @default(cuid())
   listingId Int
@@ -3211,9 +3212,9 @@ model MarketplaceQAAnswer {
   @@index([createdAt(sort: Desc)], map: "MQAA_createdAt_idx")
   @@map("MarketplaceQAAnswer")
 }
-// ══════════════════════════════════════════════════════════════
-// Pending bank payments — user pays via bank transfer, CEO approves
-// ══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Pending bank payments â€” user pays via bank transfer, CEO approves
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 model PendingBankPayment {
   id             String   @id @default(cuid())
   userId         String?
@@ -3237,4 +3238,81 @@ model PendingBankPayment {
   @@index([status])
   @@index([email])
   @@index([txnReference])
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// POS MODULE
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+model PosTerminal {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  location       String?
+  deviceId       String?  @unique
+  isActive       Boolean  @default(true)
+  lastSyncAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model PosSession {
+  id             String    @id @default(cuid())
+  terminalId     String
+  organizationId String
+  cashierId      String
+  cashierName    String?
+  openingCash    Float     @default(0)
+  closingCash    Float?
+  expectedCash   Float?
+  cashVariance   Float?
+  status         String    @default("OPEN")
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  notes          String?
+
+  @@index([terminalId])
+  @@index([status])
+}
+
+model PosSale {
+  id               String   @id @default(cuid())
+  organizationId   String
+  terminalId       String
+  sessionId        String
+  receiptNumber    String   @unique
+  cashierId        String
+  customerId       String?
+  subtotal         Float
+  taxAmount        Float    @default(0)
+  discountAmount   Float    @default(0)
+  total            Float
+  currency         String   @default("KES")
+  paymentMethod    String
+  paymentReference String?
+  changeGiven      Float    @default(0)
+  status           String   @default("COMPLETED")
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model PosSaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  productId   String?
+  productName String
+  sku         String?
+  quantity    Float
+  unitPrice   Float
+  taxRate     Float    @default(0)
+  lineTotal   Float
+  createdAt   DateTime @default(now())
+
+  @@index([saleId])
 }

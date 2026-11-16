@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
 
-    let query = `SELECT id, type, title, content, "isRead", "createdAt"
+    let query = `SELECT id, type, title, content, link, "isRead", "createdAt"
                  FROM "Notification"
                  WHERE "userId" = $1`
     const params: any[] = [session.userId]

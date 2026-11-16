@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { DollarSign,  Bell, X, Loader2, UserPlus, ShoppingCart, MessageSquare, Star, Package, Check } from 'lucide-react'
 
 interface Notification {
@@ -8,6 +9,7 @@ interface Notification {
   type: string
   title: string
   content: string | null
+  link: string | null
   isRead: boolean
   createdAt: string
 }
@@ -40,13 +42,14 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   const loadNotifications = async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/marketplace/notifications?limit=20', { cache: 'no-store' })
       if (res.status === 401) {
-        // Not logged in â€” hide bell
+        // Not logged in ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â hide bell
         return
       }
       if (res.ok) {
@@ -167,8 +170,18 @@ export function NotificationBell() {
                   return (
                     <button
                       key={n.id}
-                      onClick={() => markOneRead(n.id)}
-                      className={'w-full text-left p-4 hover:bg-neutral-800/50 transition-colors ' + (!n.isRead ? 'bg-cyan-500/5' : '')}
+                      onClick={() => {
+                        if (!n.isRead) markOneRead(n.id)
+                        if (n.link) {
+                          setOpen(false)
+                          if (n.link.startsWith('http')) {
+                            window.location.href = n.link
+                          } else {
+                            router.push(n.link)
+                          }
+                        }
+                      }}
+                      className={'w-full text-left p-4 hover:bg-neutral-800/50 transition-colors ' + (!n.isRead ? 'bg-cyan-500/5' : '') + (n.link ? ' cursor-pointer' : '')}
                     >
                       <div className="flex items-start gap-3">
                         <div className={'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ' + colorClass}>
