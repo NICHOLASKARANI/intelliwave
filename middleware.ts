@@ -149,9 +149,14 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/wavecore-erp/:path*',
-    '/marketplace/inbox/:path*',
-    '/marketplace/saved/:path*',
-    '/marketplace/sell/:path*',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - Static assets (svg, png, jpg, jpeg, gif, webp)
+     * This ensures referral tracking works on EVERY page, including the homepage.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)).*)',
   ],
 }

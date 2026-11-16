@@ -201,6 +201,31 @@ export default function SubscriptionPage() {
                 </button>
               </div>
 
+              {/* Persistent bank details — always visible as fallback */}
+              <div className="mb-6 p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-bold text-blue-300">Bank Transfer Details (Global + Kenya fallback)</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-slate-500">Account Name</p>
+                    <p className="text-white font-mono">NIC NOVARANN LAUNCHPAD ENTERPRISES</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Business Number</p>
+                    <p className="text-white font-mono">400200</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Account Number</p>
+                    <p className="text-white font-mono">01103362733001</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Send payment to the account above, then submit your transaction reference below.
+                </p>
+              </div>
+
               {message && (
                 <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
                   {message}
