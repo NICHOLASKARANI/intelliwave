@@ -17,14 +17,32 @@ const HR_PATHS = [
 ]
 
 /**
- * Decode session role from the wavecore_session cookie without a DB hit.
- * The actual session is validated inside the API. This middleware ONLY
- * decides whether to render the shell. It NEVER trusts the cookie for data.
- * Note: role is embedded in the cached session on first page load; we
- * fall back to a lightweight role marker cookie set by the login route.
+ * Referral + product + region capture — additive, does not affect auth.
+ * Sets 30-day cookies so referrals survive navigation and delay before payment.
  */
+function applyReferralTracking(request: NextRequest, response: NextResponse): void {
+  const url = new URL(request.url)
+  const exec = url.searchParams.get('exec') || url.searchParams.get('ref')
+  const product = url.searchParams.get('product')
+  const redirect = url.searchParams.get('redirect')
+  const thirtyDays = 60 * 60 * 24 * 30
+
+  if (exec && exec.length >= 3 && exec.length <= 64) {
+    response.cookies.set('iw_exec', exec, { maxAge: thirtyDays, path: '/', sameSite: 'lax' })
+  }
+  if (product && ['wavvemarket', 'wavecore-erp', 'wavve-si'].includes(product)) {
+    response.cookies.set('iw_product', product, { maxAge: thirtyDays, path: '/', sameSite: 'lax' })
+  }
+  if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+    response.cookies.set('iw_redirect', redirect, { maxAge: 3600, path: '/', sameSite: 'lax' })
+  }
+  const country = request.headers.get('x-vercel-ip-country') || ''
+  if (country.length === 2) {
+    response.cookies.set('iw_country', country, { maxAge: thirtyDays, path: '/', sameSite: 'lax' })
+  }
+}
+
 function getRoleFromCookie(request: NextRequest): string | null {
-  // Primary source: explicit role cookie set on login
   const roleCookie = request.cookies.get('wavecore_role')?.value
   if (roleCookie) return roleCookie
   return null
@@ -39,23 +57,37 @@ function redirectToLogin(request: NextRequest, pathname: string) {
   const loginUrl = new URL('/wavecore-erp/auth/login', request.url)
   loginUrl.searchParams.set('redirect', pathname)
   loginUrl.searchParams.set('returnTo', pathname)
-  return NextResponse.redirect(loginUrl)
+  const res = NextResponse.redirect(loginUrl)
+  applyReferralTracking(request, res)
+  return res
 }
 
 function redirectToDashboard(request: NextRequest, reason: string) {
   const url = new URL('/wavecore-erp', request.url)
   url.searchParams.set('denied', reason)
-  return NextResponse.redirect(url)
+  const res = NextResponse.redirect(url)
+  applyReferralTracking(request, res)
+  return res
+}
+
+function nextWithReferral(request: NextRequest): NextResponse {
+  const res = NextResponse.next()
+  applyReferralTracking(request, res)
+  return res
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // API routes handle their own auth — bypass
-  if (pathname.startsWith('/api/')) return NextResponse.next()
+  if (pathname.startsWith('/api/')) {
+    return nextWithReferral(request)
+  }
 
   // Public auth pages
-  if (PUBLIC_AUTH_PATHS.includes(pathname)) return NextResponse.next()
+  if (PUBLIC_AUTH_PATHS.includes(pathname)) {
+    return nextWithReferral(request)
+  }
 
   // ============ HR SPECIFIC GATE ============
   const isHRPath = HR_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
@@ -64,39 +96,36 @@ export function middleware(request: NextRequest) {
       return redirectToLogin(request, pathname)
     }
     const role = getRoleFromCookie(request)
-    // If role cookie missing (older session) — allow shell render,
-    // API will 401/403 as appropriate. This preserves back-compat.
     if (role && !HR_ALLOWED_ROLES.includes(role)) {
       return redirectToDashboard(request, 'hr-role-required')
     }
-
-    // Note: subscription check happens at the generic ERP gate below
-    return NextResponse.next()
+    return nextWithReferral(request)
   }
 
   // ============ GENERIC ERP GATE ============
   if (pathname.startsWith('/wavecore-erp')) {
-    // Free-to-access paths
-    if (pathname.startsWith('/wavecore-erp/subscription')) return NextResponse.next()
-    if (pathname.startsWith('/wavecore-erp/billing')) return NextResponse.next()
+    if (pathname.startsWith('/wavecore-erp/subscription')) {
+      return nextWithReferral(request)
+    }
+    if (pathname.startsWith('/wavecore-erp/billing')) {
+      return nextWithReferral(request)
+    }
 
     if (!hasSession(request)) {
       return redirectToLogin(request, pathname)
     }
 
-    // Subscription gate — applies to ALL ERP modules
     const subscribed = request.cookies.get('wavecore_subscribed')?.value
     if (subscribed === 'false') {
-      {
-        const subUrl = new URL('/wavecore-erp/subscription', request.url)
-        subUrl.searchParams.set('returnTo', pathname)
-        return NextResponse.redirect(subUrl)
-      }
+      const subUrl = new URL('/wavecore-erp/subscription', request.url)
+      subUrl.searchParams.set('returnTo', pathname)
+      const res = NextResponse.redirect(subUrl)
+      applyReferralTracking(request, res)
+      return res
     }
   }
 
   // ============ MARKETPLACE GATE ============
-  // Requires login + active subscription (paywall)
   if (
     pathname.startsWith('/marketplace/inbox') ||
     pathname.startsWith('/marketplace/saved') ||
@@ -105,18 +134,17 @@ export function middleware(request: NextRequest) {
     if (!hasSession(request)) {
       return redirectToLogin(request, pathname)
     }
-    // Subscription gate for authenticated marketplace sellers/buyers
     const subscribed = request.cookies.get('wavecore_subscribed')?.value
     if (subscribed === 'false') {
-      {
-        const subUrl = new URL('/wavecore-erp/subscription', request.url)
-        subUrl.searchParams.set('returnTo', pathname)
-        return NextResponse.redirect(subUrl)
-      }
+      const subUrl = new URL('/wavecore-erp/subscription', request.url)
+      subUrl.searchParams.set('returnTo', pathname)
+      const res = NextResponse.redirect(subUrl)
+      applyReferralTracking(request, res)
+      return res
     }
   }
 
-  return NextResponse.next()
+  return nextWithReferral(request)
 }
 
 export const config = {

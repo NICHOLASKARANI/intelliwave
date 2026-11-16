@@ -3211,3 +3211,30 @@ model MarketplaceQAAnswer {
   @@index([createdAt(sort: Desc)], map: "MQAA_createdAt_idx")
   @@map("MarketplaceQAAnswer")
 }
+// ══════════════════════════════════════════════════════════════
+// Pending bank payments — user pays via bank transfer, CEO approves
+// ══════════════════════════════════════════════════════════════
+model PendingBankPayment {
+  id             String   @id @default(cuid())
+  userId         String?
+  email          String?
+  planId         String
+  amount         Int
+  currency       String   @default("KES")
+  txnReference   String   @unique
+  bankName       String?
+  payerName      String?
+  execId         String?
+  status         String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectionNote  String?
+  notes          String?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([txnReference])
+}

@@ -1,13 +1,41 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Crown, ArrowRight, CheckCircle } from 'lucide-react'
+import { Crown, ArrowRight, CheckCircle, Clock, Trophy, Zap } from 'lucide-react'
 
 export default function ExecutivesLanding() {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', location: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
+
+  // ─── 7-Day 100-User Sprint Countdown ───
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+
+  useEffect(() => {
+    // Sprint ends 7 days from first visit (persisted in localStorage so it doesn't reset)
+    const KEY = 'iw_sprint_deadline'
+    let deadline = localStorage.getItem(KEY)
+    if (!deadline) {
+      deadline = String(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      localStorage.setItem(KEY, deadline)
+    }
+    const endTime = parseInt(deadline, 10)
+
+    const tick = () => {
+      const diff = Math.max(0, endTime - Date.now())
+      setTimeLeft({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / (1000 * 60)) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      })
+    }
+
+    tick()
+    const timer = setInterval(tick, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,7 +58,82 @@ export default function ExecutivesLanding() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white pt-24 pb-20 px-4">
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-start">
+      <div className="max-w-6xl mx-auto">
+
+        {/* ═══ 7-DAY 100-USER SPRINT — LIVE COUNTDOWN ═══ */}
+        <div className="mb-12 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border-2 border-amber-400/50 rounded-3xl p-6 md:p-8 shadow-2xl">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Zap className="w-6 h-6 text-amber-400" />
+            <span className="text-sm font-bold text-amber-300 uppercase tracking-widest">
+              Live Sprint — Limited Time
+            </span>
+          </div>
+          <h2 className="text-2xl md:text-4xl font-extrabold text-center text-white mb-2">
+            7-Day 100-User Sprint
+          </h2>
+          <p className="text-center text-slate-300 mb-6 max-w-2xl mx-auto">
+            First Executive to onboard 100 paying subscribers in 7 days unlocks{' '}
+            <span className="text-amber-400 font-bold">KSh 20,000 bonus cash</span> — on top of your monthly tier reward.
+          </p>
+
+          <div className="grid grid-cols-4 gap-2 md:gap-4 max-w-xl mx-auto">
+            {[
+              { label: 'DAYS', value: timeLeft.days },
+              { label: 'HRS', value: timeLeft.hours },
+              { label: 'MIN', value: timeLeft.minutes },
+              { label: 'SEC', value: timeLeft.seconds },
+            ].map((t) => (
+              <div key={t.label} className="bg-black/40 rounded-2xl p-3 md:p-4 border border-amber-400/30 text-center">
+                <div className="text-2xl md:text-4xl font-extrabold text-white tabular-nums">
+                  {String(t.value).padStart(2, '0')}
+                </div>
+                <div className="text-[10px] md:text-xs text-amber-300 font-bold mt-1 tracking-widest">
+                  {t.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-center gap-2 mt-6 text-sm text-slate-400">
+            <Clock className="w-4 h-4" />
+            <span>Sprint ends automatically — no extensions</span>
+          </div>
+        </div>
+
+        {/* ═══ LEADERBOARD ═══ */}
+        <div className="mb-12 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 md:p-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="w-6 h-6 text-amber-400" />
+            <h3 className="text-xl md:text-2xl font-bold text-white">Top Executives</h3>
+            <span className="ml-auto text-xs text-slate-500">Live rankings</span>
+          </div>
+          <p className="text-sm text-slate-400 mb-4">
+            Leaderboard updates as Executives onboard paying users. Be the first to hit L3.
+          </p>
+          <div className="space-y-2">
+            {[
+              { rank: 1, name: 'Be the first', subs: 0, level: '—' },
+              { rank: 2, name: 'Your name here', subs: 0, level: '—' },
+              { rank: 3, name: 'Your name here', subs: 0, level: '—' },
+            ].map((e) => (
+              <div key={e.rank} className="flex items-center gap-4 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center font-bold text-amber-400 text-sm">
+                  {e.rank}
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-white text-sm">{e.name}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-400">{e.subs} subs</p>
+                  <p className="text-xs text-amber-400 font-bold">{e.level}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ═══ EXISTING GRID (PRESERVED) ═══ */}
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
         {/* Left — Hero */}
         <div>
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-semibold text-sm mb-6 border border-amber-500/30">
@@ -108,6 +211,7 @@ export default function ExecutivesLanding() {
               </p>
             </form>
           )}
+        </div>
         </div>
       </div>
     </div>
