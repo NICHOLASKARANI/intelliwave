@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Shield, Lock, Loader2, X, Crown, BarChart3, Zap, ShoppingCart, Store, AlertTriangle, Rocket } from 'lucide-react'
+import { Shield, Lock, Loader2, X, Crown, BarChart3, Zap, ShoppingCart, Store, AlertTriangle, Rocket, Banknote } from 'lucide-react'
 
 const TABS = [
   { id: 'executives', label: 'Executives',  icon: Crown,        url: '/executives/admin' },
   { id: 'analytics',  label: 'Analytics',   icon: BarChart3,    url: '/executives/admin/analytics' },
   { id: 'erp',        label: 'ERP',         icon: Zap,          url: '/wavecore-erp/admin/marketplace-moderation' },
   { id: 'shop',       label: 'Shop',        icon: Store,        url: '/shop/admin' },
+  { id: 'bank-payments', label: 'Bank Payments', icon: Banknote,     url: '/admin/bank-payments' },
   { id: 'security',   label: 'Security',    icon: AlertTriangle, url: '/security/admin' },
 ] as const
 
@@ -21,7 +22,7 @@ export default function NuclearCommandCenterPage() {
   const [activeTab, setActiveTab] = useState<TabId>('executives')
   const [masterPassword, setMasterPassword] = useState<string>('')
 
-  // Restore session on mount — cookie exists, but we need the password in memory for iframes
+  // Restore session on mount â€” cookie exists, but we need the password in memory for iframes
   useEffect(() => {
     // We can't recover the password from the HttpOnly cookie.
     // If the cookie is valid but we lost the password (page refresh), re-ask.
@@ -78,7 +79,7 @@ export default function NuclearCommandCenterPage() {
               Nuclear Command Center
             </h1>
             <p className="text-slate-400 text-sm">IntelliWavve Master Control</p>
-            <p className="text-slate-500 text-xs mt-1">WaveCore ERP · WaveMarket · Wavve SI · Shop · Executives</p>
+            <p className="text-slate-500 text-xs mt-1">WaveCore ERP Â· WaveMarket Â· Wavve SI Â· Shop Â· Executives</p>
           </div>
 
           <form onSubmit={handleUnlock} className="p-8 rounded-3xl bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
@@ -112,7 +113,7 @@ export default function NuclearCommandCenterPage() {
           </form>
 
           <p className="text-center text-xs text-slate-600 mt-6">
-            Authorized personnel only · All access is logged
+            Authorized personnel only Â· All access is logged
           </p>
         </div>
       </div>
@@ -169,7 +170,7 @@ export default function NuclearCommandCenterPage() {
         </div>
       </nav>
 
-      {/* Content — iframe */}
+      {/* Content â€” iframe */}
       <main className="flex-1 bg-white">
         <iframe
           key={iframeUrl}
