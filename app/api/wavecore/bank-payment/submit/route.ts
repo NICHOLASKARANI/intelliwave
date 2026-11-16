@@ -74,10 +74,10 @@ export async function POST(req: NextRequest) {
 
     await pool.query(
       `INSERT INTO "PendingBankPayment"
-        (id, "userId", email, "planId", amount, currency, "txnReference",
+        (id, "userId", email, "organizationId", "planId", amount, currency, "txnReference",
          "payerName", status, "ipAddress", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, 'KES', $6, $7, 'PENDING', $8, NOW(), NOW())`,
-      [id, session.userId, email, planId, plan.amount, txnReference, payerName, ip]
+       VALUES ($1, $2, $3, $4, $5, $6, 'KES', $7, $8, 'PENDING', $9, NOW(), NOW())`,
+      [id, session.userId, email, session.organizationId, planId, plan.amount, txnReference, payerName, ip]
     )
 
     // ─── Audit log ───
