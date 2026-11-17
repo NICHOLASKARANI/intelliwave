@@ -6,6 +6,7 @@ import { pool } from '@/lib/wavecore/db'
 import { ensureInvoiceSchema } from '@/lib/wavecore/invoice-schema'
 import { postInvoiceToGL } from '@/lib/wavecore/finance/post-journal'
 import { writeAudit, writeAuditAsync } from '@/lib/wavecore/audit'
+import { evaluateFinanceApproval, createFinanceApprovalRequest } from '@/lib/wavecore/finance/finance-approval'
 
 // GET: List all invoices with customer info
 export async function GET(request: NextRequest) {
@@ -96,22 +97,52 @@ export async function POST(request: NextRequest) {
     // Either the whole invoice saves, or nothing does.
     const client = await pool.connect()
     try {
+      // ── Approval check (finance-only, isolated to FinanceApproval table) ──
+      const approvalDecision = await evaluateFinanceApproval(
+        session.organizationId,
+        'INVOICE',
+        total
+      )
+
       await client.query('BEGIN')
 
+      let effectiveStatus: string = body.status || 'DRAFT'
+      let approvalId: string | null = null
+
+      if (approvalDecision.requiresApproval) {
+        effectiveStatus = 'PENDING_APPROVAL'
+        const approval = await createFinanceApprovalRequest(client, {
+          organizationId: session.organizationId,
+          documentType: 'INVOICE',
+          entityId: invoiceId,
+          entityNumber: invoiceNumber,
+          amount: total,
+          userId: session.userId,
+          userName: session.name || 'User',
+          chainId: approvalDecision.chainId,
+        })
+        approvalId = approval.approvalId
+      }
+
       const result = await client.query(
-        `INSERT INTO "CustomerInvoice" (id, number, date, "dueDate", status, subtotal, "taxAmount", total, "customerId", "organizationId", "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) RETURNING *`,
+        `INSERT INTO "CustomerInvoice"
+           (id, number, date, "dueDate", status, subtotal, "taxAmount", total,
+            "customerId", "organizationId", "requiresApproval", "approvalId",
+            "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW()) RETURNING *`,
         [
           invoiceId,
           invoiceNumber,
           body.date || new Date().toISOString().split('T')[0],
           body.dueDate || body.date || new Date().toISOString().split('T')[0],
-          body.status || 'DRAFT',
+          effectiveStatus,
           subtotal,
           taxAmount,
           total,
           customerId,
-          session.organizationId
+          session.organizationId,
+          approvalDecision.requiresApproval,
+          approvalId,
         ]
       )
 
@@ -129,22 +160,23 @@ export async function POST(request: NextRequest) {
             Number(item.quantity) || 0,
             Number(item.unitPrice) || 0,
             itemTotal,
-            session.organizationId
+            session.organizationId,
           ]
         )
         savedItems.push(itemRow.rows[0])
       }
 
-      // Post to General Ledger (same transaction — invoice + journal commit/rollback together)
-      await postInvoiceToGL(client, {
-        organizationId: session.organizationId,
-        invoiceId,
-        invoiceNumber,
-        date: body.date || new Date().toISOString().split('T')[0],
-        subtotal,
-        taxAmount,
-        total,
-      })
+      if (!approvalDecision.requiresApproval) {
+        await postInvoiceToGL(client, {
+          organizationId: session.organizationId,
+          invoiceId,
+          invoiceNumber,
+          date: body.date || new Date().toISOString().split('T')[0],
+          subtotal,
+          taxAmount,
+          total,
+        })
+      }
 
       await writeAudit(client, {
         organizationId: session.organizationId,
@@ -152,7 +184,12 @@ export async function POST(request: NextRequest) {
         action: 'CREATE',
         entityType: 'CustomerInvoice',
         entityId: invoiceId,
-        changes: { number: invoiceNumber, subtotal, taxAmount, total, customerId, status: body.status || 'DRAFT' },
+        changes: {
+          number: invoiceNumber, subtotal, taxAmount, total, customerId,
+          status: effectiveStatus,
+          requiresApproval: approvalDecision.requiresApproval,
+          approvalId,
+        },
       })
 
       await client.query('COMMIT')
@@ -165,7 +202,10 @@ export async function POST(request: NextRequest) {
           taxAmount,
           total,
           items: savedItems
-        }
+        },
+        requiresApproval: approvalDecision.requiresApproval,
+        approvalId,
+        chainName: approvalDecision.chainName,
       }, { status: 201 })
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {})

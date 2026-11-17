@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { evaluateFinanceApproval, createFinanceApprovalRequest } from '@/lib/wavecore/finance/finance-approval'
 
 // GET: List journal entries
 export async function GET(request: NextRequest) {
@@ -76,34 +77,79 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create journal entry using CORRECT columns
-    const result = await pool.query(
-      `INSERT INTO "JournalEntry" (id, number, date, reference, description, status, amount, "organizationId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *`,
-      [
-        entryId,
-        entryNumber,
-        body.date || new Date().toISOString().split('T')[0],
-        body.reference || null,
-        body.description || '',
-        body.status || 'POSTED',
-        totalDebit,
-        session.organizationId
-      ]
+    // ── Approval check (finance-only, isolated to FinanceApproval table) ──
+    // Only kicks in when an ApprovalChain rule matches the amount for this org.
+    // For orgs with no configured chains, this returns requiresApproval=false
+    // and the rest of the code below is byte-for-byte identical to before.
+    const approvalDecision = await evaluateFinanceApproval(
+      session.organizationId,
+      'JOURNAL_ENTRY',
+      totalDebit
     )
 
-    // Create journal items
-    for (const item of items) {
-      await pool.query(
-        `INSERT INTO "JournalItem" (id, "journalEntryId", "accountId", debit, credit, "organizationId")
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [crypto.randomUUID(), entryId, item.accountId, item.debit || 0, item.credit || 0, session.organizationId]
-      )
-    }
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
 
-    return NextResponse.json({ 
-      entry: { ...result.rows[0], itemCount: items.length, totalDebit, totalCredit }
-    }, { status: 201 })
+      let effectiveStatus: string = body.status || 'POSTED'
+      let approvalId: string | null = null
+
+      if (approvalDecision.requiresApproval) {
+        effectiveStatus = 'PENDING_APPROVAL'
+        const approval = await createFinanceApprovalRequest(client, {
+          organizationId: session.organizationId,
+          documentType: 'JOURNAL_ENTRY',
+          entityId: entryId,
+          entityNumber: entryNumber,
+          amount: totalDebit,
+          userId: session.userId,
+          userName: session.name || 'User',
+          chainId: approvalDecision.chainId,
+        })
+        approvalId = approval.approvalId
+      }
+
+      const result = await client.query(
+        `INSERT INTO "JournalEntry"
+           (id, number, date, reference, description, status, amount,
+            "organizationId", "requiresApproval", "approvalId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) RETURNING *`,
+        [
+          entryId,
+          entryNumber,
+          body.date || new Date().toISOString().split('T')[0],
+          body.reference || null,
+          body.description || '',
+          effectiveStatus,
+          totalDebit,
+          session.organizationId,
+          approvalDecision.requiresApproval,
+          approvalId,
+        ]
+      )
+
+      for (const item of items) {
+        await client.query(
+          `INSERT INTO "JournalItem" (id, "journalEntryId", "accountId", debit, credit, "organizationId")
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [crypto.randomUUID(), entryId, item.accountId, item.debit || 0, item.credit || 0, session.organizationId]
+        )
+      }
+
+      await client.query('COMMIT')
+
+      return NextResponse.json({
+        entry: { ...result.rows[0], itemCount: items.length, totalDebit, totalCredit },
+        requiresApproval: approvalDecision.requiresApproval,
+        approvalId,
+        chainName: approvalDecision.chainName,
+      }, { status: 201 })
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {})
+      throw err
+    } finally {
+      client.release()
+    }
   } catch (error) {
     console.error('Journal create error:', error)
     return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })

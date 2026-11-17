@@ -5,6 +5,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 import { postPaymentToGL } from '@/lib/wavecore/finance/post-journal'
 import { writeAudit, writeAuditAsync } from '@/lib/wavecore/audit'
+import { evaluateFinanceApproval, createFinanceApprovalRequest } from '@/lib/wavecore/finance/finance-approval'
 
 export async function GET(request: NextRequest) {
   try {
@@ -67,45 +68,98 @@ export async function POST(request: NextRequest) {
     const number = 'PAY-' + Date.now().toString().slice(-8)
     const dateStr = body.date || new Date().toISOString().split('T')[0]
 
-    await client.query('BEGIN')
+      // ── Approval check (finance-only, isolated to FinanceApproval table) ──
+      const approvalDecision = await evaluateFinanceApproval(
+        session.organizationId,
+        'PAYMENT',
+        amount
+      )
 
-    const result = await client.query(
-      `INSERT INTO "CustomerPayment"
-         (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
-      [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null]
-    )
+      await client.query('BEGIN')
 
-    // Post to General Ledger: Dr 1100 Bank / Cr 1200 AR
-    await postPaymentToGL(client, {
-      organizationId: session.organizationId,
-      paymentId: id,
-      reference: number,
-      date: dateStr,
-      amount,
-    })
+      let approvalId: string | null = null
 
-    // Update invoice status based on new total paid
-    const newPaid = alreadyPaid + amount
-    const newStatus = newPaid >= invoiceTotal - 0.01 ? 'PAID' : 'PARTIALLY_PAID'
-    await client.query(
-      `UPDATE "CustomerInvoice" SET status = $1, "updatedAt" = NOW()
-       WHERE id = $2 AND "organizationId" = $3`,
-      [newStatus, invoiceId, session.organizationId]
-    )
+      if (approvalDecision.requiresApproval) {
+        const paymentRow = await client.query(
+          `INSERT INTO "CustomerPayment"
+             (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
+          [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null]
+        )
 
-    await writeAudit(client, {
-      organizationId: session.organizationId,
-      userId: session.userId,
-      action: 'CREATE',
-      entityType: 'CustomerPayment',
-      entityId: id,
-      changes: { number, amount, method: body.method || 'MPESA', invoiceId, newInvoiceStatus: newStatus, reference: body.reference || null },
-    })
+        const approval = await createFinanceApprovalRequest(client, {
+          organizationId: session.organizationId,
+          documentType: 'PAYMENT',
+          entityId: id,
+          entityNumber: number,
+          amount,
+          userId: session.userId,
+          userName: session.name || 'User',
+          chainId: approvalDecision.chainId,
+        })
+        approvalId = approval.approvalId
 
-    await client.query('COMMIT')
+        await writeAudit(client, {
+          organizationId: session.organizationId,
+          userId: session.userId,
+          action: 'CREATE',
+          entityType: 'CustomerPayment',
+          entityId: id,
+          changes: { number, amount, method: body.method || 'MPESA', invoiceId, status: 'PENDING_APPROVAL', approvalId },
+        })
 
-    return NextResponse.json({ payment: result.rows[0], newInvoiceStatus: newStatus }, { status: 201 })
+        await client.query('COMMIT')
+
+        return NextResponse.json({
+          payment: paymentRow.rows[0],
+          requiresApproval: true,
+          approvalId,
+          chainName: approvalDecision.chainName,
+        }, { status: 201 })
+      }
+
+      // Under threshold — existing behavior preserved
+      const result = await client.query(
+        `INSERT INTO "CustomerPayment"
+           (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
+        [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null]
+      )
+
+      await postPaymentToGL(client, {
+        organizationId: session.organizationId,
+        paymentId: id,
+        reference: number,
+        date: dateStr,
+        amount,
+      })
+
+      const newPaid = alreadyPaid + amount
+      const newStatus = newPaid >= invoiceTotal - 0.01 ? 'PAID' : 'PARTIALLY_PAID'
+      await client.query(
+        `UPDATE "CustomerInvoice" SET status = $1, "updatedAt" = NOW()
+         WHERE id = $2 AND "organizationId" = $3`,
+        [newStatus, invoiceId, session.organizationId]
+      )
+
+      await writeAudit(client, {
+        organizationId: session.organizationId,
+        userId: session.userId,
+        action: 'CREATE',
+        entityType: 'CustomerPayment',
+        entityId: id,
+        changes: { number, amount, method: body.method || 'MPESA', invoiceId, newInvoiceStatus: newStatus, reference: body.reference || null },
+      })
+
+      await client.query('COMMIT')
+
+      return NextResponse.json({
+        payment: result.rows[0],
+        newInvoiceStatus: newStatus,
+        requiresApproval: false,
+        approvalId: null,
+        chainName: null,
+      }, { status: 201 })
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {})
     console.error('Payment create error:', error)
