@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     const newPaid = alreadyPaid + amount
     const newStatus = newPaid >= invoiceTotal - 0.01 ? 'PAID' : 'PARTIALLY_PAID'
     await client.query(
-      `UPDATE "CustomerInvoice" SET status = $1, "paidAt" = CASE WHEN $1 = 'PAID' THEN NOW() ELSE "paidAt" END, "updatedAt" = NOW()
+      `UPDATE "CustomerInvoice" SET status = $1, "updatedAt" = NOW()
        WHERE id = $2 AND "organizationId" = $3`,
       [newStatus, invoiceId, session.organizationId]
     )
