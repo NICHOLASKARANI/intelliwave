@@ -325,3 +325,114 @@ export async function postBillToGL(
 
   return { journalEntryId: result.journalEntryId, skipped: false }
 }
+/**
+ * Post a customer credit note to GL (reverses a customer invoice).
+ *
+ *   DEBIT  4000 Sales Revenue         subtotal
+ *   DEBIT  2100 VAT Payable           taxAmount (if > 0)
+ *   CREDIT 1200 Accounts Receivable   total
+ *
+ * Idempotent: tagged [CCN:<first8>] in description.
+ * Zero-amount-safe.
+ */
+export async function postCustomerCreditNoteToGL(
+  client: PoolClient,
+  args: {
+    organizationId: string
+    creditNoteId: string
+    creditNoteNumber: string
+    date: Date | string
+    subtotal: number
+    taxAmount: number
+    total: number
+  }
+): Promise<{ journalEntryId: string; skipped: boolean }> {
+  if (Number(args.total) <= 0.01) {
+    return { journalEntryId: '', skipped: true }
+  }
+
+  const tag = `[CCN:${String(args.creditNoteId).slice(0, 8)}]`
+  const existing = await client.query(
+    `SELECT id FROM "JournalEntry" WHERE "organizationId" = $1 AND description LIKE $2 LIMIT 1`,
+    [args.organizationId, `%${tag}%`]
+  )
+  if ((existing.rowCount ?? 0) > 0) {
+    return { journalEntryId: existing.rows[0].id, skipped: true }
+  }
+
+  const lines: JournalLineInput[] = [
+    { accountCode: '4000', description: `CN ${args.creditNoteNumber} — sales reversal`, debit: Number(args.subtotal) || 0, credit: 0 },
+    { accountCode: '1200', description: `CN ${args.creditNoteNumber} — AR reduction`, debit: 0, credit: Number(args.total) || 0 },
+  ]
+  if (Number(args.taxAmount) > 0.01) {
+    lines.splice(1, 0, { accountCode: '2100', description: `CN ${args.creditNoteNumber} — VAT reversal`, debit: Number(args.taxAmount), credit: 0 })
+  }
+
+  const result = await postJournal(client, {
+    organizationId: args.organizationId,
+    date: args.date,
+    description: `Customer credit note ${args.creditNoteNumber} approved ${tag}`,
+    reference: args.creditNoteNumber,
+    lines,
+    sourceType: 'CREDIT_NOTE',
+    sourceId: args.creditNoteId,
+  })
+
+  return { journalEntryId: result.journalEntryId, skipped: false }
+}
+
+/**
+ * Post a supplier credit note to GL (reverses a supplier invoice / bill).
+ *
+ *   DEBIT  2000 Accounts Payable     total
+ *   CREDIT 5000 Cost of Goods Sold   subtotal
+ *   CREDIT 2100 VAT Payable          taxAmount (if > 0)
+ *
+ * Idempotent: tagged [SCN:<first8>] in description.
+ * Zero-amount-safe.
+ */
+export async function postSupplierCreditNoteToGL(
+  client: PoolClient,
+  args: {
+    organizationId: string
+    creditNoteId: string
+    creditNoteNumber: string
+    date: Date | string
+    subtotal: number
+    taxAmount: number
+    total: number
+  }
+): Promise<{ journalEntryId: string; skipped: boolean }> {
+  if (Number(args.total) <= 0.01) {
+    return { journalEntryId: '', skipped: true }
+  }
+
+  const tag = `[SCN:${String(args.creditNoteId).slice(0, 8)}]`
+  const existing = await client.query(
+    `SELECT id FROM "JournalEntry" WHERE "organizationId" = $1 AND description LIKE $2 LIMIT 1`,
+    [args.organizationId, `%${tag}%`]
+  )
+  if ((existing.rowCount ?? 0) > 0) {
+    return { journalEntryId: existing.rows[0].id, skipped: true }
+  }
+
+  const lines: JournalLineInput[] = [
+    { accountCode: '2000', description: `CN ${args.creditNoteNumber} — AP reduction`, debit: Number(args.total) || 0, credit: 0 },
+    { accountCode: '5000', description: `CN ${args.creditNoteNumber} — COGS reversal`, debit: 0, credit: Number(args.subtotal) || 0 },
+  ]
+  if (Number(args.taxAmount) > 0.01) {
+    lines.push({ accountCode: '2100', description: `CN ${args.creditNoteNumber} — VAT reversal`, debit: 0, credit: Number(args.taxAmount) })
+  }
+
+  const result = await postJournal(client, {
+    organizationId: args.organizationId,
+    date: args.date,
+    description: `Supplier credit note ${args.creditNoteNumber} approved ${tag}`,
+    reference: args.creditNoteNumber,
+    lines,
+    sourceType: 'CREDIT_NOTE',
+    sourceId: args.creditNoteId,
+  })
+
+  return { journalEntryId: result.journalEntryId, skipped: false }
+}
