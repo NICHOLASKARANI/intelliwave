@@ -111,6 +111,8 @@ export type DocumentType =
   | 'INVOICE'          // customer invoice (finance AR)
   | 'JOURNAL_ENTRY'    // manual + auto-posted journal entries (finance GL)
   | 'PAYMENT'          // customer payment (finance AR)
+  | 'CUSTOMER_CREDIT_NOTE'
+  | 'SUPPLIER_CREDIT_NOTE'
 
 export interface ResolvedStep {
   id: string

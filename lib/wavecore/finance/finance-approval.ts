@@ -15,7 +15,7 @@
 import type { PoolClient } from 'pg'
 import { resolveApprovalChain, type DocumentType } from '@/lib/wavecore/procurement-approval'
 
-export type FinanceDocumentType = 'INVOICE' | 'JOURNAL_ENTRY' | 'PAYMENT'
+export type FinanceDocumentType = 'INVOICE' | 'JOURNAL_ENTRY' | 'PAYMENT' | 'CUSTOMER_CREDIT_NOTE' | 'SUPPLIER_CREDIT_NOTE'
 
 export interface FinanceApprovalDecision {
   requiresApproval: boolean
