@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { ensureFixedAssetSchema } from '@/lib/wavecore/fixed-assets-schema'
+import { resolveOpenPeriod } from '@/lib/wavecore/finance/fiscal-period'
 
 const round2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 
@@ -107,12 +108,15 @@ export async function POST(request: NextRequest) {
 
     await client.query('BEGIN')
 
+    // Resolve (or auto-create) the open fiscal period for this posting date
+    const period = await resolveOpenPeriod(client, orgId, postDate)
+
     await client.query(
       `INSERT INTO "JournalEntry"
          (id, number, date, reference, description, status, amount,
-          "organizationId", "createdAt", "updatedAt")
-       VALUES ($1,$2,$3,$4,$5,'POSTED',$6,$7,NOW(),NOW())`,
-      [entryId, entryNumber, postDate, 'DEPRECIATION', description, total, orgId]
+          "fiscalPeriodId", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,'POSTED',$6,$7,$8,NOW(),NOW())`,
+      [entryId, entryNumber, postDate, 'DEPRECIATION', description, total, period.periodId, orgId]
     )
 
     // Consolidate Dr and Cr per account so the entry has 2–N lines, not 2N.

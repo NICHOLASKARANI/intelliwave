@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { ensureFixedAssetSchema } from '@/lib/wavecore/fixed-assets-schema'
+import { resolveOpenPeriod } from '@/lib/wavecore/finance/fiscal-period'
 
 const round2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 
@@ -135,12 +136,16 @@ export async function POST(
 
     await client.query('BEGIN')
 
+    // Resolve (or auto-create) the open fiscal period for this posting date
+    // Throws if the target period is closed (belt-and-suspenders on top of the FIN-8 lock above)
+    const period = await resolveOpenPeriod(client, orgId, postDate)
+
     await client.query(
       `INSERT INTO "JournalEntry"
          (id, number, date, reference, description, status, amount,
-          "organizationId", "createdAt", "updatedAt")
-       VALUES ($1,$2,$3,$4,$5,'POSTED',$6,$7,NOW(),NOW())`,
-      [entryId, entryNumber, postDate, asset.code, description, amount, orgId]
+          "fiscalPeriodId", "organizationId", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,'POSTED',$6,$7,$8,NOW(),NOW())`,
+      [entryId, entryNumber, postDate, asset.code, description, amount, period.periodId, orgId]
     )
 
     // Dr depreciation expense
