@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { seedStandardAccounts } from '@/lib/wavecore/finance/seed-accounts'
 import { hash } from 'bcryptjs'
 import { validatePassword } from '@/lib/wavecore/password-policy'
 import { sign } from 'jsonwebtoken'
@@ -103,6 +104,10 @@ export async function POST(req: NextRequest) {
       `INSERT INTO "Session" (id, "userId", "sessionToken", expires) VALUES ($1, $2, $3, NOW() + INTERVAL '24 hours')`,
       [sessionToken, userId, sessionToken]
     )
+
+      // STEP 5: Seed 18 standard Chart of Accounts for the new org
+      // (inside the same transaction — if signup succeeds, accounts exist; if it rolls back, no orphans)
+      await seedStandardAccounts(client, orgId)
 
     // ─── REFERRAL CODE HANDLING ───
     // If a referral code was provided, credit the executive leader

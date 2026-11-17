@@ -16,6 +16,7 @@
 
 import type { PoolClient } from 'pg'
 import { pool } from '@/lib/wavecore/db'
+import { resolveOpenPeriod } from '@/lib/wavecore/finance/fiscal-period'
 
 export interface JournalLineInput {
   accountCode: string
@@ -107,11 +108,15 @@ export async function postJournal(
     ? `${input.description} [${input.sourceType}${input.sourceId ? ':' + input.sourceId.slice(0, 8) : ''}]`
     : input.description
 
+  // Resolve (or auto-create) the open fiscal period for this posting date.
+  // Throws if the target period is closed.
+  const period = await resolveOpenPeriod(client, input.organizationId, dateStr)
+
   await client.query(
     `INSERT INTO "JournalEntry"
        (id, number, date, reference, description, status, amount,
         "fiscalPeriodId", "organizationId", "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4, $5, 'POSTED', $6, NULL, $7, NOW(), NOW())`,
+     VALUES ($1, $2, $3, $4, $5, 'POSTED', $6, $7, $8, NOW(), NOW())`,
     [
       journalId,
       journalNumber,
@@ -119,6 +124,7 @@ export async function postJournal(
       input.reference || null,
       description,
       input.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0),
+      period.periodId,
       input.organizationId,
     ]
   )
