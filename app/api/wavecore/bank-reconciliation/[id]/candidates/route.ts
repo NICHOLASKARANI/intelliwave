@@ -29,7 +29,7 @@ export async function GET(
     const orgId = session.organizationId
 
     const recRes = await pool.query(
-      `SELECT id, "bankAccountId", "statementBalance", "closingBalance", status
+      `SELECT id, "bankAccountId", "statementBalance", "bookBalance" AS "closingBalance", status
        FROM "BankReconciliation"
        WHERE id = $1 AND "organizationId" = $2`,
       [params.id, orgId]

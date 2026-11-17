@@ -51,7 +51,7 @@ export async function POST(
     // Resolve the reconciliation
     const recRes = await client.query(
       `SELECT id, "bankAccountId", "statementBalance",
-              COALESCE(NULLIF("bookBalance", 0), "closingBalance", 0) AS book
+              COALESCE("bookBalance", 0) AS book
        FROM "BankReconciliation"
        WHERE id = $1 AND "organizationId" = $2`,
       [params.id, orgId]
