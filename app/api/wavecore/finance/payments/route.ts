@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 import { postPaymentToGL } from '@/lib/wavecore/finance/post-journal'
+import { writeAudit, writeAuditAsync } from '@/lib/wavecore/audit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,6 +94,15 @@ export async function POST(request: NextRequest) {
       [newStatus, invoiceId, session.organizationId]
     )
 
+    await writeAudit(client, {
+      organizationId: session.organizationId,
+      userId: session.userId,
+      action: 'CREATE',
+      entityType: 'CustomerPayment',
+      entityId: id,
+      changes: { number, amount, method: body.method || 'MPESA', invoiceId, newInvoiceStatus: newStatus, reference: body.reference || null },
+    })
+
     await client.query('COMMIT')
 
     return NextResponse.json({ payment: result.rows[0], newInvoiceStatus: newStatus }, { status: 201 })
@@ -112,7 +122,16 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    await pool.query(`DELETE FROM "CustomerPayment" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    const delResult = await pool.query(`DELETE FROM "CustomerPayment" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    if (delResult.rowCount && delResult.rowCount > 0) {
+      await writeAuditAsync({
+        organizationId: session.organizationId,
+        userId: session.userId,
+        action: 'DELETE',
+        entityType: 'CustomerPayment',
+        entityId: id || '',
+      })
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })

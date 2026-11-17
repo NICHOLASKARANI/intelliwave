@@ -5,6 +5,7 @@ import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 import { ensureInvoiceSchema } from '@/lib/wavecore/invoice-schema'
 import { postInvoiceToGL } from '@/lib/wavecore/finance/post-journal'
+import { writeAudit, writeAuditAsync } from '@/lib/wavecore/audit'
 
 // GET: List all invoices with customer info
 export async function GET(request: NextRequest) {
@@ -145,6 +146,15 @@ export async function POST(request: NextRequest) {
         total,
       })
 
+      await writeAudit(client, {
+        organizationId: session.organizationId,
+        userId: session.userId,
+        action: 'CREATE',
+        entityType: 'CustomerInvoice',
+        entityId: invoiceId,
+        changes: { number: invoiceNumber, subtotal, taxAmount, total, customerId, status: body.status || 'DRAFT' },
+      })
+
       await client.query('COMMIT')
 
       const invoice = result.rows[0]
@@ -177,10 +187,20 @@ export async function PUT(request: NextRequest) {
     await ensureInvoiceSchema()
 
     const body = await request.json()
-    const result = await pool.query(
+      const result = await pool.query(
       `UPDATE "CustomerInvoice" SET status = $1, "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3 RETURNING *`,
       [body.status, body.id, session.organizationId]
     )
+    if (result.rowCount && result.rowCount > 0) {
+      await writeAuditAsync({
+        organizationId: session.organizationId,
+        userId: session.userId,
+        action: 'UPDATE',
+        entityType: 'CustomerInvoice',
+        entityId: body.id,
+        changes: { status: body.status },
+      })
+    }
     return NextResponse.json({ invoice: result.rows[0] })
   } catch (error) {
     return NextResponse.json({ error: 'Update failed: ' + (error as Error).message }, { status: 500 })
@@ -196,7 +216,16 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    await pool.query(`DELETE FROM "CustomerInvoice" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    const delResult = await pool.query(`DELETE FROM "CustomerInvoice" WHERE id = $1 AND "organizationId" = $2`, [id, session.organizationId])
+    if (delResult.rowCount && delResult.rowCount > 0) {
+      await writeAuditAsync({
+        organizationId: session.organizationId,
+        userId: session.userId,
+        action: 'DELETE',
+        entityType: 'CustomerInvoice',
+        entityId: id || '',
+      })
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: 'Delete failed: ' + (error as Error).message }, { status: 500 })
@@ -211,10 +240,20 @@ export async function PATCH(request: NextRequest) {
     await ensureInvoiceSchema()
 
     const body = await request.json()
-    const result = await pool.query(
+      const result = await pool.query(
       `UPDATE "CustomerInvoice" SET "dueDate" = $1, status = $2, "updatedAt" = NOW() WHERE id = $3 AND "organizationId" = $4 RETURNING *`,
       [body.dueDate || null, body.status || 'DRAFT', body.id, session.organizationId]
     )
+    if (result.rowCount && result.rowCount > 0) {
+      await writeAuditAsync({
+        organizationId: session.organizationId,
+        userId: session.userId,
+        action: 'UPDATE',
+        entityType: 'CustomerInvoice',
+        entityId: body.id,
+        changes: { dueDate: body.dueDate || null, status: body.status || 'DRAFT' },
+      })
+    }
     return NextResponse.json({ invoice: result.rows[0] })
   } catch (error) {
     return NextResponse.json({ error: 'Update failed' }, { status: 500 })
