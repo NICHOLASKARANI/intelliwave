@@ -5,8 +5,7 @@ import {
   ArrowLeft, Plus, Search, Filter, Download, Upload,
   FileText, Calculator, Building2, CreditCard, Receipt, Percent, Lock, PiggyBank, Box, Landmark,
   ChevronDown, TrendingUp, DollarSign, LayoutDashboard,
-  ChevronRight
-} from 'lucide-react'
+  ChevronRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
@@ -44,6 +43,7 @@ const quickLinks = [
   { icon: Building2, label: 'Bank Reconciliation', desc: 'Match bank statements', href: '/wavecore-erp/finance/reconciliation' },
   { icon: Calculator, label: 'Budget', desc: 'Plan and track budgets', href: '/wavecore-erp/finance/budgets' },
   { icon: TrendingUp, label: 'Reports', desc: 'Financial statements & reports', href: '/wavecore-erp/finance/reports' },
+  { icon: CheckCircle2, label: 'Approvals', desc: 'Pending invoice, journal & payment approvals', href: '/wavecore-erp/finance/approvals' },
   { icon: Percent, label: 'VAT Return', desc: 'Output / input VAT & net payable', href: '/wavecore-erp/finance/reports/vat' },
   { icon: LayoutDashboard, label: 'Trial Balance', desc: 'All accounts with debit/credit balance', href: '/wavecore-erp/finance/gl/trial-balance' },
   { icon: FileText, label: 'Balance Sheet', desc: 'Assets, liabilities and equity', href: '/wavecore-erp/finance/gl/balance-sheet' },
