@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
+import { postPaymentToGL } from '@/lib/wavecore/finance/post-journal'
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,25 +31,77 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const client = await pool.connect()
   try {
     const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
+    const amount = Number(body.amount) || 0
+    if (amount <= 0) return NextResponse.json({ error: 'Amount must be positive' }, { status: 400 })
+
+    const invoiceId = body.invoiceId || null
+    if (!invoiceId) return NextResponse.json({ error: 'Invoice is required' }, { status: 400 })
+
+    // Verify the invoice belongs to this tenant
+    const invCheck = await pool.query(
+      `SELECT id, number, total,
+              COALESCE((SELECT SUM(amount) FROM "CustomerPayment" WHERE "invoiceId" = $1), 0) AS "alreadyPaid"
+       FROM "CustomerInvoice"
+       WHERE id = $1 AND "organizationId" = $2`,
+      [invoiceId, session.organizationId]
+    )
+    if (invCheck.rowCount === 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    const invoice = invCheck.rows[0]
+    const invoiceTotal = Number(invoice.total)
+    const alreadyPaid = Number(invoice.alreadyPaid || 0)
+    const remaining = invoiceTotal - alreadyPaid
+
+    if (amount > remaining + 0.01) {
+      return NextResponse.json({ error: `Overpayment: remaining balance is ${remaining.toFixed(2)}` }, { status: 400 })
+    }
+
     const crypto = require('crypto')
     const id = crypto.randomUUID()
     const number = 'PAY-' + Date.now().toString().slice(-8)
+    const dateStr = body.date || new Date().toISOString().split('T')[0]
 
-    const result = await pool.query(
-      `INSERT INTO "CustomerPayment" (id, "number", amount, method, "invoiceId", "organizationId", "createdAt")
-       VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *`,
-      [id, number, body.amount, body.method || 'MPESA', body.invoiceId || null, session.organizationId]
+    await client.query('BEGIN')
+
+    const result = await client.query(
+      `INSERT INTO "CustomerPayment"
+         (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
+      [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null]
     )
 
-    return NextResponse.json({ payment: result.rows[0] }, { status: 201 })
+    // Post to General Ledger: Dr 1100 Bank / Cr 1200 AR
+    await postPaymentToGL(client, {
+      organizationId: session.organizationId,
+      paymentId: id,
+      reference: number,
+      date: dateStr,
+      amount,
+    })
+
+    // Update invoice status based on new total paid
+    const newPaid = alreadyPaid + amount
+    const newStatus = newPaid >= invoiceTotal - 0.01 ? 'PAID' : 'PARTIALLY_PAID'
+    await client.query(
+      `UPDATE "CustomerInvoice" SET status = $1, "paidAt" = CASE WHEN $1 = 'PAID' THEN NOW() ELSE "paidAt" END, "updatedAt" = NOW()
+       WHERE id = $2 AND "organizationId" = $3`,
+      [newStatus, invoiceId, session.organizationId]
+    )
+
+    await client.query('COMMIT')
+
+    return NextResponse.json({ payment: result.rows[0], newInvoiceStatus: newStatus }, { status: 201 })
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
     console.error('Payment create error:', error)
     return NextResponse.json({ error: 'Create failed: ' + (error as Error).message }, { status: 500 })
+  } finally {
+    client.release()
   }
 }
 
