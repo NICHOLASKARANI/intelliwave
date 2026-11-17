@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Plus, Download, Zap, FileText, ArrowLeft, Loader2 } from 'lucide-react'
+import { Plus, Download, Zap, FileText, ArrowLeft, Loader2, LayoutDashboard, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Account {
@@ -125,6 +125,39 @@ export default function ChartOfAccountsPage() {
               </Button>
             </Link>
           </div>
+        </div>
+
+        {/* Financial Statements — links to real GL reports (Trial Balance / Balance Sheet / Income Statement) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Link href="/wavecore-erp/finance/gl/trial-balance" className="block p-5 bg-white dark:bg-neutral-900 rounded-2xl border hover:border-indigo-400 hover:shadow-sm transition">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+                <FileText className="w-5 h-5 text-indigo-600" />
+              </div>
+              <h3 className="font-bold">Trial Balance</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">All accounts with debit and credit balances as of a date</p>
+          </Link>
+
+          <Link href="/wavecore-erp/finance/gl/balance-sheet" className="block p-5 bg-white dark:bg-neutral-900 rounded-2xl border hover:border-green-400 hover:shadow-sm transition">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-green-50 dark:bg-green-950/40">
+                <LayoutDashboard className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="font-bold">Balance Sheet</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">Assets, liabilities and equity at a point in time</p>
+          </Link>
+
+          <Link href="/wavecore-erp/finance/gl/income-statement" className="block p-5 bg-white dark:bg-neutral-900 rounded-2xl border hover:border-purple-400 hover:shadow-sm transition">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/40">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+              </div>
+              <h3 className="font-bold">Income Statement</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">Revenue, expenses and net profit for a period</p>
+          </Link>
         </div>
 
         {loading ? (
