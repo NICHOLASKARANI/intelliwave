@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
 import { ensureInvoiceSchema } from '@/lib/wavecore/invoice-schema'
+import { postInvoiceToGL } from '@/lib/wavecore/finance/post-journal'
 
 // GET: List all invoices with customer info
 export async function GET(request: NextRequest) {
@@ -132,6 +133,17 @@ export async function POST(request: NextRequest) {
         )
         savedItems.push(itemRow.rows[0])
       }
+
+      // Post to General Ledger (same transaction — invoice + journal commit/rollback together)
+      await postInvoiceToGL(client, {
+        organizationId: session.organizationId,
+        invoiceId,
+        invoiceNumber,
+        date: body.date || new Date().toISOString().split('T')[0],
+        subtotal,
+        taxAmount,
+        total,
+      })
 
       await client.query('COMMIT')
 
