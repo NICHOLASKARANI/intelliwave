@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -14,7 +14,7 @@ import { LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
 const modules = [
   { icon: Calculator, title: 'Finance & Accounting', desc: 'GL, AP/AR, Bank Rec, Budgets', href: '/wavecore-erp/finance', bg: 'from-emerald-500 to-green-600', color: 'text-emerald-500' },
   { icon: Users, title: 'CRM & Sales', desc: 'Leads, Opportunities, Pipeline', href: '/wavecore-erp/crm', bg: 'from-blue-500 to-indigo-600', color: 'text-blue-500' },
-  { icon: Store, title: 'Point of Sale (POS)', desc: 'Ring up sales, M-Pesa, cash drawer', href: '/wavecore-erp/pos', bg: 'from-pink-500 to-rose-600', color: 'text-pink-500' },
+  { icon: Store, title: 'Point of Sale (POS)', desc: 'Ring up sales, M-Pesa, cash drawer', href: '/wavecore-erp/store', bg: 'from-pink-500 to-rose-600', color: 'text-pink-500' },
   { icon: Package, title: 'Inventory', desc: 'Warehouses, Stock, Serial', href: '/wavecore-erp/inventory', bg: 'from-orange-500 to-amber-600', color: 'text-orange-500' },
   { icon: Factory, title: 'Manufacturing', desc: 'BOM, Work Orders, Quality', href: '/wavecore-erp/manufacturing', bg: 'from-purple-500 to-violet-600', color: 'text-purple-500' },
   { icon: Briefcase, title: 'HR', desc: 'Employees, Payroll, Attendance', href: '/wavecore-erp/hr', bg: 'from-indigo-500 to-blue-600', color: 'text-indigo-500' },
