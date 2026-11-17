@@ -1,257 +1,254 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
-import { LifeBuoy, Plus, Search, Clock, CheckCircle2, AlertCircle, BookOpen, Settings2, Loader2 } from 'lucide-react'
-
-type Ticket = {
-  id: string
-  ticketNumber: string
-  subject: string
-  priority: string
-  status: string
-  assigneeName?: string
-  requesterName?: string
-  createdAt: string
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  OPEN: 'bg-blue-500/20 text-blue-300',
-  IN_PROGRESS: 'bg-yellow-500/20 text-yellow-300',
-  RESOLVED: 'bg-green-500/20 text-green-300',
-  CLOSED: 'bg-neutral-500/20 text-neutral-300',
-}
-
-const PRIORITY_COLORS: Record<string, string> = {
-  LOW: 'text-neutral-400',
-  MEDIUM: 'text-blue-400',
-  HIGH: 'text-orange-400',
-  URGENT: 'text-red-400',
-}
+import {
+  HeadphonesIcon, Ticket, BookOpen, BarChart3, MessageSquare,
+  Download, Loader2, Plus, CheckCircle, Clock, TrendingUp,
+  Bot, Star, Users, FileText, RefreshCw, AlertTriangle, Zap,
+  ArrowUpRight, Timer, Shield, Activity, Target,
+} from 'lucide-react'
 
 export default function HelpdeskPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [stats, setStats] = useState<Record<string, number>>({})
-  const [loading, setLoading] = useState(false)
-  const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'>('ALL')
-  const [search, setSearch] = useState('')
-  const [showCreate, setShowCreate] = useState(false)
-  const [newSubject, setNewSubject] = useState('')
-  const [newDescription, setNewDescription] = useState('')
-  const [newPriority, setNewPriority] = useState('MEDIUM')
-  const [creating, setCreating] = useState(false)
-  const [msg, setMsg] = useState('')
+  const [data, setData] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const load = async () => {
+  const fetchAll = () => {
     setLoading(true)
-    try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets?limit=100')
-      if (res.ok) {
-        const d = await res.json()
-        setTickets(d.tickets || [])
-        setStats(d.stats || {})
-      }
-    } catch {}
-    setLoading(false)
+    fetch('/api/wavecore/helpdesk/tickets')
+      .then(r => r.json())
+      .then(d => setData(d))
+      .catch(() => setError('Failed to load'))
+      .finally(() => setLoading(false))
   }
+  useEffect(() => { fetchAll() }, [])
 
-  useEffect(() => { load() }, [])
+  const summary = data.summary || {}
+  const tickets = data.tickets || []
 
-  const filtered = useMemo(() => {
-    let list = tickets
-    if (filter !== 'ALL') list = list.filter(t => t.status === filter)
-    if (search) {
-      const s = search.toLowerCase()
-      list = list.filter(t =>
-        t.subject.toLowerCase().includes(s) ||
-        t.ticketNumber.toLowerCase().includes(s) ||
-        (t.requesterName || '').toLowerCase().includes(s)
-      )
-    }
-    return list
-  }, [tickets, filter, search])
+  // Distribution by status
+  const byStatus = useMemo(() => {
+    const m: Record<string, number> = { OPEN: 0, IN_PROGRESS: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 }
+    for (const t of tickets) m[t.status] = (m[t.status] || 0) + 1
+    return m
+  }, [tickets])
 
-  const createTicket = async () => {
-    if (!newSubject.trim()) return
-    setCreating(true)
-    setMsg('')
-    try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject: newSubject.trim(),
-          description: newDescription.trim(),
-          priority: newPriority,
-        }),
-      })
-      const d = await res.json()
-      if (res.ok) {
-        setShowCreate(false)
-        setNewSubject('')
-        setNewDescription('')
-        setNewPriority('MEDIUM')
-        setMsg('Ticket created')
-        load()
-      } else {
-        setMsg(d.error || 'Failed to create')
-      }
-    } catch (e: any) {
-      setMsg(e.message)
-    }
-    setCreating(false)
-  }
+  // Distribution by priority
+  const byPriority = useMemo(() => {
+    const m: Record<string, number> = { LOW: 0, MEDIUM: 0, HIGH: 0, URGENT: 0 }
+    for (const t of tickets) m[t.priority] = (m[t.priority] || 0) + 1
+    return m
+  }, [tickets])
 
-  const totalOpen = (stats.OPEN || 0) + (stats.IN_PROGRESS || 0)
+  // Recent tickets (top 5)
+  const recent = useMemo(() => {
+    return [...tickets].slice(0, 5)
+  }, [tickets])
+
+  const handleDownloadPDF = () => window.open('/api/wavecore/helpdesk/tickets/pdf', '_blank')
+
+  const modules = [
+    { name: 'Tickets', href: '/wavecore-erp/helpdesk/tickets', icon: Ticket, color: 'from-blue-500 to-indigo-600', stat: summary.total || 0, sub: (summary.open || 0) + ' open' },
+    { name: 'Knowledge Base', href: '/wavecore-erp/helpdesk/knowledge-base', icon: BookOpen, color: 'from-purple-500 to-violet-600', stat: '—', sub: 'articles' },
+    { name: 'SLA Policies', href: '/wavecore-erp/helpdesk/sla', icon: BarChart3, color: 'from-green-500 to-emerald-600', stat: summary.slaComplianceRate || 100, sub: '% compliance' },
+    { name: 'Live Chat', href: '/wavecore-erp/helpdesk/chat', icon: MessageSquare, color: 'from-amber-500 to-orange-600', stat: '—', sub: 'real-time' },
+    { name: 'Reports', href: '/wavecore-erp/helpdesk/reports', icon: TrendingUp, color: 'from-pink-500 to-rose-600', stat: '—', sub: 'analytics' },
+    { name: 'AI Classify', href: '/wavecore-erp/helpdesk/ai-classification', icon: Bot, color: 'from-violet-500 to-purple-600', stat: '—', sub: 'auto-triage' },
+    { name: 'CSAT', href: '/wavecore-erp/helpdesk/csat', icon: Star, color: 'from-amber-500 to-yellow-600', stat: summary.avgCsat || 0, sub: (summary.csatCount || 0) + ' rated' },
+    { name: 'Agents', href: '/wavecore-erp/helpdesk/agents', icon: Users, color: 'from-cyan-500 to-blue-600', stat: summary.unassigned || 0, sub: 'unassigned' },
+    { name: 'Templates', href: '/wavecore-erp/helpdesk/templates', icon: FileText, color: 'from-teal-500 to-emerald-600', stat: '—', sub: 'canned' },
+  ]
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white pt-24 pb-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <LifeBuoy className="w-8 h-8 text-blue-400" /> Helpdesk
-            </h1>
-            <p className="text-slate-400">Customer support tickets & knowledge base</p>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/wavecore-erp/helpdesk/sla" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm flex items-center gap-2">
-              <Settings2 className="w-4 h-4" /> SLA
-            </Link>
-            <Link href="/wavecore-erp/helpdesk/knowledge-base" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm flex items-center gap-2">
-              <BookOpen className="w-4 h-4" /> Knowledge Base
-            </Link>
-            <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-blue-500 hover:bg-blue-400 rounded-xl text-sm font-medium flex items-center gap-2">
-              <Plus className="w-4 h-4" /> New Ticket
-            </button>
-          </div>
+    <div className="min-h-screen bg-neutral-950">
+      <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-800">
+        <div className="flex items-center justify-between px-4 h-16">
+          <Link href="/wavecore-erp" className="flex items-center gap-3">
+            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
+            <span className="font-bold text-white">WaveCore</span>
+          </Link>
+          <span className="text-sm text-neutral-400">Helpdesk & Support</span>
         </div>
+      </header>
 
-        {msg && (
-          <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-300 text-sm">{msg}</div>
-        )}
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4">
-            <p className="text-xs text-blue-300 uppercase tracking-wide">Open</p>
-            <p className="text-3xl font-bold text-blue-400">{stats.OPEN || 0}</p>
-          </div>
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4">
-            <p className="text-xs text-yellow-300 uppercase tracking-wide">In Progress</p>
-            <p className="text-3xl font-bold text-yellow-400">{stats.IN_PROGRESS || 0}</p>
-          </div>
-          <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4">
-            <p className="text-xs text-green-300 uppercase tracking-wide">Resolved</p>
-            <p className="text-3xl font-bold text-green-400">{stats.RESOLVED || 0}</p>
-          </div>
-          <div className="bg-neutral-500/10 border border-neutral-500/30 rounded-2xl p-4">
-            <p className="text-xs text-neutral-300 uppercase tracking-wide">Closed</p>
-            <p className="text-3xl font-bold text-neutral-400">{stats.CLOSED || 0}</p>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <div className="flex-1 min-w-[200px] relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search tickets..."
-              className="w-full pl-10 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-sm"
-            />
-          </div>
-          {(['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={'px-3 py-2 rounded-xl text-sm ' + (filter === f ? 'bg-blue-500 text-white' : 'bg-slate-900 text-slate-400 hover:text-white')}
-            >
-              {f === 'ALL' ? 'All' : f.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
-
-        {/* Ticket list */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center"><Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-slate-500">
-              <LifeBuoy className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-              <p>No tickets {filter !== 'ALL' ? `with status ${filter}` : 'yet'}</p>
-              <button onClick={() => setShowCreate(true)} className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-400 rounded-xl text-sm font-medium">
-                Create First Ticket
+      <main className="max-w-7xl mx-auto p-4 lg:p-8">
+        {/* HERO */}
+        <div className="rounded-3xl bg-gradient-to-br from-pink-600 via-rose-600 to-red-700 p-6 lg:p-8 mb-8">
+          <div className="flex flex-wrap justify-between items-start gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                <HeadphonesIcon className="w-8 h-8" /> Helpdesk Command Center
+              </h1>
+              <p className="text-white/80 text-sm">9 modules · Live ticket queue · SLA tracking · CSAT analytics</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => fetchAll()} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">
+                <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} /> Refresh
               </button>
+              <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm font-medium hover:bg-white/30">
+                <Download className="w-4 h-4" /> PDF
+              </button>
+              <Link href="/wavecore-erp/helpdesk/tickets/create" className="flex items-center gap-2 px-5 py-2 rounded-xl bg-white text-pink-700 text-sm font-bold shadow-lg">
+                <Plus className="w-4 h-4" /> New Ticket
+              </Link>
             </div>
-          ) : (
-            <div className="divide-y divide-slate-800">
-              {filtered.map(t => (
-                <Link key={t.id} href={'/wavecore-erp/helpdesk/tickets/' + t.id} className="block p-4 hover:bg-slate-800/50 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-mono text-slate-500">{t.ticketNumber}</span>
-                        <span className={'text-xs px-2 py-0.5 rounded-full ' + (STATUS_COLORS[t.status] || 'bg-slate-500/20 text-slate-300')}>
-                          {t.status.replace('_', ' ')}
-                        </span>
-                        <span className={'text-xs font-bold ' + (PRIORITY_COLORS[t.priority] || 'text-slate-400')}>
-                          {t.priority}
-                        </span>
-                      </div>
-                      <p className="font-medium text-white truncate">{t.subject}</p>
-                      <div className="flex gap-3 text-xs text-slate-500 mt-1">
-                        {t.requesterName && <span>From: {t.requesterName}</span>}
-                        {t.assigneeName && <span>Assigned: {t.assigneeName}</span>}
-                        <span>{new Date(t.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Create modal */}
-        {showCreate && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setShowCreate(false)}>
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-              <h2 className="text-xl font-bold mb-4">Create Ticket</h2>
-              <input
-                value={newSubject}
-                onChange={e => setNewSubject(e.target.value)}
-                placeholder="Subject"
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white mb-3"
-              />
-              <textarea
-                value={newDescription}
-                onChange={e => setNewDescription(e.target.value)}
-                placeholder="Description (optional)"
-                rows={4}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white mb-3"
-              />
-              <select
-                value={newPriority}
-                onChange={e => setNewPriority(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white mb-4"
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="URGENT">Urgent</option>
-              </select>
-              <div className="flex gap-2">
-                <button onClick={() => setShowCreate(false)} className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl">Cancel</button>
-                <button onClick={createTicket} disabled={creating || !newSubject.trim()} className="flex-1 py-3 bg-blue-500 hover:bg-blue-400 rounded-xl font-bold disabled:opacity-50">
-                  {creating ? 'Creating...' : 'Create Ticket'}
-                </button>
+        {error && <div className="mb-4 p-4 rounded-xl bg-red-900/50 text-red-300 border border-red-800">{error}</div>}
+
+        {loading ? (
+          <div className="text-center py-16"><Loader2 className="w-10 h-10 animate-spin mx-auto text-pink-500" /></div>
+        ) : (
+          <>
+            {/* 7 KPI CARDS */}
+            <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">Ticket Queue</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
+              <Link href="/wavecore-erp/helpdesk/tickets" className="p-4 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-800 text-white shadow-lg hover:scale-105 transition-all">
+                <Ticket className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.total || 0}</p><p className="text-xs opacity-90">Total</p>
+              </Link>
+              <Link href="/wavecore-erp/helpdesk/tickets?status=OPEN" className="p-4 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-800 text-white shadow-lg hover:scale-105 transition-all">
+                <Clock className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.open || 0}</p><p className="text-xs opacity-90">Open</p>
+              </Link>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-600 to-amber-800 text-white shadow-lg">
+                <Timer className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.inProgress || 0}</p><p className="text-xs opacity-90">In Progress</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-800 text-white shadow-lg">
+                <CheckCircle className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.resolvedToday || 0}</p><p className="text-xs opacity-90">Resolved Today</p>
+              </div>
+              <div className={'p-4 rounded-2xl text-white shadow-lg bg-gradient-to-br ' + (summary.overdue > 0 ? 'from-red-600 to-rose-800' : 'from-slate-600 to-neutral-800')}>
+                <AlertTriangle className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.overdue || 0}</p><p className="text-xs opacity-90">SLA Breaches</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-800 text-white shadow-lg">
+                <Activity className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.avgResponseHours || 0}h</p><p className="text-xs opacity-90">Avg Response</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-800 text-white shadow-lg">
+                <Star className="w-5 h-5 mb-2" /><p className="text-2xl font-bold">{summary.avgCsat || 0}<span className="text-sm">/5</span></p><p className="text-xs opacity-90">CSAT</p>
               </div>
             </div>
-          </div>
+
+            {/* DISTRIBUTIONS */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-pink-400 mb-4 flex items-center gap-2">
+                  <Target className="w-4 h-4" /> Tickets by Status
+                </h3>
+                {tickets.length === 0 ? (
+                  <p className="text-sm text-neutral-500 text-center py-6">No tickets yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {Object.entries(byStatus).map(([s, count]) => {
+                      const pct = tickets.length > 0 ? Math.round((count / tickets.length) * 100) : 0
+                      const colors: Record<string, string> = { OPEN: 'bg-cyan-500', IN_PROGRESS: 'bg-yellow-500', PENDING: 'bg-orange-500', RESOLVED: 'bg-green-500', CLOSED: 'bg-neutral-500' }
+                      return (
+                        <div key={s}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-neutral-400 uppercase font-bold">{s.replace('_', ' ')}</span>
+                            <span className="text-white font-bold">{count} ({pct}%)</span>
+                          </div>
+                          <div className="w-full bg-neutral-800 rounded-full h-2">
+                            <div className={(colors[s] || 'bg-pink-500') + ' h-2 rounded-full'} style={{ width: pct + '%' }}></div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-5">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-orange-400 mb-4 flex items-center gap-2">
+                  <Zap className="w-4 h-4" /> Tickets by Priority
+                </h3>
+                {tickets.length === 0 ? (
+                  <p className="text-sm text-neutral-500 text-center py-6">No tickets yet</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {Object.entries(byPriority).map(([p, count]) => {
+                      const colors: Record<string, string> = { LOW: 'from-neutral-600 to-neutral-800', MEDIUM: 'from-blue-600 to-indigo-800', HIGH: 'from-orange-600 to-red-800', URGENT: 'from-red-600 to-rose-800' }
+                      return (
+                        <div key={p} className={'p-4 rounded-xl text-center bg-gradient-to-br text-white ' + colors[p]}>
+                          <p className="text-2xl font-bold">{count}</p>
+                          <p className="text-[10px] uppercase tracking-wide opacity-90 font-bold mt-1">{p}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RECENT TICKETS */}
+            {recent.length > 0 && (
+              <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden mb-8">
+                <div className="flex justify-between items-center p-5 border-b border-neutral-800">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-white flex items-center gap-2">
+                    <Ticket className="w-4 h-4 text-pink-400" /> Recent Tickets
+                  </h3>
+                  <Link href="/wavecore-erp/helpdesk/tickets" className="text-xs text-pink-400 hover:text-pink-300 font-bold flex items-center gap-1">
+                    View All <ArrowUpRight className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="overflow-x-auto">
+<table className="w-full">
+                  <thead className="bg-neutral-800">
+                    <tr>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Subject</th>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-neutral-400">Customer</th>
+                      <th className="text-center p-3 text-xs uppercase tracking-wide text-neutral-400">Priority</th>
+                      <th className="text-center p-3 text-xs uppercase tracking-wide text-neutral-400">Status</th>
+                      <th className="text-center p-3 text-xs uppercase tracking-wide text-neutral-400">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recent.map(t => (
+                      <tr key={t.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
+                        <td className="p-3 text-white font-medium">{t.subject}</td>
+                        <td className="p-3 text-xs text-neutral-400">{t.customerName || '—'}</td>
+                        <td className="p-3 text-center">
+                          <span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + (t.priority === 'URGENT' ? 'bg-red-900/40 text-red-300' : t.priority === 'HIGH' ? 'bg-orange-900/40 text-orange-300' : t.priority === 'MEDIUM' ? 'bg-blue-900/40 text-blue-300' : 'bg-neutral-800 text-neutral-400')}>
+                            {t.priority}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={'px-2 py-1 rounded-full text-[10px] font-bold ' + (t.isOverdue ? 'bg-red-900/40 text-red-300' : t.status === 'OPEN' ? 'bg-cyan-900/40 text-cyan-300' : t.status === 'RESOLVED' ? 'bg-green-900/40 text-green-300' : 'bg-neutral-800 text-neutral-400')}>
+                            {t.isOverdue ? 'OVERDUE' : t.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center text-xs text-neutral-400">{new Date(t.createdAt).toLocaleDateString('en-GB')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+</div>
+              </div>
+            )}
+
+            {/* MODULE GRID */}
+            <h2 className="text-xl font-bold mb-4 text-white">Support Modules (9)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {modules.map(module => {
+                const Icon = module.icon
+                return (
+                  <Link key={module.name} href={module.href}
+                    className="p-5 rounded-2xl border bg-neutral-900 border-neutral-800 hover:border-pink-600 hover:shadow-2xl transition-all group">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${module.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="font-bold text-sm text-white">{module.name}</p>
+                    <div className="mt-3 pt-3 border-t border-neutral-800 flex justify-between items-center">
+                      <span className="text-lg font-extrabold text-white">{module.stat}</span>
+                      <span className="text-[10px] text-neutral-500 uppercase tracking-wide">{module.sub}</span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </>
         )}
-      </div>
+      </main>
     </div>
   )
 }

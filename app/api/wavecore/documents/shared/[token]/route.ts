@@ -1,64 +1,65 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-
-// PUBLIC ENDPOINT — no auth required
-// Security: token is 48-char random hex (unguessable)
-// Auto-checks: token valid + not expired + document not trashed
-export async function GET(req: NextRequest, { params }: { params: { token: string } }) {
+// GET: Public access via share token — NO auth required
+// Returns document metadata (not the file blob) so the page can render a preview
+export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
   try {
     const token = params.token
-    if (!token || token.length < 32) {
-      return NextResponse.json({ error: 'Invalid share token' }, { status: 400 })
-    }
+    if (!token) return NextResponse.json({ error: 'Token required' }, { status: 400 })
 
-    // Look up share + document
     const shareRes = await pool.query(
-      `SELECT s.id, s."documentId", s."expiresAt", s.password, s."viewCount",
-              d."originalName", d."fileName", d."mimeType", d."fileSize", d."fileUrl", d."isTrashed"
+      `SELECT s.*, d.name, d."fileName", d."fileUrl", d."mimeType", d."fileSize", d.description, d.category
        FROM "DocumentShare" s
-       JOIN "Document" d ON d.id = s."documentId"
-       WHERE s.token = $1 LIMIT 1`,
+       JOIN "Document" d ON d.id = s."documentId" AND d."organizationId" = s."organizationId"
+       WHERE s."shareToken" = $1 AND s."isActive" = true`,
       [token]
     )
-
-    if (shareRes.rowCount === 0) {
-      return NextResponse.json({ error: 'Document not found or link expired' }, { status: 404 })
+    if (shareRes.rows.length === 0) {
+      return NextResponse.json({ error: 'Share link invalid or expired' }, { status: 404 })
     }
 
     const share = shareRes.rows[0]
 
     // Check expiry
     if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
-      return NextResponse.json({ error: 'This share link has expired' }, { status: 410 })
+      await pool.query(`UPDATE "DocumentShare" SET "isActive" = false WHERE id = $1`, [share.id]).catch(() => {})
+      return NextResponse.json({ error: 'Share link expired' }, { status: 410 })
     }
 
-    // Check if document is trashed
-    if (share.isTrashed) {
-      return NextResponse.json({ error: 'Document is no longer available' }, { status: 404 })
-    }
-
-    // Increment view count
+    // Log activity
+    const crypto = require('crypto')
     await pool.query(
-      `UPDATE "DocumentShare" SET "viewCount" = "viewCount" + 1 WHERE id = $1`,
-      [share.id]
+      `INSERT INTO "DocumentActivity" (id, "documentId", action, details, "organizationId", "createdAt")
+       VALUES ($1,$2,'SHARE_ACCESSED',$3,$4,NOW())`,
+      [
+        crypto.randomUUID(),
+        share.documentId,
+        JSON.stringify({ token: token.slice(0, 8) + '…', permission: share.permission }),
+        share.organizationId,
+      ]
     ).catch(() => {})
 
-    // Return SAFE public data only (no internal fields)
+    // Return metadata — actual file served separately via /shared/[token]/file
     return NextResponse.json({
       document: {
-        originalName: share.originalName,
+        id: share.documentId,
+        name: share.name,
         fileName: share.fileName,
         mimeType: share.mimeType,
         fileSize: share.fileSize,
-        fileUrl: share.fileUrl,
+        description: share.description,
+        category: share.category,
+        fileUrl: share.permission === 'DOWNLOAD' || share.permission === 'FULL' ? share.fileUrl : null,
       },
-      hasPassword: !!share.password,
+      permission: share.permission,
+      sharedBy: share.sharedByName,
+      expiresAt: share.expiresAt,
     })
-  } catch (err) {
-    console.error('[shared document]', err)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  } catch (error) {
+    console.error('Shared token GET error:', error)
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

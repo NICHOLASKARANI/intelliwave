@@ -1,69 +1,95 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-
-function makeSlug(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 80)
-}
-
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant(req)
+    const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const url = new URL(req.url)
-    const search = url.searchParams.get('search') || ''
-    const publishedOnly = url.searchParams.get('published') === 'true'
+    const guard = await guardHR(request, 'HR_READ')
+    if (guard.deny) return guard.response!
 
-    let query = `SELECT * FROM "KnowledgeArticle" WHERE "organizationId" = $1`
-    const params: any[] = [session.organizationId]
+    const orgId = session.organizationId
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get('search')
+    const category = searchParams.get('category')
+    const status = searchParams.get('status')
 
-    if (publishedOnly) query += ` AND "isPublished" = true`
+    let sql = `SELECT * FROM "KnowledgeArticle" WHERE "organizationId" = $1`
+    const params: any[] = [orgId]
+    let idx = 2
+
     if (search) {
-      query += ` AND (title ILIKE $${params.length + 1} OR content ILIKE $${params.length + 1})`
-      params.push('%' + search + '%')
+      sql += ` AND (title ILIKE $${idx} OR body ILIKE $${idx} OR tags ILIKE $${idx})`
+      params.push(`%${search}%`); idx++
+    }
+    if (category && category !== 'ALL') { sql += ` AND category = $${idx++}`; params.push(category) }
+    if (status && status !== 'ALL') { sql += ` AND status = $${idx++}`; params.push(status) }
+
+    sql += ` ORDER BY "updatedAt" DESC LIMIT 500`
+
+    const res = await pool.query(sql, params)
+    const articles = res.rows
+
+    const published = articles.filter(a => a.status === 'PUBLISHED')
+    const drafts = articles.filter(a => a.status === 'DRAFT')
+    const totalViews = articles.reduce((s, a) => s + Number(a.views || 0), 0)
+    const totalHelpful = articles.reduce((s, a) => s + Number(a.helpful || 0), 0)
+
+    const summary = {
+      total: articles.length,
+      published: published.length,
+      drafts: drafts.length,
+      totalViews,
+      totalHelpful,
+      avgViews: articles.length > 0 ? Math.round(totalViews / articles.length) : 0,
     }
 
-    query += ` ORDER BY "updatedAt" DESC LIMIT 100`
-
-    const result = await pool.query(query, params)
-    return NextResponse.json({ articles: result.rows })
-  } catch (err) {
-    console.error('[helpdesk/kb GET]', err)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ articles, summary })
+  } catch (error) {
+    console.error('KB GET error:', error)
+    return NextResponse.json({ articles: [], summary: {}, error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await requireTenant(req)
+    const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json()
-    const { title, content, category, tags, isPublished } = body
+    const guard = await guardHR(request, 'HR_WRITE')
+    if (guard.deny) return guard.response!
 
-    if (!title || !content) {
-      return NextResponse.json({ error: 'Title and content required' }, { status: 400 })
-    }
+    const body = await request.json()
+    if (!body.title || !body.title.trim()) return NextResponse.json({ error: 'Title required' }, { status: 400 })
+    if (!body.body || !body.body.trim()) return NextResponse.json({ error: 'Body required' }, { status: 400 })
 
-    const slug = makeSlug(title)
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
-    await pool.query(
+    const slug = body.slug || body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+    const result = await pool.query(
       `INSERT INTO "KnowledgeArticle"
-        (id, "organizationId", title, slug, content, category, tags, "isPublished", "authorId", "authorName", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
-      [id, session.organizationId, title, slug, content, category || null, tags || null, !!isPublished, session.userId, session.name || 'Agent']
+        (id, title, slug, category, body, tags, status, views, helpful, "notHelpful",
+         "authorId", "authorName", "organizationId", "publishedAt", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,0,0,0,$8,$9,$10,$11,NOW(),NOW())
+       RETURNING *`,
+      [
+        id, body.title.trim(), slug, body.category || 'GENERAL',
+        body.body.trim(), body.tags || null, body.status || 'DRAFT',
+        session.userId, session.name || 'User', session.organizationId,
+        body.status === 'PUBLISHED' ? new Date().toISOString() : null,
+      ]
     )
 
-    const result = await pool.query(`SELECT * FROM "KnowledgeArticle" WHERE id = $1`, [id])
     return NextResponse.json({ article: result.rows[0] }, { status: 201 })
-  } catch (err) {
-    console.error('[helpdesk/kb POST]', err)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  } catch (error) {
+    console.error('KB POST error:', error)
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

@@ -1,97 +1,143 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
+import { guardHR } from '@/lib/wavecore/guard'
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-
-export async function GET(req: NextRequest) {
+// GET: List documents with filters
+export async function GET(request: NextRequest) {
   try {
-    const session = await requireTenant(req)
+    const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const url = new URL(req.url)
-    const folderId = url.searchParams.get('folderId')
-    const category = url.searchParams.get('category')
-    const search = url.searchParams.get('search')
-    const starred = url.searchParams.get('starred') === 'true'
-    const archived = url.searchParams.get('archived') === 'true'
-    const trashed = url.searchParams.get('trashed') === 'true'
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '100'), 500)
+    const guard = await guardHR(request, 'HR_READ')
+    if (guard.deny) return guard.response!
 
-    let query = `SELECT id, "organizationId", "folderId", "fileName", "originalName", "mimeType", 
-                        "fileSize", "fileUrl", "thumbnailUrl", category, tags, description,
-                        "ocrStatus", "isStarred", "isArchived", "isTrashed", "ownerId", "ownerName",
-                        version, "createdAt", "updatedAt"
-                 FROM "Document" WHERE "organizationId" = $1 AND "isTrashed" = $2`
-    const params: any[] = [session.organizationId, trashed]
+    const orgId = session.organizationId
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get('search')
+    const category = searchParams.get('category')
+    const folderId = searchParams.get('folderId')
+    const status = searchParams.get('status')
+    const starred = searchParams.get('starred')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '200'), 500)
 
-    if (folderId) { query += ` AND "folderId" = $${params.length + 1}`; params.push(folderId) }
-    if (category) { query += ` AND category = $${params.length + 1}`; params.push(category) }
-    if (starred) { query += ` AND "isStarred" = true` }
-    if (archived !== null) { query += ` AND "isArchived" = $${params.length + 1}`; params.push(archived) }
+    let sql = `SELECT d.*, f.name AS "folderName"
+               FROM "Document" d
+               LEFT JOIN "DocumentFolder" f ON f.id = d."folderId" AND f."organizationId" = d."organizationId"
+               WHERE d."organizationId" = $1`
+    const params: any[] = [orgId]
+    let idx = 2
+
     if (search) {
-      query += ` AND ("originalName" ILIKE $${params.length + 1} OR description ILIKE $${params.length + 1} OR "contentText" ILIKE $${params.length + 1})`
-      params.push('%' + search + '%')
+      sql += ` AND (d.name ILIKE $${idx} OR d.description ILIKE $${idx} OR d.tags ILIKE $${idx} OR d."textContent" ILIKE $${idx})`
+      params.push(`%${search}%`); idx++
     }
+    if (category && category !== 'ALL') { sql += ` AND d.category = $${idx++}`; params.push(category) }
+    if (folderId) { sql += ` AND d."folderId" = $${idx++}`; params.push(folderId) }
+    if (status && status !== 'ALL') { sql += ` AND d.status = $${idx++}`; params.push(status) }
+    if (starred === 'true') { sql += ` AND d."isStarred" = true` }
 
-    query += ` ORDER BY "createdAt" DESC LIMIT $${params.length + 1}`
+    sql += ` ORDER BY d."createdAt" DESC LIMIT $${idx}`
     params.push(limit)
 
-    const result = await pool.query(query, params)
+    const result = await pool.query(sql, params)
+    const documents = result.rows.map(d => ({
+      ...d,
+      fileSize: Number(d.fileSize || 0),
+      currentVersion: Number(d.currentVersion || 1),
+      isStarred: Boolean(d.isStarred),
+      isArchived: Boolean(d.isArchived),
+    }))
 
-    // Stats
+    // Summary KPIs
     const statsRes = await pool.query(
-      `SELECT 
-        COUNT(*)::int as total,
-        COUNT(*) FILTER (WHERE "isStarred" = true)::int as starred,
-        COUNT(*) FILTER (WHERE "isTrashed" = true)::int as trashed,
-        COUNT(*) FILTER (WHERE "isArchived" = true)::int as archived,
-        COALESCE(SUM("fileSize"), 0)::bigint as totalSize
+      `SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE "isStarred" = true) AS starred,
+        COUNT(*) FILTER (WHERE "createdAt" >= NOW() - INTERVAL '7 days') AS recent,
+        COUNT(*) FILTER (WHERE "isArchived" = true) AS archived,
+        COALESCE(SUM("fileSize"), 0) AS total_bytes
        FROM "Document" WHERE "organizationId" = $1`,
-      [session.organizationId]
+      [orgId]
     )
-    const stats = statsRes.rows[0]
+    const stats = statsRes.rows[0] || {}
 
-    return NextResponse.json({ documents: result.rows, stats })
-  } catch (err) {
-    console.error('[documents GET]', err)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    // Category breakdown
+    const catRes = await pool.query(
+      `SELECT category, COUNT(*) AS count FROM "Document"
+       WHERE "organizationId" = $1 GROUP BY category ORDER BY count DESC LIMIT 20`,
+      [orgId]
+    )
+
+    const summary = {
+      total: Number(stats.total || 0),
+      starred: Number(stats.starred || 0),
+      recent: Number(stats.recent || 0),
+      archived: Number(stats.archived || 0),
+      totalBytes: Number(stats.total_bytes || 0),
+      totalMB: Math.round((Number(stats.total_bytes || 0) / 1024 / 1024) * 10) / 10,
+    }
+
+    return NextResponse.json({ documents, summary, categories: catRes.rows })
+  } catch (error) {
+    console.error('Documents GET error:', error)
+    return NextResponse.json({ documents: [], summary: {}, categories: [], error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST: Create document (metadata + optional file data URL)
+export async function POST(request: NextRequest) {
   try {
-    const session = await requireTenant(req)
+    const session = await requireTenant(request)
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json()
-    const { fileName, originalName, mimeType, fileSize, fileUrl, blobKey, folderId, category, description, tags } = body
+    const guard = await guardHR(request, 'HR_WRITE')
+    if (guard.deny) return guard.response!
 
-    if (!fileName || !originalName || !fileUrl) {
-      return NextResponse.json({ error: 'fileName, originalName, and fileUrl are required' }, { status: 400 })
-    }
+    const body = await request.json()
+    if (!body.name || !body.name.trim()) return NextResponse.json({ error: 'Document name required' }, { status: 400 })
 
     const crypto = require('crypto')
     const id = crypto.randomUUID()
 
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO "Document"
-        (id, "organizationId", "folderId", "fileName", "originalName", "mimeType", "fileSize",
-         "fileUrl", "blobKey", category, tags, description, "ocrStatus",
-         "isStarred", "isArchived", "isTrashed", "ownerId", "ownerName", version, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'NONE',
-               false, false, false, $13, $14, 1, NOW(), NOW())`,
-      [id, session.organizationId, folderId || null, fileName, originalName, 
-       mimeType || 'application/octet-stream', Number(fileSize) || 0, fileUrl, blobKey || null,
-       category || null, tags || null, description || null,
-       session.userId, session.name || 'User']
+        (id, name, "fileName", "fileUrl", "mimeType", "fileSize", "folderId", category, tags,
+         description, "currentVersion", "isStarred", status, "expiryDate", "retentionUntil",
+         "ocrStatus", "organizationId", "uploadedBy", "uploadedByName", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,1,false,'ACTIVE',$11,$12,'PENDING',$13,$14,$15,NOW(),NOW())
+       RETURNING *`,
+      [
+        id,
+        body.name.trim(),
+        body.fileName || body.name.trim(),
+        body.fileUrl || null,
+        body.mimeType || 'application/octet-stream',
+        Number(body.fileSize || 0),
+        body.folderId || null,
+        body.category || 'GENERAL',
+        body.tags || null,
+        body.description || null,
+        body.expiryDate || null,
+        body.retentionUntil || null,
+        session.organizationId,
+        session.userId,
+        session.name || 'User',
+      ]
     )
 
-    const result = await pool.query(`SELECT * FROM "Document" WHERE id = $1`, [id])
+    // Log activity
+    await pool.query(
+      `INSERT INTO "DocumentActivity" (id, "documentId", action, "userId", "userName", "organizationId", "createdAt")
+       VALUES ($1,$2,'CREATED',$3,$4,$5,NOW())`,
+      [crypto.randomUUID(), id, session.userId, session.name || 'User', session.organizationId]
+    ).catch(() => {})
+
     return NextResponse.json({ document: result.rows[0] }, { status: 201 })
-  } catch (err) {
-    console.error('[documents POST]', err)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  } catch (error) {
+    console.error('Documents POST error:', error)
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

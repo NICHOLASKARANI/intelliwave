@@ -3396,3 +3396,139 @@ model KnowledgeArticle {
   @@index([organizationId])
   @@index([isPublished])
 }
+
+// ══════════════════════════════════════════════════════════════
+// DOCUMENTS MODULE
+// ══════════════════════════════════════════════════════════════
+
+model DocumentFolder {
+  id             String   @id @default(cuid())
+  organizationId String
+  parentId       String?
+  name           String
+  color          String?
+  path           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([parentId])
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  organizationId String
+  folderId       String?
+  fileName       String
+  originalName   String
+  mimeType       String
+  fileSize       Int
+  fileUrl        String
+  blobKey        String?
+  thumbnailUrl   String?
+  category       String?
+  tags           String?
+  description    String?
+  contentText    String?
+  ocrStatus      String   @default("NONE")
+  isStarred      Boolean  @default(false)
+  isArchived     Boolean  @default(false)
+  isTrashed      Boolean  @default(false)
+  ownerId        String?
+  ownerName      String?
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([folderId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model DocumentShare {
+  id             String    @id @default(cuid())
+  documentId     String
+  organizationId String
+  token          String    @unique
+  expiresAt      DateTime?
+  password       String?
+  viewCount      Int       @default(0)
+  createdById    String?
+  createdAt      DateTime  @default(now())
+
+  @@index([documentId])
+}
+
+model DocumentVersion {
+  id             String   @id @default(cuid())
+  documentId     String
+  versionNumber  Int
+  fileName       String
+  fileSize       Int
+  fileUrl        String
+  blobKey        String?
+  uploadedById   String?
+  uploadedByName String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([documentId])
+}
+
+// ══════════════════════════════════════════════════════════════
+// BI & ANALYTICS MODULE
+// ══════════════════════════════════════════════════════════════
+
+model Report {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  type           String    @default("CUSTOM")
+  query          String
+  visualization  String    @default("TABLE")
+  filters        String?
+  isPublic       Boolean   @default(false)
+  isScheduled    Boolean   @default(false)
+  scheduleCron   String?
+  lastRunAt      DateTime?
+  createdById    String?
+  createdByName  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([type])
+}
+
+model Dashboard {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  layout         String
+  widgets        String
+  isDefault      Boolean  @default(false)
+  createdById    String?
+  createdByName  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model AnalyticSnapshot {
+  id             String   @id @default(cuid())
+  organizationId String
+  metric         String
+  value          Float
+  metadata       String?
+  snapshotDate   DateTime
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, metric, snapshotDate])
+  @@index([organizationId])
+  @@index([metric])
+  @@index([snapshotDate])
+}
