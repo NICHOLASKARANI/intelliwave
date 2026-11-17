@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
@@ -9,7 +9,8 @@ import { generateCSV, parseCSV } from '@/lib/wavecore/csv'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const orgId = session.organizationId
 
     const { searchParams } = new URL(request.url)
     const entity = searchParams.get('entity') || 'accounts'
@@ -48,7 +49,8 @@ export async function POST(request: NextRequest) {
   const client = await pool.connect()
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const orgId = session.organizationId
 
     const body = await request.json()
     const { csvText } = body

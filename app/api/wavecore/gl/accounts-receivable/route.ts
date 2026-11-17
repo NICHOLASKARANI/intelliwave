@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
@@ -7,7 +7,8 @@ import { requireTenant } from '@/lib/wavecore/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
-    const orgId = session!.organizationId
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const orgId = session.organizationId
 
     const result = await pool.query(
       `SELECT ci.id, ci.number, ci."dueDate", ci.total,

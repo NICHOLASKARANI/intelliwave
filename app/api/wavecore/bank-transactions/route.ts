@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -17,6 +17,7 @@ const transactionSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const bankAccountId = searchParams.get('bankAccountId')
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       JOIN "BankAccount" ba ON ba.id = bt."bankAccountId"
       WHERE bt."organizationId" = $1
     `
-    const params: any[] = [session!.organizationId]
+    const params: any[] = [session.organizationId]
 
     if (bankAccountId) {
       params.push(bankAccountId)
@@ -55,6 +56,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const validated = transactionSchema.parse(body)
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
     // Verify bank account belongs to tenant
     const account = await pool.query(
       'SELECT id FROM "BankAccount" WHERE id = $1 AND "organizationId" = $2',
-      [validated.bankAccountId, session!.organizationId]
+      [validated.bankAccountId, session.organizationId]
     )
 
     if (account.rows.length === 0) {
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "BankTransaction" (id, "bankAccountId", date, description, reference, amount, type, "organizationId", "createdAt")
        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING id`,
-      [validated.bankAccountId, new Date(validated.date), validated.description, validated.reference || null, validated.amount, validated.type, session!.organizationId]
+      [validated.bankAccountId, new Date(validated.date), validated.description, validated.reference || null, validated.amount, validated.type, session.organizationId]
     )
 
     return NextResponse.json({ success: true, transactionId: result.rows[0].id }, { status: 201 })
