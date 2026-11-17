@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { assertProcurement, logProcurementEvent, procurementHandler } from '@/lib/wavecore/procurement-guard'
+import { postBillToGL } from '@/lib/wavecore/finance/post-journal'
 
 /**
  * POST /api/wavecore/procurement/supplier-invoices/bulk-approve
@@ -57,40 +58,71 @@ export const POST = procurementHandler(async (request: NextRequest) => {
     })
   }
 
-  // Single UPDATE — same columns as the lifecycle endpoint
-  const upd = await pool.query(
-    `UPDATE "SupplierInvoice"
-     SET status = 'APPROVED',
-         "approvedBy" = $2,
-         "approvedByName" = $3,
-         "approvedAt" = NOW(),
-         "updatedAt" = NOW()
-     WHERE "organizationId" = $1 AND id = ANY($4::text[])
-     RETURNING id, "invoiceNumber"`,
-    [g.organizationId, g.userId, g.userName, approvableIds]
-  )
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
 
-  const approved = upd.rowCount || 0
+    // Single UPDATE — same columns as the lifecycle endpoint
+    const upd = await client.query(
+      `UPDATE "SupplierInvoice"
+       SET status = 'APPROVED',
+           "approvedBy" = $2,
+           "approvedByName" = $3,
+           "approvedAt" = NOW(),
+           "updatedAt" = NOW()
+       WHERE "organizationId" = $1 AND id = ANY($4::text[])
+       RETURNING id, "invoiceNumber", subtotal, "taxAmount", total, "invoiceDate", "createdAt"`,
+      [g.organizationId, g.userId, g.userName, approvableIds]
+    )
 
-  // One event per approved invoice (same eventType as single-approve)
-  await Promise.all(upd.rows.map((r: any) =>
-    logProcurementEvent(pool, {
-      organizationId: g.organizationId,
-      eventType: 'SUPPLIER_INVOICE_APPROVED',
-      entityType: 'SupplierInvoice',
-      entityId: r.id,
-      actorId: g.userId,
-      actorName: g.userName,
-      summary: 'Bulk approved ' + (r.invoiceNumber || r.id),
-      metadata: { bulk: true, fromStatus: current.rows.find((x: any) => x.id === r.id)?.status, toStatus: 'APPROVED' },
+    // Post each approved invoice to GL (idempotent, skips zero-amounts)
+    for (const r of upd.rows) {
+      if (Number(r.total) > 0.01) {
+        await postBillToGL(client, {
+          organizationId: g.organizationId,
+          billId: r.id,
+          billNumber: r.invoiceNumber || r.id.slice(0, 8),
+          date: r.invoiceDate || r.createdAt || new Date(),
+          subtotal: Number(r.subtotal || 0),
+          taxAmount: Number(r.taxAmount || 0),
+          total: Number(r.total || 0),
+          expenseCode: '5000',
+        })
+      }
+    }
+
+    await client.query('COMMIT')
+
+    const approved = upd.rowCount || 0
+
+    // One event per approved invoice (same eventType as single-approve)
+    await Promise.all(upd.rows.map((r: any) =>
+      logProcurementEvent(pool, {
+        organizationId: g.organizationId,
+        eventType: 'SUPPLIER_INVOICE_APPROVED',
+        entityType: 'SupplierInvoice',
+        entityId: r.id,
+        actorId: g.userId,
+        actorName: g.userName,
+        summary: 'Bulk approved ' + (r.invoiceNumber || r.id),
+        metadata: { bulk: true, fromStatus: current.rows.find((x: any) => x.id === r.id)?.status, toStatus: 'APPROVED' },
+      })
+    ))
+
+    return NextResponse.json({
+      approved,
+      skipped: wrongStatus.length + notInOrg.length,
+      approvedIds: upd.rows.map((r: any) => r.id),
+      wrongStatus,
+      notInOrg,
     })
-  ))
-
-  return NextResponse.json({
-    approved,
-    skipped: wrongStatus.length + notInOrg.length,
-    approvedIds: upd.rows.map((r: any) => r.id),
-    wrongStatus,
-    notInOrg,
-  })
+  } catch (glErr) {
+    await client.query('ROLLBACK').catch(() => {})
+    console.error('[supplier-invoice bulk-approve GL]', glErr)
+    return NextResponse.json({
+      error: 'Bulk approval failed: ' + (glErr as Error).message,
+    }, { status: 500 })
+  } finally {
+    client.release()
+  }
 })

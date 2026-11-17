@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { assertProcurement, logProcurementEvent, procurementHandler } from '@/lib/wavecore/procurement-guard'
+import { postBillToGL } from '@/lib/wavecore/finance/post-journal'
 
 const ALLOWED: Record<string, string[]> = {
   APPROVE: ['SUBMITTED', 'MATCHED', 'PARTIAL_MATCH', 'MISMATCH'],
@@ -79,29 +80,61 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
   values.push(g.organizationId)
   const orgParam = values.length
 
-  const upd = await pool.query(
-    `UPDATE "SupplierInvoice" SET ${sets.join(', ')}
-     WHERE id = $${idParam} AND "organizationId" = $${orgParam}
-     RETURNING *`,
-    values
-  )
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
 
-  const eventType =
-    action === 'APPROVE' ? 'SUPPLIER_INVOICE_APPROVED'
-    : action === 'REJECT' ? 'SUPPLIER_INVOICE_REJECTED'
-    : action === 'PAID'   ? 'SUPPLIER_INVOICE_PAID'
-    :                        'SUPPLIER_INVOICE_CANCELLED'
+    const upd = await client.query(
+      `UPDATE "SupplierInvoice" SET ${sets.join(', ')}
+       WHERE id = $${idParam} AND "organizationId" = $${orgParam}
+       RETURNING *`,
+      values
+    )
 
-  await logProcurementEvent(pool, {
-    organizationId: g.organizationId,
-    eventType,
-    entityType: 'SupplierInvoice',
-    entityId: id,
-    actorId: g.userId,
-    actorName: g.userName,
-    summary: `${action} invoice ${inv.invoiceNumber}`,
-    metadata: { reason, paymentReference, fromStatus: inv.status, toStatus: newStatus },
-  })
+    // On APPROVE: post the bill to GL (idempotent, skips if JE already exists)
+    if (action === 'APPROVE') {
+      const updatedInv = upd.rows[0]
+      if (Number(updatedInv.total) > 0.01) {
+        await postBillToGL(client, {
+          organizationId: g.organizationId,
+          billId: updatedInv.id,
+          billNumber: updatedInv.invoiceNumber || updatedInv.id.slice(0, 8),
+          date: updatedInv.invoiceDate || updatedInv.createdAt || new Date(),
+          subtotal: Number(updatedInv.subtotal || 0),
+          taxAmount: Number(updatedInv.taxAmount || 0),
+          total: Number(updatedInv.total || 0),
+          expenseCode: '5000',
+        })
+      }
+    }
 
-  return NextResponse.json({ ok: true, supplierInvoice: upd.rows[0] })
+    await client.query('COMMIT')
+
+    const eventType =
+      action === 'APPROVE' ? 'SUPPLIER_INVOICE_APPROVED'
+      : action === 'REJECT' ? 'SUPPLIER_INVOICE_REJECTED'
+      : action === 'PAID'   ? 'SUPPLIER_INVOICE_PAID'
+      :                        'SUPPLIER_INVOICE_CANCELLED'
+
+    await logProcurementEvent(pool, {
+      organizationId: g.organizationId,
+      eventType,
+      entityType: 'SupplierInvoice',
+      entityId: id,
+      actorId: g.userId,
+      actorName: g.userName,
+      summary: `${action} invoice ${inv.invoiceNumber}`,
+      metadata: { reason, paymentReference, fromStatus: inv.status, toStatus: newStatus },
+    })
+
+    return NextResponse.json({ ok: true, supplierInvoice: upd.rows[0] })
+  } catch (glErr) {
+    await client.query('ROLLBACK').catch(() => {})
+    console.error('[supplier-invoice lifecycle GL]', glErr)
+    return NextResponse.json({
+      error: 'Approval failed: ' + (glErr as Error).message,
+    }, { status: 500 })
+  } finally {
+    client.release()
+  }
 })

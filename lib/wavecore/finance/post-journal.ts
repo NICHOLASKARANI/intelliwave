@@ -248,3 +248,80 @@ export async function hasJournalForSource(
   )
   return (res.rowCount ?? 0) > 0
 }
+/**
+ * Post a supplier bill (AP invoice) to GL.
+ *
+ *   DEBIT  5000 Cost of Goods Sold   subtotal   (default — can be overridden)
+ *   CREDIT 2000 Accounts Payable     total
+ *   CREDIT 2100 VAT Payable          taxAmount (only if > 0)
+ *
+ * Idempotent: if a JE tagged [BILL:<first8>] already exists for this bill,
+ * returns early with the existing id — prevents double-posting on retry.
+ *
+ * Must be called inside a caller-owned transaction on the same client.
+ */
+export async function postBillToGL(
+  client: PoolClient,
+  args: {
+    organizationId: string
+    billId: string
+    billNumber: string
+    date: Date | string
+    subtotal: number
+    taxAmount: number
+    total: number
+    expenseCode?: string  // default '5000' Cost of Goods Sold
+  }
+): Promise<{ journalEntryId: string; skipped: boolean }> {
+  // Zero-amount bills don't need a GL entry
+  if (Number(args.total) <= 0.01) {
+    return { journalEntryId: '', skipped: true }
+  }
+
+  const tag = `[BILL:${String(args.billId).slice(0, 8)}]`
+  const existing = await client.query(
+    `SELECT id FROM "JournalEntry"
+     WHERE "organizationId" = $1 AND description LIKE $2
+     LIMIT 1`,
+    [args.organizationId, `%${tag}%`]
+  )
+  if ((existing.rowCount ?? 0) > 0) {
+    return { journalEntryId: existing.rows[0].id, skipped: true }
+  }
+
+  const expenseCode = args.expenseCode || '5000'
+  const lines: JournalLineInput[] = [
+    {
+      accountCode: expenseCode,
+      description: `Bill ${args.billNumber} — expense`,
+      debit: Number(args.subtotal) || 0,
+      credit: 0,
+    },
+    {
+      accountCode: '2000',
+      description: `AP — ${args.billNumber}`,
+      debit: 0,
+      credit: Number(args.total) || 0,
+    },
+  ]
+  if (Number(args.taxAmount) > 0.01) {
+    lines.push({
+      accountCode: '2100',
+      description: `VAT — ${args.billNumber}`,
+      debit: 0,
+      credit: Number(args.taxAmount),
+    })
+  }
+
+  const result = await postJournal(client, {
+    organizationId: args.organizationId,
+    date: args.date,
+    description: `Supplier bill ${args.billNumber} approved [BILL:${String(args.billId).slice(0, 8)}]`,
+    reference: args.billNumber,
+    lines,
+    sourceType: 'BILL',
+    sourceId: args.billId,
+  })
+
+  return { journalEntryId: result.journalEntryId, skipped: false }
+}
