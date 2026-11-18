@@ -25,6 +25,7 @@ export interface JournalLineInput {
   credit: number
   baseDebit?: number
   baseCredit?: number
+  fundId?: string  // optional fund tag per line
 }
 
 export interface PostJournalInput {
@@ -38,6 +39,7 @@ export interface PostJournalInput {
   // FX (optional — defaults to KES / rate 1, preserving legacy behavior)
   currency?: string
   fxRate?: number
+  fundId?: string  // optional default fund for all lines
 }
 
 /**
@@ -151,10 +153,11 @@ export async function postJournal(
     const origCredit = Number(line.credit) || 0
     const baseDebit  = line.baseDebit  ?? (fxRate === 1 ? origDebit  : Math.round(origDebit  * fxRate * 100) / 100)
     const baseCredit = line.baseCredit ?? (fxRate === 1 ? origCredit : Math.round(origCredit * fxRate * 100) / 100)
+    const lineFundId = line.fundId || input.fundId || null
     await client.query(
       `INSERT INTO "JournalItem"
-         (id, "journalEntryId", "accountId", debit, credit, "organizationId", "createdAt", "baseDebit", "baseCredit")
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW(), $6, $7)`,
+         (id, "journalEntryId", "accountId", debit, credit, "organizationId", "createdAt", "baseDebit", "baseCredit", "fundId")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW(), $6, $7, $8)`,
       [
         journalId,
         accountId,
@@ -163,6 +166,7 @@ export async function postJournal(
         input.organizationId,
         baseDebit,
         baseCredit,
+        lineFundId,
       ]
     )
   }
