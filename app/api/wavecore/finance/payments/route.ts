@@ -54,12 +54,29 @@ export async function POST(request: NextRequest) {
       [invoiceId, session.organizationId]
     )
     if (invCheck.rowCount === 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+        const dateStr = body.date || new Date().toISOString().split('T')[0]
+
     const invoice = invCheck.rows[0]
 
     // P1.3 deploy 5a
     const invoiceFxRate = Number(invoice.fxRate) || 1
     const paymentCurrency = invoice.currency || 'KES'
     let paymentFxRate = invoiceFxRate
+    // P1.3 deploy 5a: look up today's rate from ExchangeRate; fall back to invoice rate
+    if (paymentCurrency !== 'KES') {
+      const rateRes = await pool.query(
+        `SELECT rate FROM "ExchangeRate"
+         WHERE "fromCurrency" = $1 AND "toCurrency" = 'KES'
+           AND "effectiveDate" <= $2
+           AND ("organizationId" IS NULL OR "organizationId" = $3)
+         ORDER BY CASE WHEN "organizationId" = $3 THEN 0 ELSE 1 END ASC,
+                  "effectiveDate" DESC, "createdAt" DESC LIMIT 1`,
+        [paymentCurrency, dateStr, session.organizationId]
+      )
+      if (rateRes.rowCount && rateRes.rowCount > 0) {
+        paymentFxRate = Number(rateRes.rows[0].rate) || paymentFxRate
+      }
+    }
     const invoiceTotal = Number(invoice.total)
     const alreadyPaid = Number(invoice.alreadyPaid || 0)
     const remaining = invoiceTotal - alreadyPaid
@@ -71,7 +88,6 @@ export async function POST(request: NextRequest) {
     const crypto = require('crypto')
     const id = crypto.randomUUID()
     const number = 'PAY-' + Date.now().toString().slice(-8)
-    const dateStr = body.date || new Date().toISOString().split('T')[0]
 
       // ── Approval check (finance-only, isolated to FinanceApproval table) ──
       const approvalDecision = await evaluateFinanceApproval(
