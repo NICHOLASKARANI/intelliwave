@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
+import { OrganizationSwitcher } from '@/components/wavecore/organization-switcher'
 import Image from 'next/image'
 import Link from 'next/link'
 import { LayoutDashboard, Settings, Bell, TrendingUp, DollarSign, CreditCard,
@@ -119,6 +120,7 @@ export default function ExecutiveDashboard() {
               <p className="text-xs text-slate-400">{session?.organization?.name || 'Executive Dashboard'}</p>
             </div>
           </Link>
+          <OrganizationSwitcher />
 
           <div className="flex items-center gap-3">
             {/* Subscription Badge */}
