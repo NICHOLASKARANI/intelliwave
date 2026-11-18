@@ -33,6 +33,9 @@ export interface PostJournalInput {
   lines: JournalLineInput[]
   sourceType?: string  // 'INVOICE' | 'PAYMENT' | 'BILL' | 'MANUAL'
   sourceId?: string
+  // FX (optional — defaults to KES / rate 1, preserving legacy behavior)
+  currency?: string
+  fxRate?: number
 }
 
 /**
@@ -112,11 +115,19 @@ export async function postJournal(
   // Throws if the target period is closed.
   const period = await resolveOpenPeriod(client, input.organizationId, dateStr)
 
+  // FX defaults — legacy callers pass nothing -> KES / rate 1 / base = original.
+  const currency = input.currency || 'KES'
+  const fxRate   = (input.fxRate == null || input.fxRate <= 0) ? 1 : input.fxRate
+  const origAmount = input.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0)
+  const baseAmount = fxRate === 1
+    ? origAmount
+    : Math.round(origAmount * fxRate * 100) / 100
+
   await client.query(
     `INSERT INTO "JournalEntry"
        (id, number, date, reference, description, status, amount,
-        "fiscalPeriodId", "organizationId", "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4, $5, 'POSTED', $6, $7, $8, NOW(), NOW())`,
+        "fiscalPeriodId", "organizationId", "createdAt", "updatedAt", currency, "fxRate", "baseAmount")
+     VALUES ($1, $2, $3, $4, $5, 'POSTED', $6, $7, $8, NOW(), NOW(), $9, $10, $11)`,
     [
       journalId,
       journalNumber,
@@ -126,21 +137,30 @@ export async function postJournal(
       input.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0),
       period.periodId,
       input.organizationId,
+      currency,
+      fxRate,
+      baseAmount,
     ]
   )
 
   for (const line of input.lines) {
     const accountId = accountIds.get(line.accountCode)!
+    const origDebit  = Number(line.debit)  || 0
+    const origCredit = Number(line.credit) || 0
+    const baseDebit  = fxRate === 1 ? origDebit  : Math.round(origDebit  * fxRate * 100) / 100
+    const baseCredit = fxRate === 1 ? origCredit : Math.round(origCredit * fxRate * 100) / 100
     await client.query(
       `INSERT INTO "JournalItem"
-         (id, "journalEntryId", "accountId", debit, credit, "organizationId", "createdAt")
-       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW())`,
+         (id, "journalEntryId", "accountId", debit, credit, "organizationId", "createdAt", "baseDebit", "baseCredit")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, NOW(), $6, $7)`,
       [
         journalId,
         accountId,
-        Number(line.debit) || 0,
-        Number(line.credit) || 0,
+        origDebit,
+        origCredit,
         input.organizationId,
+        baseDebit,
+        baseCredit,
       ]
     )
   }
