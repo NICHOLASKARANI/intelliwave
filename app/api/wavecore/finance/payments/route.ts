@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { pool } from '@/lib/wavecore/db'
-import { postPaymentToGL } from '@/lib/wavecore/finance/post-journal'
+import { postPaymentToGL, postPaymentToGLV2 } from '@/lib/wavecore/finance/post-journal'
 import { writeAudit, writeAuditAsync } from '@/lib/wavecore/audit'
 import { evaluateFinanceApproval, createFinanceApprovalRequest } from '@/lib/wavecore/finance/finance-approval'
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Verify the invoice belongs to this tenant
     const invCheck = await pool.query(
-      `SELECT id, number, total,
+      `SELECT id, number, total, currency, "fxRate", "baseAmount",
               COALESCE((SELECT SUM(amount) FROM "CustomerPayment" WHERE "invoiceId" = $1), 0) AS "alreadyPaid"
        FROM "CustomerInvoice"
        WHERE id = $1 AND "organizationId" = $2`,
@@ -55,6 +55,11 @@ export async function POST(request: NextRequest) {
     )
     if (invCheck.rowCount === 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     const invoice = invCheck.rows[0]
+
+    // P1.3 deploy 5a
+    const invoiceFxRate = Number(invoice.fxRate) || 1
+    const paymentCurrency = invoice.currency || 'KES'
+    let paymentFxRate = invoiceFxRate
     const invoiceTotal = Number(invoice.total)
     const alreadyPaid = Number(invoice.alreadyPaid || 0)
     const remaining = invoiceTotal - alreadyPaid
@@ -82,9 +87,9 @@ export async function POST(request: NextRequest) {
       if (approvalDecision.requiresApproval) {
         const paymentRow = await client.query(
           `INSERT INTO "CustomerPayment"
-             (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
-          [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null]
+             (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt", currency, "fxRate", "baseAmount")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING *`,
+          [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null, paymentCurrency, paymentFxRate, Math.round(amount * paymentFxRate * 100) / 100]
         )
 
         const approval = await createFinanceApprovalRequest(client, {
@@ -121,17 +126,20 @@ export async function POST(request: NextRequest) {
       // Under threshold — existing behavior preserved
       const result = await client.query(
         `INSERT INTO "CustomerPayment"
-           (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
-        [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null]
+           (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt", currency, "fxRate", "baseAmount")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING *`,
+        [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null, paymentCurrency, paymentFxRate, Math.round(amount * paymentFxRate * 100) / 100]
       )
 
-      await postPaymentToGL(client, {
+      await postPaymentToGLV2(client, {
         organizationId: session.organizationId,
         paymentId: id,
         reference: number,
         date: dateStr,
         amount,
+        currency: paymentCurrency,
+        fxRate: paymentFxRate,
+        invoiceFxRate,
       })
 
       const newPaid = alreadyPaid + amount

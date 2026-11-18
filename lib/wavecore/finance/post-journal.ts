@@ -23,6 +23,8 @@ export interface JournalLineInput {
   description: string
   debit: number
   credit: number
+  baseDebit?: number
+  baseCredit?: number
 }
 
 export interface PostJournalInput {
@@ -147,8 +149,8 @@ export async function postJournal(
     const accountId = accountIds.get(line.accountCode)!
     const origDebit  = Number(line.debit)  || 0
     const origCredit = Number(line.credit) || 0
-    const baseDebit  = fxRate === 1 ? origDebit  : Math.round(origDebit  * fxRate * 100) / 100
-    const baseCredit = fxRate === 1 ? origCredit : Math.round(origCredit * fxRate * 100) / 100
+    const baseDebit  = line.baseDebit  ?? (fxRate === 1 ? origDebit  : Math.round(origDebit  * fxRate * 100) / 100)
+    const baseCredit = line.baseCredit ?? (fxRate === 1 ? origCredit : Math.round(origCredit * fxRate * 100) / 100)
     await client.query(
       `INSERT INTO "JournalItem"
          (id, "journalEntryId", "accountId", debit, credit, "organizationId", "createdAt", "baseDebit", "baseCredit")
@@ -459,4 +461,47 @@ export async function postSupplierCreditNoteToGL(
   })
 
   return { journalEntryId: result.journalEntryId, skipped: false }
+}
+
+// === P1.3 deploy 5a: FX-aware payment posting ===
+export async function postPaymentToGLV2(
+  client: PoolClient,
+  args: {
+    organizationId: string
+    paymentId: string
+    reference: string
+    date: Date | string
+    amount: number
+    currency?: string
+    fxRate?: number
+    invoiceFxRate?: number
+  }
+) {
+  const payRate = (args.fxRate == null || args.fxRate <= 0) ? 1 : args.fxRate
+  const invRate = (args.invoiceFxRate == null || args.invoiceFxRate <= 0) ? payRate : args.invoiceFxRate
+  const amountBase = Math.round(args.amount * payRate * 100) / 100
+  const arBase = Math.round(args.amount * invRate * 100) / 100
+  const fxDelta = Math.round((amountBase - arBase) * 100) / 100
+  const lines: JournalLineInput[] = [
+    { accountCode: '1100', description: 'Bank - ' + args.reference, debit: args.amount, credit: 0 },
+    { accountCode: '1200', description: 'AR - ' + args.reference, debit: 0, credit: args.amount, baseCredit: arBase },
+  ]
+  if (Math.abs(fxDelta) >= 0.01) {
+    if (fxDelta > 0) {
+      lines.push({ accountCode: '4900', description: 'FX gain - ' + args.reference, debit: 0, credit: 0, baseCredit: fxDelta })
+    } else {
+      lines.push({ accountCode: '4910', description: 'FX loss - ' + args.reference, debit: 0, credit: 0, baseDebit: -fxDelta })
+    }
+  }
+  return postJournal(client, {
+    organizationId: args.organizationId,
+    date: args.date,
+    description: 'Customer payment ' + args.reference,
+    reference: args.reference,
+    lines,
+    sourceType: 'PAYMENT',
+    sourceId: args.paymentId,
+    currency: args.currency,
+    fxRate: payRate,
+  })
 }

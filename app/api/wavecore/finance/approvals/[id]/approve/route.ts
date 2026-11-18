@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
-import { postInvoiceToGL, postPaymentToGL } from '@/lib/wavecore/finance/post-journal'
+import { postInvoiceToGL, postPaymentToGL, postPaymentToGLV2 } from '@/lib/wavecore/finance/post-journal'
 import { writeAudit } from '@/lib/wavecore/audit'
 
 export async function POST(
@@ -82,13 +82,25 @@ export async function POST(
       )
       if (pmtRes.rowCount === 0) throw new Error('Payment not found')
       const pmt = pmtRes.rows[0]
+      // P1.3 deploy 5a: invoice FX context
+      let pmtInv: any = null
+      if (pmt.invoiceId) {
+        const pInvRes = await client.query(
+          `SELECT currency, "fxRate" FROM "CustomerInvoice" WHERE id = $1 AND "organizationId" = $2 LIMIT 1`,
+          [pmt.invoiceId, session.organizationId]
+        )
+        if (pInvRes.rowCount && pInvRes.rowCount > 0) pmtInv = pInvRes.rows[0]
+      }
 
-      await postPaymentToGL(client, {
+      await postPaymentToGLV2(client, {
         organizationId: session.organizationId,
         paymentId: pmt.id,
         reference: pmt.number || pmt.id,
         date: pmt.date || new Date().toISOString(),
         amount: Number(pmt.amount),
+        currency: pmt.currency || 'KES',
+        fxRate: Number(pmt.fxRate) || 1,
+        invoiceFxRate: Number(pmtInv?.fxRate) || Number(pmt.fxRate) || 1,
       })
 
       // Update linked invoice status
