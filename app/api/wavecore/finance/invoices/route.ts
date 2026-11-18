@@ -89,6 +89,13 @@ export async function POST(request: NextRequest) {
     const taxRate = body.taxRate || 0.16 // Default 16% VAT
     const taxAmount = subtotal * taxRate
     const total = subtotal + taxAmount
+    // FX: default to KES at rate 1 -- preserves pre-FX behavior for existing callers.
+    const currency = (typeof body.currency === 'string' && body.currency.trim()) || 'KES'
+    const fxRate = (body.fxRate === undefined || body.fxRate === null) ? 1 : Number(body.fxRate)
+    if (!Number.isFinite(fxRate) || fxRate <= 0) {
+      throw new Error('Invalid fxRate: ' + body.fxRate)
+    }
+    const baseAmount = Math.round(total * fxRate * 100) / 100
 
     // Get customerId
     let customerId = body.customerId
@@ -128,8 +135,8 @@ export async function POST(request: NextRequest) {
         `INSERT INTO "CustomerInvoice"
            (id, number, date, "dueDate", status, subtotal, "taxAmount", total,
             "customerId", "organizationId", "requiresApproval", "approvalId",
-            "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW()) RETURNING *`,
+            "createdAt", "updatedAt", currency, "fxRate", "baseAmount")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW()) RETURNING *`,
         [
           invoiceId,
           invoiceNumber,
@@ -143,6 +150,9 @@ export async function POST(request: NextRequest) {
           session.organizationId,
           approvalDecision.requiresApproval,
           approvalId,
+          currency,
+          fxRate,
+          baseAmount,
         ]
       )
 
@@ -175,6 +185,8 @@ export async function POST(request: NextRequest) {
           subtotal,
           taxAmount,
           total,
+          currency,
+          fxRate,
         })
       }
 

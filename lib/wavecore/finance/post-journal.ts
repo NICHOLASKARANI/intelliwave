@@ -184,6 +184,8 @@ export async function postInvoiceToGL(
     subtotal: number
     taxAmount: number
     total: number
+    currency?: string
+    fxRate?: number
   }
 ) {
   const lines: JournalLineInput[] = [
@@ -217,6 +219,8 @@ export async function postInvoiceToGL(
     lines,
     sourceType: 'INVOICE',
     sourceId: args.invoiceId,
+    currency: args.currency,
+    fxRate: args.fxRate,
   })
 }
 

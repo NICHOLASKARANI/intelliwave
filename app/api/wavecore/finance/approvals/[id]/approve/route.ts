@@ -60,6 +60,8 @@ export async function POST(
           subtotal: Number(inv.subtotal),
           taxAmount: Number(inv.taxAmount),
           total: Number(inv.total),
+          currency: inv.currency,
+          fxRate: Number(inv.fxRate),
         })
       }
 
