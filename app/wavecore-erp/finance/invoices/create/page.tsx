@@ -25,6 +25,38 @@ export default function CreateInvoicePage() {
   const [error, setError] = useState('')
   const router = useRouter()
 
+  // FX state (P1.3 deploy 4b)
+  const [currency, setCurrency] = useState<string>('KES')
+  const [fxRate, setFxRate] = useState<number>(1)
+  const [currencies, setCurrencies] = useState<Array<{ code: string; name: string; rate: number; isdefault: boolean }>>([])
+  const [rateInfo, setRateInfo] = useState<{ source: string; effectiveDate: string; warning?: string } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/wavecore/currency', { headers: { 'X-CSRF-Token': csrf() } })
+      .then(r => r.json())
+      .then(d => {
+        const list = (d.currencies || []) as Array<{ code: string; name: string; rate: number; isdefault: boolean }>
+        setCurrencies(list)
+        const def = list.find(c => c.isdefault) || list.find(c => c.code === 'KES')
+        if (def) setCurrency(def.code)
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleCurrencyChange = async (code: string) => {
+    setCurrency(code)
+    if (code === 'KES') { setFxRate(1); setRateInfo(null); return }
+    try {
+      const res = await fetch(`/api/wavecore/currency/rate?from=${code}&to=KES&date=${date}`, { headers: { 'X-CSRF-Token': csrf() } })
+      const d = await res.json()
+      setFxRate(Number(d.rate) || 1)
+      setRateInfo({ source: d.source || 'unknown', effectiveDate: d.effectiveDate || date, warning: d.warning })
+    } catch {
+      setFxRate(1)
+      setRateInfo({ source: 'fallback', effectiveDate: date, warning: 'Failed to fetch rate - defaulting to 1' })
+    }
+  }
+
   const addItem = () => setItems([...items, { description: '', quantity: 1, unitPrice: 0 }])
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
   const updateItem = (index: number, field: keyof LineItem, value: any) => {
@@ -36,6 +68,7 @@ export default function CreateInvoicePage() {
   const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0), 0)
   const tax = subtotal * 0.16
   const total = subtotal + tax
+  const totalInBase = currency === 'KES' ? total : total * fxRate
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,6 +120,8 @@ export default function CreateInvoicePage() {
           customerId,
           date,
           dueDate: dueDate || date,
+          currency,
+          fxRate,
           items: items.map(i => ({
             description: i.description,
             quantity: Number(i.quantity),
@@ -172,6 +207,39 @@ export default function CreateInvoicePage() {
             </div>
           </div>
 
+          {/* Currency */}
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+            <h3 className="font-bold mb-4">Currency</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Invoice Currency</label>
+                <select value={currency} onChange={(e) => handleCurrencyChange(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-background">
+                  {currencies.length === 0 && <option value="KES">KES - Kenyan Shilling</option>}
+                  {currencies.map(c => (
+                    <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Exchange Rate (to KES)</label>
+                <input type="number" value={fxRate} step="0.000001" min="0.000001"
+                  onChange={(e) => setFxRate(Number(e.target.value) || 1)}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-background"
+                  disabled={currency === 'KES'} />
+              </div>
+            </div>
+            {currency !== 'KES' && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Invoice total: <strong>{currency} {total.toFixed(2)}</strong> ? <strong>KSh {totalInBase.toFixed(2)}</strong> at rate {fxRate.toFixed(4)}
+                {rateInfo?.source && <span className="ml-2 text-xs">({rateInfo.source} {rateInfo.effectiveDate})</span>}
+              </p>
+            )}
+            {rateInfo?.warning && (
+              <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">{rateInfo.warning}</div>
+            )}
+          </div>
+
           {/* Line Items */}
           <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
             <div className="flex items-center justify-between mb-4">
@@ -198,7 +266,8 @@ export default function CreateInvoicePage() {
             <div className="border-t pt-4 mt-4 space-y-2">
               <div className="flex justify-between text-sm"><span>Subtotal</span><span>{subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between text-sm"><span>VAT (16%)</span><span>{tax.toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-lg"><span>Total</span><span>KSh {total.toFixed(2)}</span></div>
+              <div className="flex justify-between font-bold text-lg"><span>Total</span><span>{currency} {total.toFixed(2)}</span></div>
+              {currency !== 'KES' && (                 <div className="flex justify-between text-sm text-muted-foreground"><span>In KES</span><span>KSh {totalInBase.toFixed(2)}</span></div>               )}
             </div>
           </div>
 

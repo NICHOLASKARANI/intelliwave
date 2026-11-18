@@ -12,6 +12,9 @@ interface Invoice {
   customerName: string
   customerEmail: string
   total: number
+  currency?: string
+  fxRate?: number
+  baseAmount?: number
   subtotal: number
   taxAmount: number
   status: string
@@ -19,6 +22,11 @@ interface Invoice {
   createdAt: string
   paidAmount: number
   items?: Array<{ id: string; description: string; quantity: number; unitPrice: number; total: number }>
+}
+
+const fmtMoney = (inv: any, amt: number | string | null | undefined): string => {
+  const code = inv?.currency || 'KES'
+  return code + ' ' + Number(amt || 0).toLocaleString()
 }
 
 export default function InvoicesPage() {
@@ -176,7 +184,7 @@ export default function InvoicesPage() {
                       <p className="font-medium">{invoice.customerName || 'N/A'}</p>
                       <p className="text-xs text-muted-foreground">{invoice.customerEmail || ''}</p>
                     </td>
-                    <td className="p-4 font-bold">KSh {Number(invoice.total || 0).toLocaleString()}</td>
+                    <td className="p-4 font-bold">{fmtMoney(invoice, invoice.total)}</td>
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                         invoice.status === 'PAID' ? 'bg-green-100 text-green-700' :
@@ -283,7 +291,7 @@ export default function InvoicesPage() {
                       ) : (
                         <tr>
                           <td className="p-2">Invoice services</td>
-                          <td className="p-2 text-right">KSh {Number(selectedInvoice.subtotal || 0).toLocaleString()}</td>
+                          <td className="p-2 text-right">{fmtMoney(selectedInvoice, selectedInvoice.subtotal)}</td>
                         </tr>
                       )}
                     </tbody>
@@ -291,9 +299,9 @@ export default function InvoicesPage() {
 </div>
 
                   <div className="text-right space-y-1">
-                    <p>Subtotal: KSh {Number(selectedInvoice.subtotal || 0).toLocaleString()}</p>
-                    <p>Tax: KSh {Number(selectedInvoice.taxAmount || 0).toLocaleString()}</p>
-                    <p className="text-xl font-bold text-blue-600">Total: KSh {Number(selectedInvoice.total || 0).toLocaleString()}</p>
+                    <p>Subtotal: {fmtMoney(selectedInvoice, selectedInvoice.subtotal)}</p>
+                    <p>Tax: {fmtMoney(selectedInvoice, selectedInvoice.taxAmount)}</p>
+                    <p className="text-xl font-bold text-blue-600">Total: {fmtMoney(selectedInvoice, selectedInvoice.total)}</p>
                   </div>
                 </div>
 
