@@ -1,0 +1,51 @@
+export const dynamic = 'force-dynamic'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireTenant } from '@/lib/wavecore/auth'
+import { listPreferences, setPreference, type NotificationCategory } from '@/lib/wavecore/notifications'
+import { z } from 'zod'
+
+const putSchema = z.object({
+  category: z.enum(['approval','invoice_overdue','payment_received','low_stock','subscription','system']),
+  inApp: z.boolean(),
+  email: z.boolean(),
+})
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const prefs = await listPreferences(session.userId, session.organizationId)
+    return NextResponse.json({ preferences: prefs })
+  } catch (error) {
+    console.error('[notifications/preferences GET] error:', error)
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await requireTenant(request)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await request.json()
+    const v = putSchema.parse(body)
+
+    await setPreference(
+      session.userId,
+      session.organizationId,
+      v.category as NotificationCategory,
+      v.inApp,
+      v.email
+    )
+
+    const prefs = await listPreferences(session.userId, session.organizationId)
+    return NextResponse.json({ success: true, preferences: prefs })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid payload', details: error.errors }, { status: 422 })
+    }
+    console.error('[notifications/preferences PUT] error:', error)
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+  }
+}
