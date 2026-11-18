@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       if (approvalDecision.requiresApproval) {
         const paymentRow = await client.query(
           `INSERT INTO "CustomerPayment"
-             (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt", currency, "fxRate", "baseAmount")
+             (id, "number", amount, method, "invoiceId", "organizationId", date, reference, currency, "fxRate", "baseAmount", "createdAt")
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING *`,
           [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null, paymentCurrency, paymentFxRate, Math.round(amount * paymentFxRate * 100) / 100]
         )
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       // Under threshold — existing behavior preserved
       const result = await client.query(
         `INSERT INTO "CustomerPayment"
-           (id, "number", amount, method, "invoiceId", "organizationId", date, reference, "createdAt", currency, "fxRate", "baseAmount")
+           (id, "number", amount, method, "invoiceId", "organizationId", date, reference, currency, "fxRate", "baseAmount", "createdAt")
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING *`,
         [id, number, amount, body.method || 'MPESA', invoiceId, session.organizationId, dateStr, body.reference || null, paymentCurrency, paymentFxRate, Math.round(amount * paymentFxRate * 100) / 100]
       )
