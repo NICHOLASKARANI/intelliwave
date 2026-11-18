@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         `INSERT INTO "CustomerInvoice"
            (id, number, date, "dueDate", status, subtotal, "taxAmount", total,
             "customerId", "organizationId", "requiresApproval", "approvalId",
-            "createdAt", "updatedAt", currency, "fxRate", "baseAmount")
+            currency, "fxRate", "baseAmount", "createdAt", "updatedAt")
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW()) RETURNING *`,
         [
           invoiceId,
