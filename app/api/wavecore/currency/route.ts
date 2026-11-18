@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT * FROM "Currency" WHERE "organizationId" = $1 ORDER BY "isdefault" DESC, code`,
+      `SELECT * FROM "Currency" WHERE ("organizationId" IS NULL OR "organizationId" = $1) ORDER BY "isdefault" DESC, code`,
       [session!.organizationId]
     )
 
