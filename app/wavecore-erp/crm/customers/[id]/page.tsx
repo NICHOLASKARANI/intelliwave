@@ -21,6 +21,7 @@ type Tab =
   | 'invoices'
   | 'payments'
   | 'activities'
+  | 'communications'
 
 interface Customer {
   id: string
@@ -64,6 +65,13 @@ export default function CustomerDetailPage() {
   const [contactSaving, setContactSaving] = useState(false)
   const [contactForm, setContactForm] = useState({ firstName: '', lastName: '', email: '', phone: '', whatsappNumber: '', position: '', department: '', isPrimary: false, isDecisionMaker: false, consentEmail: true, consentSms: true, consentWhatsapp: true, notes: '' })
 
+  // Phase 2B — Communication log state
+  const [showLogComm, setShowLogComm] = useState(false)
+  const [commLogs, setCommLogs] = useState<any[]>([])
+  const [commLoading, setCommLoading] = useState(false)
+  const [commSaving, setCommSaving] = useState(false)
+  const [commForm, setCommForm] = useState({ channel: 'CALL', subject: '', body: '', contactName: '' })
+
   const csrf = () => (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
@@ -84,6 +92,11 @@ export default function CustomerDetailPage() {
 
   useEffect(() => { if (id) load() /* eslint-disable-next-line */ }, [id])
 
+  useEffect(() => {
+    if (tab === 'communications' && commLogs.length === 0) loadComms()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab])
+
   // Phase 1 — Contacts handlers
   const openAddContact = () => {
     setContactForm({ firstName: '', lastName: '', email: '', phone: '', whatsappNumber: '', position: '', department: '', isPrimary: false, isDecisionMaker: false, consentEmail: true, consentSms: true, consentWhatsapp: true, notes: '' })
@@ -98,6 +111,59 @@ export default function CustomerDetailPage() {
       if (!res.ok) { setError(json.error || 'Failed to save contact'); return }
       setShowAddContact(false); setSuccess('Contact added'); await load()
     } catch { setError('Network error') } finally { setContactSaving(false) }
+  }
+
+  // Phase 2B — Communication log helpers
+  const logComm = (c: any, channel: string, subject?: string, body?: string) => {
+    // Fire-and-forget logging. The actual WhatsApp/Call/Email still opens in the user's app.
+    fetch('/api/wavecore/crm/communications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+      body: JSON.stringify({
+        customerId: id,
+        contactId: c?.id || null,
+        channel,
+        direction: 'OUTBOUND',
+        subject: subject || null,
+        body: body || null,
+        contactName: c ? [c.firstName, c.lastName].filter(Boolean).join(' ') : null,
+      }),
+    }).then(r => r.ok ? loadComms() : null).catch(() => {})
+  }
+
+  const loadComms = async () => {
+    setCommLoading(true)
+    try {
+      const res = await fetch('/api/wavecore/crm/communications?customerId=' + id, { cache: 'no-store' })
+      const json = await res.json()
+      if (res.ok) setCommLogs(json.communications || [])
+    } catch {} finally {
+      setCommLoading(false)
+    }
+  }
+
+  const saveCommLog = async () => {
+    setCommSaving(true)
+    try {
+      const res = await fetch('/api/wavecore/crm/communications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({
+          customerId: id,
+          channel: commForm.channel,
+          direction: 'OUTBOUND',
+          subject: commForm.subject || null,
+          body: commForm.body || null,
+          contactName: commForm.contactName || null,
+        }),
+      })
+      if (res.ok) {
+        setShowLogComm(false)
+        await loadComms()
+      }
+    } catch {} finally {
+      setCommSaving(false)
+    }
   }
   const sendWhatsApp = (c: any) => {
     const phone = c.whatsappNumber || c.phone
