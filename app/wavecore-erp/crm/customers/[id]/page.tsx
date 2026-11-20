@@ -170,6 +170,7 @@ export default function CustomerDetailPage() {
     if (!phone) { setError('No WhatsApp or phone number'); return }
     const msg = buildMessage({ contactName: c.firstName, customerName: customer?.name, context: 'reaching out from our team.' })
     const link = buildWhatsAppLink(phone, msg)
+    logComm(c, 'WHATSAPP')
     if (link) window.open(link, '_blank', 'noopener,noreferrer')
     else setError('Could not normalize phone: ' + phone)
   }
@@ -639,13 +640,13 @@ export default function CustomerDetailPage() {
                               </button>
                             )}
                             {c.phone && (
-                              <a href={'tel:' + c.phone} title="Call"
+                              <a href={'tel:' + c.phone} onClick={() => logComm(c, 'CALL')} title="Call"
                                 className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold">
                                 <PhoneCall className="w-3.5 h-3.5" />
                               </a>
                             )}
                             {c.email && (
-                              <a href={'mailto:' + c.email} title="Email"
+                              <a href={'mailto:' + c.email} onClick={() => logComm(c, 'EMAIL')} title="Email"
                                 className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs font-bold">
                                 <Mail className="w-3.5 h-3.5" />
                               </a>
@@ -743,9 +744,15 @@ export default function CustomerDetailPage() {
 
             {tab === 'communications' && (
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-                <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+                  <div>
                   <h3 className="font-bold">Communication Timeline</h3>
                   <p className="text-xs text-neutral-500">{commLogs.length} logged touchpoint(s)</p>
+                  </div>
+                  <button onClick={() => { setCommForm({ channel: 'CALL', subject: '', body: '', contactName: '' }); setShowLogComm(true) }}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-2">
+                    <Plus className="w-4 h-4" /> Log Communication
+                  </button>
                 </div>
                 {commLoading ? (
                   <div className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-500" /></div>
@@ -878,6 +885,55 @@ export default function CustomerDetailPage() {
               <button onClick={saveContact} disabled={contactSaving}
                 className="px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40">
                 {contactSaving ? 'Saving...' : 'Save Contact'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2B — Log Communication modal */}
+      {showLogComm && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowLogComm(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Log Communication</h3>
+              <button onClick={() => setShowLogComm(false)} className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Channel</label>
+                <select value={commForm.channel} onChange={(e) => setCommForm({ ...commForm, channel: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm">
+                  <option value="CALL">Call</option>
+                  <option value="WHATSAPP">WhatsApp</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="MEETING">Meeting</option>
+                  <option value="NOTE">Note</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Contact name (optional)</label>
+                <input value={commForm.contactName} onChange={(e) => setCommForm({ ...commForm, contactName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Subject</label>
+                <input value={commForm.subject} onChange={(e) => setCommForm({ ...commForm, subject: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Notes</label>
+                <textarea rows={3} value={commForm.body} onChange={(e) => setCommForm({ ...commForm, body: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button onClick={() => setShowLogComm(false)} className="px-4 py-2 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800">Cancel</button>
+              <button onClick={saveCommLog} disabled={commSaving}
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40">
+                {commSaving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
