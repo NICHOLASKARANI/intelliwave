@@ -8,8 +8,9 @@ import {
   ArrowLeft, Loader2, AlertTriangle, Users, Printer, Trash2,
   User, Mail, Phone, Building2, Calendar, DollarSign, Save, X, Edit3,
   FileText, Package, TrendingUp, Activity as ActivityIcon, Target,
-  Receipt, CheckCircle2, CreditCard, Tag, Plus, X as XIcon,
+  Receipt, CheckCircle2, CreditCard, Tag, Plus, X as XIcon, MessageCircle, PhoneCall,
 } from 'lucide-react'
+import { buildWhatsAppLink, buildMessage } from '@/lib/wavecore/crm/whatsapp'
 
 type Tab =
   | 'overview'
@@ -59,6 +60,9 @@ export default function CustomerDetailPage() {
   const [form, setForm] = useState<any>({})
   const [tagInput, setTagInput] = useState('')
   const [tagsSaving, setTagsSaving] = useState(false)
+  const [showAddContact, setShowAddContact] = useState(false)
+  const [contactSaving, setContactSaving] = useState(false)
+  const [contactForm, setContactForm] = useState({ firstName: '', lastName: '', email: '', phone: '', whatsappNumber: '', position: '', department: '', isPrimary: false, isDecisionMaker: false, consentEmail: true, consentSms: true, consentWhatsapp: true, notes: '' })
 
   const csrf = () => (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
@@ -80,6 +84,29 @@ export default function CustomerDetailPage() {
 
   useEffect(() => { if (id) load() /* eslint-disable-next-line */ }, [id])
 
+  // Phase 1 — Contacts handlers
+  const openAddContact = () => {
+    setContactForm({ firstName: '', lastName: '', email: '', phone: '', whatsappNumber: '', position: '', department: '', isPrimary: false, isDecisionMaker: false, consentEmail: true, consentSms: true, consentWhatsapp: true, notes: '' })
+    setShowAddContact(true)
+  }
+  const saveContact = async () => {
+    if (!contactForm.firstName.trim() || !contactForm.lastName.trim()) { setError('First name and last name are required'); return }
+    setContactSaving(true); setError(''); setSuccess('')
+    try {
+      const res = await fetch('/api/wavecore/crm/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() }, body: JSON.stringify({ ...contactForm, customerId: id }) })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Failed to save contact'); return }
+      setShowAddContact(false); setSuccess('Contact added'); await load()
+    } catch { setError('Network error') } finally { setContactSaving(false) }
+  }
+  const sendWhatsApp = (c: any) => {
+    const phone = c.whatsappNumber || c.phone
+    if (!phone) { setError('No WhatsApp or phone number'); return }
+    const msg = buildMessage({ contactName: c.firstName, customerName: customer?.name, context: 'reaching out from our team.' })
+    const link = buildWhatsAppLink(phone, msg)
+    if (link) window.open(link, '_blank', 'noopener,noreferrer')
+    else setError('Could not normalize phone: ' + phone)
+  }
   const startEdit = () => {
     if (!customer) return
     setForm({
@@ -497,8 +524,18 @@ export default function CustomerDetailPage() {
 
             {tab === 'contacts' && (
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+                  <div>
+                    <h3 className="font-bold">Contacts</h3>
+                    <p className="text-xs text-neutral-500">{(data.contacts || []).length} contact(s) — B2B multi-contact record</p>
+                  </div>
+                  <button onClick={openAddContact}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-2">
+                    <Plus className="w-4 h-4" /> Add Contact
+                  </button>
+                </div>
                 {(data.contacts || []).length === 0 ? (
-                  <Empty msg="No contacts recorded for this customer." />
+                  <Empty msg="No contacts recorded for this customer. Click Add Contact to add the first one." />
                 ) : (
                   <table className="w-full text-sm">
                     <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
@@ -506,18 +543,47 @@ export default function CustomerDetailPage() {
                         <th className="px-6 py-3">Name</th>
                         <th className="px-4 py-3">Position</th>
                         <th className="px-4 py-3">Email</th>
-                        <th className="px-4 py-3">Phone</th>
-                        <th className="px-4 py-3">Primary</th>
+                        <th className="px-4 py-3">Phone / WhatsApp</th>
+                        <th className="px-4 py-3">Badges</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(data.contacts || []).map((c: any) => (
                         <tr key={c.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                          <td className="px-6 py-3 font-bold">{c.firstName} {c.lastName}</td>
+                          <td className="px-6 py-3 font-bold">
+                            {c.firstName} {c.lastName}
+                            {c.isPrimary && <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-green-100 text-green-700 font-bold">PRIMARY</span>}
+                          </td>
                           <td className="px-4 py-3 text-xs text-neutral-500">{c.position || '—'}</td>
                           <td className="px-4 py-3 text-xs">{c.email || '—'}</td>
-                          <td className="px-4 py-3 text-xs">{c.phone || '—'}</td>
-                          <td className="px-4 py-3 text-xs">{c.isPrimary ? '✓' : ''}</td>
+                          <td className="px-4 py-3 text-xs">
+                            {c.whatsappNumber || c.phone || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs space-x-1">
+                            {c.isDecisionMaker && <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-bold">DM</span>}
+                            {c.consentWhatsapp === false && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">No WA consent</span>}
+                          </td>
+                          <td className="px-4 py-3 text-right space-x-1">
+                            {(c.whatsappNumber || c.phone) && (
+                              <button onClick={() => sendWhatsApp(c)} title="WhatsApp"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold">
+                                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                              </button>
+                            )}
+                            {c.phone && (
+                              <a href={'tel:' + c.phone} title="Call"
+                                className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold">
+                                <PhoneCall className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            {c.email && (
+                              <a href={'mailto:' + c.email} title="Email"
+                                className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs font-bold">
+                                <Mail className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -525,7 +591,6 @@ export default function CustomerDetailPage() {
                 )}
               </div>
             )}
-
             {tab === 'opportunities' && (
               <SimpleTable
                 empty="No deals for this customer."
@@ -611,8 +676,109 @@ export default function CustomerDetailPage() {
           </>
         )}
 
+      {/* Phase 1 — Add Contact modal */}
+      {showAddContact && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowAddContact(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Add Contact</h3>
+              <button onClick={() => setShowAddContact(false)} className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1">First Name *</label>
+                  <input value={contactForm.firstName} onChange={(e) => setContactForm({ ...contactForm, firstName: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1">Last Name *</label>
+                  <input value={contactForm.lastName} onChange={(e) => setContactForm({ ...contactForm, lastName: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Position</label>
+                <input value={contactForm.position} onChange={(e) => setContactForm({ ...contactForm, position: e.target.value })}
+                  placeholder="e.g., Procurement Manager"
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Department</label>
+                <input value={contactForm.department} onChange={(e) => setContactForm({ ...contactForm, department: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1">Email</label>
+                  <input type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 mb-1">Phone</label>
+                  <input type="tel" value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                    placeholder="0712345678"
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">WhatsApp Number</label>
+                <input type="tel" value={contactForm.whatsappNumber} onChange={(e) => setContactForm({ ...contactForm, whatsappNumber: e.target.value })}
+                  placeholder="0712345678 (leave blank to use phone)"
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={contactForm.isPrimary} onChange={(e) => setContactForm({ ...contactForm, isPrimary: e.target.checked })} />
+                  Primary contact
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={contactForm.isDecisionMaker} onChange={(e) => setContactForm({ ...contactForm, isDecisionMaker: e.target.checked })} />
+                  Decision maker
+                </label>
+              </div>
+              <div className="border-t pt-3">
+                <p className="text-xs font-bold text-neutral-500 mb-2">Communication Consent (Kenya DPA 2019)</p>
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={contactForm.consentEmail} onChange={(e) => setContactForm({ ...contactForm, consentEmail: e.target.checked })} />
+                    Allow email
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={contactForm.consentSms} onChange={(e) => setContactForm({ ...contactForm, consentSms: e.target.checked })} />
+                    Allow SMS
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={contactForm.consentWhatsapp} onChange={(e) => setContactForm({ ...contactForm, consentWhatsapp: e.target.checked })} />
+                    Allow WhatsApp
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Notes</label>
+                <textarea value={contactForm.notes} onChange={(e) => setContactForm({ ...contactForm, notes: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setShowAddContact(false)} disabled={contactSaving}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800 disabled:opacity-40">
+                Cancel
+              </button>
+              <button onClick={saveContact} disabled={contactSaving}
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40">
+                {contactSaving ? 'Saving...' : 'Save Contact'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </main>
     </div>
+
   )
 }
 
