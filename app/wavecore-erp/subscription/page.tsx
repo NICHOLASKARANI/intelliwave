@@ -74,7 +74,7 @@ export default function SubscriptionPage() {
   }
 
   const formatDate = (iso: string | null) => {
-    if (!iso) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'
+    if (!iso) return '—'
     return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
@@ -163,7 +163,7 @@ export default function SubscriptionPage() {
                       {data.currency} {Number(data.amount || 0).toLocaleString()}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      {isPaid ? 'Paid' : isTrial ? 'Trial period' : 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}
+                    {isPaid ? 'Paid' : isTrial ? 'Trial period' : '—'}
                     </p>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function SubscriptionPage() {
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Subscription Plans</h2>
-              <p className="text-sm text-neutral-500">Pay via M-Pesa Ãƒâ€šÃ‚Â· Instant activation</p>
+              <p className="text-sm text-neutral-500">Pay via M-Pesa · Instant activation</p>
             </div>
             <Link
               href="/wavecore-erp/subscription/pay"
@@ -276,7 +276,7 @@ export default function SubscriptionPage() {
             {[
               { name: 'Monthly', price: 500, days: 30, badge: null, rate: '16.7' },
               { name: '3 Months', price: 1350, days: 90, badge: 'Best Value', rate: '15.0' },
-              { name: '6 Months', price: 2750, days: 180, badge: null, rate: '15.3' },
+              { name: '6 Months', price: 2650, days: 180, badge: null, rate: '14.7' },
               { name: '1 Year', price: 5000, days: 365, badge: 'Max Savings', rate: '13.7' },
             ].map(p => (
               <div
@@ -324,11 +324,11 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
-        {/* Alternative Payment â€” Bank Transfer */}
+        {/* Alternative Payment — Bank Transfer */}
         <div className="mt-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 rounded-3xl border-2 border-blue-200 dark:border-blue-800 p-6 lg:p-8">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <span className="text-2xl">ðŸ¦</span>
+              <span className="text-2xl">🏦</span>
             </div>
             <div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Alternative Payment Method</h3>
@@ -368,7 +368,7 @@ export default function SubscriptionPage() {
               className="flex items-center gap-3 bg-white dark:bg-neutral-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-4 transition-colors group"
             >
               <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
-                <span className="text-lg">ðŸ“ž</span>
+                <span className="text-lg">📞</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase">Call / WhatsApp</p>
@@ -380,7 +380,7 @@ export default function SubscriptionPage() {
               className="flex items-center gap-3 bg-white dark:bg-neutral-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4 transition-colors group"
             >
               <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
-                <span className="text-lg">âœ‰ï¸</span>
+                <span className="text-lg">✉️</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase">Email</p>
@@ -402,7 +402,7 @@ export default function SubscriptionPage() {
               >
                 <option value="MONTHLY">Monthly — KSh 500 (30 days)</option>
                 <option value="QUARTERLY">3 Months — KSh 1,350 (90 days)</option>
-                <option value="HALF_YEARLY">6 Months — KSh 2,750 (180 days)</option>
+                <option value="HALF_YEARLY">6 Months — KSh 2,650 (180 days)</option>
                 <option value="YEARLY">1 Year — KSh 5,000 (365 days)</option>
               </select>
               <input
@@ -423,7 +423,7 @@ export default function SubscriptionPage() {
                 const txnRef = txnInput.value.trim()
                 const planId = planSelect.value
                 if (!txnRef || txnRef.length < 6) {
-                  if (statusDiv) statusDiv.textContent = '⚠️ Please enter a valid transaction reference (min 6 chars)'
+                  if (statusDiv) statusDiv.textContent = 'âš ï¸ Please enter a valid transaction reference (min 6 chars)'
                   return
                 }
                 btn.disabled = true
@@ -437,12 +437,12 @@ export default function SubscriptionPage() {
                   })
                   const data = await res.json()
                   if (!res.ok) {
-                    if (statusDiv) statusDiv.textContent = '❌ ' + (data.error || 'Submission failed')
+                    if (statusDiv) statusDiv.textContent = 'âŒ ' + (data.error || 'Submission failed')
                     btn.disabled = false
                     btn.textContent = 'Submit Reference'
                     return
                   }
-                  if (statusDiv) statusDiv.textContent = '⏳ Submitted. Checking approval...'
+                  if (statusDiv) statusDiv.textContent = 'â³ Submitted. Checking approval...'
                   btn.textContent = 'Awaiting Approval...'
                   let polls = 0
                   const poll = async () => {
@@ -456,12 +456,12 @@ export default function SubscriptionPage() {
                         return
                       }
                       if (sData.rejected) {
-                        if (statusDiv) statusDiv.textContent = '❌ Payment rejected: ' + (sData.rejectionNote || 'Contact support')
+                        if (statusDiv) statusDiv.textContent = 'âŒ Payment rejected: ' + (sData.rejectionNote || 'Contact support')
                         btn.disabled = false
                         btn.textContent = 'Submit Reference'
                         return
                       }
-                      if (statusDiv) statusDiv.textContent = '⏳ Awaiting approval (' + polls + '/60 — ' + (polls * 10) + 's)'
+                      if (statusDiv) statusDiv.textContent = '⏳ Awaiting approval (' + polls + '/60 - ' + (polls * 10) + 's)'
                       if (polls < 60) setTimeout(poll, 10000)
                     } catch {
                       if (polls < 60) setTimeout(poll, 10000)
@@ -469,7 +469,7 @@ export default function SubscriptionPage() {
                   }
                   setTimeout(poll, 5000)
                 } catch {
-                  if (statusDiv) statusDiv.textContent = '❌ Network error. Try again.'
+                  if (statusDiv) statusDiv.textContent = 'âŒ Network error. Try again.'
                   btn.disabled = false
                   btn.textContent = 'Submit Reference'
                 }
