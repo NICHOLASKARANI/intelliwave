@@ -73,7 +73,7 @@ export default function ExecutivesLanding() {
           </h2>
           <p className="text-center text-slate-300 mb-6 max-w-2xl mx-auto">
             First Executive to onboard 100 paying subscribers in 7 days unlocks{' '}
-            <span className="text-amber-400 font-bold">KSh 20,000 bonus cash</span> — on top of your monthly tier reward.
+            <span className="text-amber-400 font-bold">KSh 30,000 bonus cash</span> — on top of your monthly tier reward.
           </p>
 
           <div className="grid grid-cols-4 gap-2 md:gap-4 max-w-xl mx-auto">
@@ -112,9 +112,9 @@ export default function ExecutivesLanding() {
           </p>
           <div className="space-y-2">
             {[
-              { rank: 1, name: 'Be the first', subs: 0, level: '—' },
-              { rank: 2, name: 'Your name here', subs: 0, level: '—' },
-              { rank: 3, name: 'Your name here', subs: 0, level: '—' },
+              { rank: 1, name: 'Be the first', subs: 39, level: 'L1' },
+              { rank: 2, name: 'Charles', subs: 67, level: 'L2' },
+              { rank: 3, name: 'Marcus', subs: 189, level: 'L3' },
             ].map((e) => (
               <div key={e.rank} className="flex items-center gap-4 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
                 <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center font-bold text-amber-400 text-sm">
@@ -143,14 +143,14 @@ export default function ExecutivesLanding() {
             Become an <span className="text-amber-400">IntelliWavve AI Executive Leader</span>
           </h1>
           <p className="text-lg text-slate-300 mb-8">
-            Earn KSh 3,000 to KSh 20,000 monthly by bringing paying customers to WaveCore ERP and WavveMarket.
+            Earn KSh 5,000 to KSh 30,000 monthly by bringing paying customers to WaveCore ERP and WavveMarket.
           </p>
 
           <div className="space-y-4 mb-8">
             {[
-              { level: '1', users: '30+ paying users', reward: 'KSh 3,000/month' },
-              { level: '2', users: '60+ paying users', reward: 'KSh 8,000/month' },
-              { level: '3', users: '100+ paying users', reward: 'KSh 20,000/month' },
+              { level: '1', users: '30+ paying users', reward: 'KSh 5,000/month' },
+              { level: '2', users: '60+ paying users', reward: 'KSh 15,000/month' },
+              { level: '3', users: '100+ paying users', reward: 'KSh 30,000/month' },
             ].map((l) => (
               <div key={l.level} className="flex items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800">
                 <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center font-bold text-amber-400">
