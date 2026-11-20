@@ -312,6 +312,7 @@ export default function CustomerDetailPage() {
     { key: 'invoices',      label: 'Invoices',      icon: Receipt,     count: counts.invoices || 0 },
     { key: 'payments',      label: 'Payments',      icon: CreditCard,  count: counts.payments || 0 },
     { key: 'activities',    label: 'Activities',    icon: ActivityIcon,count: counts.activities || 0 },
+    { key: 'communications', label: 'Communication', icon: MessageCircle, count: commLogs.length || 0 },
   ]
 
   return (
@@ -738,6 +739,46 @@ export default function CustomerDetailPage() {
                   { k: 'createdAt', label: 'Created', date: true },
                 ]}
               />
+            )}
+
+            {tab === 'communications' && (
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+                  <h3 className="font-bold">Communication Timeline</h3>
+                  <p className="text-xs text-neutral-500">{commLogs.length} logged touchpoint(s)</p>
+                </div>
+                {commLoading ? (
+                  <div className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-500" /></div>
+                ) : commLogs.length === 0 ? (
+                  <Empty msg="No communication logged yet. Use the WhatsApp, Call, or Email buttons on a contact, or log a meeting manually." />
+                ) : (
+                  <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {commLogs.map((log: any) => (
+                      <div key={log.id} className="p-4 flex items-start gap-3">
+                        <div className={"w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 " + (
+                          log.channel === "WHATSAPP" ? "bg-green-100 text-green-700" :
+                          log.channel === "EMAIL" ? "bg-blue-100 text-blue-700" :
+                          log.channel === "CALL" ? "bg-purple-100 text-purple-700" :
+                          log.channel === "MEETING" ? "bg-amber-100 text-amber-700" :
+                          "bg-neutral-100 text-neutral-700"
+                        )}>
+                          <MessageCircle className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="font-bold text-sm">{log.channel}</span>
+                            <span className="text-[10px] uppercase tracking-wide text-neutral-500 font-bold">{log.direction}</span>
+                            {log.contactName && <span className="text-xs text-neutral-500">— {log.contactName}</span>}
+                            <span className="ml-auto text-xs text-neutral-400">{fmtDate(log.sentAt || log.createdAt)}</span>
+                          </div>
+                          {log.subject && <p className="text-sm font-medium mt-0.5">{log.subject}</p>}
+                          {log.body && <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 whitespace-pre-wrap">{log.body}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
