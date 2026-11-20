@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     )
     return NextResponse.json({ leads: result.rows })
   } catch (error) {
+    console.error('[crm/leads]', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
     )
     return NextResponse.json({ lead: result.rows[0] }, { status: 201 })
   } catch (error) {
+    console.error('[crm/leads]', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
@@ -84,6 +86,7 @@ export async function PUT(request: NextRequest) {
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ lead: result.rows[0] })
   } catch (error) {
+    console.error('[crm/leads]', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
@@ -103,6 +106,7 @@ export async function DELETE(request: NextRequest) {
     )
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('[crm/leads]', error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

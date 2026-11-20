@@ -93,6 +93,7 @@ export async function GET(
       }
     })
   } catch (error) {
+    console.error('[crm/leads/pdf]', error)
     return NextResponse.json({ error: 'PDF failed' }, { status: 500 })
   }
 }

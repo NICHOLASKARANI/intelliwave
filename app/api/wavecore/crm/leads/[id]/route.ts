@@ -49,7 +49,8 @@ export async function GET(
       activities: activitiesRes.rows,
       opportunities: oppsRes.rows,
     })
-  } catch {
+  } catch (error) {
+    console.error('[crm/leads/[id]]', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -92,7 +93,8 @@ export async function PATCH(
     )
     if (result.rowCount === 0) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
     return NextResponse.json({ success: true, lead: result.rows[0] })
-  } catch {
+  } catch (error) {
+    console.error('[crm/leads/[id]]', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -118,7 +120,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
     }
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    console.error('[crm/leads/[id]]', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
