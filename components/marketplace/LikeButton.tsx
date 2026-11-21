@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Heart, Loader2 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface LikeButtonProps {
   listingId: number
   initialCount?: number
@@ -53,7 +54,7 @@ export function LikeButton({
 
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/likes', {
+      const res = await authedFetch('/api/marketplace/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId }),

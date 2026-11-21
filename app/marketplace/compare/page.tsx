@@ -8,6 +8,7 @@ import {
   ShoppingCart, CheckCircle2, Star, MapPin, Store,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 function CompareInner() {
   const params = useSearchParams()
   const router = useRouter()
@@ -76,7 +77,7 @@ function CompareInner() {
   const addToCart = async (listingId: number) => {
     setAddingToCart(listingId)
     try {
-      const res = await fetch('/api/marketplace/cart', {
+      const res = await authedFetch('/api/marketplace/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId, quantity: 1 }),

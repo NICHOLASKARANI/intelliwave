@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X, Plus, Heart, Bell, Loader2, CheckCircle2 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Collection {
   id: string
   name: string
@@ -31,7 +32,7 @@ export default function SaveModal({ listingId, currentPrice, onClose, onSaved }:
   const fetchCollections = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/wishlists')
+      const res = await authedFetch('/api/marketplace/wishlists')
       if (res.ok) {
         const d = await res.json()
         setCollections(d.collections || [])
@@ -46,7 +47,7 @@ export default function SaveModal({ listingId, currentPrice, onClose, onSaved }:
     if (!newName.trim()) return
     setCreating(true)
     try {
-      const res = await fetch('/api/marketplace/wishlists', {
+      const res = await authedFetch('/api/marketplace/wishlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim() }),
@@ -68,7 +69,7 @@ export default function SaveModal({ listingId, currentPrice, onClose, onSaved }:
     setError('')
     try {
       // Save to collection
-      const saveRes = await fetch('/api/marketplace/saved', {
+      const saveRes = await authedFetch('/api/marketplace/saved', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -87,7 +88,7 @@ export default function SaveModal({ listingId, currentPrice, onClose, onSaved }:
       if (priceAlert && targetPrice) {
         const tp = parseFloat(targetPrice)
         if (tp > 0 && tp < currentPrice) {
-          await fetch('/api/marketplace/wishlists/price-alert', {
+          await authedFetch('/api/marketplace/wishlists/price-alert', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ listingId, targetPrice: tp }),

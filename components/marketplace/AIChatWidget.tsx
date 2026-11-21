@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Bot, X, Send, Loader2, ShoppingCart, MessageCircle } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Message {
   role: 'user' | 'assistant'
   content: string
@@ -44,7 +45,7 @@ export default function AIChatWidget() {
     setSending(true)
 
     try {
-      const res = await fetch('/api/marketplace/ai/chat', {
+      const res = await authedFetch('/api/marketplace/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg }),
@@ -74,7 +75,7 @@ export default function AIChatWidget() {
 
   const addToCart = async (listingId: number) => {
     try {
-      const res = await fetch('/api/marketplace/cart', {
+      const res = await authedFetch('/api/marketplace/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId, quantity: 1 }),

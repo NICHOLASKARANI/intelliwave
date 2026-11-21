@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import WishlistCollectionCard from '@/components/marketplace/WishlistCollectionCard'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type TabId = 'all' | 'collections' | 'alerts'
 
 export default function SavedPage() {
@@ -36,7 +37,7 @@ export default function SavedPage() {
   const fetchSaved = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/saved')
+      const res = await authedFetch('/api/marketplace/saved')
       if (res.ok) { const d = await res.json(); setSaved(d.saved || []) }
     } finally { setLoading(false) }
   }
@@ -44,7 +45,7 @@ export default function SavedPage() {
   const fetchCollections = async () => {
     setCollectionsLoading(true)
     try {
-      const res = await fetch('/api/marketplace/wishlists')
+      const res = await authedFetch('/api/marketplace/wishlists')
       if (res.ok) { const d = await res.json(); setCollections(d.collections || []) }
     } finally { setCollectionsLoading(false) }
   }
@@ -52,13 +53,13 @@ export default function SavedPage() {
   const fetchAlerts = async () => {
     setAlertsLoading(true)
     try {
-      const res = await fetch('/api/marketplace/wishlists/price-alert')
+      const res = await authedFetch('/api/marketplace/wishlists/price-alert')
       if (res.ok) { const d = await res.json(); setAlerts(d.alerts || []) }
     } finally { setAlertsLoading(false) }
   }
 
   const removeSaved = async (listingId: number) => {
-    await fetch(`/api/marketplace/saved?listingId=${listingId}`, { method: 'DELETE' })
+    await authedFetch(`/api/marketplace/saved?listingId=${listingId}`, { method: 'DELETE' })
     fetchSaved()
   }
 
@@ -66,7 +67,7 @@ export default function SavedPage() {
     if (!newCollectionName.trim()) return
     setCreatingCollection(true)
     try {
-      const res = await fetch('/api/marketplace/wishlists', {
+      const res = await authedFetch('/api/marketplace/wishlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCollectionName.trim() }),
@@ -77,12 +78,12 @@ export default function SavedPage() {
 
   const deleteCollection = async (id: string) => {
     if (!confirm('Delete this collection? Items will move to your default saved list.')) return
-    await fetch(`/api/marketplace/wishlists/${id}`, { method: 'DELETE' })
+    await authedFetch(`/api/marketplace/wishlists/${id}`, { method: 'DELETE' })
     fetchCollections()
   }
 
   const toggleShare = async (id: string, currentPublic: boolean) => {
-    const res = await fetch(`/api/marketplace/wishlists/${id}/share`, {
+    const res = await authedFetch(`/api/marketplace/wishlists/${id}/share`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ makePublic: !currentPublic }),
@@ -99,7 +100,7 @@ export default function SavedPage() {
   }
 
   const removeAlert = async (id: string) => {
-    await fetch(`/api/marketplace/wishlists/price-alert?id=${id}`, { method: 'DELETE' })
+    await authedFetch(`/api/marketplace/wishlists/price-alert?id=${id}`, { method: 'DELETE' })
     fetchAlerts()
   }
 

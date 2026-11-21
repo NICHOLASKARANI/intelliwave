@@ -17,6 +17,7 @@ import ReviewsSection from '@/components/marketplace/ReviewsSection'
 import ProductQA from '@/components/marketplace/ProductQA'
 import CustomersAlsoBought from '@/components/marketplace/CustomersAlsoBought'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function ListingDetailPage({ params }: { params: { id: string } }) {
   const [listing, setListing] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -36,7 +37,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
 
   const fetchListing = async () => {
     try {
-      const res = await fetch(`/api/marketplace/listings?id=${params.id}`)
+      const res = await authedFetch(`/api/marketplace/listings?id=${params.id}`)
       if (res.ok) {
         const data = await res.json()
         setListing(data.listing)
@@ -50,7 +51,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
 
   const handleSave = async () => {
     if (saved) {
-      await fetch(`/api/marketplace/saved?listingId=${params.id}`, { method: 'DELETE' })
+      await authedFetch(`/api/marketplace/saved?listingId=${params.id}`, { method: 'DELETE' })
       setSaved(false)
     } else {
       setShowSaveModal(true)
@@ -61,7 +62,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
     e.preventDefault()
     setSending(true)
     try {
-      const res = await fetch('/api/marketplace/conversations', {
+      const res = await authedFetch('/api/marketplace/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: parseInt(params.id), message: message || 'Hello, is this available?' })
@@ -95,7 +96,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
   const handleAddToCart = async (redirect: boolean = false) => {
     setAddToCartLoading(true)
     try {
-      const res = await fetch('/api/marketplace/cart', {
+      const res = await authedFetch('/api/marketplace/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: parseInt(params.id), quantity: 1 }),
@@ -119,7 +120,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
   const handleBuyNow = async () => {
     setAddToCartLoading(true)
     try {
-      const res = await fetch('/api/marketplace/orders/create', {
+      const res = await authedFetch('/api/marketplace/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'buynow', listingId: parseInt(params.id), quantity: 1 }),

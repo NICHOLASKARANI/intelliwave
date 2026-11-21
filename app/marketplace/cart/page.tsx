@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ShoppingCart, Loader2, Trash2, Plus, Minus, Store, ChevronLeft, Package, ArrowRight } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function CartPage() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -12,7 +13,7 @@ export default function CartPage() {
   const handlePlaceOrders = async () => {
     if (!confirm('Place order request? Sellers will confirm stock before you pay.')) return
     try {
-      const res = await fetch('/api/marketplace/orders/create', {
+      const res = await authedFetch('/api/marketplace/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'cart' }),
@@ -34,7 +35,7 @@ export default function CartPage() {
 
   const fetchCart = async () => {
     try {
-      const res = await fetch('/api/marketplace/cart')
+      const res = await authedFetch('/api/marketplace/cart')
       if (res.ok) setData(await res.json())
     } finally { setLoading(false) }
   }
@@ -43,7 +44,7 @@ export default function CartPage() {
     if (quantity < 1) { removeItem(itemId); return }
     setUpdating(itemId)
     try {
-      await fetch(`/api/marketplace/cart/${itemId}`, {
+      await authedFetch(`/api/marketplace/cart/${itemId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity }),
@@ -56,7 +57,7 @@ export default function CartPage() {
   const removeItem = async (itemId: string) => {
     setUpdating(itemId)
     try {
-      await fetch(`/api/marketplace/cart/${itemId}`, { method: 'DELETE' })
+      await authedFetch(`/api/marketplace/cart/${itemId}`, { method: 'DELETE' })
       window.dispatchEvent(new Event('cart-updated'))
       await fetchCart()
     } finally { setUpdating(null) }
@@ -64,7 +65,7 @@ export default function CartPage() {
 
   const clearAll = async () => {
     if (!confirm('Clear entire cart?')) return
-    await fetch('/api/marketplace/cart', { method: 'DELETE' })
+    await authedFetch('/api/marketplace/cart', { method: 'DELETE' })
     window.dispatchEvent(new Event('cart-updated'))
     await fetchCart()
   }

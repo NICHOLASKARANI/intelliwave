@@ -7,6 +7,7 @@ import {
   Upload, FileText, Eye, EyeOff, Store, TrendingUp, RefreshCw,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function InventoryPage() {
   const [listings, setListings] = useState<any[]>([])
   const [counts, setCounts] = useState({ all: 0, active: 0, draft: 0, outOfStock: 0, lowStock: 0 })
@@ -25,7 +26,7 @@ export default function InventoryPage() {
     setLoading(true)
     try {
       const url = `/api/marketplace/seller/inventory?filter=${filter}&search=${encodeURIComponent(search)}`
-      const res = await fetch(url)
+      const res = await authedFetch(url)
       if (res.ok) {
         const d = await res.json()
         setListings(d.listings || [])
@@ -39,7 +40,7 @@ export default function InventoryPage() {
   const updateField = async (id: number, field: 'stock' | 'price', value: number) => {
     setSaving(id)
     try {
-      const res = await fetch('/api/marketplace/seller/inventory', {
+      const res = await authedFetch('/api/marketplace/seller/inventory', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: id, [field]: value }),
@@ -58,7 +59,7 @@ export default function InventoryPage() {
     const newStatus = currentStatus === 'ACTIVE' ? 'DRAFT' : 'ACTIVE'
     setSaving(id)
     try {
-      const res = await fetch('/api/marketplace/seller/inventory', {
+      const res = await authedFetch('/api/marketplace/seller/inventory', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: id, status: newStatus }),
@@ -102,7 +103,7 @@ export default function InventoryPage() {
         rows.push(row)
       }
 
-      const res = await fetch('/api/marketplace/seller/inventory/bulk-csv', {
+      const res = await authedFetch('/api/marketplace/seller/inventory/bulk-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rows }),

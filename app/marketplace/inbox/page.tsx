@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { MessageCircle, Send, Loader2, ChevronLeft, User, BadgeCheck, AlertCircle, CheckCheck, Paperclip, Image as ImageIcon, FileText, X, ExternalLink } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const POLL_INTERVAL = 3000
 
 export default function InboxPage() {
@@ -60,7 +61,7 @@ export default function InboxPage() {
   const fetchConversations = async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/conversations')
+      const res = await authedFetch('/api/marketplace/conversations')
       if (res.status === 402) { setSubscriptionRequired(true); setConversations([]); return }
       if (res.ok) {
         const data = await res.json()
@@ -77,7 +78,7 @@ export default function InboxPage() {
       const url = sinceId > 0
         ? `/api/marketplace/messages?conversationId=${conversationId}&sinceId=${sinceId}`
         : `/api/marketplace/messages?conversationId=${conversationId}`
-      const res = await fetch(url)
+      const res = await authedFetch(url)
       if (res.ok) {
         const data = await res.json()
         const newMsgs = data.messages || []
@@ -108,7 +109,7 @@ export default function InboxPage() {
         const fd = new FormData()
         fd.append('file', file)
         fd.append('title', file.name.replace(/\.[^.]+$/, ''))
-        const res = await fetch('/api/marketplace/upload', { method: 'POST', body: fd })
+        const res = await authedFetch('/api/marketplace/upload', { method: 'POST', body: fd })
         if (res.ok) {
           const d = await res.json()
           if (d.url) setPendingAttachments(prev => [...prev, d.url])
@@ -137,7 +138,7 @@ export default function InboxPage() {
       const hasText = newMessage.trim().length > 0
       const messageType = hasFiles && hasText ? 'mixed' : hasFiles ? 'file' : 'text'
 
-      const res = await fetch('/api/marketplace/messages', {
+      const res = await authedFetch('/api/marketplace/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Star, ThumbsUp, Flag, MessageSquare, CheckCircle } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Review {
   id: string
   reviewerName: string | null
@@ -40,7 +41,7 @@ export default function ReviewCard({ review, isLoggedIn, isSeller, onRefresh }: 
     if (!isLoggedIn) { alert('Log in to vote'); return }
     setVoting(true)
     try {
-      const res = await fetch(`/api/marketplace/reviews/${review.id}/helpful`, { method: 'POST' })
+      const res = await authedFetch(`/api/marketplace/reviews/${review.id}/helpful`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
         setHelpful(data.helpfulCount)
@@ -53,7 +54,7 @@ export default function ReviewCard({ review, isLoggedIn, isSeller, onRefresh }: 
     if (reported) return
     const reason = prompt('Why are you reporting this review?\n(spam / fraud / offensive / fake / irrelevant / other)')
     if (!reason) return
-    const res = await fetch(`/api/marketplace/reviews/${review.id}/report`, {
+    const res = await authedFetch(`/api/marketplace/reviews/${review.id}/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason: reason.toLowerCase().trim() }),
@@ -66,7 +67,7 @@ export default function ReviewCard({ review, isLoggedIn, isSeller, onRefresh }: 
     if (!replyText.trim()) return
     setSubmittingReply(true)
     try {
-      const res = await fetch(`/api/marketplace/reviews/${review.id}/reply`, {
+      const res = await authedFetch(`/api/marketplace/reviews/${review.id}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reply: replyText.trim() }),

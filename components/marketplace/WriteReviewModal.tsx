@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, Star, Loader2, Upload, Image as ImageIcon } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface WriteReviewModalProps {
   listingId: number | string
   onClose: () => void
@@ -35,7 +36,7 @@ export default function WriteReviewModal({ listingId, onClose, onSuccess }: Writ
         const fd = new FormData()
         fd.append('file', file)
         fd.append('title', `review-${listingId}-${Date.now()}`)
-        const res = await fetch('/api/marketplace/upload', { method: 'POST', body: fd })
+        const res = await authedFetch('/api/marketplace/upload', { method: 'POST', body: fd })
         if (!res.ok) { const d = await res.json(); setError(d.error || 'Upload failed'); continue }
         const { url } = await res.json()
         if (url) setPhotos(prev => [...prev, url])
@@ -52,7 +53,7 @@ export default function WriteReviewModal({ listingId, onClose, onSuccess }: Writ
     if (rating < 1 || rating > 5) { setError('Please choose a star rating'); return }
     setSubmitting(true)
     try {
-      const res = await fetch('/api/marketplace/reviews', {
+      const res = await authedFetch('/api/marketplace/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

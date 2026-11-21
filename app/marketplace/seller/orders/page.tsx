@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Package, Loader2, ChevronLeft, Check, X, Clock, CheckCircle, XCircle, Store } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUS_LABELS: Record<string, { label: string, color: string }> = {
   'AWAITING_SELLER_ACCEPT': { label: 'Action required', color: 'bg-yellow-500/20 text-yellow-400' },
   'SELLER_ACCEPTED': { label: 'Accepted · awaiting payment', color: 'bg-blue-500/20 text-blue-400' },
@@ -36,7 +37,7 @@ export default function SellerOrdersPage() {
   const accept = async (orderId: string) => {
     setActioning(orderId)
     try {
-      await fetch(`/api/marketplace/orders/${orderId}/accept`, {
+      await authedFetch(`/api/marketplace/orders/${orderId}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'accept' }),
@@ -48,7 +49,7 @@ export default function SellerOrdersPage() {
   const decline = async (orderId: string) => {
     setActioning(orderId)
     try {
-      await fetch(`/api/marketplace/orders/${orderId}/accept`, {
+      await authedFetch(`/api/marketplace/orders/${orderId}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'decline', reason: declineReason }),
@@ -62,7 +63,7 @@ export default function SellerOrdersPage() {
   const ship = async (orderId: string) => {
     setActioning(orderId)
     try {
-      const res = await fetch(`/api/marketplace/orders/${orderId}/ship`, {
+      const res = await authedFetch(`/api/marketplace/orders/${orderId}/ship`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trackingNumber }),
@@ -82,7 +83,7 @@ export default function SellerOrdersPage() {
     if (!confirm('Mark as delivered?')) return
     setActioning(orderId)
     try {
-      const res = await fetch(`/api/marketplace/orders/${orderId}/deliver`, {
+      const res = await authedFetch(`/api/marketplace/orders/${orderId}/deliver`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),

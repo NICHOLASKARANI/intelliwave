@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Loader2, Save, CheckCircle, Wallet, Smartphone, Store } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Method = 'PAYBILL' | 'TILL' | 'PERSONAL' | ''
 
 export default function PaymentSettingsPage() {
@@ -39,7 +40,7 @@ export default function PaymentSettingsPage() {
     if (!method) { setError('Choose a payment method'); return }
     setSaving(true)
     try {
-      const res = await fetch('/api/marketplace/seller/payment-settings', {
+      const res = await authedFetch('/api/marketplace/seller/payment-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

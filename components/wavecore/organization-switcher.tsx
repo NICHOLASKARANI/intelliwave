@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, Building2, Check } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Organization {
   id: string
   name: string
@@ -21,7 +22,7 @@ export function OrganizationSwitcher() {
   useEffect(() => {
     async function fetchOrgs() {
       try {
-        const res = await fetch('/api/wavecore/auth/organizations')
+        const res = await authedFetch('/api/wavecore/auth/organizations')
         if (res.ok) {
           const data = await res.json()
           setOrgs(data.organizations)
@@ -46,7 +47,7 @@ export function OrganizationSwitcher() {
   const handleSwitch = async (orgId: string) => {
     setSwitching(true)
     try {
-      const res = await fetch('/api/wavecore/auth/switch-organization', {
+      const res = await authedFetch('/api/wavecore/auth/switch-organization', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ organizationId: orgId }),

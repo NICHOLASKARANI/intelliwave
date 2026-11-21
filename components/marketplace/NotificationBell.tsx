@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { DollarSign,  Bell, X, Loader2, UserPlus, ShoppingCart, MessageSquare, Star, Package, Check } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Notification {
   id: string
   type: string
@@ -47,7 +48,7 @@ export function NotificationBell() {
   const loadNotifications = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/notifications?limit=20', { cache: 'no-store' })
+      const res = await authedFetch('/api/marketplace/notifications?limit=20', { cache: 'no-store' })
       if (res.status === 401) {
         // Not logged in ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â hide bell
         return
@@ -86,7 +87,7 @@ export function NotificationBell() {
 
   const markAllRead = async () => {
     try {
-      await fetch('/api/marketplace/notifications', { method: 'POST' })
+      await authedFetch('/api/marketplace/notifications', { method: 'POST' })
       setUnreadCount(0)
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
     } catch {}
@@ -94,7 +95,7 @@ export function NotificationBell() {
 
   const markOneRead = async (id: string) => {
     try {
-      await fetch('/api/marketplace/notifications/' + id + '/read', { method: 'POST' })
+      await authedFetch('/api/marketplace/notifications/' + id + '/read', { method: 'POST' })
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch {}

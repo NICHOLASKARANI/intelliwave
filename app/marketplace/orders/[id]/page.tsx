@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Package, Loader2, ChevronLeft, Clock, CheckCircle, XCircle, Store } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUS_LABELS: Record<string, { label: string, color: string, icon: any }> = {
   'AWAITING_SELLER_ACCEPT': { label: 'Waiting for seller to accept', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500', icon: Clock },
   'SELLER_ACCEPTED': { label: 'Seller accepted — pay now', color: 'bg-blue-500/20 text-blue-400 border-blue-500', icon: CheckCircle },
@@ -56,7 +57,7 @@ export default function OrderDetailPage() {
     if (!receiptCode.trim()) { alert('Enter M-Pesa receipt code'); return }
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/marketplace/orders/${id}/submit-payment`, {
+      const res = await authedFetch(`/api/marketplace/orders/${id}/submit-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ receiptCode: receiptCode.trim().toUpperCase(), notes: buyerNotes.trim() }),
@@ -71,7 +72,7 @@ export default function OrderDetailPage() {
     if (action === 'reject' && reason === null) return
     setVerifying(true)
     try {
-      const res = await fetch(`/api/marketplace/orders/${id}/confirm-payment`, {
+      const res = await authedFetch(`/api/marketplace/orders/${id}/confirm-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, reason }),

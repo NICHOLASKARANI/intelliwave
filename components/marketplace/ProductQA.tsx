@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { HelpCircle, Loader2, Send, CheckCircle2, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Answer {
   id: string
   answererId: string
@@ -54,7 +55,7 @@ export default function ProductQA({ listingId, sellerId }: ProductQAProps) {
   const loadQuestions = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/marketplace/qa?listingId=${listingId}`)
+      const res = await authedFetch(`/api/marketplace/qa?listingId=${listingId}`)
       if (res.ok) {
         const d = await res.json()
         setQuestions(d.questions || [])
@@ -75,7 +76,7 @@ export default function ProductQA({ listingId, sellerId }: ProductQAProps) {
     if (newQuestion.trim().length < 5) { setError('Please enter at least 5 characters'); return }
     setAsking(true)
     try {
-      const res = await fetch('/api/marketplace/qa', {
+      const res = await authedFetch('/api/marketplace/qa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId, question: newQuestion.trim() }),
@@ -95,7 +96,7 @@ export default function ProductQA({ listingId, sellerId }: ProductQAProps) {
     if (answerText.trim().length < 3) { alert('Answer too short'); return }
     setAnswering(true)
     try {
-      const res = await fetch(`/api/marketplace/qa/${qaId}/answer`, {
+      const res = await authedFetch(`/api/marketplace/qa/${qaId}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answer: answerText.trim() }),

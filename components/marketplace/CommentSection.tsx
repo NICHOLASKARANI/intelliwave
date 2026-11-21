@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { MessageSquare, Heart, Send, Trash2, Reply, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface CommentUser {
   userName: string | null
   userImage: string | null
@@ -46,7 +47,7 @@ export function CommentSection({ listingId }: CommentSectionProps) {
 
   const loadComments = async () => {
     try {
-      const res = await fetch('/api/marketplace/comments?listingId=' + listingId + '&limit=100', { cache: 'no-store' })
+      const res = await authedFetch('/api/marketplace/comments?listingId=' + listingId + '&limit=100', { cache: 'no-store' })
       if (!res.ok) throw new Error('Failed to load')
       const d = await res.json()
       setComments(d.comments || [])
@@ -68,7 +69,7 @@ export function CommentSection({ listingId }: CommentSectionProps) {
     if (!newComment.trim()) return
     setSubmitting(true)
     try {
-      const res = await fetch('/api/marketplace/comments', {
+      const res = await authedFetch('/api/marketplace/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId, body: newComment.trim() }),
@@ -93,7 +94,7 @@ export function CommentSection({ listingId }: CommentSectionProps) {
     if (!replyBody.trim()) return
     setSubmitting(true)
     try {
-      const res = await fetch('/api/marketplace/comments', {
+      const res = await authedFetch('/api/marketplace/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId, body: replyBody.trim(), parentId }),
@@ -121,7 +122,7 @@ export function CommentSection({ listingId }: CommentSectionProps) {
   const handleLike = async (commentId: string) => {
     setLikingComment(commentId)
     try {
-      const res = await fetch('/api/marketplace/comments/' + commentId + '/like', {
+      const res = await authedFetch('/api/marketplace/comments/' + commentId + '/like', {
         method: 'POST',
       })
       if (res.status === 401) {
@@ -148,7 +149,7 @@ export function CommentSection({ listingId }: CommentSectionProps) {
     if (!confirm('Delete this comment?')) return
     setDeleting(commentId)
     try {
-      const res = await fetch('/api/marketplace/comments/' + commentId, {
+      const res = await authedFetch('/api/marketplace/comments/' + commentId, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed')

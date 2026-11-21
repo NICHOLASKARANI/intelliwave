@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Image as ImageIcon, DollarSign, MapPin, Loader2, Upload, X, Camera } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function SellPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -85,7 +86,7 @@ export default function SellPage() {
         fd.append('file', new File([resizedBlob], file.name || 'image.jpg', { type: 'image/jpeg' }))
         fd.append('title', title || file.name || 'listing')
 
-        const uploadRes = await fetch('/api/marketplace/upload', {
+        const uploadRes = await authedFetch('/api/marketplace/upload', {
           method: 'POST',
           body: fd,
         })
@@ -119,7 +120,7 @@ export default function SellPage() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/marketplace/listings', {
+      const res = await authedFetch('/api/marketplace/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
