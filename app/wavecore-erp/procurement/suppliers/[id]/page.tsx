@@ -10,7 +10,7 @@ import {
   TrendingUp, History, Shield, Activity, Plus, X, Save, Edit3,
   Trash2, Download, ExternalLink, Calendar, DollarSign, Package, Package2, FileSignature, FileDown,
   FileSpreadsheet, Receipt, Clock, BarChart3, Truck, XCircle} from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'contacts' | 'bank' | 'documents' | 'scorecards' | 'risks' | 'activity'
 

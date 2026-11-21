@@ -10,7 +10,7 @@ import {
   Activity, FileText, ClipboardList, Users, ExternalLink, Calendar,
   Clock, Plus, Trash2, Save, Warehouse, Info, ShieldCheck, Microscope,
 } from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'inspections' | 'activity' | 'related'
 

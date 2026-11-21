@@ -9,7 +9,7 @@ import {
   Filter, ArrowLeft, RefreshCw, Ban, CheckSquare, Square, Check,
   Download, FileSpreadsheet, FileText, Trash2,
 } from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Supplier {
   id: string

@@ -12,7 +12,7 @@ import {
   AlertCircle, Clock, Hash, Building2,
 } from 'lucide-react'
 import ActivityFeed from '../../_components/ActivityFeed'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'activity'
 

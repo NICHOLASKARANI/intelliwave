@@ -10,7 +10,7 @@ import {
   Clock, CheckCheck, User, Calendar, Package, DollarSign,
   FileText, Activity, History, AlertCircle, X, Plus, Save, Paperclip, Upload,
 } from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'approvals' | 'activity' | 'attachments'
 

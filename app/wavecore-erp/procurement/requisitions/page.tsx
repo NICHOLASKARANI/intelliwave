@@ -10,7 +10,7 @@ import {
   Trash2, Save, Send, FileText, Calendar, DollarSign, User,
   ChevronLeft, ChevronRight, AlertCircle, Zap, Package,
 } from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Requisition {
   id: string

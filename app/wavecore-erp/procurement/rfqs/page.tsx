@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight, Save, FileSignature, Package, FileText,
   Sparkles, TrendingUp, Award, Hash, MapPin, DollarSign, ArrowRight,
 } from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface RFQ {
   id: string

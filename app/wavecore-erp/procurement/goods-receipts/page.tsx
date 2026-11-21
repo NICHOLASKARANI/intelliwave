@@ -9,7 +9,7 @@ import {
   Truck, CheckCheck, Layers, ChevronLeft, ChevronRight, Save,
   Warehouse, FileText, Users, Calendar, Package2, ArrowRight, Trash2,
 } from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface GRN {
   id: string

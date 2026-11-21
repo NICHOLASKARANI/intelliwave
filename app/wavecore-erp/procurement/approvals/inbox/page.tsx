@@ -8,7 +8,7 @@ import {
   XCircle, Clock, AlertCircle, History, TrendingUp, User, Calendar,
   Package, ChevronRight, RefreshCw,
 } from 'lucide-react'
-
+
 import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'inbox' | 'history'
 
