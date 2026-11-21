@@ -85,7 +85,7 @@ export default function ProjectsPage() {
     const payload = { ...form, budget: Number(form.budget || 0) }
     try {
       const url = editing ? '/api/wavecore/projects/' + editing.id : '/api/wavecore/projects'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
