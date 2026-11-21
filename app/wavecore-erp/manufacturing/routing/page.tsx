@@ -9,6 +9,7 @@ import {
   TrendingUp, Copy, Cog, Layers,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function RoutingPage() {
   const [routings, setRoutings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,7 +54,7 @@ export default function RoutingPage() {
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
 
   const openEdit = async (id: string) => {
-    const res = await fetch('/api/wavecore/manufacturing/routing/' + id)
+    const res = await authedFetch('/api/wavecore/manufacturing/routing/' + id)
     const data = await res.json()
     if (!data.routing) return
     setForm({
@@ -114,7 +115,7 @@ export default function RoutingPage() {
 
     try {
       const url = editing ? '/api/wavecore/manufacturing/routing/' + editing.id : '/api/wavecore/manufacturing/routing'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -130,7 +131,7 @@ export default function RoutingPage() {
     if (!confirm('Delete routing ' + label + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/routing/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/manufacturing/routing/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -139,7 +140,7 @@ export default function RoutingPage() {
     if (!confirm('Clone routing ' + name + '?')) return
     setCloning(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/routing/' + id, { method: 'POST' })
+      const res = await authedFetch('/api/wavecore/manufacturing/routing/' + id, { method: 'POST' })
       if (res.ok) { flash('Cloned'); fetchAll() }
     } finally { setCloning('') }
   }
@@ -148,7 +149,7 @@ export default function RoutingPage() {
     if (selected.size === 0) return
     if (!confirm('Delete ' + selected.size + ' routing(s)?')) return
     for (const id of Array.from(selected)) {
-      await fetch('/api/wavecore/manufacturing/routing/' + id, { method: 'DELETE' })
+      await authedFetch('/api/wavecore/manufacturing/routing/' + id, { method: 'DELETE' })
     }
     setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }

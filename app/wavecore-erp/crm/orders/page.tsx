@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Package, Search, Trash2, Loader2, Printer, DollarSign, ExternalLink } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface SalesOrder {
   id: string
@@ -38,7 +39,7 @@ export default function OrdersPage() {
   const fetchOrders = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/orders')
+      const res = await authedFetch('/api/wavecore/crm/orders')
       const data = await res.json()
       setOrders(data.orders || [])
     } catch (err) {
@@ -52,7 +53,7 @@ export default function OrdersPage() {
     if (!confirm('Delete this order?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/orders?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/crm/orders?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchOrders()
     } catch (err) {
       setError('Delete failed')

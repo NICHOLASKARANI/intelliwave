@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Phone, Mail, MessageSquare, Users, Loader2, CheckCircle, Calendar, Clock, Plus, ArrowLeft } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 export default function CreateActivityPage() {
   const [customers, setCustomers] = useState<any[]>([])
@@ -26,7 +27,7 @@ export default function CreateActivityPage() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await fetch('/api/wavecore/crm/customers')
+      const res = await authedFetch('/api/wavecore/crm/customers')
       const data = await res.json()
       setCustomers(data.customers || [])
     } catch {}
@@ -44,7 +45,7 @@ export default function CreateActivityPage() {
     }
 
     try {
-      const res = await fetch('/api/wavecore/crm/activities', {
+      const res = await authedFetch('/api/wavecore/crm/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
         body: JSON.stringify(formData)

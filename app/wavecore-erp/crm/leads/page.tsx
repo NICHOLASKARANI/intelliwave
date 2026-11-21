@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Users, Search, Trash2, Loader2, Printer, Mail, Phone, Filter, ExternalLink, Building2, X, UserPlus, CheckSquare } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface Lead {
   id: string
@@ -102,7 +103,7 @@ export default function LeadsPage() {
   const fetchLeads = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/leads')
+      const res = await authedFetch('/api/wavecore/crm/leads')
       const data = await res.json()
       setLeads(data.leads || [])
     } catch (err) {
@@ -116,7 +117,7 @@ export default function LeadsPage() {
     if (!confirm('Delete this lead?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/leads?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/crm/leads?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) {
         setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
         fetchLeads()
@@ -190,7 +191,7 @@ export default function LeadsPage() {
       if (bulkAction === 'assign')  payload = { assignedToId: bulkAssignedTo || null }
       if (bulkAction === 'status')  payload = { status: bulkStatus }
 
-      const res = await fetch('/api/wavecore/crm/leads/bulk', {
+      const res = await authedFetch('/api/wavecore/crm/leads/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ids, action: bulkAction, payload }),

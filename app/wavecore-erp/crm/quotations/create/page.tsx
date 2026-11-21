@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface Customer {
   id: string
@@ -31,7 +32,7 @@ export default function CreateQuotationPage() {
   useEffect(() => {
     async function fetchCustomers() {
       try {
-        const res = await fetch('/api/wavecore/crm/customers')
+        const res = await authedFetch('/api/wavecore/crm/customers')
         if (res.ok) {
           const data = await res.json()
           setCustomers(data.customers || [])
@@ -60,7 +61,7 @@ export default function CreateQuotationPage() {
 
     // If no customer selected but name provided, create customer
     if (!finalCustomerId && customerName) {
-      const custRes = await fetch('/api/wavecore/crm/customers', {
+      const custRes = await authedFetch('/api/wavecore/crm/customers', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: customerName }),
       })
@@ -83,7 +84,7 @@ export default function CreateQuotationPage() {
     }
 
     try {
-      const res = await fetch('/api/wavecore/crm/quotations', {
+      const res = await authedFetch('/api/wavecore/crm/quotations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

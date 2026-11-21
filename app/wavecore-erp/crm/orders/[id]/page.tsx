@@ -10,6 +10,7 @@ import {
   Receipt, CheckCircle2, X, ExternalLink,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Order {
   id: string
   number: string
@@ -71,7 +72,7 @@ export default function OrderDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/orders/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/crm/orders/' + id, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setOrder(data.order)
@@ -90,7 +91,7 @@ export default function OrderDetailPage() {
     if (!confirm('Delete sales order ' + order.number + '? This cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/crm/orders?id=' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/crm/orders?id=' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -113,7 +114,7 @@ export default function OrderDetailPage() {
     setConverting(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/crm/orders/' + id + '/convert-to-invoice', {
+      const res = await authedFetch('/api/wavecore/crm/orders/' + id + '/convert-to-invoice', {
         method: 'POST',
         headers: { 'X-CSRF-Token': csrf() },
       })

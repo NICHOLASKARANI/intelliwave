@@ -11,6 +11,7 @@ import {
   Receipt, CheckCircle2, CreditCard, Tag, Plus, X as XIcon, MessageCircle, PhoneCall,
 } from 'lucide-react'
 import { buildWhatsAppLink, buildMessage } from '@/lib/wavecore/crm/whatsapp'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 type Tab =
   | 'overview'
@@ -78,7 +79,7 @@ export default function CustomerDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/customers/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/crm/customers/' + id, { cache: 'no-store' })
       const json = await res.json()
       if (!res.ok) { setError(json.error || 'Failed to load'); return }
       setCustomer(json.customer)
@@ -106,7 +107,7 @@ export default function CustomerDetailPage() {
     if (!contactForm.firstName.trim() || !contactForm.lastName.trim()) { setError('First name and last name are required'); return }
     setContactSaving(true); setError(''); setSuccess('')
     try {
-      const res = await fetch('/api/wavecore/crm/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() }, body: JSON.stringify({ ...contactForm, customerId: id }) })
+      const res = await authedFetch('/api/wavecore/crm/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() }, body: JSON.stringify({ ...contactForm, customerId: id }) })
       const json = await res.json()
       if (!res.ok) { setError(json.error || 'Failed to save contact'); return }
       setShowAddContact(false); setSuccess('Contact added'); await load()
@@ -134,7 +135,7 @@ export default function CustomerDetailPage() {
   const loadComms = async () => {
     setCommLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/communications?customerId=' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/crm/communications?customerId=' + id, { cache: 'no-store' })
       const json = await res.json()
       if (res.ok) setCommLogs(json.communications || [])
     } catch {} finally {
@@ -145,7 +146,7 @@ export default function CustomerDetailPage() {
   const saveCommLog = async () => {
     setCommSaving(true)
     try {
-      const res = await fetch('/api/wavecore/crm/communications', {
+      const res = await authedFetch('/api/wavecore/crm/communications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -198,7 +199,7 @@ export default function CustomerDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/crm/customers/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/customers/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
@@ -219,7 +220,7 @@ export default function CustomerDetailPage() {
     if (!customer) return
     setTagsSaving(true)
     try {
-      const res = await fetch('/api/wavecore/crm/customers/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/customers/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ tags: next }),
@@ -254,7 +255,7 @@ export default function CustomerDetailPage() {
     if (!confirm('Delete customer "' + customer.name + '"? This cascades contacts, deals, quotations, orders, invoices, payments, and activities. Cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/crm/customers/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/customers/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

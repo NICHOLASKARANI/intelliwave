@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 export default function CreateOpportunityPage() {
   const [name, setName] = useState('')
@@ -27,12 +28,12 @@ export default function CreateOpportunityPage() {
   useEffect(() => {
     async function fetchCustomers() {
       try {
-        const res = await fetch('/api/wavecore/crm/customers')
+        const res = await authedFetch('/api/wavecore/crm/customers')
         if (res.ok) {
           const data = await res.json()
           setCustomers(data.customers || [])
         }
-        const tRes = await fetch('/api/wavecore/crm/team')
+        const tRes = await authedFetch('/api/wavecore/crm/team')
         if (tRes.ok) {
           const tData = await tRes.json()
           setTeam(tData.members || [])
@@ -49,7 +50,7 @@ export default function CreateOpportunityPage() {
 
     let finalCustomerId = customerId
     if (!finalCustomerId && customerName) {
-      const custRes = await fetch('/api/wavecore/crm/customers', {
+      const custRes = await authedFetch('/api/wavecore/crm/customers', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: customerName }),
       })
@@ -64,7 +65,7 @@ export default function CreateOpportunityPage() {
     }
 
     try {
-      const res = await fetch('/api/wavecore/crm/opportunities', {
+      const res = await authedFetch('/api/wavecore/crm/opportunities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

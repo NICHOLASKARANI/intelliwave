@@ -10,6 +10,7 @@ import {
   Phone as PhoneIcon, MessageSquare, Users as UsersIcon, Target,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Activity {
   id: string
   type: string
@@ -69,7 +70,7 @@ export default function ActivityDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/activities/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/crm/activities/' + id, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setActivity(data.activity)
@@ -98,7 +99,7 @@ export default function ActivityDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/crm/activities/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/activities/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -125,7 +126,7 @@ export default function ActivityDetailPage() {
     if (!activity) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/crm/activities/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/activities/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ completed: !activity.completed }),
@@ -146,7 +147,7 @@ export default function ActivityDetailPage() {
     if (!confirm('Delete activity "' + activity.subject + '"? This cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/crm/activities/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/activities/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

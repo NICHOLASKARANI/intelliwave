@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, AlertCircle, AlertTriangle, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface DupMatch {
   id: string
@@ -37,7 +38,7 @@ export default function AddCustomerPage() {
       if (name.trim().length >= 3) params.set('name', name.trim())
       if ([...params.keys()].length === 0) { setDups([]); return }
       try {
-        const res = await fetch('/api/wavecore/crm/customers/check-duplicate?' + params.toString(), { cache: 'no-store' })
+        const res = await authedFetch('/api/wavecore/crm/customers/check-duplicate?' + params.toString(), { cache: 'no-store' })
         const data = await res.json()
         setDups(data.matches || [])
       } catch {
@@ -53,7 +54,7 @@ export default function AddCustomerPage() {
     setError('')
     if (!name) { setError('Name is required'); setLoading(false); return }
     try {
-      const res = await fetch('/api/wavecore/crm/customers', {
+      const res = await authedFetch('/api/wavecore/crm/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
         body: JSON.stringify({ name, email: email || null, phone: phone || null, company: company || null }),

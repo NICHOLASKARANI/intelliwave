@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 export default function CreateOrderPage() {
   const [customers, setCustomers] = useState<any[]>([])
@@ -68,7 +69,7 @@ export default function CreateOrderPage() {
     if (items.some(i => !i.description.trim())) { setError('All line items need a description'); setLoading(false); return }
 
     try {
-      const res = await fetch('/api/wavecore/crm/orders', {
+      const res = await authedFetch('/api/wavecore/crm/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

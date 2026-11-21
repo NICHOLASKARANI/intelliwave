@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 import {
   Loader2, TrendingUp, CheckCircle2, AlertTriangle, Printer, BarChart3,
   LayoutGrid, DollarSign, GripVertical, RefreshCw, ExternalLink,
@@ -108,7 +109,7 @@ export default function PipelinePage() {
     ))
 
     try {
-      const res = await fetch('/api/wavecore/crm/opportunities/' + oppId, {
+      const res = await authedFetch('/api/wavecore/crm/opportunities/' + oppId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

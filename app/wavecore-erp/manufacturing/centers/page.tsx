@@ -9,6 +9,7 @@ import {
   Gauge, DollarSign, Zap, AlertTriangle, Cog as CogIcon,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function CentersPage() {
   const [centers, setCenters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,7 +35,7 @@ export default function CentersPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/manufacturing/centers')
+      const res = await authedFetch('/api/wavecore/manufacturing/centers')
       const data = await res.json()
       if (!res.ok) {
         setError('API error: ' + (data.error || res.status))
@@ -55,7 +56,7 @@ export default function CentersPage() {
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
 
   const openEdit = async (id: string) => {
-    const res = await fetch('/api/wavecore/manufacturing/centers/' + id)
+    const res = await authedFetch('/api/wavecore/manufacturing/centers/' + id)
     const data = await res.json()
     if (!data.center) return
     const c = data.center
@@ -77,7 +78,7 @@ export default function CentersPage() {
     if (!form.name.trim()) { setError('Name is required'); return }
     try {
       const url = editing ? '/api/wavecore/manufacturing/centers/' + editing.id : '/api/wavecore/manufacturing/centers'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,7 +99,7 @@ export default function CentersPage() {
     if (!confirm('Delete work center ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/centers/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/manufacturing/centers/' + id, { method: 'DELETE' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Delete failed'); return }
       flash('Deleted'); fetchAll()
@@ -109,7 +110,7 @@ export default function CentersPage() {
     if (selected.size === 0) return
     if (!confirm('Delete ' + selected.size + ' work center(s)?')) return
     for (const id of Array.from(selected)) {
-      await fetch('/api/wavecore/manufacturing/centers/' + id, { method: 'DELETE' })
+      await authedFetch('/api/wavecore/manufacturing/centers/' + id, { method: 'DELETE' })
     }
     setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }

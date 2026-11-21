@@ -9,6 +9,7 @@ import {
   ChevronRight, Sparkles, Boxes,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const statusColor = (active: boolean) =>
   active ? 'bg-green-900/40 text-green-300 border border-green-700'
          : 'bg-red-900/40 text-red-300 border border-red-700'
@@ -57,7 +58,7 @@ export default function BOMPage() {
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
 
   const openEdit = async (id: string) => {
-    const res = await fetch('/api/wavecore/manufacturing/bom/' + id)
+    const res = await authedFetch('/api/wavecore/manufacturing/bom/' + id)
     const data = await res.json()
     if (!data.bom) return
     setForm({
@@ -122,7 +123,7 @@ export default function BOMPage() {
       const url = editing
         ? '/api/wavecore/manufacturing/bom/' + editing.id
         : '/api/wavecore/manufacturing/bom'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -138,7 +139,7 @@ export default function BOMPage() {
     if (!confirm('Delete BOM ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/bom/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/manufacturing/bom/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -147,7 +148,7 @@ export default function BOMPage() {
     if (!confirm('Clone BOM ' + name + '?')) return
     setCloning(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/bom/' + id, { method: 'POST' })
+      const res = await authedFetch('/api/wavecore/manufacturing/bom/' + id, { method: 'POST' })
       if (res.ok) { flash('Cloned'); fetchAll() }
     } finally { setCloning('') }
   }
@@ -156,7 +157,7 @@ export default function BOMPage() {
     if (selected.size === 0) return
     if (!confirm('Delete ' + selected.size + ' BOM(s)?')) return
     for (const id of Array.from(selected)) {
-      await fetch('/api/wavecore/manufacturing/bom/' + id, { method: 'DELETE' })
+      await authedFetch('/api/wavecore/manufacturing/bom/' + id, { method: 'DELETE' })
     }
     setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }

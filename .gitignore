@@ -86,3 +86,8 @@ _backups/
 # Temporary check scripts from apply operations
 *.check-*.sql
 check-result-*.txt
+
+# Backup files from batch patches
+*.bak-*
+*.bak
+

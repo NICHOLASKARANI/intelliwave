@@ -9,6 +9,7 @@ import {
   PlayCircle, Clock, TrendingUp,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['ALL', 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 const PRIORITIES = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 const TYPES = ['ALL', 'PREVENTIVE', 'CORRECTIVE', 'EMERGENCY', 'PREDICTIVE']
@@ -61,7 +62,7 @@ export default function MaintenancePage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/maintenance')
+      const res = await authedFetch('/api/wavecore/manufacturing/maintenance')
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); setRequests([]) }
       else setRequests(data.requests || [])
@@ -79,7 +80,7 @@ export default function MaintenancePage() {
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
 
   const openEdit = async (id: string) => {
-    const res = await fetch('/api/wavecore/manufacturing/maintenance/' + id)
+    const res = await authedFetch('/api/wavecore/manufacturing/maintenance/' + id)
     const data = await res.json()
     if (!data.request) return
     const r = data.request
@@ -104,7 +105,7 @@ export default function MaintenancePage() {
     if (!form.description.trim()) { setError('Description is required'); return }
     try {
       const url = editing ? '/api/wavecore/manufacturing/maintenance/' + editing.id : '/api/wavecore/manufacturing/maintenance'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -119,7 +120,7 @@ export default function MaintenancePage() {
   const patchRequest = async (id: string, patch: any, label: string) => {
     setBusy(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/maintenance/' + id, {
+      const res = await authedFetch('/api/wavecore/manufacturing/maintenance/' + id, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       })
@@ -131,7 +132,7 @@ export default function MaintenancePage() {
     if (!confirm('Delete maintenance request ' + label + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/maintenance/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/manufacturing/maintenance/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -140,7 +141,7 @@ export default function MaintenancePage() {
     if (selected.size === 0) return
     if (!confirm('Delete ' + selected.size + ' request(s)?')) return
     for (const id of Array.from(selected)) {
-      await fetch('/api/wavecore/manufacturing/maintenance/' + id, { method: 'DELETE' })
+      await authedFetch('/api/wavecore/manufacturing/maintenance/' + id, { method: 'DELETE' })
     }
     setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }

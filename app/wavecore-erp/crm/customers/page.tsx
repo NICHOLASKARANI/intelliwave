@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Users, Search, Trash2, Loader2, Printer, Mail, Phone, ExternalLink } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface Customer {
   id: string
@@ -37,7 +38,7 @@ export default function CustomersPage() {
   const fetchCustomers = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/customers')
+      const res = await authedFetch('/api/wavecore/crm/customers')
       const data = await res.json()
       setCustomers(data.customers || [])
     } catch (err) {
@@ -52,7 +53,7 @@ export default function CustomersPage() {
     setDeleting(id)
     setError('')
     try {
-      const res = await fetch(`/api/wavecore/crm/customers?id=${id}`, {
+      const res = await authedFetch(`/api/wavecore/crm/customers?id=${id}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

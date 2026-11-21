@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Target, Search, Trash2, Loader2, Printer, DollarSign, ExternalLink, X, UserPlus, CheckSquare, Percent } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface Opportunity {
   id: string
@@ -57,7 +58,7 @@ export default function OpportunitiesPage() {
   const fetchOpportunities = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/opportunities')
+      const res = await authedFetch('/api/wavecore/crm/opportunities')
       const data = await res.json()
       setOpportunities(data.opportunities || [])
     } catch (err) {
@@ -71,7 +72,7 @@ export default function OpportunitiesPage() {
     if (!confirm('Delete this opportunity?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/opportunities?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/crm/opportunities?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) {
         setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
         fetchOpportunities()
@@ -148,7 +149,7 @@ export default function OpportunitiesPage() {
       if (bulkAction === 'stage')       payload = { stage: bulkStage }
       if (bulkAction === 'probability') payload = { probability: parseInt(bulkProbability) || 0 }
 
-      const res = await fetch('/api/wavecore/crm/opportunities/bulk', {
+      const res = await authedFetch('/api/wavecore/crm/opportunities/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ids, action: bulkAction, payload }),

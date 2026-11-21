@@ -9,6 +9,7 @@ import {
   TrendingUp, Cog, Search,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const priorityStyle = (p: string) => {
   switch (p) {
     case 'URGENT': return 'bg-red-900/60 text-red-200 border border-red-700'
@@ -49,7 +50,7 @@ export default function ShopFloorPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/shop-floor')
+      const res = await authedFetch('/api/wavecore/manufacturing/shop-floor')
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load') }
       else {
@@ -75,7 +76,7 @@ export default function ShopFloorPage() {
   const act = async (id: string, action: string, label: string) => {
     setBusy(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/shop-floor', {
+      const res = await authedFetch('/api/wavecore/manufacturing/shop-floor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action }),

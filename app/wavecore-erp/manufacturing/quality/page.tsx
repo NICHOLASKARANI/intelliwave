@@ -8,6 +8,7 @@ import {
   ArrowUpDown, ClipboardCheck, TrendingUp, Activity, FileEdit, ChevronRight, Sparkles,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const RESULT_OPTIONS = ['ALL', 'PASS', 'FAIL', 'PENDING']
 
 const resultStyle = (r: string) => {
@@ -158,7 +159,7 @@ export default function QualityPage() {
 
     try {
       const url = editing ? '/api/wavecore/manufacturing/quality/' + editing.id : '/api/wavecore/manufacturing/quality'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,7 +183,7 @@ export default function QualityPage() {
     if (!confirm('Delete quality check ' + label + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/quality/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/manufacturing/quality/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -191,7 +192,7 @@ export default function QualityPage() {
     if (selected.size === 0) return
     if (!confirm('Delete ' + selected.size + ' quality check(s)?')) return
     for (const id of Array.from(selected)) {
-      await fetch('/api/wavecore/manufacturing/quality/' + id, { method: 'DELETE' })
+      await authedFetch('/api/wavecore/manufacturing/quality/' + id, { method: 'DELETE' })
     }
     setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }

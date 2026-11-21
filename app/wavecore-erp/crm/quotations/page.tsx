@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, FileText, Search, Trash2, Loader2, Printer, DollarSign, ExternalLink } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface Quotation {
   id: string
@@ -37,7 +38,7 @@ export default function QuotationsPage() {
   const fetchQuotations = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/quotations')
+      const res = await authedFetch('/api/wavecore/crm/quotations')
       const data = await res.json()
       setQuotations(data.quotations || [])
     } catch (err) {
@@ -51,7 +52,7 @@ export default function QuotationsPage() {
     if (!confirm('Delete this quotation?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/quotations?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/crm/quotations?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchQuotations()
     } catch (err) {
       setError('Delete failed')

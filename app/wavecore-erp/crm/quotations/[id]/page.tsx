@@ -9,6 +9,7 @@ import {
   User, Mail, Phone, Building2, Calendar, DollarSign, Package, ShoppingCart,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Quotation {
   id: string
   number: string
@@ -74,7 +75,7 @@ export default function QuotationDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/quotations/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/crm/quotations/' + id, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setQuotation(data.quotation)
@@ -94,7 +95,7 @@ export default function QuotationDetailPage() {
     if (!confirm('Delete quotation ' + quotation.number + '? This cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/crm/quotations?id=' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/crm/quotations?id=' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -123,7 +124,7 @@ export default function QuotationDetailPage() {
 
     setConverting(true)
     try {
-      const res = await fetch('/api/wavecore/crm/orders', {
+      const res = await authedFetch('/api/wavecore/crm/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

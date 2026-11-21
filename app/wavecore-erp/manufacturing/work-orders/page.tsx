@@ -9,6 +9,7 @@ import {
   FileEdit, ChevronRight, Sparkles, TrendingUp, AlertTriangle,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type WO = any
 
 const TYPES = ['ALL', 'MANUFACTURING', 'ASSEMBLY', 'PACKAGING']
@@ -61,7 +62,7 @@ export default function WorkOrdersPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const o = await fetch('/api/wavecore/manufacturing/work-orders').then(r => r.json()).catch(() => ({ workOrders: [] }))
+      const o = await authedFetch('/api/wavecore/manufacturing/work-orders').then(r => r.json()).catch(() => ({ workOrders: [] }))
       setOrders(o.workOrders || [])
     } catch { setError('Failed to load data') }
     finally { setLoading(false) }
@@ -78,7 +79,7 @@ export default function WorkOrdersPage() {
     if (!form.workCenterName.trim()) { setError('Work Center is required'); return }
     if (!form.bomName.trim()) { setError('BOM is required'); return }
     try {
-      const res = await fetch('/api/wavecore/manufacturing/work-orders', {
+      const res = await authedFetch('/api/wavecore/manufacturing/work-orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, quantity: Number(form.quantity) })
       })
@@ -94,7 +95,7 @@ export default function WorkOrdersPage() {
   const patchOrder = async (id: string, patch: any, label: string) => {
     setBusy(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/work-orders/' + id, {
+      const res = await authedFetch('/api/wavecore/manufacturing/work-orders/' + id, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch)
       })
@@ -106,7 +107,7 @@ export default function WorkOrdersPage() {
     if (!confirm('Delete work order ' + number + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/work-orders/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/manufacturing/work-orders/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -115,7 +116,7 @@ export default function WorkOrdersPage() {
     if (selected.size === 0) return
     if (!confirm('Delete ' + selected.size + ' work order(s)?')) return
     for (const id of Array.from(selected)) {
-      await fetch('/api/wavecore/manufacturing/work-orders/' + id, { method: 'DELETE' })
+      await authedFetch('/api/wavecore/manufacturing/work-orders/' + id, { method: 'DELETE' })
     }
     setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }

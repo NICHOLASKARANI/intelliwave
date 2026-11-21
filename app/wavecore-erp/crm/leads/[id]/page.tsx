@@ -10,6 +10,7 @@ import {
   UserPlus, TrendingUp, CheckCircle2, Activity as ActivityIcon,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Lead {
   id: string
   name: string
@@ -137,7 +138,7 @@ export default function LeadDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/leads/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/crm/leads/' + id, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setLead(data.lead)
@@ -171,7 +172,7 @@ export default function LeadDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/crm/leads/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/leads/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -201,7 +202,7 @@ export default function LeadDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/crm/leads/' + id + '/convert-to-customer', {
+      const res = await authedFetch('/api/wavecore/crm/leads/' + id + '/convert-to-customer', {
         method: 'POST',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -222,7 +223,7 @@ export default function LeadDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/crm/leads/' + id + '/convert-to-opportunity', {
+      const res = await authedFetch('/api/wavecore/crm/leads/' + id + '/convert-to-opportunity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -255,7 +256,7 @@ export default function LeadDetailPage() {
     if (!confirm('Delete lead "' + lead.name + '"? This cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/crm/leads/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/leads/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

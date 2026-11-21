@@ -8,6 +8,7 @@ import {
   CheckCircle2, TrendingDown, DollarSign, Package, Activity, FileEdit, Sparkles,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const REASONS = ['DEFECT', 'REWORK', 'DAMAGE', 'EXPIRY', 'OTHER']
 
 const reasonStyle = (r: string) => {
@@ -48,7 +49,7 @@ export default function ScrapPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/scrap')
+      const res = await authedFetch('/api/wavecore/manufacturing/scrap')
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); setRecords([]) }
       else {
@@ -70,7 +71,7 @@ export default function ScrapPage() {
 
   const openCreate = () => { resetForm(); setEditing(null); setShowCreate(true) }
   const openEdit = async (id: string) => {
-    const res = await fetch('/api/wavecore/manufacturing/scrap/' + id)
+    const res = await authedFetch('/api/wavecore/manufacturing/scrap/' + id)
     const data = await res.json()
     if (!data.record) return
     const r = data.record
@@ -102,7 +103,7 @@ export default function ScrapPage() {
 
     try {
       const url = editing ? '/api/wavecore/manufacturing/scrap/' + editing.id : '/api/wavecore/manufacturing/scrap'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -118,7 +119,7 @@ export default function ScrapPage() {
     if (!confirm('Delete scrap record for ' + label + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/manufacturing/scrap/' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/manufacturing/scrap/' + id, { method: 'DELETE' })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -127,7 +128,7 @@ export default function ScrapPage() {
     if (selected.size === 0) return
     if (!confirm('Delete ' + selected.size + ' record(s)?')) return
     for (const id of Array.from(selected)) {
-      await fetch('/api/wavecore/manufacturing/scrap/' + id, { method: 'DELETE' })
+      await authedFetch('/api/wavecore/manufacturing/scrap/' + id, { method: 'DELETE' })
     }
     setSelected(new Set()); flash('Bulk delete complete'); fetchAll()
   }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Activity, Search, Trash2, Loader2, Printer, Phone, Mail, Users, MessageSquare, ExternalLink, Clock, Calendar } from 'lucide-react'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 
 interface Activity {
   id: string
@@ -39,7 +40,7 @@ export default function ActivitiesPage() {
   const fetchActivities = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/activities')
+      const res = await authedFetch('/api/wavecore/crm/activities')
       const data = await res.json()
       setActivities(data.activities || [])
     } catch (err) {
@@ -53,7 +54,7 @@ export default function ActivitiesPage() {
     if (!confirm('Delete this activity?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/crm/activities?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/crm/activities?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchActivities()
     } catch (err) {
       setError('Delete failed')

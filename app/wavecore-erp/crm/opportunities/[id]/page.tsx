@@ -10,6 +10,7 @@ import {
   Activity as ActivityIcon,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Opportunity {
   id: string
   name: string
@@ -75,12 +76,12 @@ export default function OpportunityDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/crm/opportunities/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/crm/opportunities/' + id, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setOpportunity(data.opportunity)
       setActivities(data.activities || [])
-      const tRes = await fetch('/api/wavecore/crm/team', { cache: 'no-store' })
+      const tRes = await authedFetch('/api/wavecore/crm/team', { cache: 'no-store' })
       if (tRes.ok) {
         const tData = await tRes.json()
         setTeam(tData.members || [])
@@ -112,7 +113,7 @@ export default function OpportunityDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/crm/opportunities/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/opportunities/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -142,7 +143,7 @@ export default function OpportunityDetailPage() {
     if (!confirm('Delete opportunity "' + opportunity.name + '"? This cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/crm/opportunities/' + id, {
+      const res = await authedFetch('/api/wavecore/crm/opportunities/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -214,7 +215,7 @@ export default function OpportunityDetailPage() {
                   const newVal = e.target.value || null
                   setWorking(true)
                   try {
-                    const r = await fetch('/api/wavecore/crm/opportunities/' + id, {
+                    const r = await authedFetch('/api/wavecore/crm/opportunities/' + id, {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
                       body: JSON.stringify({ assignedToId: newVal }),
