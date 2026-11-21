@@ -8,6 +8,7 @@ import {
   CheckCircle2, XCircle, Clock, AlertTriangle, FileEdit, Sparkles, ThumbsUp, ThumbsDown, Settings2, Save,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
 
 const statusStyle = (s: string) => {
@@ -87,7 +88,7 @@ export default function LeavesPage() {
   const loadLeaveTypes = async () => {
     setLeaveTypesLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/leave-types', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/hr/leave-types', { cache: 'no-store' })
       const data = await res.json()
       if (res.ok) setLeaveTypes(data.leaveTypes || [])
     } catch {}
@@ -97,7 +98,7 @@ export default function LeavesPage() {
   const createLeaveType = async () => {
     if (!newType.name.trim()) { setError('Leave type name required'); return }
     try {
-      const res = await fetch('/api/wavecore/hr/leave-types', {
+      const res = await authedFetch('/api/wavecore/hr/leave-types', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(newType),
@@ -113,7 +114,7 @@ export default function LeavesPage() {
   const deleteLeaveType = async (id: string, name: string) => {
     if (!confirm('Delete leave type "' + name + '"? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/hr/leave-types/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/leave-types/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -134,7 +135,7 @@ export default function LeavesPage() {
     setBalancesLoading(true)
     try {
       const yr = yearArg || balanceYear
-      const res = await fetch('/api/wavecore/hr/leave-balances?year=' + yr, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/hr/leave-balances?year=' + yr, { cache: 'no-store' })
       const data = await res.json()
       if (res.ok) setBalances(data.balances || [])
     } catch {}
@@ -151,7 +152,7 @@ export default function LeavesPage() {
   const loadMyBalances = async (employeeId: string) => {
     if (!employeeId) { setMyBalances([]); return }
     try {
-      const res = await fetch('/api/wavecore/hr/leave-balances?employeeId=' + employeeId + '&year=' + new Date().getFullYear(), { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/hr/leave-balances?employeeId=' + employeeId + '&year=' + new Date().getFullYear(), { cache: 'no-store' })
       const data = await res.json()
       if (res.ok) setMyBalances(data.balances || [])
     } catch { setMyBalances([]) }
@@ -176,7 +177,7 @@ export default function LeavesPage() {
 
     try {
       const url = editing ? '/api/wavecore/hr/leaves/' + editing.id : '/api/wavecore/hr/leaves'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -191,7 +192,7 @@ export default function LeavesPage() {
   const approve = async (id: string) => {
     setActioning(id)
     try {
-      const res = await fetch('/api/wavecore/hr/leaves/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/leaves/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ status: 'APPROVED' }),
@@ -205,7 +206,7 @@ export default function LeavesPage() {
     if (reason === null) return
     setActioning(id)
     try {
-      const res = await fetch('/api/wavecore/hr/leaves/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/leaves/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ status: 'REJECTED', rejectionReason: reason || 'No reason given' }),
@@ -218,7 +219,7 @@ export default function LeavesPage() {
     if (!confirm('Delete leave request for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/leaves/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/leaves/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

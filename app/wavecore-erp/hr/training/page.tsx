@@ -8,6 +8,7 @@ import {
   CheckCircle2, Users, TrendingUp, FileEdit, Sparkles, Clock, DollarSign,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 
 const statusStyle = (s: string) => {
@@ -45,7 +46,7 @@ export default function TrainingPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/training')
+      const res = await authedFetch('/api/wavecore/hr/training')
       const data = await res.json()
       setTrainings(data.trainings || [])
       setSummary(data.summary || {})
@@ -90,7 +91,7 @@ export default function TrainingPage() {
     }
     try {
       const url = editing ? '/api/wavecore/hr/training/' + editing.id : '/api/wavecore/hr/training'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -106,7 +107,7 @@ export default function TrainingPage() {
     if (!confirm('Delete "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/training/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/training/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

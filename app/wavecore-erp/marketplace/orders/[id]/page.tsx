@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { WhatsAppButton } from '@/components/marketplace/WhatsAppButton'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Order {
   id: string
   orderNumber: string
@@ -76,7 +77,7 @@ export default function OrderDetailPage() {
   const loadOrder = async () => {
     if (!orderId) return
     try {
-      const res = await fetch('/api/marketplace/orders?id=' + orderId)
+      const res = await authedFetch('/api/marketplace/orders?id=' + orderId)
       if (res.status === 401) {
         router.push('/wavecore-erp/auth/login?returnTo=/wavecore-erp/marketplace/orders/' + orderId)
         return
@@ -100,7 +101,7 @@ export default function OrderDetailPage() {
   const updateStatus = async (newStatus: string) => {
     setUpdating(true)
     try {
-      const res = await fetch('/api/marketplace/orders', {
+      const res = await authedFetch('/api/marketplace/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: orderId, status: newStatus }),

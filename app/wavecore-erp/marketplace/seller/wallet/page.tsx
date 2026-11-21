@@ -35,7 +35,7 @@ export default function WalletPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/wallet')
+      const res = await authedFetch('/api/marketplace/wallet')
       const data = await res.json()
       setWallet(data.wallet)
       setSummary(data.summary || {})

@@ -26,7 +26,7 @@ export default function InboxPage() {
   const fetchConversations = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/marketplace/conversations')
+      const res = await authedFetch('/api/marketplace/conversations')
       // 402 = subscription required (paywall)
       if (res.status === 402) {
         setSubscriptionRequired(true)
@@ -53,7 +53,7 @@ export default function InboxPage() {
   const loadMessages = async (conversationId: string) => {
     setLoadingMessages(true)
     try {
-      const res = await fetch('/api/marketplace/messages?conversationId=' + conversationId)
+      const res = await authedFetch('/api/marketplace/messages?conversationId=' + conversationId)
       if (res.status === 402) {
         setSubscriptionRequired(true)
         setMessages([])

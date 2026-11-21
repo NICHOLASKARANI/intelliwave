@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MessageCircle, Phone, Loader2, AlertCircle, CheckCircle2, Info } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface SettingsData {
   whatsappNumber: string | null
   mpesaNumber: string | null
@@ -56,7 +57,7 @@ export default function SellerSettingsPage() {
     setSuccess('')
 
     try {
-      const res = await fetch('/api/marketplace/seller/whatsapp', {
+      const res = await authedFetch('/api/marketplace/seller/whatsapp', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ whatsappNumber: whatsappInput.trim() || null }),
@@ -84,7 +85,7 @@ export default function SellerSettingsPage() {
     setError('')
     setSuccess('')
     try {
-      const res = await fetch('/api/marketplace/seller/whatsapp', {
+      const res = await authedFetch('/api/marketplace/seller/whatsapp', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ whatsappNumber: null }),

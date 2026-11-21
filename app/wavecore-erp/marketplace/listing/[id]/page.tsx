@@ -13,6 +13,7 @@ import { CommentSection } from '@/components/marketplace/CommentSection'
 import { WhatsAppButton } from '@/components/marketplace/WhatsAppButton'
 import { FollowButton } from '@/components/marketplace/FollowButton'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Listing {
   id: number
   sellerId: string
@@ -99,7 +100,7 @@ export default function ListingDetailPage() {
   const addToCart = async () => {
     setAddingToCart(true)
     try {
-      const res = await fetch('/api/marketplace/cart', {
+      const res = await authedFetch('/api/marketplace/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: listing?.id, quantity }),
@@ -124,7 +125,7 @@ export default function ListingDetailPage() {
 
   const toggleSave = async () => {
     try {
-      const res = await fetch('/api/marketplace/saved', {
+      const res = await authedFetch('/api/marketplace/saved', {
         method: saved ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: listing?.id }),
@@ -137,7 +138,7 @@ export default function ListingDetailPage() {
     e.preventDefault()
     setSubmittingReview(true)
     try {
-      const res = await fetch('/api/marketplace/reviews', {
+      const res = await authedFetch('/api/marketplace/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: listing?.id, rating: reviewRating, title: reviewTitle, body: reviewBody }),

@@ -9,6 +9,7 @@ import {
   Trash2, Pencil,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const CATEGORY_ICONS: Record<string, any> = {
   Electronics: Laptop,
   'Mobile Phones': Smartphone,
@@ -66,7 +67,7 @@ export default function CategoriesPage() {
     if (!newCategory.name.trim()) return
     setCreating(true)
     try {
-      const res = await fetch('/api/marketplace/categories', {
+      const res = await authedFetch('/api/marketplace/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newCategory),
@@ -82,7 +83,7 @@ export default function CategoriesPage() {
 
   const deleteCategory = async (id: number, name: string) => {
     if (!confirm(`Delete category "${name}"?`)) return
-    const res = await fetch(`/api/marketplace/categories?id=${id}`, { method: 'DELETE' })
+    const res = await authedFetch(`/api/marketplace/categories?id=${id}`, { method: 'DELETE' })
     if (res.ok) { flash('Category deleted'); fetchAll() }
   }
 

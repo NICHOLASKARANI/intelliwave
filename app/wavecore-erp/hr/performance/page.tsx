@@ -8,6 +8,7 @@ import {
   CheckCircle2, Star, TrendingUp, FileEdit, Sparkles, Target,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 const TYPES = ['ANNUAL', 'QUARTERLY', 'MID_YEAR', 'PROBATION', 'PROJECT']
 
@@ -100,7 +101,7 @@ export default function PerformancePage() {
     }
     try {
       const url = editing ? '/api/wavecore/hr/performance/' + editing.id : '/api/wavecore/hr/performance'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -116,7 +117,7 @@ export default function PerformancePage() {
     if (!confirm('Delete performance review for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/performance/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/performance/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

@@ -8,6 +8,7 @@ import {
   CheckCircle2, DollarSign, Users, TrendingUp, PlayCircle, Sparkles, FileEdit, AlertTriangle, FileDown, Settings2, RotateCcw, Save, Files, Landmark,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function PayrollPage() {
   const [periods, setPeriods] = useState<any[]>([])
   const [activePeriod, setActivePeriod] = useState<any>(null)
@@ -40,7 +41,7 @@ export default function PayrollPage() {
       const url = periodId
         ? '/api/wavecore/hr/payroll?periodId=' + periodId
         : '/api/wavecore/hr/payroll'
-      const res = await fetch(url)
+      const res = await authedFetch(url)
       const data = await res.json()
       setPeriods(data.periods || [])
       setActivePeriod(data.activePeriod || null)
@@ -67,7 +68,7 @@ export default function PayrollPage() {
     setRunning(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/hr/payroll', {
+      const res = await authedFetch('/api/wavecore/hr/payroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action: 'run', periodId: activePeriod.id }),
@@ -85,7 +86,7 @@ export default function PayrollPage() {
     setError('')
     if (!periodForm.name.trim()) { setError('Period name required'); return }
     try {
-      const res = await fetch('/api/wavecore/hr/payroll', {
+      const res = await authedFetch('/api/wavecore/hr/payroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action: 'create-period', ...periodForm }),
@@ -103,7 +104,7 @@ export default function PayrollPage() {
   const loadStatutory = async () => {
     setStatutoryLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/statutory', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/hr/statutory', { cache: 'no-store' })
       const data = await res.json()
       if (res.ok) setStatutoryBands(data.bands || [])
     } catch {}
@@ -114,7 +115,7 @@ export default function PayrollPage() {
     setStatutorySaving(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/hr/statutory', {
+      const res = await authedFetch('/api/wavecore/hr/statutory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -141,7 +142,7 @@ export default function PayrollPage() {
     if (!confirm('Reset statutory bands to Kenya 2026 defaults? Your custom edits will be lost.')) return
     setStatutorySaving(true)
     try {
-      const res = await fetch('/api/wavecore/hr/statutory', {
+      const res = await authedFetch('/api/wavecore/hr/statutory', {
         method: 'PUT',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -166,7 +167,7 @@ export default function PayrollPage() {
     if (!confirm('Delete payslip for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/payroll/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/payroll/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Payslip deleted'); fetchAll(activePeriod?.id) }
     } finally { setDeleting('') }
   }
@@ -175,7 +176,7 @@ export default function PayrollPage() {
     if (!activePeriod) return
     if (!confirm('Delete the entire period "' + activePeriod.name + '" and all its payslips?\n\nThis cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/hr/payroll?periodId=' + activePeriod.id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/payroll?periodId=' + activePeriod.id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Period deleted'); fetchAll() }
     } catch {}
   }

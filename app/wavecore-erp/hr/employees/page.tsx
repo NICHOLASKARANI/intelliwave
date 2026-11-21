@@ -9,6 +9,7 @@ import {
   Mail, Phone, MapPin, Building2, Calendar, Star, FileText, Wallet, CreditCard, FileDown, ExternalLink,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['ACTIVE', 'PROBATION', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED']
 const TYPES = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'CONSULTANT']
 
@@ -173,7 +174,7 @@ export default function EmployeesPage() {
 
     try {
       const url = editing ? '/api/wavecore/hr/employees/' + editing.id : '/api/wavecore/hr/employees'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(normalised),
@@ -200,7 +201,7 @@ export default function EmployeesPage() {
     setDeleting(id)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/hr/employees/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/employees/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       flash('Employee deleted'); fetchAll()

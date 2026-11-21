@@ -8,6 +8,7 @@ import {
   CheckCircle2, Clock, TrendingUp, FileEdit, Sparkles,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 
 const statusStyle = (s: string) => {
@@ -95,7 +96,7 @@ export default function OnboardingPage() {
     }
     try {
       const url = editing ? '/api/wavecore/hr/onboarding/' + editing.id : '/api/wavecore/hr/onboarding'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -111,7 +112,7 @@ export default function OnboardingPage() {
     if (!confirm('Delete onboarding checklist for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/onboarding/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/onboarding/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -120,7 +121,7 @@ export default function OnboardingPage() {
     const next = Math.min(c.currentStep + 1, c.totalSteps)
     const newStatus = next >= c.totalSteps ? 'COMPLETED' : 'IN_PROGRESS'
     try {
-      const res = await fetch('/api/wavecore/hr/onboarding/' + c.id, {
+      const res = await authedFetch('/api/wavecore/hr/onboarding/' + c.id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ currentStep: next, status: newStatus }),

@@ -8,6 +8,7 @@ import {
   CheckCircle2, Users, DollarSign, TrendingUp, AlertTriangle, FileEdit, Sparkles, User,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
@@ -33,7 +34,7 @@ export default function DepartmentsPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/departments')
+      const res = await authedFetch('/api/wavecore/hr/departments')
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); setDepartments([]) }
       else { setDepartments(data.departments || []); setSummary(data.summary || {}) }
@@ -72,7 +73,7 @@ export default function DepartmentsPage() {
     const payload = { ...form, budgetAmount: Number(form.budgetAmount || 0) }
     try {
       const url = editing ? '/api/wavecore/hr/departments/' + editing.id : '/api/wavecore/hr/departments'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -88,7 +89,7 @@ export default function DepartmentsPage() {
     if (!confirm('Delete department "' + name + '"? This cannot be undone.')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/departments/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/departments/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       flash('Department deleted'); fetchAll()

@@ -11,6 +11,7 @@ import {
   CheckCircle2, ChevronRight,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'documents' | 'leave' | 'attendance' | 'payroll' | 'training' | 'performance'
 
 interface Employee {
@@ -89,7 +90,7 @@ export default function Employee360Page() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/employees/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/hr/employees/' + id, { cache: 'no-store' })
       const json = await res.json()
       if (!res.ok) { setError(json.error || 'Failed to load'); return }
       setEmp(json.employee)
@@ -116,7 +117,7 @@ export default function Employee360Page() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/hr/employees/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/employees/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ...form, salary: Number(form.salary || 0) }),
@@ -139,7 +140,7 @@ export default function Employee360Page() {
     if (!confirm('Delete employee "' + emp.firstName + ' ' + emp.lastName + '"? This cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/hr/employees/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/employees/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

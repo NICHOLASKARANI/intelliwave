@@ -8,6 +8,7 @@ import {
   CheckCircle2, Users, TrendingUp, FileEdit, Sparkles, MapPin, Clock,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['OPEN', 'CLOSED', 'ON_HOLD', 'DRAFT']
 const TYPES = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP']
 
@@ -48,7 +49,7 @@ export default function RecruitmentPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/recruitment')
+      const res = await authedFetch('/api/wavecore/hr/recruitment')
       const data = await res.json()
       setJobs(data.jobs || [])
       setSummary(data.summary || {})
@@ -85,7 +86,7 @@ export default function RecruitmentPage() {
     if (!form.title.trim()) { setError('Job title required'); return }
     try {
       const url = editing ? '/api/wavecore/hr/recruitment/' + editing.id : '/api/wavecore/hr/recruitment'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
@@ -102,7 +103,7 @@ export default function RecruitmentPage() {
     setDeleting(id)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/hr/recruitment/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/recruitment/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

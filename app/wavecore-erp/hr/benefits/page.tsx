@@ -8,6 +8,7 @@ import {
   CheckCircle2, Users, DollarSign, TrendingUp, FileEdit, Sparkles, Building2,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['ACTIVE', 'INACTIVE', 'DRAFT']
 
 const statusStyle = (s: string) => {
@@ -43,7 +44,7 @@ export default function BenefitsPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/benefits')
+      const res = await authedFetch('/api/wavecore/hr/benefits')
       const data = await res.json()
       setBenefits(data.benefits || [])
       setSummary(data.summary || {})
@@ -89,7 +90,7 @@ export default function BenefitsPage() {
     }
     try {
       const url = editing ? '/api/wavecore/hr/benefits/' + editing.id : '/api/wavecore/hr/benefits'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -105,7 +106,7 @@ export default function BenefitsPage() {
     if (!confirm('Delete benefit program "' + name + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/benefits/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/benefits/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }

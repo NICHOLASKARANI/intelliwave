@@ -139,7 +139,7 @@ export default function SellPage() {
         fd.append('file', file)
         fd.append('title', form.title || file.name || 'listing')
 
-        const uploadRes = await fetch('/api/marketplace/upload', {
+        const uploadRes = await authedFetch('/api/marketplace/upload', {
           method: 'POST',
           body: fd,
         })
@@ -320,7 +320,7 @@ export default function SellPage() {
         fd.append('file', file)
         fd.append('title', form.title || file.name || 'listing')
 
-        const uploadRes = await fetch('/api/marketplace/upload', {
+        const uploadRes = await authedFetch('/api/marketplace/upload', {
           method: 'POST',
           body: fd,
         })

@@ -8,6 +8,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, UserCheck, TrendingUp, FileEdit, Sparkles, PlayCircle, StopCircle, ExternalLink,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'REMOTE']
 
 const statusStyle = (s: string) => {
@@ -106,7 +107,7 @@ export default function AttendancePage() {
 
     try {
       const url = editing ? '/api/wavecore/hr/attendance/' + editing.id : '/api/wavecore/hr/attendance'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -122,7 +123,7 @@ export default function AttendancePage() {
     if (!confirm('Delete attendance record for ' + name + '?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/hr/attendance/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/hr/attendance/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) { flash('Deleted'); fetchAll() }
     } finally { setDeleting('') }
   }
@@ -131,7 +132,7 @@ export default function AttendancePage() {
     const now = new Date()
     const time = now.toTimeString().slice(0, 5)
     try {
-      const res = await fetch('/api/wavecore/hr/attendance', {
+      const res = await authedFetch('/api/wavecore/hr/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

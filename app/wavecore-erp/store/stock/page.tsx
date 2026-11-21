@@ -24,7 +24,7 @@ export default function StockPage() {
     setError('')
     try {
       const url = '/api/wavecore/store/stock' + (shopId ? '?locationId=' + encodeURIComponent(shopId) : '')
-      const res = await fetch(url)
+      const res = await authedFetch(url)
       const data = await res.json()
       setProducts(data.products || [])
       setStats(data.stats || {})

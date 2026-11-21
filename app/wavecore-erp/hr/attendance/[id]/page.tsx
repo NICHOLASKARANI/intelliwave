@@ -9,6 +9,7 @@ import {
   Calendar, User, CheckCircle2, FileText,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Attendance {
   id: string
   date: string
@@ -59,7 +60,7 @@ export default function AttendanceDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/hr/attendance/' + id, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/hr/attendance/' + id, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       // The endpoint returns { attendance: row } without employee join;
@@ -67,7 +68,7 @@ export default function AttendanceDetailPage() {
       const a = data.attendance
       let enriched = a
       try {
-        const listRes = await fetch('/api/wavecore/hr/attendance', { cache: 'no-store' })
+        const listRes = await authedFetch('/api/wavecore/hr/attendance', { cache: 'no-store' })
         const listData = await listRes.json()
         const match = (listData.attendance || []).find((x: any) => x.id === a.id)
         if (match) enriched = { ...a, ...match }
@@ -106,7 +107,7 @@ export default function AttendanceDetailPage() {
       if (form.checkIn) body.checkIn = baseDate + 'T' + form.checkIn + ':00'
       if (form.checkOut) body.checkOut = baseDate + 'T' + form.checkOut + ':00'
 
-      const res = await fetch('/api/wavecore/hr/attendance/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/attendance/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(body),
@@ -125,7 +126,7 @@ export default function AttendanceDetailPage() {
     if (!confirm('Delete this attendance record? This cannot be undone.')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/hr/attendance/' + id, {
+      const res = await authedFetch('/api/wavecore/hr/attendance/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
