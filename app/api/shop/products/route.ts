@@ -2,8 +2,12 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
+import { checkRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const rl = await checkRateLimit('shop-products:' + ip, 60, 60)
+  if (!rl.allowed) { return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': '60' } }) }
   const { searchParams } = new URL(req.url)
   const store = searchParams.get('store') || 'wavvemarket'
 

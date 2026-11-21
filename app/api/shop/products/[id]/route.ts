@@ -3,12 +3,16 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { del } from '@vercel/blob'
+import { checkRateLimit } from '@/lib/wavecore/security/redis-limiter'
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rl = await checkRateLimit('shop-admin:' + ip, 5, 60)
+    if (!rl.allowed) { return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': '60' } }) }
     const password = req.headers.get('x-admin-password')
     if (password !== process.env.SHOP_ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -40,6 +44,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rl = await checkRateLimit('shop-admin:' + ip, 5, 60)
+    if (!rl.allowed) { return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': '60' } }) }
     const body = await req.json()
     if (body.password !== process.env.SHOP_ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
