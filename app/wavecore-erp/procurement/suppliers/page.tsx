@@ -9,7 +9,8 @@ import {
   Filter, ArrowLeft, RefreshCw, Ban, CheckSquare, Square, Check,
   Download, FileSpreadsheet, FileText, Trash2,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Supplier {
   id: string
   name: string
@@ -76,7 +77,7 @@ export default function SuppliersPage() {
       params.set('limit', String(limit))
       params.set('offset', String(offset))
 
-      const res = await fetch('/api/wavecore/procurement/suppliers?' + params.toString())
+      const res = await authedFetch('/api/wavecore/procurement/suppliers?' + params.toString())
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       let list: Supplier[] = data.suppliers || []
@@ -99,7 +100,7 @@ export default function SuppliersPage() {
   const deleteSupplier = async (id: string, name: string) => {
     if (!confirm('Delete supplier "' + name + '"? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/suppliers?id=' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/procurement/suppliers?id=' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -120,7 +121,7 @@ export default function SuppliersPage() {
     if (!form.name.trim()) { setError('Name is required'); return }
     setCreating(true); setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/suppliers', {
+      const res = await authedFetch('/api/wavecore/procurement/suppliers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
@@ -176,7 +177,7 @@ export default function SuppliersPage() {
     setBulkWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/suppliers/bulk', {
+      const res = await authedFetch('/api/wavecore/procurement/suppliers/bulk', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ids: Array.from(selectedIds), action }),

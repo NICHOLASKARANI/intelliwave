@@ -10,6 +10,7 @@ import {
   DollarSign, Building2, Hash, Users, ArrowRight, Trash2,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface PaymentRun {
   id: string
   runNumber: string
@@ -104,7 +105,7 @@ export default function PaymentRunsPage() {
       p.set('limit', String(limit))
       p.set('offset', String(offset))
 
-      const res = await fetch('/api/wavecore/procurement/payment-runs?' + p.toString())
+      const res = await authedFetch('/api/wavecore/procurement/payment-runs?' + p.toString())
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setRuns(data.paymentRuns || [])
@@ -116,7 +117,7 @@ export default function PaymentRunsPage() {
   const deleteRun = async (id: string, runNumber: string) => {
     if (!confirm('Delete payment run ' + runNumber + '? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/payment-runs/' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/procurement/payment-runs/' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
       })
@@ -408,7 +409,7 @@ function RunWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () 
         supplierInvoiceIds: selectedIds,
       }
 
-      const res = await fetch('/api/wavecore/procurement/payment-runs', {
+      const res = await authedFetch('/api/wavecore/procurement/payment-runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -418,7 +419,7 @@ function RunWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () 
 
       const runId = data.paymentRun?.id
       if (submit && runId) {
-        const sres = await fetch('/api/wavecore/procurement/payment-runs/' + runId + '/lifecycle', {
+        const sres = await authedFetch('/api/wavecore/procurement/payment-runs/' + runId + '/lifecycle', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
           body: JSON.stringify({ action: 'SUBMIT' }),

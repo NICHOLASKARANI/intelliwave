@@ -9,6 +9,7 @@ import {
   CheckCircle2, Scan, QrCode, Trash2
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function BarcodePage() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,7 +23,7 @@ export default function BarcodePage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/barcode')
+      const res = await authedFetch('/api/wavecore/inventory/barcode')
       const data = await res.json()
       setProducts(data.products || [])
     } catch (err) {
@@ -38,7 +39,7 @@ export default function BarcodePage() {
     setError('')
     setSuccess('')
     try {
-      const res = await fetch('/api/wavecore/inventory/barcode', {
+      const res = await authedFetch('/api/wavecore/inventory/barcode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId })
@@ -59,7 +60,7 @@ export default function BarcodePage() {
   const deleteProduct = async (id: string, name: string) => {
     if (!confirm('Delete product ' + name + '?')) return
     try {
-      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Product deleted!')
         setTimeout(() => setSuccess(''), 3000)

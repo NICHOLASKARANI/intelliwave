@@ -8,6 +8,7 @@ import {
   DollarSign, Clock, Package2, Microscope, ShieldCheck, Hash, FileText,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Settings {
   id?: string
   defaultCurrency: string
@@ -67,7 +68,7 @@ export default function ProcurementSettingsPage() {
         invoiceNumberPrefix: s.invoiceNumberPrefix,
         notes: s.notes || undefined,
       }
-      const res = await fetch('/api/wavecore/procurement/settings', {
+      const res = await authedFetch('/api/wavecore/procurement/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),

@@ -10,7 +10,8 @@ import {
   Activity, FileText, ClipboardList, Users, ExternalLink, Calendar,
   Clock, Plus, Trash2, Save, Warehouse, Info, ShieldCheck, Microscope,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'inspections' | 'activity' | 'related'
 
 interface GRNHook {
@@ -65,7 +66,7 @@ export default function GRNDetailPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/goods-receipts/' + id)
+      const res = await authedFetch('/api/wavecore/procurement/goods-receipts/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setGrn(data.goodsReceipt)
@@ -83,7 +84,7 @@ export default function GRNDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/goods-receipts/' + id + '/' + endpoint, {
+      const res = await authedFetch('/api/wavecore/procurement/goods-receipts/' + id + '/' + endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: body ? JSON.stringify(body) : '{}',
@@ -101,7 +102,7 @@ export default function GRNDetailPage() {
 
   const deleteGRN = async () => {
     if (!confirm('Delete this draft GRN? Cannot be undone.')) return
-    const res = await fetch('/api/wavecore/procurement/goods-receipts/' + id, {
+    const res = await authedFetch('/api/wavecore/procurement/goods-receipts/' + id, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -126,7 +127,7 @@ export default function GRNDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/quality-inspections/' + decideTarget.id + '/decide', {
+      const res = await authedFetch('/api/wavecore/procurement/quality-inspections/' + decideTarget.id + '/decide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

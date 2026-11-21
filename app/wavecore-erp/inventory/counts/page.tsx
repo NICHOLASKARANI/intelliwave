@@ -9,6 +9,7 @@ import {
   TrendingUp, TrendingDown, Filter, Calendar, DollarSign, ShieldAlert, Truck, Scale, CheckCircle, XCircle
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function CountsPage() {
   const [counts, setCounts] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
@@ -56,7 +57,7 @@ export default function CountsPage() {
       const buyingPrice = form.buyingPrice || selectedProduct?.costPrice || 0
       const sellingPrice = form.sellingPrice || selectedProduct?.sellingPrice || 0
 
-      const res = await fetch('/api/wavecore/inventory/cycle-counts', {
+      const res = await authedFetch('/api/wavecore/inventory/cycle-counts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -85,7 +86,7 @@ export default function CountsPage() {
     if (!confirm('Delete this count?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/cycle-counts?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/cycle-counts?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Count deleted!')
         setTimeout(() => setSuccess(''), 3000)

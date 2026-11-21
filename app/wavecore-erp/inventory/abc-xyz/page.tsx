@@ -9,6 +9,7 @@ import {
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, BarChart3, Trash2
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function AbcXyzPage() {
   const [products, setProducts] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
@@ -23,7 +24,7 @@ export default function AbcXyzPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/abc-xyz')
+      const res = await authedFetch('/api/wavecore/inventory/abc-xyz')
       const data = await res.json()
       setProducts(data.products || [])
       setSummary(data.summary || {})
@@ -41,7 +42,7 @@ export default function AbcXyzPage() {
     setDeleting(id)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Product deleted!')
         setTimeout(() => setSuccess(''), 3000)

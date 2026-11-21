@@ -10,7 +10,8 @@ import {
   Clock, CheckCheck, User, Calendar, Package, DollarSign,
   FileText, Activity, History, AlertCircle, X, Plus, Save, Paperclip, Upload,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'approvals' | 'activity' | 'attachments'
 
 export default function RequisitionDetailPage() {
@@ -51,7 +52,7 @@ export default function RequisitionDetailPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + id)
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setReq(data.requisition)
@@ -82,7 +83,7 @@ export default function RequisitionDetailPage() {
       const reader = new FileReader()
       reader.onload = async () => {
         const b64 = String(reader.result || '').split(',')[1] || ''
-        const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/attachments', {
+        const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/attachments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
           body: JSON.stringify({
@@ -113,7 +114,7 @@ export default function RequisitionDetailPage() {
   const deleteAttachment = async (attachmentId: string, fileName: string) => {
     if (!confirm('Delete attachment "' + fileName + '"')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/attachments/' + attachmentId, {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/attachments/' + attachmentId, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -129,7 +130,7 @@ export default function RequisitionDetailPage() {
     if (!confirm('Submit this requisition for approval?')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/submit', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/submit', {
         method: 'POST',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -143,7 +144,7 @@ export default function RequisitionDetailPage() {
   const approve = async () => {
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/approve', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ comment }),
@@ -161,7 +162,7 @@ export default function RequisitionDetailPage() {
     if (!rejectReason.trim()) { setError('Rejection reason required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/reject', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ reason: rejectReason }),
@@ -179,7 +180,7 @@ export default function RequisitionDetailPage() {
     if (!delegateTo.trim()) { setError('User ID required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/delegate', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/delegate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ delegateToUserId: delegateTo, comment: delegateNote }),
@@ -196,7 +197,7 @@ export default function RequisitionDetailPage() {
 
   const deleteReq = async () => {
     if (!confirm('Delete this draft requisition? Cannot be undone.')) return
-    const res = await fetch('/api/wavecore/procurement/requisitions/' + id, {
+    const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -208,7 +209,7 @@ export default function RequisitionDetailPage() {
     if (!newLine.description.trim()) { setError('Description required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/lines', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/lines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(newLine),
@@ -224,7 +225,7 @@ export default function RequisitionDetailPage() {
 
   const removeLine = async (lineId: string) => {
     if (!confirm('Remove this line?')) return
-    const res = await fetch('/api/wavecore/procurement/requisitions/' + id + '/lines/' + lineId, {
+    const res = await authedFetch('/api/wavecore/procurement/requisitions/' + id + '/lines/' + lineId, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })

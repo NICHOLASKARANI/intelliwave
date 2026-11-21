@@ -12,7 +12,8 @@ import {
   AlertCircle, Clock, Hash, Building2,
 } from 'lucide-react'
 import ActivityFeed from '../../_components/ActivityFeed'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'activity'
 
 interface RunHook {
@@ -83,7 +84,7 @@ export default function PaymentRunDetailPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/payment-runs/' + id)
+      const res = await authedFetch('/api/wavecore/procurement/payment-runs/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setRun(data.paymentRun)
@@ -98,7 +99,7 @@ export default function PaymentRunDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/payment-runs/' + id + '/lifecycle', {
+      const res = await authedFetch('/api/wavecore/procurement/payment-runs/' + id + '/lifecycle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action, ...(extra || {}) }),
@@ -120,7 +121,7 @@ export default function PaymentRunDetailPage() {
     setInvQuery('')
     setLoadingInv(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices?status=APPROVED&limit=200')
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices?status=APPROVED&limit=200')
       const data = await res.json()
       if (res.ok) {
         const existing = new Set(lines.map((l: any) => l.supplierInvoiceId))
@@ -134,7 +135,7 @@ export default function PaymentRunDetailPage() {
     if (pickedIds.length === 0) { setError('Pick at least one invoice'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/payment-runs/' + id + '/lines', {
+      const res = await authedFetch('/api/wavecore/procurement/payment-runs/' + id + '/lines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ supplierInvoiceIds: pickedIds }),
@@ -149,7 +150,7 @@ export default function PaymentRunDetailPage() {
 
   const removeLine = async (lineId: string) => {
     if (!confirm('Remove this invoice from the run?')) return
-    const res = await fetch('/api/wavecore/procurement/payment-runs/' + id + '/lines/' + lineId, {
+    const res = await authedFetch('/api/wavecore/procurement/payment-runs/' + id + '/lines/' + lineId, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -159,7 +160,7 @@ export default function PaymentRunDetailPage() {
 
   const deleteRun = async () => {
     if (!confirm('Delete this DRAFT run? Cannot be undone.')) return
-    const res = await fetch('/api/wavecore/procurement/payment-runs/' + id, {
+    const res = await authedFetch('/api/wavecore/procurement/payment-runs/' + id, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })

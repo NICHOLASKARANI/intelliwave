@@ -9,6 +9,7 @@ import {
   CheckCircle2, Clock, Plus, Trash2, ArrowRight
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function TransfersPage() {
   const [transfers, setTransfers] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
@@ -54,7 +55,7 @@ export default function TransfersPage() {
       return
     }
     try {
-      const res = await fetch('/api/wavecore/inventory/transfers', {
+      const res = await authedFetch('/api/wavecore/inventory/transfers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, quantity: Number(form.quantity), buyingPrice: Number(form.buyingPrice || 0), sellingPrice: Number(form.sellingPrice || 0) })
@@ -78,7 +79,7 @@ export default function TransfersPage() {
     if (!confirm('Delete this transfer?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/transfers?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/transfers?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Transfer deleted!')
         setTimeout(() => setSuccess(''), 3000)

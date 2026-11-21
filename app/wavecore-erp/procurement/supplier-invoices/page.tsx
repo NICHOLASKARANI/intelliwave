@@ -10,6 +10,7 @@ import {
   Calendar, DollarSign, Users, ShieldCheck, AlertOctagon, Sparkles, ArrowRight, Trash2,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Invoice {
   id: string
   invoiceNumber: string
@@ -138,7 +139,7 @@ export default function SupplierInvoicesPage() {
 
     setApproving(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices/bulk-approve', {
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices/bulk-approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
         body: JSON.stringify({ ids }),
@@ -166,7 +167,7 @@ export default function SupplierInvoicesPage() {
       p.set('limit', String(limit))
       p.set('offset', String(offset))
 
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices?' + p.toString())
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices?' + p.toString())
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setInvoices(data.supplierInvoices || [])
@@ -178,7 +179,7 @@ export default function SupplierInvoicesPage() {
   const deleteInvoice = async (id: string, invoiceNumber: string) => {
     if (!confirm('Delete supplier invoice ' + invoiceNumber + '? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices/' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
       })
@@ -606,7 +607,7 @@ function InvoiceWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
         payload.supplierName = form.supplierNameManual
       }
 
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices', {
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -616,7 +617,7 @@ function InvoiceWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
 
       const invoiceId = data.supplierInvoice?.id
       if (submit && invoiceId) {
-        const sres = await fetch('/api/wavecore/procurement/supplier-invoices/' + invoiceId + '/submit', {
+        const sres = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + invoiceId + '/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         })

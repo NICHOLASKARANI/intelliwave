@@ -9,6 +9,7 @@ import {
   TrendingUp, TrendingDown, ArrowRight, Filter, Download, Calendar, DollarSign, ShieldAlert, Truck
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function MovementsPage() {
   const [movements, setMovements] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
@@ -58,7 +59,7 @@ export default function MovementsPage() {
       const buyingPrice = form.buyingPrice || selectedProduct?.costPrice || 0
       const sellingPrice = form.sellingPrice || selectedProduct?.sellingPrice || 0
 
-      const res = await fetch('/api/wavecore/inventory/movements', {
+      const res = await authedFetch('/api/wavecore/inventory/movements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -87,7 +88,7 @@ export default function MovementsPage() {
     if (!confirm('Delete this movement?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/movements?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/movements?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Movement deleted!')
         setTimeout(() => setSuccess(''), 3000)

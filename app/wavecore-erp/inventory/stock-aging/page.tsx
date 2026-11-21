@@ -9,6 +9,7 @@ import {
   CheckCircle2, AlertTriangle, Trash2
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function StockAgingPage() {
   const [products, setProducts] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
@@ -21,7 +22,7 @@ export default function StockAgingPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/stock-aging')
+      const res = await authedFetch('/api/wavecore/inventory/stock-aging')
       const data = await res.json()
       setProducts(data.products || [])
       setSummary(data.summary || {})
@@ -41,7 +42,7 @@ export default function StockAgingPage() {
   const deleteProduct = async (id: string, name: string) => {
     if (!confirm('Delete product ' + name + '?')) return
     try {
-      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
       if (res.ok) fetchData()
     } catch (err) {
       setError('Delete failed')

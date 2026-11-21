@@ -9,6 +9,7 @@ import {
   CheckCircle2, XCircle, Trash2, DollarSign, ShieldAlert, Truck, Boxes
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function AtpPage() {
   const [atpList, setAtpList] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
@@ -23,7 +24,7 @@ export default function AtpPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/atp')
+      const res = await authedFetch('/api/wavecore/inventory/atp')
       const data = await res.json()
       setAtpList(data.atpList || [])
       setSummary(data.summary || {})
@@ -41,7 +42,7 @@ export default function AtpPage() {
     setDeleting(id)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Product deleted!')
         setTimeout(() => setSuccess(''), 3000)

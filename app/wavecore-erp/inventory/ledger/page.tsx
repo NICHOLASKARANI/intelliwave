@@ -9,6 +9,7 @@ import {
   TrendingUp, TrendingDown, Calendar, DollarSign, ShieldAlert, Truck, ArrowRight, ArrowDown, Database, Trash2
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function LedgerPage() {
   const [ledger, setLedger] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,7 +23,7 @@ export default function LedgerPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/ledger')
+      const res = await authedFetch('/api/wavecore/inventory/ledger')
       const data = await res.json()
       setLedger(data.ledger || [])
     } catch (err) {
@@ -38,7 +39,7 @@ export default function LedgerPage() {
     if (!confirm('Delete this ledger entry?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/ledger?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/ledger?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Ledger entry deleted!')
         setTimeout(() => setSuccess(''), 3000)

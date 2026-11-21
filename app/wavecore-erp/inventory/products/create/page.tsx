@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, AlertCircle, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function AddProductPage() {
   const [formData, setFormData] = useState({
     name: '', sku: '', barcode: '', description: '', category: '',
@@ -25,7 +26,7 @@ export default function AddProductPage() {
     if (!formData.name || !formData.sku) { setError('Name and SKU required'); setLoading(false); return }
 
     try {
-      const res = await fetch('/api/wavecore/inventory/products', {
+      const res = await authedFetch('/api/wavecore/inventory/products', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name, sku: formData.sku, barcode: formData.barcode || null,

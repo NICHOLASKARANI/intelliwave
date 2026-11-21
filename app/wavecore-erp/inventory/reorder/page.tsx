@@ -9,6 +9,7 @@ import {
   AlertTriangle, CheckCircle2, TrendingDown, Plus, Trash2
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function ReorderPage() {
   const [reorderList, setReorderList] = useState<any[]>([])
   const [purchaseOrders, setPurchaseOrders] = useState<any[]>([])
@@ -55,7 +56,7 @@ export default function ReorderPage() {
       return
     }
     try {
-      const res = await fetch('/api/wavecore/inventory/reorder', {
+      const res = await authedFetch('/api/wavecore/inventory/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId: form.productId, quantity: Number(form.quantity), supplier: form.supplier || 'Manual Entry' })
@@ -79,7 +80,7 @@ export default function ReorderPage() {
     setError('')
     setSuccess('')
     try {
-      const res = await fetch('/api/wavecore/inventory/reorder', {
+      const res = await authedFetch('/api/wavecore/inventory/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId, quantity })
@@ -105,7 +106,7 @@ export default function ReorderPage() {
     if (!confirm('Delete this purchase order?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/reorder?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/reorder?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Purchase order deleted!')
         setTimeout(() => setSuccess(''), 3000)

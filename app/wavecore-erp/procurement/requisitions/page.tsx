@@ -10,7 +10,8 @@ import {
   Trash2, Save, Send, FileText, Calendar, DollarSign, User,
   ChevronLeft, ChevronRight, AlertCircle, Zap, Package,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Requisition {
   id: string
   requisitionNumber: string
@@ -113,7 +114,7 @@ export default function RequisitionsPage() {
       p.set('limit', String(limit))
       p.set('offset', String(offset))
 
-      const res = await fetch('/api/wavecore/procurement/requisitions?' + p.toString())
+      const res = await authedFetch('/api/wavecore/procurement/requisitions?' + p.toString())
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setRequisitions(data.requisitions || [])
@@ -124,7 +125,7 @@ export default function RequisitionsPage() {
 
   const fetchCounts = async () => {
     try {
-      const res = await fetch('/api/wavecore/procurement/approvals/counts')
+      const res = await authedFetch('/api/wavecore/procurement/approvals/counts')
       if (res.ok) {
         const d = await res.json()
         setCounts(d)
@@ -144,7 +145,7 @@ export default function RequisitionsPage() {
   const deleteRequisition = async (id: string, number: string) => {
     if (!confirm('Delete requisition ' + number + '? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions?id=' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions?id=' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -498,7 +499,7 @@ function CreateWizard({ onClose, onCreated }: { onClose: () => void; onCreated: 
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ...form, lines }),
@@ -508,7 +509,7 @@ function CreateWizard({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
       const reqId = data.requisition?.id
       if (submit && reqId) {
-        const submitRes = await fetch('/api/wavecore/procurement/requisitions/' + reqId + '/submit', {
+        const submitRes = await authedFetch('/api/wavecore/procurement/requisitions/' + reqId + '/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         })

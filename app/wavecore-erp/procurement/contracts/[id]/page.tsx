@@ -12,7 +12,8 @@ import {
   RefreshCw, Pause, Play, Landmark, PenTool, AlertCircle,
 } from 'lucide-react'
 import ActivityFeed from '../../_components/ActivityFeed'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'milestones' | 'activity' | 'related'
 
 interface ContractHook {
@@ -65,7 +66,7 @@ export default function ContractDetailPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/contracts/' + id)
+      const res = await authedFetch('/api/wavecore/procurement/contracts/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setContract(data.contract)
@@ -81,7 +82,7 @@ export default function ContractDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/contracts/' + id + '/lifecycle', {
+      const res = await authedFetch('/api/wavecore/procurement/contracts/' + id + '/lifecycle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action, reason }),
@@ -101,7 +102,7 @@ export default function ContractDetailPage() {
     if (!newLine.description.trim()) { setError('Description required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/contracts/' + id + '/lines', {
+      const res = await authedFetch('/api/wavecore/procurement/contracts/' + id + '/lines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(newLine),
@@ -117,7 +118,7 @@ export default function ContractDetailPage() {
 
   const removeLine = async (lineId: string) => {
     if (!confirm('Remove this line?')) return
-    const res = await fetch('/api/wavecore/procurement/contracts/' + id + '/lines/' + lineId, {
+    const res = await authedFetch('/api/wavecore/procurement/contracts/' + id + '/lines/' + lineId, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -129,7 +130,7 @@ export default function ContractDetailPage() {
     if (!newMilestone.name.trim()) { setError('Milestone name required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/contracts/' + id + '/milestones', {
+      const res = await authedFetch('/api/wavecore/procurement/contracts/' + id + '/milestones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(newMilestone),
@@ -144,7 +145,7 @@ export default function ContractDetailPage() {
   }
 
   const updateMilestone = async (msId: string, patch: any) => {
-    const res = await fetch('/api/wavecore/procurement/contracts/' + id + '/milestones/' + msId, {
+    const res = await authedFetch('/api/wavecore/procurement/contracts/' + id + '/milestones/' + msId, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify(patch),
@@ -155,7 +156,7 @@ export default function ContractDetailPage() {
 
   const removeMilestone = async (msId: string) => {
     if (!confirm('Remove this milestone?')) return
-    const res = await fetch('/api/wavecore/procurement/contracts/' + id + '/milestones/' + msId, {
+    const res = await authedFetch('/api/wavecore/procurement/contracts/' + id + '/milestones/' + msId, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -165,7 +166,7 @@ export default function ContractDetailPage() {
 
   const deleteContract = async () => {
     if (!confirm('Delete this DRAFT contract? Cannot be undone.')) return
-    const res = await fetch('/api/wavecore/procurement/contracts/' + id, {
+    const res = await authedFetch('/api/wavecore/procurement/contracts/' + id, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })

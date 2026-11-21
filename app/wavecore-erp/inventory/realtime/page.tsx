@@ -10,6 +10,7 @@ import {
   CheckCircle2, AlertTriangle, Boxes, Radio, TrendingUp, Trash2
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function RealtimeDashboardPage() {
   const router = useRouter()
   const [kpis, setKpis] = useState<any>({})
@@ -24,7 +25,7 @@ export default function RealtimeDashboardPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/wavecore/inventory/realtime')
+      const res = await authedFetch('/api/wavecore/inventory/realtime')
       const result = await res.json()
       setKpis(result.kpis || {})
       setRecentMovements(result.recentMovements || [])
@@ -55,7 +56,7 @@ export default function RealtimeDashboardPage() {
     if (!confirm('Delete this movement?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/movements?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/movements?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Movement deleted!')
         setTimeout(() => setSuccess(''), 3000)

@@ -10,7 +10,8 @@ import {
   Truck, CheckCheck, FileSpreadsheet, Trash2, ChevronLeft, ChevronRight,
   Save, Users, Layers,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface PO {
   id: string
   number: string
@@ -134,7 +135,7 @@ export default function PurchaseOrdersPage() {
       p.set('limit', String(limit))
       p.set('offset', String(offset))
 
-      const res = await fetch('/api/wavecore/procurement/purchase-orders?' + p.toString())
+      const res = await authedFetch('/api/wavecore/procurement/purchase-orders?' + p.toString())
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setOrders(data.purchaseOrders || [])
@@ -148,7 +149,7 @@ export default function PurchaseOrdersPage() {
   const deleteOrder = async (id: string, number: string) => {
     if (!confirm('Delete purchase order ' + number + '? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/purchase-orders/' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/procurement/purchase-orders/' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -574,7 +575,7 @@ function POWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () =
         payload.lines = lines
       }
 
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -584,7 +585,7 @@ function POWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () =
 
       const poId = data.purchaseOrder?.id
       if (submit && poId) {
-        const sres = await fetch('/api/wavecore/procurement/purchase-orders/' + poId + '/submit', {
+        const sres = await authedFetch('/api/wavecore/procurement/purchase-orders/' + poId + '/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         })

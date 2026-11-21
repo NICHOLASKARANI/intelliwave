@@ -9,6 +9,7 @@ import {
   TrendingDown, CheckCircle2, XCircle, AlertTriangle, Trash2, Printer
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function AnomaliesPage() {
   const [data, setData] = useState<any>({})
   const [loading, setLoading] = useState(true)
@@ -21,7 +22,7 @@ export default function AnomaliesPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/anomalies')
+      const res = await authedFetch('/api/wavecore/inventory/anomalies')
       const result = await res.json()
       setData(result)
     } catch (err) {
@@ -38,7 +39,7 @@ export default function AnomaliesPage() {
     setDeleting(params)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/anomalies?type=' + type + '&' + params, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/anomalies?type=' + type + '&' + params, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Deleted!')
         setTimeout(() => setSuccess(''), 3000)

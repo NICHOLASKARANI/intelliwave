@@ -10,7 +10,8 @@ import {
   TrendingUp, History, Shield, Activity, Plus, X, Save, Edit3,
   Trash2, Download, ExternalLink, Calendar, DollarSign, Package, Package2, FileSignature, FileDown,
   FileSpreadsheet, Receipt, Clock, BarChart3, Truck, XCircle} from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'contacts' | 'bank' | 'documents' | 'scorecards' | 'risks' | 'activity'
 
 interface KpiStats {
@@ -61,7 +62,7 @@ export default function SupplierDetailPage() {
   const deleteRow = async (endpoint: string, rowId: string, label: string) => {
     if (!confirm('Delete this ' + label + '? This cannot be undone.')) return
     try {
-      const res = await fetch(endpoint, {
+      const res = await authedFetch(endpoint, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -166,7 +167,7 @@ export default function SupplierDetailPage() {
   const save = async () => {
     setSaving(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/suppliers/' + id, {
+      const res = await authedFetch('/api/wavecore/procurement/suppliers/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
@@ -178,7 +179,7 @@ export default function SupplierDetailPage() {
 
   const softDelete = async () => {
     if (!confirm('Deactivate "' + supplier.name + '"? It will be marked INACTIVE.')) return
-    const res = await fetch('/api/wavecore/procurement/suppliers/' + id, {
+    const res = await authedFetch('/api/wavecore/procurement/suppliers/' + id, {
       method: 'DELETE', headers: { 'X-CSRF-Token': csrf() },
     })
     if (res.ok) { flash('Supplier deactivated'); fetchAll() }
@@ -196,7 +197,7 @@ export default function SupplierDetailPage() {
       if (subModal === 'scorecard') url += '/scorecards'
       if (subModal === 'risk') url += '/risks'
 
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(subForm),

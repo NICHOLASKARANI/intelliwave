@@ -8,6 +8,7 @@ import {
   ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,7 +26,7 @@ export default function ProductsPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/products')
+      const res = await authedFetch('/api/wavecore/inventory/products')
       const data = await res.json()
       setProducts(data.products || [])
     } catch (err) {
@@ -48,7 +49,7 @@ export default function ProductsPage() {
       return
     }
     try {
-      const res = await fetch('/api/wavecore/inventory/products', {
+      const res = await authedFetch('/api/wavecore/inventory/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,7 +80,7 @@ export default function ProductsPage() {
     if (!confirm('Delete product "' + name + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
       if (res.ok) {
         setSuccess('Product deleted!')
         setTimeout(() => setSuccess(''), 3000)

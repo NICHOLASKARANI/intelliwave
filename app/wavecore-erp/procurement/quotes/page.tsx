@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FileSpreadsheet, Plus, Download, Loader2, Trash2, Search } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Quote {
   id: string
   supplierName: string
@@ -26,7 +27,7 @@ export default function QuotesPage() {
 
   const fetchQuotes = async () => {
     try {
-      const res = await fetch('/api/wavecore/quotes')
+      const res = await authedFetch('/api/wavecore/quotes')
       const data = await res.json()
       setQuotes(data.quotes || [])
     } catch (error) {
@@ -39,7 +40,7 @@ export default function QuotesPage() {
   const addQuote = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/wavecore/quotes', {
+      const res = await authedFetch('/api/wavecore/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -57,7 +58,7 @@ export default function QuotesPage() {
   const deleteQuote = async (id: string) => {
     if (!confirm('Delete this quote?')) return
     try {
-      await fetch(`/api/wavecore/quotes?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/quotes?id=${id}`, { method: 'DELETE' })
       fetchQuotes()
     } catch (error) {
       console.error('Failed to delete quote')

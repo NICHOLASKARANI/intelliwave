@@ -8,7 +8,8 @@ import {
   XCircle, Clock, AlertCircle, History, TrendingUp, User, Calendar,
   Package, ChevronRight, RefreshCw,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'inbox' | 'history'
 
 export default function ApprovalInboxPage() {
@@ -57,7 +58,7 @@ export default function ApprovalInboxPage() {
     try {
       const item = inbox.find(a => a.approvalId === approvalId)
       if (!item) return
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + item.requisitionId + '/approve', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + item.requisitionId + '/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({}),
@@ -73,7 +74,7 @@ export default function ApprovalInboxPage() {
     if (!rejectModal || !rejectReason.trim()) { setError('Reason required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/requisitions/' + rejectModal.requisitionId + '/reject', {
+      const res = await authedFetch('/api/wavecore/procurement/requisitions/' + rejectModal.requisitionId + '/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ reason: rejectReason }),

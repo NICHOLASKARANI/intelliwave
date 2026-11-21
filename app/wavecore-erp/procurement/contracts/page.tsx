@@ -10,6 +10,7 @@ import {
   Layers, Sparkles, Clock, FileText, Landmark, ArrowRight, Trash2,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Contract {
   id: string
   contractNumber: string
@@ -113,7 +114,7 @@ export default function ContractsPage() {
       p.set('limit', String(limit))
       p.set('offset', String(offset))
 
-      const res = await fetch('/api/wavecore/procurement/contracts?' + p.toString())
+      const res = await authedFetch('/api/wavecore/procurement/contracts?' + p.toString())
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setContracts(data.contracts || [])
@@ -125,7 +126,7 @@ export default function ContractsPage() {
   const deleteContract = async (id: string, contractNumber: string) => {
     if (!confirm('Delete contract ' + contractNumber + '? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/contracts/' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/procurement/contracts/' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
       })
@@ -462,7 +463,7 @@ function ContractWizard({ onClose, onCreated }: { onClose: () => void; onCreated
         })),
       }
 
-      const res = await fetch('/api/wavecore/procurement/contracts', {
+      const res = await authedFetch('/api/wavecore/procurement/contracts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),

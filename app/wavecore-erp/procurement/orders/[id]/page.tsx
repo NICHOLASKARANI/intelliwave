@@ -11,6 +11,7 @@ import {
   DollarSign, Clock, Plus, Trash2, Save, Package2, Hash, Info,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'approvals' | 'activity' | 'related'
 
 interface POHook {
@@ -80,7 +81,7 @@ export default function PurchaseOrderDetailPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/purchase-orders/' + id)
+      const res = await authedFetch('/api/wavecore/procurement/purchase-orders/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setPo(data.purchaseOrder)
@@ -98,7 +99,7 @@ export default function PurchaseOrderDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/purchase-orders/' + id + '/' + endpoint, {
+      const res = await authedFetch('/api/wavecore/procurement/purchase-orders/' + id + '/' + endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: body ? JSON.stringify(body) : '{}',
@@ -120,7 +121,7 @@ export default function PurchaseOrderDetailPage() {
     if (!newLine.description.trim()) { setError('Description required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/purchase-orders/' + id + '/lines', {
+      const res = await authedFetch('/api/wavecore/procurement/purchase-orders/' + id + '/lines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(newLine),
@@ -136,7 +137,7 @@ export default function PurchaseOrderDetailPage() {
 
   const removeLine = async (lineId: string) => {
     if (!confirm('Remove this line?')) return
-    const res = await fetch('/api/wavecore/procurement/purchase-orders/' + id + '/lines/' + lineId, {
+    const res = await authedFetch('/api/wavecore/procurement/purchase-orders/' + id + '/lines/' + lineId, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -146,7 +147,7 @@ export default function PurchaseOrderDetailPage() {
 
   const deletePO = async () => {
     if (!confirm('Delete this draft PO? Cannot be undone.')) return
-    const res = await fetch('/api/wavecore/procurement/purchase-orders/' + id, {
+    const res = await authedFetch('/api/wavecore/procurement/purchase-orders/' + id, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })

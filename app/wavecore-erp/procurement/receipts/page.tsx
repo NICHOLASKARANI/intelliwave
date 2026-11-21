@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CheckCircle, Plus, Download, Loader2, Trash2, Search } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface GoodsReceipt {
   id: string
   purchaseOrderId: string
@@ -25,7 +26,7 @@ export default function GoodsReceiptsPage() {
 
   const fetchReceipts = async () => {
     try {
-      const res = await fetch('/api/wavecore/goods-receipts')
+      const res = await authedFetch('/api/wavecore/goods-receipts')
       const data = await res.json()
       setReceipts(data.receipts || [])
     } catch (error) {
@@ -38,7 +39,7 @@ export default function GoodsReceiptsPage() {
   const addReceipt = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/wavecore/goods-receipts', {
+      const res = await authedFetch('/api/wavecore/goods-receipts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -56,7 +57,7 @@ export default function GoodsReceiptsPage() {
   const deleteReceipt = async (id: string) => {
     if (!confirm('Delete this goods receipt?')) return
     try {
-      await fetch(`/api/wavecore/goods-receipts?id=${id}`, { method: 'DELETE' })
+      await authedFetch(`/api/wavecore/goods-receipts?id=${id}`, { method: 'DELETE' })
       fetchReceipts()
     } catch (error) {
       console.error('Failed to delete receipt')

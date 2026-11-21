@@ -9,6 +9,7 @@ import {
   TrendingUp, CheckCircle2, BarChart3, Trash2
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function ValuationPage() {
   const [products, setProducts] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
@@ -22,7 +23,7 @@ export default function ValuationPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/inventory/valuation?method=' + (m || method))
+      const res = await authedFetch('/api/wavecore/inventory/valuation?method=' + (m || method))
       const data = await res.json()
       setProducts(data.products || [])
       setSummary(data.summary || {})
@@ -42,7 +43,7 @@ export default function ValuationPage() {
   const deleteProduct = async (id: string, name: string) => {
     if (!confirm('Delete product ' + name + '?')) return
     try {
-      const res = await fetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
+      const res = await authedFetch('/api/wavecore/inventory/products?id=' + id, { method: 'DELETE' })
       if (res.ok) fetchData()
     } catch (err) {
       setError('Delete failed')

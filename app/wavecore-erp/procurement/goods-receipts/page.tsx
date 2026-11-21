@@ -9,7 +9,8 @@ import {
   Truck, CheckCheck, Layers, ChevronLeft, ChevronRight, Save,
   Warehouse, FileText, Users, Calendar, Package2, ArrowRight, Trash2,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface GRN {
   id: string
   grnNumber: string
@@ -125,7 +126,7 @@ export default function GoodsReceiptsPage() {
       p.set('limit', String(limit))
       p.set('offset', String(offset))
 
-      const res = await fetch('/api/wavecore/procurement/goods-receipts?' + p.toString())
+      const res = await authedFetch('/api/wavecore/procurement/goods-receipts?' + p.toString())
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setGrns(data.goodsReceipts || [])
@@ -137,7 +138,7 @@ export default function GoodsReceiptsPage() {
   const deleteGRN = async (id: string, number: string) => {
     if (!confirm('Delete goods receipt ' + number + '? This cannot be undone.')) return
     try {
-      const res = await fetch('/api/wavecore/procurement/goods-receipts/' + encodeURIComponent(id), {
+      const res = await authedFetch('/api/wavecore/procurement/goods-receipts/' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '') },
       })
@@ -499,7 +500,7 @@ function ReceiveWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
         })),
       }
 
-      const res = await fetch('/api/wavecore/procurement/goods-receipts', {
+      const res = await authedFetch('/api/wavecore/procurement/goods-receipts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -509,7 +510,7 @@ function ReceiveWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
 
       const grnId = data.goodsReceipt?.id
       if (submit && grnId) {
-        const sres = await fetch('/api/wavecore/procurement/goods-receipts/' + grnId + '/submit', {
+        const sres = await authedFetch('/api/wavecore/procurement/goods-receipts/' + grnId + '/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         })

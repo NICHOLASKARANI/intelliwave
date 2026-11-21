@@ -9,7 +9,8 @@ import {
   ChevronLeft, ChevronRight, Save, FileSignature, Package, FileText,
   Sparkles, TrendingUp, Award, Hash, MapPin, DollarSign, ArrowRight,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface RFQ {
   id: string
   rfqNumber: string
@@ -461,7 +462,7 @@ function RFQWizard({ onClose, onCreated }: { onClose: () => void; onCreated: () 
         supplierIds: selectedSuppliers.map(s => s.id),
       }
 
-      const res = await fetch('/api/wavecore/procurement/rfqs', {
+      const res = await authedFetch('/api/wavecore/procurement/rfqs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),

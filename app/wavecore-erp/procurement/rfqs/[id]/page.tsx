@@ -10,7 +10,8 @@ import {
   Users, ExternalLink, Calendar, Plus, Trash2, Award, TrendingUp,
   BarChart3, Sparkles, Package, Crown, ChevronRight, Clock, MapPin,
 } from 'lucide-react'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'invites' | 'quotes' | 'analysis' | 'related'
 
 interface RFQHook {
@@ -76,7 +77,7 @@ export default function RFQDetailPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/rfqs/' + id)
+      const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setRfq(data.rfq)
@@ -85,7 +86,7 @@ export default function RFQDetailPage() {
       setRequisition(data.requisition)
       setPo(data.purchaseOrder)
       // quotes
-      const qres = await fetch('/api/wavecore/procurement/rfqs/' + id + '/quotes')
+      const qres = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/quotes')
       const qdata = await qres.json()
       if (qres.ok) setQuotes(qdata)
     } catch { setError('Network error') }
@@ -97,7 +98,7 @@ export default function RFQDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/rfqs/' + id + '/lifecycle', {
+      const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/lifecycle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action, ...(extra || {}) }),
@@ -117,7 +118,7 @@ export default function RFQDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/rfqs/' + id + '/analysis', {
+      const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: '{}',
@@ -135,7 +136,7 @@ export default function RFQDetailPage() {
     if (!newLine.description.trim()) { setError('Description required'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/rfqs/' + id + '/lines', {
+      const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/lines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(newLine),
@@ -151,7 +152,7 @@ export default function RFQDetailPage() {
 
   const removeLine = async (lineId: string) => {
     if (!confirm('Remove this line?')) return
-    const res = await fetch('/api/wavecore/procurement/rfqs/' + id + '/lines/' + lineId, {
+    const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/lines/' + lineId, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -165,7 +166,7 @@ export default function RFQDetailPage() {
     setSelectedInviteIds([])
     if (invitePicker.length === 0) {
       try {
-        const res = await fetch('/api/wavecore/procurement/suppliers?status=ACTIVE&limit=200')
+        const res = await authedFetch('/api/wavecore/procurement/suppliers?status=ACTIVE&limit=200')
         const data = await res.json()
         if (res.ok) setInvitePicker(data.suppliers || [])
       } catch {}
@@ -176,7 +177,7 @@ export default function RFQDetailPage() {
     if (selectedInviteIds.length === 0) { setError('Pick at least one supplier'); return }
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/rfqs/' + id + '/invites', {
+      const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ supplierIds: selectedInviteIds }),
@@ -191,7 +192,7 @@ export default function RFQDetailPage() {
 
   const removeInvite = async (inviteId: string) => {
     if (!confirm('Remove this invite?')) return
-    const res = await fetch('/api/wavecore/procurement/rfqs/' + id + '/invites/' + inviteId, {
+    const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/invites/' + inviteId, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
@@ -232,7 +233,7 @@ export default function RFQDetailPage() {
           notes: l.notes || undefined,
         })),
       }
-      const res = await fetch('/api/wavecore/procurement/rfqs/' + id + '/quotes', {
+      const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id + '/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(payload),
@@ -385,7 +386,7 @@ export default function RFQDetailPage() {
             {isDraft && (
               <button onClick={async () => {
                 if (!confirm('Delete this draft RFQ? Cannot be undone.')) return
-                const res = await fetch('/api/wavecore/procurement/rfqs/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+                const res = await authedFetch('/api/wavecore/procurement/rfqs/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
                 if (res.ok) router.push('/wavecore-erp/procurement/rfqs')
                 else { const d = await res.json(); setError(d.error || 'Delete failed') }
               }} className="px-4 py-2.5 rounded-xl bg-red-700/80 hover:bg-red-700 text-white font-bold flex items-center gap-2">

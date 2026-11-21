@@ -12,7 +12,8 @@ import {
   ShieldCheck, AlertOctagon, Sparkles, RotateCw, CheckCheck,
 } from 'lucide-react'
 import ActivityFeed from '../../_components/ActivityFeed'
-
+
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 type Tab = 'overview' | 'lines' | 'match' | 'activity' | 'related'
 
 interface InvHook {
@@ -71,7 +72,7 @@ export default function SupplierInvoiceDetailPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices/' + id)
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setInvoice(data.supplierInvoice)
@@ -81,7 +82,7 @@ export default function SupplierInvoiceDetailPage() {
       setSupplier(data.supplier)
       // fetch activity
       try {
-        const ares = await fetch('/api/wavecore/procurement/supplier-invoices/' + id)
+        const ares = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + id)
         // activity is not included above — build a lightweight local list from events endpoint if exists, else empty
       } catch {}
     } catch { setError('Network error') }
@@ -93,7 +94,7 @@ export default function SupplierInvoiceDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices/' + id + '/match', {
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + id + '/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: '{}',
@@ -112,7 +113,7 @@ export default function SupplierInvoiceDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices/' + id + '/lifecycle', {
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + id + '/lifecycle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ action, ...(extra || {}) }),
@@ -132,7 +133,7 @@ export default function SupplierInvoiceDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/procurement/supplier-invoices/' + id + '/submit', {
+      const res = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + id + '/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: '{}',
@@ -146,7 +147,7 @@ export default function SupplierInvoiceDetailPage() {
 
   const deleteInvoice = async () => {
     if (!confirm('Delete this DRAFT invoice? Cannot be undone.')) return
-    const res = await fetch('/api/wavecore/procurement/supplier-invoices/' + id, {
+    const res = await authedFetch('/api/wavecore/procurement/supplier-invoices/' + id, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': csrf() },
     })
