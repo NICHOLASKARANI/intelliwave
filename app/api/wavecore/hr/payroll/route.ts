@@ -345,6 +345,11 @@ export async function POST(request: NextRequest) {
         [body.periodId, orgId]
       )
       const totals = totRes.rows[0] || {}
+      const itemCountRes = await pool.query(
+        'SELECT COUNT(*)::int AS c FROM "PayrollItem" WHERE "payrollPeriodId" = $1 AND "organizationId" = $2',
+        [body.periodId, orgId]
+      )
+      const itemCount = itemCountRes.rows[0] ? itemCountRes.rows[0].c : created
       const periodRes = await pool.query(
         'SELECT "journalEntryId", "paymentDate", "startDate" FROM "PayrollPeriod" WHERE id = $1 AND "organizationId" = $2',
         [body.periodId, orgId]
@@ -357,7 +362,7 @@ export async function POST(request: NextRequest) {
           const je = await postJournal(glClient, {
             organizationId: orgId,
             date: periodRes.rows[0].paymentDate || periodRes.rows[0].startDate,
-            description: 'Payroll - ' + created + ' employees',
+            description: 'Payroll - ' + itemCount + ' employees',
             reference: 'PAYROLL-' + body.periodId.slice(0, 8),
             lines: [
               { accountCode: '5100', description: 'Salaries Expense', debit: Number(totals.gross), credit: 0 },
