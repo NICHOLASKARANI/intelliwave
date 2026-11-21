@@ -8,6 +8,7 @@ import {
   CheckCircle2, Clock, AlertTriangle, Star, Ticket, Activity, Sparkles,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function AgentsPage() {
   const [tickets, setTickets] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
@@ -21,7 +22,7 @@ export default function AgentsPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets')
+      const res = await authedFetch('/api/wavecore/helpdesk/tickets')
       const data = await res.json()
       setTickets(data.tickets || [])
       setSummary(data.summary || {})
@@ -38,7 +39,7 @@ export default function AgentsPage() {
     if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Seed failed'); return }
       alert(data.message || 'Seeded')
@@ -50,7 +51,7 @@ export default function AgentsPage() {
     if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Clear failed'); return }
       alert(data.message || 'Cleared')
@@ -134,7 +135,7 @@ export default function AgentsPage() {
     if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Seed failed'); return }
       alert(data.message || 'Seeded')
@@ -146,7 +147,7 @@ export default function AgentsPage() {
     if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Clear failed'); return }
       alert(data.message || 'Cleared')

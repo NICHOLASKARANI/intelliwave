@@ -9,6 +9,7 @@ import {
   CheckCircle2, Link2, Unlink, Landmark, Upload, Save,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Txn {
   id: string
   date: string
@@ -67,7 +68,7 @@ export default function ReconciliationDetailPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/bank-reconciliation/' + id + '/candidates', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/bank-reconciliation/' + id + '/candidates', { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       setRec(data.reconciliation)
@@ -107,7 +108,7 @@ export default function ReconciliationDetailPage() {
     setWorking(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/bank-reconciliation/' + id + '/match', {
+      const res = await authedFetch('/api/wavecore/bank-reconciliation/' + id + '/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ transactionId: tid, journalEntryId: jid }),
@@ -125,7 +126,7 @@ export default function ReconciliationDetailPage() {
     if (!confirm('Unmatch this transaction?')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/bank-reconciliation/' + id + '/match?transactionId=' + txnId, {
+      const res = await authedFetch('/api/wavecore/bank-reconciliation/' + id + '/match?transactionId=' + txnId, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -153,7 +154,7 @@ export default function ReconciliationDetailPage() {
     if (adjForm.bankAccountId === adjForm.offsetAccountId) { setError('The two accounts must be different'); return }
     setWorking(true); setError('')
     try {
-      const res = await fetch('/api/wavecore/bank-reconciliation/' + id + '/adjustment', {
+      const res = await authedFetch('/api/wavecore/bank-reconciliation/' + id + '/adjustment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(adjForm),
@@ -171,7 +172,7 @@ export default function ReconciliationDetailPage() {
     if (!confirm('Remove the posted adjustment for this reconciliation?')) return
     setWorking(true)
     try {
-      const res = await fetch('/api/wavecore/bank-reconciliation/' + id + '/adjustment', {
+      const res = await authedFetch('/api/wavecore/bank-reconciliation/' + id + '/adjustment', {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })

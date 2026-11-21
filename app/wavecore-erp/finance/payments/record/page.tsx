@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, DollarSign, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Invoice {
   id: string
   number: string
@@ -30,7 +31,7 @@ export default function RecordPaymentPage() {
   useEffect(() => {
     async function fetchInvoices() {
       try {
-        const res = await fetch('/api/wavecore/finance/invoices')
+        const res = await authedFetch('/api/wavecore/finance/invoices')
         if (res.ok) {
           const data = await res.json()
           setInvoices(data.invoices?.filter((i: Invoice) => i.status !== 'PAID') || [])
@@ -54,7 +55,7 @@ export default function RecordPaymentPage() {
     }
 
     try {
-      const res = await fetch('/api/wavecore/finance/payments', {
+      const res = await authedFetch('/api/wavecore/finance/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ invoiceId, amount: parseFloat(amount), date, method, reference: reference || null }),

@@ -9,6 +9,7 @@ import {
   FileEdit, AlertTriangle, CheckCircle2, Hash,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function ArticleDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -23,7 +24,7 @@ export default function ArticleDetailPage() {
   const fetchArticle = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id)
+      const res = await authedFetch('/api/wavecore/helpdesk/knowledge-base/' + id)
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed'); return }
       setArticle(data.article)
@@ -42,7 +43,7 @@ export default function ArticleDetailPage() {
   const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 2500) }
 
   const vote = async (helpful: boolean) => {
-    await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, {
+    await authedFetch('/api/wavecore/helpdesk/knowledge-base/' + id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify(helpful ? { helpful: 1 } : { notHelpful: 1 }),

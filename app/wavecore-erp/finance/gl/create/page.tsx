@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function CreateAccountPage() {
   const [code, setCode] = useState('')
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
@@ -31,7 +32,7 @@ export default function CreateAccountPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/wavecore/gl/chart-of-accounts', {
+      const res = await authedFetch('/api/wavecore/gl/chart-of-accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ code, name, type, description: description || null }),

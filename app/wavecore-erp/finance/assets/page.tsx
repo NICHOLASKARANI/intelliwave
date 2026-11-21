@@ -9,6 +9,7 @@ import {
   ChevronRight, Calendar as CalIcon, Printer
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Asset {
   id: string
   code: string
@@ -139,7 +140,7 @@ export default function AssetsPage() {
       }
       if (editingId) {
         payload.status = formData.status
-        const res = await fetch('/api/wavecore/finance/assets/' + editingId, {
+        const res = await authedFetch('/api/wavecore/finance/assets/' + editingId, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
           body: JSON.stringify(payload),
@@ -148,7 +149,7 @@ export default function AssetsPage() {
         if (!res.ok) { setError(data.error || 'Save failed'); return }
         flash('Asset updated')
       } else {
-        const res = await fetch('/api/wavecore/finance/assets', {
+        const res = await authedFetch('/api/wavecore/finance/assets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
           body: JSON.stringify(payload),
@@ -168,7 +169,7 @@ export default function AssetsPage() {
     if (!confirm('Delete ' + a.code + ' ' + a.name + '?')) return
     setWorking('del-' + a.id)
     try {
-      const res = await fetch('/api/wavecore/finance/assets/' + a.id, {
+      const res = await authedFetch('/api/wavecore/finance/assets/' + a.id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -184,7 +185,7 @@ export default function AssetsPage() {
     setScheduleFor(a)
     setScheduleLoading(true)
     try {
-      const res = await fetch('/api/wavecore/finance/assets/' + a.id + '/schedule', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/finance/assets/' + a.id + '/schedule', { cache: 'no-store' })
       const data = await res.json()
       setSchedule(data.schedule || [])
     } catch { setError('Failed to load schedule') }
@@ -195,7 +196,7 @@ export default function AssetsPage() {
     if (!confirm('Post this month\'s depreciation for ' + a.code + '?')) return
     setWorking('dep-' + a.id)
     try {
-      const res = await fetch('/api/wavecore/finance/assets/' + a.id + '/depreciate', {
+      const res = await authedFetch('/api/wavecore/finance/assets/' + a.id + '/depreciate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({}),
@@ -213,7 +214,7 @@ export default function AssetsPage() {
     if (!confirm('Post this month\'s depreciation for every active asset with accounts set?')) return
     setWorking('batch')
     try {
-      const res = await fetch('/api/wavecore/finance/assets/depreciate-all', {
+      const res = await authedFetch('/api/wavecore/finance/assets/depreciate-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({}),

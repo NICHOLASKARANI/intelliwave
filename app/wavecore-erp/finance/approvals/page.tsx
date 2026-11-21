@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, CheckCircle2, XCircle, AlertTriangle, Clock, Check, X } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Approval {
   id: string
   documentType: string
@@ -35,7 +36,7 @@ export default function ApprovalsPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/approvals/inbox?status=' + status, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/finance/approvals/inbox?status=' + status, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setApprovals(data.approvals || [])
@@ -50,7 +51,7 @@ export default function ApprovalsPage() {
     if (!confirm('Approve ' + (a.documentNumber || a.id) + '?')) return
     setBusy(a.id); setError(''); setSuccess('')
     try {
-      const res = await fetch('/api/wavecore/finance/approvals/' + a.id + '/approve', {
+      const res = await authedFetch('/api/wavecore/finance/approvals/' + a.id + '/approve', {
         method: 'POST',
         headers: { 'X-CSRF-Token': csrf() },
       })
@@ -68,7 +69,7 @@ export default function ApprovalsPage() {
     const a = rejectModal
     setBusy(a.id); setError(''); setSuccess('')
     try {
-      const res = await fetch('/api/wavecore/finance/approvals/' + a.id + '/reject', {
+      const res = await authedFetch('/api/wavecore/finance/approvals/' + a.id + '/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ reason: rejectReason }),

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function CreateTicketPage() {
   const [subject, setSubject] = useState('')
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
@@ -26,7 +27,7 @@ export default function CreateTicketPage() {
     if (!subject || !description) { setError('Subject and description required'); setLoading(false); return }
 
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets', {
+      const res = await authedFetch('/api/wavecore/helpdesk/tickets', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ subject, description, priority }),
       })

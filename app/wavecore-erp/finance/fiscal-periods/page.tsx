@@ -8,6 +8,7 @@ import {
   CheckCircle2, RefreshCw,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Period {
   id: string
   name: string
@@ -42,7 +43,7 @@ export default function FiscalPeriodsPage() {
   const load = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true); else setRefreshing(true)
     try {
-      const res = await fetch('/api/wavecore/finance/fiscal-periods', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/finance/fiscal-periods', { cache: 'no-store' })
       const data = await res.json()
       setYears(data.fiscalYears || [])
     } catch { setError('Network error') }
@@ -59,7 +60,7 @@ export default function FiscalPeriodsPage() {
     e.preventDefault()
     setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/fiscal-periods', {
+      const res = await authedFetch('/api/wavecore/finance/fiscal-periods', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData),
@@ -78,7 +79,7 @@ export default function FiscalPeriodsPage() {
     setWorking(p.id)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/fiscal-periods/' + p.id, {
+      const res = await authedFetch('/api/wavecore/finance/fiscal-periods/' + p.id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ isClosed: !p.isClosed }),

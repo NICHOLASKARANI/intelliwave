@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Plus, CheckCircle2, AlertTriangle, FileMinus, X } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface CreditNote {
   id: string
   creditNoteNumber: string
@@ -42,7 +43,7 @@ export default function CreditNotesPage() {
   const load = async () => {
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/credit-notes/' + tab, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/finance/credit-notes/' + tab, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setNotes(data.creditNotes || [])
@@ -68,7 +69,7 @@ export default function CreditNotesPage() {
       if (tab === 'customer') body.customerName = form.customerName || null
       else body.supplierName = form.supplierName || null
 
-      const res = await fetch('/api/wavecore/finance/credit-notes/' + tab, {
+      const res = await authedFetch('/api/wavecore/finance/credit-notes/' + tab, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(body),
@@ -88,7 +89,7 @@ export default function CreditNotesPage() {
     if (!confirm('Approve credit note ' + n.creditNoteNumber + '? This will post to the General Ledger.')) return
     setBusy(n.id); setError(''); setSuccess('')
     try {
-      const res = await fetch('/api/wavecore/finance/credit-notes/' + tab + '/' + n.id + '/approve', {
+      const res = await authedFetch('/api/wavecore/finance/credit-notes/' + tab + '/' + n.id + '/approve', {
         method: 'POST',
         headers: { 'X-CSRF-Token': csrf() },
       })

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, FileText, Printer, Trash2, Loader2, Search, Banknote, Check } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Reconciliation {
   id: string
   name: string
@@ -40,7 +41,7 @@ export default function ReconciliationPage() {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/bank-reconciliation')
+      const res = await authedFetch('/api/wavecore/bank-reconciliation')
       const data = await res.json()
       setReconciliations(data.reconciliations || [])
     } catch (err) {
@@ -54,7 +55,7 @@ export default function ReconciliationPage() {
     e.preventDefault()
     setError('')
     try {
-      const res = await fetch('/api/wavecore/bank-reconciliation', {
+      const res = await authedFetch('/api/wavecore/bank-reconciliation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData)
@@ -75,7 +76,7 @@ export default function ReconciliationPage() {
   const deleteReconciliation = async (id: string) => {
     if (!confirm('Delete this reconciliation?')) return
     try {
-      await fetch(`/api/wavecore/bank-reconciliation?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      await authedFetch(`/api/wavecore/bank-reconciliation?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       fetchReconciliations()
     } catch (err) {
       setError('Delete failed')

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Plus, FileText, Download, ArrowLeft, Loader2, Printer, Trash2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface JournalEntry {
   id: string
   number: string
@@ -29,7 +30,7 @@ function downloadJournalPdf(id: string) {
   async function fetchEntries(opts?: { silent?: boolean }) {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/gl/journal-entries')
+      const res = await authedFetch('/api/wavecore/gl/journal-entries')
       if (res.ok) {
         const data = await res.json()
         setEntries(data.entries || [])
@@ -57,7 +58,7 @@ function downloadJournalPdf(id: string) {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this journal entry? This cannot be undone.')) return
     try {
-      const res = await fetch(`/api/wavecore/gl/journal-entries/${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/gl/journal-entries/${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) {
         fetchEntries()
       } else {

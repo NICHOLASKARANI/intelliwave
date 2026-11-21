@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface LineItem {
   description: string
   quantity: number
@@ -47,7 +48,7 @@ export default function CreateInvoicePage() {
     setCurrency(code)
     if (code === 'KES') { setFxRate(1); setRateInfo(null); return }
     try {
-      const res = await fetch(`/api/wavecore/currency/rate?from=${code}&to=KES&date=${date}`, { headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/currency/rate?from=${code}&to=KES&date=${date}`, { headers: { 'X-CSRF-Token': csrf() } })
       const d = await res.json()
       setFxRate(Number(d.rate) || 1)
       setRateInfo({ source: d.source || 'unknown', effectiveDate: d.effectiveDate || date, warning: d.warning })
@@ -81,7 +82,7 @@ export default function CreateInvoicePage() {
 
     try {
       // Step 1: Create customer (or get existing)
-      const customerRes = await fetch('/api/wavecore/crm/customers', {
+      const customerRes = await authedFetch('/api/wavecore/crm/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({
@@ -99,7 +100,7 @@ export default function CreateInvoicePage() {
 
       // If customer already exists, search for them
       if (!customerRes.ok) {
-        const searchRes = await fetch(`/api/wavecore/crm/customers?search=${encodeURIComponent(customerName)}`)
+        const searchRes = await authedFetch(`/api/wavecore/crm/customers?search=${encodeURIComponent(customerName)}`)
         if (searchRes.ok) {
           const searchData = await searchRes.json()
           if (searchData.customers?.length > 0) {
@@ -113,7 +114,7 @@ export default function CreateInvoicePage() {
       }
 
       // Step 2: Create invoice
-      const invoiceRes = await fetch('/api/wavecore/finance/invoices', {
+      const invoiceRes = await authedFetch('/api/wavecore/finance/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

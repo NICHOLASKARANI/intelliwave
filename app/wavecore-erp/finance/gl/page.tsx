@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Plus, Download, Zap, FileText, ArrowLeft, Loader2, LayoutDashboard, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Account {
   id: string
   code: string
@@ -24,7 +25,7 @@ export default function ChartOfAccountsPage() {
   async function fetchAccounts() {
     setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/gl/chart-of-accounts')
+      const res = await authedFetch('/api/wavecore/gl/chart-of-accounts')
       if (res.ok) {
         const data = await res.json()
         setAccounts(data.accounts || [])
@@ -43,7 +44,7 @@ export default function ChartOfAccountsPage() {
   const handleQuickSetup = async () => {
     setQuickSetupLoading(true)
     try {
-      const res = await fetch('/api/wavecore/gl/chart-of-accounts/quick-setup', {
+      const res = await authedFetch('/api/wavecore/gl/chart-of-accounts/quick-setup', {
         method: 'POST',
         headers: { 'X-CSRF-Token': csrf() },
       })

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, DollarSign, Download, Printer, Trash2, Loader2, Search } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Payment {
   id: string
   receiptNumber: string
@@ -36,7 +37,7 @@ export default function PaymentsPage() {
   const fetchPayments = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/finance/payments')
+      const res = await authedFetch('/api/wavecore/finance/payments')
       const data = await res.json()
       setPayments(data.payments || [])
     } catch (err) {
@@ -49,7 +50,7 @@ export default function PaymentsPage() {
   const deletePayment = async (id: string) => {
     if (!confirm('Delete this payment?')) return
     try {
-      const res = await fetch(`/api/wavecore/finance/payments?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/finance/payments?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) fetchPayments()
     } catch (err) {
       setError('Delete failed')

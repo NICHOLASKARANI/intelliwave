@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, AlertCircle, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function AddBankAccountPage() {
   const [name, setName] = useState('')
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
@@ -30,7 +31,7 @@ export default function AddBankAccountPage() {
     }
 
     try {
-      const res = await fetch('/api/wavecore/bank-accounts', {
+      const res = await authedFetch('/api/wavecore/bank-accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

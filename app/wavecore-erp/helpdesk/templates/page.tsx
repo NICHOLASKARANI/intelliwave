@@ -8,6 +8,7 @@ import {
   FileEdit, Sparkles, Copy, Hash, FolderOpen,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const CATEGORIES = ['GENERAL', 'BILLING', 'TECHNICAL', 'SALES', 'SUPPORT', 'FOLLOWUP']
 
 export default function TemplatesPage() {
@@ -29,7 +30,7 @@ export default function TemplatesPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/templates')
+      const res = await authedFetch('/api/wavecore/helpdesk/templates')
       const data = await res.json()
       setTemplates(data.templates || [])
       setSummary(data.summary || {})
@@ -61,7 +62,7 @@ export default function TemplatesPage() {
     if (!form.body.trim()) { setError('Body required'); return }
     try {
       const url = editing ? '/api/wavecore/helpdesk/templates/' + editing.id : '/api/wavecore/helpdesk/templates'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
@@ -77,7 +78,7 @@ export default function TemplatesPage() {
     if (!confirm('Delete template "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/templates/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/templates/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         alert(data.error || ('Delete failed (HTTP ' + res.status + ')'))

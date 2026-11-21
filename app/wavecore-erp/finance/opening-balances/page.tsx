@@ -8,6 +8,7 @@ import {
   Wallet, Info,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Account {
   id: string
   code: string
@@ -41,7 +42,7 @@ export default function OpeningBalancesPage() {
   const load = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true); else setRefreshing(true)
     try {
-      const res = await fetch('/api/wavecore/finance/opening-balances', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/finance/opening-balances', { cache: 'no-store' })
       const data = await res.json()
       setAccounts(data.accounts || [])
       setCurrentEntry(data.currentEntry || null)
@@ -87,7 +88,7 @@ export default function OpeningBalancesPage() {
 
     setSaving(true); setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/opening-balances', {
+      const res = await authedFetch('/api/wavecore/finance/opening-balances', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ asOf, lines }),

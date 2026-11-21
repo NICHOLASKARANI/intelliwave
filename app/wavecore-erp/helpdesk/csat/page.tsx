@@ -8,6 +8,7 @@ import {
   MessageSquare, BarChart3, Smile, Frown, Meh, Sparkles,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function CSATPage() {
   const [tickets, setTickets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -17,7 +18,7 @@ export default function CSATPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets')
+      const res = await authedFetch('/api/wavecore/helpdesk/tickets')
       const data = await res.json()
       setTickets(data.tickets || [])
     } catch { setError('Network error') }
@@ -33,7 +34,7 @@ export default function CSATPage() {
     if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Seed failed'); return }
       alert(data.message || 'Seeded')
@@ -45,7 +46,7 @@ export default function CSATPage() {
     if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Clear failed'); return }
       alert(data.message || 'Cleared')
@@ -87,7 +88,7 @@ export default function CSATPage() {
     if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Seed failed'); return }
       alert(data.message || 'Seeded')
@@ -99,7 +100,7 @@ export default function CSATPage() {
     if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Clear failed'); return }
       alert(data.message || 'Cleared')
@@ -174,7 +175,7 @@ export default function CSATPage() {
     if (!confirm('Create 8 demo tickets with ratings, assignees, and response times?')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'POST', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Seed failed'); return }
       alert(data.message || 'Seeded')
@@ -186,7 +187,7 @@ export default function CSATPage() {
     if (!confirm('Delete all SEED demo tickets? Real tickets are not touched.')) return
     setSeeding(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/seed-demo', { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Clear failed'); return }
       alert(data.message || 'Cleared')

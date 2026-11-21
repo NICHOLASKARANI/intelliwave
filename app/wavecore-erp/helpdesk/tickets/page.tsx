@@ -9,6 +9,7 @@ import {
   TrendingUp, Timer, Star, Activity,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const STATUSES = ['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED']
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
 
@@ -51,7 +52,7 @@ export default function TicketsPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets')
+      const res = await authedFetch('/api/wavecore/helpdesk/tickets')
       const data = await res.json()
       setTickets(data.tickets || [])
       setSummary(data.summary || {})
@@ -73,7 +74,7 @@ export default function TicketsPage() {
     if (!confirm('Delete ticket "' + subject + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/tickets/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         alert(data.error || ('Delete failed (HTTP ' + res.status + ')'))

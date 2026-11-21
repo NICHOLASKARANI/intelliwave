@@ -8,6 +8,7 @@ import {
   TrendingUp, Zap, Target, Wand2, Gauge,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const PRIORITY_KEYWORDS = {
   URGENT: ['urgent', 'critical', 'down', 'broken', 'outage', 'emergency', 'asap', 'immediately'],
   HIGH: ['important', 'issue', 'problem', 'error', 'failed', 'not working', 'bug', 'cannot'],
@@ -52,7 +53,7 @@ export default function AIClassificationPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets')
+      const res = await authedFetch('/api/wavecore/helpdesk/tickets')
       const data = await res.json()
       setTickets(data.tickets || [])
     } catch { setError('Network error') }
@@ -85,7 +86,7 @@ export default function AIClassificationPage() {
     let updated = 0
     for (const t of needsUpdate) {
       try {
-        const res = await fetch('/api/wavecore/helpdesk/tickets/' + t.id, {
+        const res = await authedFetch('/api/wavecore/helpdesk/tickets/' + t.id, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
           body: JSON.stringify({ priority: t.suggestion.priority, category: t.suggestion.category }),

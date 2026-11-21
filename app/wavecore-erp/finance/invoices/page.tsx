@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Plus, FileText, Search, Download, Trash2, Eye, Loader2, Printer, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Invoice {
   id: string
   number: string
@@ -54,7 +55,7 @@ export default function InvoicesPage() {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/invoices')
+      const res = await authedFetch('/api/wavecore/finance/invoices')
       const data = await res.json()
       setInvoices(data.invoices || [])
     } catch (err) {
@@ -68,7 +69,7 @@ export default function InvoicesPage() {
     if (!confirm('Delete this invoice permanently?')) return
     setDeleting(id)
     try {
-      const res = await fetch(`/api/wavecore/finance/invoices?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch(`/api/wavecore/finance/invoices?id=${id}`, { method: 'DELETE' , headers: { 'X-CSRF-Token': csrf() } })
       if (res.ok) {
         fetchInvoices()
       }
@@ -81,7 +82,7 @@ export default function InvoicesPage() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await fetch('/api/wavecore/finance/invoices', {
+      await authedFetch('/api/wavecore/finance/invoices', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ id, status })

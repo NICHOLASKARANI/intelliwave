@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Plus, Trash2, AlertCircle, CheckCircle, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Account {
   id: string
   code: string
@@ -43,7 +44,7 @@ export default function CreateJournalEntryPage() {
 
   async function fetchAccounts() {
     try {
-      const res = await fetch('/api/wavecore/gl/chart-of-accounts')
+      const res = await authedFetch('/api/wavecore/gl/chart-of-accounts')
       if (res.ok) {
         const data = await res.json()
         setAccounts(data.accounts || [])
@@ -56,7 +57,7 @@ export default function CreateJournalEntryPage() {
   const handleQuickSetup = async () => {
     setQuickSetupLoading(true)
     try {
-      const res = await fetch('/api/wavecore/gl/chart-of-accounts/quick-setup', { method: 'POST' , headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/gl/chart-of-accounts/quick-setup', { method: 'POST' , headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json()
       if (res.ok) {
         await fetchAccounts()
@@ -104,7 +105,7 @@ export default function CreateJournalEntryPage() {
     if (!isBalanced) { setError('Debits must equal credits'); setLoading(false); return }
 
     try {
-      const res = await fetch('/api/wavecore/gl/journal-entries', {
+      const res = await authedFetch('/api/wavecore/gl/journal-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({

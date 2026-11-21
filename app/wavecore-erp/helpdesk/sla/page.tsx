@@ -8,6 +8,7 @@ import {
   ArrowUpDown, FileEdit, Sparkles, Clock, Shield, AlertTriangle, Timer,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
 
 const priorityStyle = (p: string) => {
@@ -37,7 +38,7 @@ export default function SLAPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/sla')
+      const res = await authedFetch('/api/wavecore/helpdesk/sla')
       const data = await res.json()
       setPolicies(data.policies || [])
       setSummary(data.summary || {})
@@ -72,7 +73,7 @@ export default function SLAPage() {
     if (!form.name.trim()) { setError('Name required'); return }
     try {
       const url = editing ? '/api/wavecore/helpdesk/sla/' + editing.id : '/api/wavecore/helpdesk/sla'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ...form, firstResponseHours: Number(form.firstResponseHours), resolutionHours: Number(form.resolutionHours) }),
@@ -88,7 +89,7 @@ export default function SLAPage() {
     if (!confirm('Delete policy "' + name + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/sla/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/sla/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         alert(data.error || ('Delete failed (HTTP ' + res.status + ')'))
@@ -102,7 +103,7 @@ export default function SLAPage() {
   }
 
   const toggle = async (p: any) => {
-    await fetch('/api/wavecore/helpdesk/sla/' + p.id, {
+    await authedFetch('/api/wavecore/helpdesk/sla/' + p.id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify({ active: !p.active }),

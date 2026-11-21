@@ -8,6 +8,7 @@ import {
   ArrowUpDown, FileEdit, Sparkles, Eye, ThumbsUp, EyeIcon, FileText,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 const CATEGORIES = ['GENERAL', 'BILLING', 'TECHNICAL', 'ACCOUNT', 'FEATURE', 'FAQ']
 const STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED']
 
@@ -34,7 +35,7 @@ export default function KBPage() {
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/knowledge-base')
+      const res = await authedFetch('/api/wavecore/helpdesk/knowledge-base')
       const data = await res.json()
       setArticles(data.articles || [])
       setSummary(data.summary || {})
@@ -66,7 +67,7 @@ export default function KBPage() {
     if (!form.body.trim()) { setError('Body required'); return }
     try {
       const url = editing ? '/api/wavecore/helpdesk/knowledge-base/' + editing.id : '/api/wavecore/helpdesk/knowledge-base'
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(form),
@@ -82,7 +83,7 @@ export default function KBPage() {
     if (!confirm('Delete article "' + title + '"?')) return
     setDeleting(id)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
+      const res = await authedFetch('/api/wavecore/helpdesk/knowledge-base/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrf() } })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         alert(data.error || ('Delete failed (HTTP ' + res.status + ')'))
@@ -96,13 +97,13 @@ export default function KBPage() {
   }
 
   const openDetail = async (id: string) => {
-    const res = await fetch('/api/wavecore/helpdesk/knowledge-base/' + id)
+    const res = await authedFetch('/api/wavecore/helpdesk/knowledge-base/' + id)
     const data = await res.json()
     if (data.article) setDetail(data.article)
   }
 
   const vote = async (id: string, helpful: boolean) => {
-    await fetch('/api/wavecore/helpdesk/knowledge-base/' + id, {
+    await authedFetch('/api/wavecore/helpdesk/knowledge-base/' + id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
       body: JSON.stringify(helpful ? { helpful: 1 } : { notHelpful: 1 }),

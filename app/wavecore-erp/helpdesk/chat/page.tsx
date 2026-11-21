@@ -8,6 +8,7 @@ import {
   Clock, CheckCircle2, AlertCircle,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function ChatPage() {
   const [tickets, setTickets] = useState<any[]>([])
   const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
@@ -24,7 +25,7 @@ export default function ChatPage() {
   const fetchTickets = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets')
+      const res = await authedFetch('/api/wavecore/helpdesk/tickets')
       const data = await res.json()
       setTickets(data.tickets || [])
     } catch { setError('Network error') }
@@ -42,7 +43,7 @@ export default function ChatPage() {
   const loadComments = async (ticketId: string) => {
     setLoadingComments(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/comments?ticketId=' + ticketId)
+      const res = await authedFetch('/api/wavecore/helpdesk/comments?ticketId=' + ticketId)
       const data = await res.json()
       setComments(data.comments || [])
     } catch {}
@@ -60,7 +61,7 @@ export default function ChatPage() {
     if (!message.trim() || !selectedTicket) return
     setSending(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/comments', {
+      const res = await authedFetch('/api/wavecore/helpdesk/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify({ ticketId: selectedTicket.id, body: message.trim() }),

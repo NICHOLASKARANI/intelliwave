@@ -8,6 +8,7 @@ import {
   CheckCircle2, AlertTriangle,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface Budget {
   id: string
   name: string
@@ -54,7 +55,7 @@ export default function BudgetsPage() {
     if (!opts?.silent) setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/budgets', { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/finance/budgets', { cache: 'no-store' })
       const data = await res.json()
       setBudgets(data.budgets || [])
     } catch { setError('Failed to load') }
@@ -66,7 +67,7 @@ export default function BudgetsPage() {
     setError('')
     try {
       const yr = year || fiscalYear
-      const res = await fetch('/api/wavecore/finance/reports/budget-vs-actual?fiscalYear=' + yr, { cache: 'no-store' })
+      const res = await authedFetch('/api/wavecore/finance/reports/budget-vs-actual?fiscalYear=' + yr, { cache: 'no-store' })
       const data = await res.json()
       setVarRows(data.rows || [])
       setUnallocated(data.unallocated || [])
@@ -93,7 +94,7 @@ export default function BudgetsPage() {
     e.preventDefault()
     setError('')
     try {
-      const res = await fetch('/api/wavecore/finance/budgets', {
+      const res = await authedFetch('/api/wavecore/finance/budgets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
         body: JSON.stringify(formData),
@@ -112,7 +113,7 @@ export default function BudgetsPage() {
   const deleteBudget = async (id: string) => {
     if (!confirm('Delete this budget?')) return
     try {
-      await fetch('/api/wavecore/finance/budgets?id=' + id, {
+      await authedFetch('/api/wavecore/finance/budgets?id=' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-Token': csrf() },
       })
