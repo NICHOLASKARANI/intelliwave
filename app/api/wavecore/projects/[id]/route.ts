@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { postJournal } from '@/lib/wavecore/finance/post-journal'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -110,7 +111,43 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       values
     )
     if (result.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json({ project: result.rows[0] })
+
+    // === P1.5 PROJECTS-GL: post cost JE on COMPLETED (idempotent, non-fatal) ===
+    const updated = result.rows[0]
+    if (updated.status === 'COMPLETED' && !updated.journalEntryId && Number(updated.costToDate) > 0) {
+      const glClient = await pool.connect()
+      try {
+        await glClient.query('BEGIN')
+        const je = await postJournal(glClient, {
+          organizationId: session.organizationId,
+          date: new Date(),
+          description: 'Project complete - ' + updated.title,
+          reference: 'PROJECT-' + updated.id.slice(0, 8),
+          lines: [
+            { accountCode: '5100', description: 'Project labour cost', debit: Number(updated.costToDate), credit: 0 },
+            { accountCode: '2110', description: 'Salaries Payable', debit: 0, credit: Number(updated.costToDate) },
+          ],
+          sourceType: 'PROJECT',
+          sourceId: updated.id,
+          currency: updated.currency || 'KES',
+          fxRate: 1,
+        })
+        await glClient.query(
+          'UPDATE "Project" SET "journalEntryId" = $1, "completedAt" = NOW(), "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
+          [je.journalEntryId, updated.id, session.organizationId]
+        )
+        await glClient.query('COMMIT')
+        updated.journalEntryId = je.journalEntryId
+      } catch (jeErr) {
+        await glClient.query('ROLLBACK').catch(() => {})
+        console.error('[project GL posting failed]', jeErr)
+        // Non-fatal: status change still committed
+      } finally {
+        glClient.release()
+      }
+    }
+
+    return NextResponse.json({ project: updated })
   } catch (error) {
     console.error('Project PATCH error:', error)
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
