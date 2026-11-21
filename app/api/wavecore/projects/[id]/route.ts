@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const progress = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : Number(project.progress || 0)
     const totalHours = timeEntries.reduce((s: number, t: any) => s + Number(t.hours || 0), 0)
     const totalBudget = Number(project.budget || 0)
-    const totalCost = timeEntries.reduce((s: number, t: any) => s + Number(t.hours || 0) * Number(t.hourlyRate || 0), 0)
+    const totalCost = timeEntries.reduce((s: number, t: any) => s + Number(t.cost || 0), 0)
 
     return NextResponse.json({
       project: { ...project, progress },

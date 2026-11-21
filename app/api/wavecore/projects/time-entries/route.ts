@@ -90,6 +90,32 @@ export async function POST(request: NextRequest) {
       ).catch(() => {})
     }
 
+    // === P1.5 PROJECTS-GL: capture rate + cost, roll up to Project.costToDate ===
+    try {
+      const rateRes = await pool.query(
+        'SELECT "hourlyRate" FROM "ProjectMember" WHERE "projectId" = $1 AND "userId" = $2 AND "organizationId" = $3 LIMIT 1',
+        [body.projectId, session.userId, session.organizationId]
+      )
+      const rate = Number(rateRes.rows[0]?.hourlyRate || 0)
+      const cost = Number((hours * rate).toFixed(2))
+
+      await pool.query(
+        'UPDATE "TimeEntry" SET rate = $1, cost = $2 WHERE id = $3 AND "organizationId" = $4',
+        [rate, cost, result.rows[0].id, session.organizationId]
+      )
+
+      await pool.query(
+        'UPDATE "Project" SET "costToDate" = COALESCE("costToDate", 0) + $1, "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
+        [cost, body.projectId, session.organizationId]
+      )
+
+      result.rows[0].rate = rate
+      result.rows[0].cost = cost
+    } catch (rateErr) {
+      console.error('[time-entry rate/cost capture failed]', rateErr)
+      // Non-fatal: entry exists, rate/cost can be backfilled later
+    }
+
     return NextResponse.json({ entry: result.rows[0] }, { status: 201 })
   } catch (error) {
     console.error('TimeEntry POST error:', error)
