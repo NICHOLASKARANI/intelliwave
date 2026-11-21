@@ -52,7 +52,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const values: any[] = []
     let i = 1
 
-    for (const k of ['subject','description','status','priority','assigneeId','assigneeName','category','subcategory','channel','tags','customerName','customerEmail','customerPhone']) {
+    for (const k of ['subject','description','status','priority','assigneeId','assigneeName','category','subcategory','channel','tags','customerName','customerEmail','customerPhone','customerId','projectId','billableHours','hourlyRate','billableAmount']) {
       if (body[k] !== undefined) { sets.push(`"${k}" = $${i++}`); values.push(body[k] || null) }
     }
     if (body.satisfactionRating !== undefined) { sets.push(`"satisfactionRating" = $${i++}`); values.push(Number(body.satisfactionRating || 0)) }

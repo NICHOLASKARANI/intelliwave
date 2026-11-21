@@ -143,9 +143,10 @@ export async function POST(request: NextRequest) {
       `INSERT INTO "SupportTicket"
         (id, subject, description, priority, status, "userId", "organizationId",
          "customerName", "customerEmail", "customerPhone",
+         "customerId", "projectId", "billableHours", "hourlyRate", "billableAmount",
          category, subcategory, channel, tags, "assigneeId", "assigneeName", "dueAt",
          "createdAt", "updatedAt")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW(),NOW())
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW(),NOW())
        RETURNING *`,
       [
         id,
@@ -158,6 +159,11 @@ export async function POST(request: NextRequest) {
         body.customerName || null,
         body.customerEmail || null,
         body.customerPhone || null,
+        body.customerId || null,
+        body.projectId || null,
+        Number(body.billableHours || 0),
+        Number(body.hourlyRate || 0),
+        Number(body.billableAmount || 0),
         body.category || 'GENERAL',
         body.subcategory || null,
         body.channel || 'WEB',
