@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { postJournal } from '@/lib/wavecore/finance/post-journal'
 
 // ============================================================
 // Idempotent schema fix - ensures PayrollItem has the statutory
@@ -338,11 +339,56 @@ export async function POST(request: NextRequest) {
         created++
       }
 
-      // Mark period as PROCESSED
-      await pool.query(
-        `UPDATE "PayrollPeriod" SET status = 'PROCESSED', "updatedAt" = NOW() WHERE id = $1 AND "organizationId" = $2`,
+      // === P1.4 HR-GL: post payroll to GL ===
+      const totRes = await pool.query(
+        'SELECT COALESCE(SUM("grossPay"), 0) as gross, COALESCE(SUM(paye), 0) as paye, COALESCE(SUM(nssf), 0) as nssf, COALESCE(SUM(shif), 0) as shif, COALESCE(SUM("housingLevy"), 0) as housing, COALESCE(SUM("netPay"), 0) as net FROM "PayrollItem" WHERE "payrollPeriodId" = $1 AND "organizationId" = $2',
         [body.periodId, orgId]
       )
+      const totals = totRes.rows[0] || {}
+      const periodRes = await pool.query(
+        'SELECT "journalEntryId", "paymentDate", "startDate" FROM "PayrollPeriod" WHERE id = $1 AND "organizationId" = $2',
+        [body.periodId, orgId]
+      )
+      const existingJE = periodRes.rows[0] ? periodRes.rows[0].journalEntryId : null
+      if (!existingJE && Number(totals.gross) > 0) {
+        const glClient = await pool.connect()
+        try {
+          await glClient.query('BEGIN')
+          const je = await postJournal(glClient, {
+            organizationId: orgId,
+            date: periodRes.rows[0].paymentDate || periodRes.rows[0].startDate,
+            description: 'Payroll - ' + created + ' employees',
+            reference: 'PAYROLL-' + body.periodId.slice(0, 8),
+            lines: [
+              { accountCode: '5100', description: 'Salaries Expense', debit: Number(totals.gross), credit: 0 },
+              { accountCode: '2200', description: 'PAYE Payable', debit: 0, credit: Number(totals.paye) },
+              { accountCode: '2210', description: 'NSSF Payable', debit: 0, credit: Number(totals.nssf) },
+              { accountCode: '2220', description: 'SHIF Payable', debit: 0, credit: Number(totals.shif) },
+              { accountCode: '2230', description: 'Housing Levy Payable', debit: 0, credit: Number(totals.housing) },
+              { accountCode: '2110', description: 'Salaries Payable (net)', debit: 0, credit: Number(totals.net) },
+            ],
+            sourceType: 'PAYROLL',
+            sourceId: body.periodId,
+            currency: 'KES',
+            fxRate: 1,
+          })
+          await glClient.query(
+            `UPDATE "PayrollPeriod" SET "journalEntryId" = $1, status = 'PROCESSED', "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3`,
+            [je.journalEntryId, body.periodId, orgId]
+          )
+          await glClient.query('COMMIT')
+        } catch (jeErr) {
+          await glClient.query('ROLLBACK').catch(() => {})
+          console.error('[payroll GL posting failed]', jeErr)
+        } finally {
+          glClient.release()
+        }
+      } else {
+        await pool.query(
+          `UPDATE "PayrollPeriod" SET status = 'PROCESSED', "updatedAt" = NOW() WHERE id = $1 AND "organizationId" = $2`,
+          [body.periodId, orgId]
+        )
+      }
 
       return NextResponse.json({ success: true, created, skipped })
     }
