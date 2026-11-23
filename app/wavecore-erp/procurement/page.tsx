@@ -47,6 +47,7 @@ const MODULES: { href: string; label: string; icon: any; color: string; desc: st
   { href: '/wavecore-erp/procurement/payment-runs',      label: 'Payment Runs',     icon: Wallet,         color: 'from-green-600 to-emerald-700',    desc: 'Batch pay approved invoices' },
   { href: '/wavecore-erp/procurement/match', label: 'Match Dashboard', icon: Award, color: 'from-amber-600 to-yellow-700', desc: '3-way match gaps & exceptions' },
   { href: '/wavecore-erp/procurement/aging', label: 'Aging Report', icon: Calendar, color: 'from-rose-600 to-red-700', desc: 'Invoice aging & AP priorities' },
+  { href: '/wavecore-erp/procurement/reports/grni', label: 'GRNI Reconciliation', icon: Layers, color: 'from-cyan-600 to-teal-700', desc: 'Goods received not invoiced' },
 ]
 
 export default function ProcurementDashboardPage() {
