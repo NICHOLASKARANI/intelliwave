@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { assertProcurement, logProcurementEvent, procurementHandler } from '@/lib/wavecore/procurement-guard'
+import { postJournal } from '@/lib/wavecore/finance/post-journal'
 
 /**
  * POST /api/wavecore/procurement/goods-receipts/[id]/submit
@@ -123,6 +124,33 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
       )
     }
 
+
+    // === P6b: GRNI GL posting (DR Inventory / CR GRNI) ===
+    const glValue = lines.reduce((sum: number, l: any) => {
+      const accepted = Math.max(0, Number(l.receivedQty || 0) - Number(l.rejectedQty || 0) - Number(l.damagedQty || 0))
+      const price = Number(l.unitPrice || 0)
+      return sum + (accepted * price)
+    }, 0)
+    if (glValue > 0.01) {
+      const je = await postJournal(client, {
+        organizationId: g.organizationId,
+        date: grn.receivedAt || new Date(),
+        description: 'Goods received ' + grn.grnNumber,
+        reference: 'GRN-' + String(grn.id).slice(0, 8),
+        lines: [
+          { accountCode: '1300', description: 'Inventory - ' + grn.grnNumber, debit: glValue, credit: 0 },
+          { accountCode: '2150', description: 'GRNI - ' + grn.grnNumber, debit: 0, credit: glValue },
+        ],
+        sourceType: 'GRN',
+        sourceId: grn.id,
+        currency: 'KES',
+        fxRate: 1,
+      })
+      await client.query(
+        'UPDATE "GoodsReceipt" SET "journalEntryId" = $1, "postedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
+        [je.journalEntryId, id, g.organizationId]
+      )
+    }
     await client.query('COMMIT')
   } catch (err) {
     await client.query('ROLLBACK')
