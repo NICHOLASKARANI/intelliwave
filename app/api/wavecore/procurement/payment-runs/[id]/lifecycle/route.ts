@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { assertProcurement, logProcurementEvent, procurementHandler } from '@/lib/wavecore/procurement-guard'
+import { postJournal } from '@/lib/wavecore/finance/post-journal'
 
 const ALLOWED: Record<string, { from: string[]; to: string }> = {
   SUBMIT:  { from: ['DRAFT'],                              to: 'PENDING_APPROVAL' },
@@ -95,6 +96,37 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
         [to, id, g.organizationId]
       )
 
+
+      // === P3 HD-GL: post payment JE (DR AP / CR Bank) ===
+      const totalAmount = Number(run.totalAmount || 0)
+      if (totalAmount > 0.01) {
+        const je = await postJournal(client, {
+          organizationId: g.organizationId,
+          date: new Date(),
+          description: 'Payment run ' + run.runNumber,
+          reference: 'PAYRUN-' + String(run.id).slice(0, 8),
+          lines: [
+            { accountCode: '2000', description: 'AP - ' + run.runNumber, debit: totalAmount, credit: 0 },
+            { accountCode: '1100', description: 'Bank - ' + run.runNumber, debit: 0, credit: totalAmount },
+          ],
+          sourceType: 'PAYMENT_RUN',
+          sourceId: run.id,
+          currency: 'KES',
+          fxRate: 1,
+        })
+        await client.query(
+          'UPDATE "PaymentRun" SET "journalEntryId" = $1, "postedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
+          [je.journalEntryId, run.id, g.organizationId]
+        )
+        // Mark each paid invoice with the payment JE
+        for (const line of linesRes.rows) {
+          if (!line.supplierInvoiceId) continue
+          await client.query(
+            'UPDATE "SupplierInvoice" SET "paymentJournalEntryId" = $1, "paidAtJournal" = NOW() WHERE id = $2 AND "organizationId" = $3',
+            [je.journalEntryId, line.supplierInvoiceId, g.organizationId]
+          )
+        }
+      }
       await client.query('COMMIT')
     } catch (err) {
       try { await client.query('ROLLBACK') } catch {}
