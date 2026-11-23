@@ -86,7 +86,7 @@ export const POST = procurementHandler(async (request: NextRequest) => {
           subtotal: Number(r.subtotal || 0),
           taxAmount: Number(r.taxAmount || 0),
           total: Number(r.total || 0),
-          expenseCode: '5000',
+          expenseCode: '1300',  // Debit Inventory — goods for resale
         })
       }
     }

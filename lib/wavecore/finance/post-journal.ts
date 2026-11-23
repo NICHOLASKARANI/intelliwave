@@ -337,9 +337,9 @@ export async function postBillToGL(
   if (Number(args.taxAmount) > 0.01) {
     lines.push({
       accountCode: '2100',
-      description: `VAT — ${args.billNumber}`,
-      debit: 0,
-      credit: Number(args.taxAmount),
+      description: `VAT Input — ${args.billNumber}`,
+      debit: Number(args.taxAmount),
+      credit: 0,
     })
   }
 
