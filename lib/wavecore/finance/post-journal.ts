@@ -346,7 +346,7 @@ export async function postBillToGL(
   const result = await postJournal(client, {
     organizationId: args.organizationId,
     date: args.date,
-    description: `Supplier bill ${args.billNumber} approved [BILL:${String(args.billId).slice(0, 8)}]`,
+    description: `Supplier bill ${args.billNumber} approved`,
     reference: args.billNumber,
     lines,
     sourceType: 'BILL',

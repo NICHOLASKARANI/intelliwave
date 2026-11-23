@@ -95,7 +95,7 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
     if (action === 'APPROVE') {
       const updatedInv = upd.rows[0]
       if (Number(updatedInv.total) > 0.01) {
-        await postBillToGL(client, {
+        const gl = await postBillToGL(client, {
           organizationId: g.organizationId,
           billId: updatedInv.id,
           billNumber: updatedInv.invoiceNumber || updatedInv.id.slice(0, 8),
@@ -105,6 +105,13 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
           total: Number(updatedInv.total || 0),
           expenseCode: '1300',  // Debit Inventory — goods for resale
         })
+        if (gl.journalEntryId) {
+          await client.query(
+            'UPDATE "SupplierInvoice" SET "journalEntryId" = $1, "postedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
+            [gl.journalEntryId, updatedInv.id, g.organizationId]
+          )
+          updatedInv.journalEntryId = gl.journalEntryId
+        }
       }
     }
 
