@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { assertProcurement, logProcurementEvent, procurementHandler } from '@/lib/wavecore/procurement-guard'
-import { postBillToGL } from '@/lib/wavecore/finance/post-journal'
+import { postBillToGL, postBillWithGRN } from '@/lib/wavecore/finance/post-journal'
 
 /**
  * POST /api/wavecore/procurement/supplier-invoices/bulk-approve
@@ -78,7 +78,7 @@ export const POST = procurementHandler(async (request: NextRequest) => {
     // Post each approved invoice to GL (idempotent, skips zero-amounts)
     for (const r of upd.rows) {
       if (Number(r.total) > 0.01) {
-        const gl = await postBillToGL(client, {
+        const commonArgs = {
           organizationId: g.organizationId,
           billId: r.id,
           billNumber: r.invoiceNumber || r.id.slice(0, 8),
@@ -86,8 +86,10 @@ export const POST = procurementHandler(async (request: NextRequest) => {
           subtotal: Number(r.subtotal || 0),
           taxAmount: Number(r.taxAmount || 0),
           total: Number(r.total || 0),
-          expenseCode: '1300',  // Debit Inventory — goods for resale
-        })
+        }
+        const gl = r.goodsReceiptId
+          ? await postBillWithGRN(client, commonArgs)
+          : await postBillToGL(client, { ...commonArgs, expenseCode: '1300' })
         if (gl.journalEntryId) {
           await client.query(
             'UPDATE "SupplierInvoice" SET "journalEntryId" = $1, "postedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
