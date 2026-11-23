@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { requireTenant } from '@/lib/wavecore/auth'
 import { guardHR } from '@/lib/wavecore/guard'
+import { postJournal } from '@/lib/wavecore/finance/post-journal'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -74,7 +75,47 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       values
     )
     if (result.rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json({ ticket: result.rows[0] })
+
+    const updated = result.rows[0]
+
+    // === P1.6 HD-GL: post revenue JE when ticket is resolved/closed (idempotent, non-fatal) ===
+    if ((body.status === 'RESOLVED' || body.status === 'CLOSED')
+        && !updated.journalEntryId
+        && Number(updated.billableAmount) > 0) {
+      const glClient = await pool.connect()
+      try {
+        await glClient.query('BEGIN')
+        const je = await postJournal(glClient, {
+          organizationId: session.organizationId,
+          date: new Date(),
+          description: 'Support ticket - ' + updated.subject,
+          reference: 'HD-' + updated.id.slice(0, 8),
+          lines: [
+            { accountCode: '1200', description: 'Accounts Receivable - ' + (updated.customerName || 'Customer'), debit: Number(updated.billableAmount), credit: 0 },
+            { accountCode: '4100', description: 'Service Revenue - Support', debit: 0, credit: Number(updated.billableAmount) },
+          ],
+          sourceType: 'HELPDESK',
+          sourceId: updated.id,
+          currency: 'KES',
+          fxRate: 1,
+        })
+        await glClient.query(
+          'UPDATE "SupportTicket" SET "journalEntryId" = $1, "billedAt" = NOW(), "updatedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
+          [je.journalEntryId, updated.id, session.organizationId]
+        )
+        await glClient.query('COMMIT')
+        updated.journalEntryId = je.journalEntryId
+        updated.billedAt = new Date()
+      } catch (jeErr) {
+        await glClient.query('ROLLBACK').catch(() => {})
+        console.error('[helpdesk GL posting failed]', jeErr)
+        // Non-fatal: ticket update still committed
+      } finally {
+        glClient.release()
+      }
+    }
+
+    return NextResponse.json({ ticket: updated })
   } catch (error) {
     console.error('Ticket PATCH error:', error)
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
