@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/wavecore/db'
 import { assertProcurement, logProcurementEvent, procurementHandler } from '@/lib/wavecore/procurement-guard'
-import { postBillToGL, postBillWithGRN } from '@/lib/wavecore/finance/post-journal'
+import { postBillToGL } from '@/lib/wavecore/finance/post-journal'
 
 const ALLOWED: Record<string, string[]> = {
   APPROVE: ['SUBMITTED', 'MATCHED', 'PARTIAL_MATCH', 'MISMATCH'],
@@ -95,7 +95,7 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
     if (action === 'APPROVE') {
       const updatedInv = upd.rows[0]
       if (Number(updatedInv.total) > 0.01) {
-        const commonArgs = {
+        const gl = await postBillToGL(client, {
           organizationId: g.organizationId,
           billId: updatedInv.id,
           billNumber: updatedInv.invoiceNumber || updatedInv.id.slice(0, 8),
@@ -103,10 +103,8 @@ export const POST = procurementHandler(async (request: NextRequest, ctx: { param
           subtotal: Number(updatedInv.subtotal || 0),
           taxAmount: Number(updatedInv.taxAmount || 0),
           total: Number(updatedInv.total || 0),
-        }
-        const gl = updatedInv.goodsReceiptId
-          ? await postBillWithGRN(client, commonArgs)
-          : await postBillToGL(client, { ...commonArgs, expenseCode: '1300' })
+          expenseCode: '1300',  // Debit Inventory — goods for resale
+        })
         if (gl.journalEntryId) {
           await client.query(
             'UPDATE "SupplierInvoice" SET "journalEntryId" = $1, "postedAt" = NOW() WHERE id = $2 AND "organizationId" = $3',
