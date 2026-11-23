@@ -53,6 +53,8 @@ export default function TicketDetailPage() {
   const [sending, setSending] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [editForm, setEditForm] = useState<any>({})
+  const [customers, setCustomers] = useState<{id:string,name:string}[]>([])
+  const [projects, setProjects] = useState<{id:string,title:string,clientId:string|null}[]>([])
   const [saving, setSaving] = useState(false)
 
   const fetchAll = async (opts?: { silent?: boolean }) => {
@@ -69,6 +71,20 @@ export default function TicketDetailPage() {
     finally { if (!opts?.silent) setLoading(false) }
   }
   useEffect(() => { if (id) fetchAll() }, [id])
+  useEffect(() => {
+    (async () => {
+      try {
+        const [cr, pr] = await Promise.all([
+          authedFetch('/api/wavecore/crm/customers'),
+          authedFetch('/api/wavecore/projects'),
+        ])
+        const cd = await cr.json()
+        const pd = await pr.json()
+        setCustomers(cd.customers || [])
+        setProjects(pd.projects || [])
+      } catch {}
+    })()
+  }, [])
 
   // 30-second silent auto-refresh
   useEffect(() => {
@@ -107,6 +123,11 @@ export default function TicketDetailPage() {
       category: ticket.category || 'GENERAL', assigneeName: ticket.assigneeName || '',
       customerName: ticket.customerName || '', customerEmail: ticket.customerEmail || '',
       customerPhone: ticket.customerPhone || '',
+      customerId: ticket.customerId || '',
+      projectId: ticket.projectId || '',
+      billableHours: Number(ticket.billableHours || 0),
+      hourlyRate: Number(ticket.hourlyRate || 0),
+      billableAmount: Number(ticket.billableAmount || 0),
       satisfactionRating: ticket.satisfactionRating || 0,
       satisfactionComment: ticket.satisfactionComment || '',
     })
@@ -120,7 +141,7 @@ export default function TicketDetailPage() {
       const res = await authedFetch('/api/wavecore/helpdesk/tickets/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ ...editForm, billableAmount: (Number(editForm.billableHours) || 0) * (Number(editForm.hourlyRate) || 0) }),
       })
       if (res.ok) { flash('Ticket updated'); setShowEdit(false); fetchAll() }
     } finally { setSaving(false) }
@@ -403,6 +424,37 @@ export default function TicketDetailPage() {
                 <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Customer Phone</label>
                 <input value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
               </div>
+                <div className="md:col-span-2 border-t border-neutral-800 pt-4">
+                  <h3 className="text-sm font-bold text-yellow-400 mb-3">Billing (GL Posting on Resolve)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Customer</label>
+                      <select value={editForm.customerId || ''} onChange={e => { setEditForm({ ...editForm, customerId: e.target.value, projectId: '' }) }} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
+                        <option value="">— None —</option>
+                        {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Project</label>
+                      <select value={editForm.projectId || ''} onChange={e => setEditForm({ ...editForm, projectId: e.target.value })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white">
+                        <option value="">— None —</option>
+                        {projects.filter(p => !editForm.customerId || p.clientId === editForm.customerId).map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Billable Hours</label>
+                      <input type="number" min="0" step="0.5" value={editForm.billableHours || 0} onChange={e => setEditForm({ ...editForm, billableHours: Number(e.target.value) || 0 })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs uppercase tracking-wide text-neutral-400 font-bold">Hourly Rate (KES)</label>
+                      <input type="number" min="0" step="100" value={editForm.hourlyRate || 0} onChange={e => setEditForm({ ...editForm, hourlyRate: Number(e.target.value) || 0 })} className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-neutral-400">Billable Amount: <span className="font-bold text-yellow-400">KES {((Number(editForm.billableHours) || 0) * (Number(editForm.hourlyRate) || 0)).toLocaleString()}</span></p>
+                      <p className="text-[11px] text-neutral-500 mt-1">Auto-computed from hours × rate. GL entry (DR 1200 AR / CR 4100 Revenue) posts when status becomes RESOLVED or CLOSED.</p>
+                    </div>
+                  </div>
+                </div>
               <div className="md:col-span-2 border-t border-neutral-800 pt-4">
                 <h3 className="text-sm font-bold text-yellow-400 mb-3">CSAT Feedback</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
