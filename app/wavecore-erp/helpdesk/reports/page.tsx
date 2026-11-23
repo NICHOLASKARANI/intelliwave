@@ -4,7 +4,6 @@ import { authedFetch } from '@/lib/wavecore/csrf-client'
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { authedFetch } from '@/lib/wavecore/csrf-client'
 import {
   TrendingUp, Loader2, RefreshCw, Printer, Ticket, CheckCircle2,
   Clock, AlertTriangle, Star, BarChart3, Users, Timer, Activity,
