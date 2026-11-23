@@ -537,7 +537,12 @@ function InvoiceWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
       .finally(() => setLoadingPos(false))
   }, [step, source])
 
+  const [grns, setGrns] = useState<any[]>([])
+  const [selectedGRN, setSelectedGRN] = useState<any>(null)
+
   const pickPO = async (po: POListItem) => {
+    setSelectedGRN(null)
+    setGrns([])
     setSelectedPO(po)
     setLoadingLines(true)
     try {
@@ -556,6 +561,19 @@ function InvoiceWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
         : [{ description: '', quantity: 1, unitPrice: 0, taxRate: 0 }]
       )
       setForm(f => ({ ...f, currency: po.currency || 'KES' }))
+
+      // Load GRNs for this PO (for optional GRN linking)
+      try {
+        const grRes = await authedFetch('/api/wavecore/procurement/goods-receipts?purchaseOrderId=' + po.id + '&limit=100')
+        if (grRes.ok) {
+          const grJson = await grRes.json()
+          setGrns(grJson.rows || grJson.data || grJson.goodsReceipts || [])
+        } else {
+          setGrns([])
+        }
+      } catch {
+        setGrns([])
+      }
     } catch (e) {
       setError('Network error: ' + (e as Error).message)
     } finally {
@@ -603,7 +621,11 @@ function InvoiceWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
       if (selectedPO) {
         payload.purchaseOrderId = selectedPO.id
         if (selectedPO.supplierId) payload.supplierId = selectedPO.supplierId
-      } else if (source === 'manual') {
+      }
+      if (selectedGRN) {
+        payload.goodsReceiptId = selectedGRN.id
+      }
+      if (source === 'manual') {
         payload.supplierName = form.supplierNameManual
       }
 
@@ -711,6 +733,33 @@ function InvoiceWizard({ onClose, onCreated }: { onClose: () => void; onCreated:
                       </div>
                     </>
                   )}
+                </div>
+              )}
+
+              {source === 'from-po' && selectedPO && grns.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-indigo-500" />
+                    Link to Goods Receipt (optional)
+                  </h3>
+                  <select
+                    value={selectedGRN?.id || ''}
+                    onChange={e => {
+                      const g = grns.find((x: any) => x.id === e.target.value) || null
+                      setSelectedGRN(g)
+                    }}
+                    className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-sm"
+                  >
+                    <option value="">— No GRN link (posts DR 1300 Inventory) —</option>
+                    {grns.map((g: any) => (
+                      <option key={g.id} value={g.id}>
+                        {g.grnNumber} — {new Date(g.receivedAt).toLocaleDateString('en-GB')} — {Number(g.totalReceived || 0).toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    When linked, approval clears GRNI 2150 instead of re-debiting Inventory.
+                  </p>
                 </div>
               )}
 
