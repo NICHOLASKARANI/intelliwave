@@ -1,8 +1,10 @@
 'use client'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 import {
   TrendingUp, Loader2, RefreshCw, Printer, Ticket, CheckCircle2,
   Clock, AlertTriangle, Star, BarChart3, Users, Timer, Activity,
@@ -11,16 +13,22 @@ import {
 export default function ReportsPage() {
   const [tickets, setTickets] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
+  const [revenue, setRevenue] = useState<any>({ total: null, billable: null, byCustomer: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const fetchAll = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     try {
-      const res = await fetch('/api/wavecore/helpdesk/tickets')
-      const data = await res.json()
+      const [ticketsRes, revenueRes] = await Promise.all([
+        authedFetch('/api/wavecore/helpdesk/tickets'),
+        authedFetch('/api/wavecore/helpdesk/reports/revenue'),
+      ])
+      const data = await ticketsRes.json()
+      const revData = await revenueRes.json()
       setTickets(data.tickets || [])
       setSummary(data.summary || {})
+      setRevenue(revData || { total: null, billable: null, byCustomer: [] })
     } catch { setError('Network error') }
     finally { if (!opts?.silent) setLoading(false) }
   }
@@ -102,6 +110,61 @@ export default function ReportsPage() {
             <h1 className="text-3xl font-bold flex items-center gap-2 text-white">
               <TrendingUp className="w-7 h-7 text-pink-400" /> Helpdesk Reports
             </h1>
+
+        {/* Revenue section (P1.6 HD-GL phase 4) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs uppercase tracking-wider text-neutral-400 font-bold">Support Revenue (All-Time)</h3>
+              <TrendingUp className="w-4 h-4 text-green-400" />
+            </div>
+            <p className="text-3xl font-bold text-green-400">
+              KES {revenue.total ? revenue.total.amount.toLocaleString() : 0}
+            </p>
+            <p className="text-xs text-neutral-500 mt-1">
+              {revenue.total ? revenue.total.jeCount : 0} journal entries posted
+            </p>
+          </div>
+          <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs uppercase tracking-wider text-neutral-400 font-bold">Billable Tickets</h3>
+              <Ticket className="w-4 h-4 text-yellow-400" />
+            </div>
+            <p className="text-3xl font-bold text-yellow-400">
+              {revenue.billable ? revenue.billable.billed : 0}
+              <span className="text-sm text-neutral-500 font-normal ml-2">
+                of {revenue.billable ? revenue.billable.totalBillable : 0} billable
+              </span>
+            </p>
+            <p className="text-xs text-neutral-500 mt-1">
+              KES {revenue.billable ? revenue.billable.totalBillableAmount.toLocaleString() : 0} total billable
+            </p>
+          </div>
+        </section>
+
+        {revenue.byCustomer && revenue.byCustomer.length > 0 && (
+          <section className="mb-6 p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
+            <h3 className="text-xs uppercase tracking-wider text-neutral-400 font-bold mb-3">Revenue by Customer</h3>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-neutral-500 border-b border-neutral-800">
+                  <th className="py-2 font-medium">Customer</th>
+                  <th className="py-2 font-medium text-right">Tickets</th>
+                  <th className="py-2 font-medium text-right">Billed (KES)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {revenue.byCustomer.map((c: any, i: number) => (
+                  <tr key={i} className="border-b border-neutral-800/50">
+                    <td className="py-2 text-white">{c.name}</td>
+                    <td className="py-2 text-right text-neutral-300">{c.tickets}</td>
+                    <td className="py-2 text-right text-green-400 font-mono">{c.billed.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
             <p className="text-sm text-neutral-400 mt-1">Volume · Performance · Distributions · PDF export</p>
           </div>
           <div className="flex gap-3">
