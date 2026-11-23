@@ -163,7 +163,7 @@ export const POST = procurementHandler(async (request: NextRequest) => {
     const unitPrice = Number(l?.unitPrice) || Number(poItem.unitPrice || 0)
     const taxRate = Number(l?.taxRate) || Number(poItem.taxRate || 0)
     const acceptedQty = Math.max(0, receivedQty - rejectedQty - damagedQty)
-    const lineTotal = acceptedQty * unitPrice * (1 + taxRate / 100)
+    const lineTotal = acceptedQty * unitPrice  // Net of VAT — VAT is tracked separately
 
     if (alreadyReceived + receivedQty > orderedQty + 0.001) {
       hasVariance = true
