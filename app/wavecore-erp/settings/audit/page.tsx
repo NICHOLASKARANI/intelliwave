@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { FileText, Download, Loader2, Search, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 interface AuditLog {
   id: string
   action: string
@@ -28,7 +29,7 @@ export default function AuditLogsPage() {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch('/api/wavecore/audit-logs')
+      const res = await authedFetch('/api/wavecore/audit-logs')
       const data = await res.json()
       setLogs(data.logs || [])
     } catch (err) {

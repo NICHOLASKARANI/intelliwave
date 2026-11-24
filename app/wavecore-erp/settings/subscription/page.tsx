@@ -9,6 +9,7 @@ import {
   Zap, Shield, Crown, ArrowUpRight, Smartphone, Info,
 } from 'lucide-react'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
 export default function SubscriptionPage() {
   const [history, setHistory] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
@@ -20,7 +21,7 @@ export default function SubscriptionPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/wavecore/settings/subscription/history')
+      const res = await authedFetch('/api/wavecore/settings/subscription/history')
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load'); return }
       setHistory(data.history || [])
