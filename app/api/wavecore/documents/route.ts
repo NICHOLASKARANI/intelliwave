@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         id,
         body.name.trim(),
         body.fileName || body.name.trim(),
-        body.fileUrl || null,
+        body.fileUrl || (body.fileData ? 'data:' + (body.mimeType || 'application/pdf') + ';base64,' + body.fileData : null),
         body.mimeType || 'application/octet-stream',
         Number(body.fileSize || 0),
         body.folderId || null,
