@@ -3,14 +3,13 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Stamp, Download, Upload, FileText, Loader2, CheckCircle, Eye } from 'lucide-react'
-import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib'
+import {
+  Stamp, Download, Upload, Loader2, CheckCircle2, Eye,
+  Printer, Trash2, Save, ArrowLeft, AlertCircle,
+} from 'lucide-react'
+import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib'
 
-interface WatermarkResult {
-  url: string
-  name: string
-  size: number
-}
+interface WatermarkResult { name: string; downloadUrl: string }
 
 export default function WatermarkPage() {
   const [fileName, setFileName] = useState('')
@@ -19,180 +18,139 @@ export default function WatermarkPage() {
   const [applying, setApplying] = useState(false)
   const [result, setResult] = useState<WatermarkResult | null>(null)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setError('')
-    setResult(null)
-
-    if (file.type !== 'application/pdf') {
-      setError('Please upload a PDF file')
-      return
-    }
-
+    if (file.type !== 'application/pdf') { setError('PDF only'); return }
     const arrayBuffer = await file.arrayBuffer()
-    setFileName(file.name)
-    setFileBuffer(arrayBuffer)
+    setFileName(file.name); setFileBuffer(arrayBuffer); setResult(null)
   }
 
-  const handleApplyWatermark = async () => {
-    if (!fileBuffer) {
-      setError('Upload a PDF first')
-      return
-    }
-    if (!watermarkText.trim()) {
-      setError('Enter watermark text')
-      return
-    }
-
-    setApplying(true)
-    setError('')
-
+  const applyWatermark = async () => {
+    if (!fileBuffer || !watermarkText) { setError('Upload PDF and enter text'); return }
+    setApplying(true); setError('')
     try {
       const pdfDoc = await PDFDocument.load(fileBuffer)
-      const pageCount = pdfDoc.getPageCount()
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-
-      for (let i = 0; i < pageCount; i++) {
-        const page = pdfDoc.getPage(i)
+      const pages = pdfDoc.getPages()
+      for (const page of pages) {
         const { width, height } = page.getSize()
-
-        // Main diagonal watermark (using degrees function)
+        const textWidth = font.widthOfTextAtSize(watermarkText, 60)
         page.drawText(watermarkText, {
-          x: width / 2 - 120,
-          y: height / 2,
-          size: 45,
-          font,
-          color: rgb(0.7, 0.7, 0.7),
-          opacity: 0.25,
-          rotate: degrees(30),
-        })
-
-        // Bottom watermark
-        page.drawText(watermarkText + ' - WaveCore ERP', {
-          x: 30,
-          y: 25,
-          size: 10,
-          font,
-          color: rgb(0.5, 0.5, 0.5),
-          opacity: 0.4,
+          x: width / 2 - textWidth / 2, y: height / 2,
+          size: 60, font, color: rgb(0.85, 0.85, 0.85), opacity: 0.3, rotate: degrees(45),
         })
       }
-
-      const pdfBytes = await pdfDoc.save()
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-
-      setResult({ url, name: fileName.replace('.pdf', '') + '-watermarked.pdf', size: blob.size })
-      setApplying(false)
-    } catch (err) {
-      setError('Watermark failed: ' + (err as Error).message)
-      setApplying(false)
-    }
+      const bytes = await pdfDoc.save()
+      const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
+      setResult({ name: 'watermarked-' + (fileName || 'document.pdf'), downloadUrl: URL.createObjectURL(blob) })
+    } catch (e) { setError('Watermark failed: ' + (e as Error).message) }
+    finally { setApplying(false) }
   }
 
-  const downloadResult = () => {
+  const saveToDocuments = async () => {
     if (!result) return
-    const a = document.createElement('a')
-    a.href = result.url
-    a.download = result.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    setSaving(true); setError('')
+    try {
+      const blob = await (await fetch(result.downloadUrl)).blob()
+      const base64 = await new Promise<string>((res) => {
+        const r = new FileReader()
+        r.onload = () => res((r.result as string).split(',')[1])
+        r.readAsDataURL(blob)
+      })
+      const res = await fetch('/api/wavecore/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({
+          name: 'Watermarked - ' + (fileName || 'document.pdf'),
+          fileName: result.name, fileData: base64, category: 'TOOL_OUTPUT',
+          description: 'Watermarked with: ' + watermarkText,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Save failed'); return }
+      flash('Saved to Documents')
+    } catch (e) { setError('Save failed: ' + (e as Error).message) }
+    finally { setSaving(false) }
   }
 
-  const resetAll = () => {
-    setFileName('')
-    setFileBuffer(null)
-    setWatermarkText('CONFIDENTIAL')
-    setResult(null)
-    setError('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
-  }
-
-  const presetWatermarks = ['CONFIDENTIAL', 'DRAFT', 'APPROVED', 'INTERNAL USE ONLY', 'SAMPLE', 'DO NOT COPY']
+  const clearOutput = () => { setResult(null); setFileName(''); setFileBuffer(null) }
+  const printInfo = () => window.print()
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp/documents" className="flex items-center gap-3">
-            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
-            <span className="font-bold">WaveCore</span>
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b print:hidden">
+        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+          <Link href="/wavecore-erp/documents" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="w-4 h-4" /> Documents
           </Link>
-          <span className="text-sm">Watermark</span>
+          <h1 className="font-bold flex items-center gap-2"><Stamp className="w-5 h-5 text-amber-500" /> Watermark PDF</h1>
+          <button onClick={printInfo} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <Printer className="w-4 h-4" /> Print
+          </button>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
-        <div className="rounded-3xl bg-gradient-to-br from-violet-600 to-purple-700 p-6 mb-8">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Stamp className="w-7 h-7" /> Watermark PDF
-          </h1>
+        <div className="hidden print:block mb-6 pb-4 border-b-2 border-neutral-800">
+          <h2 className="text-xl font-bold">Watermark {fileName ? '- ' + fileName : ''}</h2>
+          <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
         </div>
 
-        {error && <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm mb-4 text-center">{error}</div>}
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2 print:hidden"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2 print:hidden"><CheckCircle2 className="w-4 h-4" /> {success}</div>}
 
-        {!result ? (
-          <>
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-              <label className="block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer mb-4">
-                <Upload className="w-12 h-12 mx-auto mb-3 text-violet-500" />
-                <p className="font-medium">{fileName || 'Upload PDF to watermark'}</p>
-                <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
-              </label>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
+          <h3 className="font-bold mb-4 flex items-center gap-2 print:hidden"><Upload className="w-5 h-5" /> Upload PDF</h3>
+          <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload}
+            className="block w-full text-sm mb-4 print:hidden file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-amber-600 file:text-white file:font-bold" />
 
-              <input type="text" value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border mb-3" placeholder="Watermark text" />
+          {fileName && (
+            <div className="mb-4 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800 text-sm font-medium">{fileName}</div>
+          )}
 
-              <div className="flex flex-wrap gap-2 mb-4">
-                {presetWatermarks.map(preset => (
-                  <button key={preset} onClick={() => setWatermarkText(preset)}
-                    className="px-3 py-1.5 rounded-full text-xs bg-neutral-100 dark:bg-neutral-800 hover:bg-violet-100">
-                    {preset}
-                  </button>
-                ))}
-              </div>
-
-              <button onClick={handleApplyWatermark} disabled={applying || !fileBuffer || !watermarkText.trim()}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2">
-                {applying ? <Loader2 className="w-5 h-5 animate-spin" /> : <Stamp className="w-5 h-5" />}
-                {applying ? 'Applying...' : 'Apply Watermark'}
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-green-50 dark:bg-green-950 rounded-2xl border border-green-200 p-6 text-center">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <p className="font-bold text-green-700">Watermark Applied!</p>
-              <p className="text-sm">{watermarkText} added to all pages</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => window.open(result.url, '_blank')}
-                className="py-3 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center gap-2">
-                <Eye className="w-4 h-4" /> View
-              </button>
-              <button onClick={downloadResult}
-                className="py-3 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center gap-2">
-                <Download className="w-4 h-4" /> Download
-              </button>
-            </div>
-
-            <button onClick={resetAll} className="w-full py-3 rounded-xl border font-medium">
-              Watermark Another
-            </button>
+          <div className="mb-4 print:hidden">
+            <label className="block text-xs font-bold text-neutral-500 mb-1">Watermark Text</label>
+            <input value={watermarkText} onChange={e => setWatermarkText(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-sm" />
           </div>
-        )}
+
+          <button onClick={applyWatermark} disabled={!fileBuffer || !watermarkText || applying}
+            className="w-full px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2 mb-4 print:hidden">
+            {applying ? <><Loader2 className="w-4 h-4 animate-spin" /> Applying...</> : <><Stamp className="w-4 h-4" /> Apply Watermark</>}
+          </button>
+
+          {result && (
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 className="w-5 h-5 text-amber-600" />
+                <span className="font-bold">Watermark applied</span>
+              </div>
+              <div className="flex flex-wrap gap-2 print:hidden">
+                <a href={result.downloadUrl} download={result.name} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center gap-1">
+                  <Download className="w-3 h-3" /> Download
+                </a>
+                <button onClick={saveToDocuments} disabled={saving} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center gap-1 disabled:opacity-40">
+                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} {saving ? 'Saving...' : 'Save to Documents'}
+                </button>
+                <a href={result.downloadUrl} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs font-bold flex items-center gap-1">
+                  <Eye className="w-3 h-3" /> Preview
+                </a>
+                <button onClick={clearOutput} className="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" /> Clear
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )
