@@ -8,6 +8,8 @@ import {
   ArrowLeft, Upload, Loader2, CheckCircle2, X, Download, FileText,
   Layers, Scissors, Minimize2, RotateCw, Stamp, Hash, GitBranch,
   Lock, Unlock, RefreshCw, Crop, FileSearch, AlertTriangle, Sparkles,
+  Archive, Brain, Calculator, FileBarChart, FileEdit, FileImage,
+  FileType, Languages, Minimize, Quote,
 } from 'lucide-react'
 
 // Tool config per slug
@@ -21,6 +23,9 @@ const TOOL_CONFIG: Record<string, {
   multiple?: boolean
   options?: { key: string; label: string; type: 'text'|'number'|'select'|'password'|'color'; default?: any; choices?: string[]; min?: number; max?: number; step?: number }[]
   multipleFiles?: boolean
+  outputType?: 'pdf' | 'text' | 'md' | 'txt';
+  outputExtension?: string;
+  outputMime?: string;
 }> = {
   merge: {
     title: 'Merge PDF',
@@ -155,6 +160,115 @@ const TOOL_CONFIG: Record<string, {
       { key: 'subject', label: 'Subject', type: 'text', default: '' },
       { key: 'keywords', label: 'Keywords (comma-separated)', type: 'text', default: '' },
     ],
+  },
+  'jpg-to-pdf': {
+    title: 'JPG to PDF',
+    description: 'Convert images (JPG, PNG) to PDF',
+    apiTool: 'JPG_TO_PDF',
+    icon: FileImage,
+    color: 'from-orange-500 to-red-600',
+    accept: 'image/*',
+  },
+  'pdf-to-text': {
+    title: 'PDF to Text',
+    description: 'Extract all text from a PDF',
+    apiTool: 'PDF_TO_TEXT',
+    outputType: 'txt',
+    outputExtension: 'txt',
+    outputMime: 'text/plain',
+    icon: FileType,
+    color: 'from-slate-500 to-gray-600',
+    accept: '.pdf',
+  },
+  'pdf-to-md': {
+    title: 'PDF to Markdown',
+    description: 'Extract PDF content as Markdown',
+    apiTool: 'PDF_TO_MD',
+    outputType: 'md',
+    outputExtension: 'md',
+    outputMime: 'text/markdown',
+    icon: Quote,
+    color: 'from-teal-500 to-cyan-600',
+    accept: '.pdf',
+  },
+  'md-to-pdf': {
+    title: 'Markdown to PDF',
+    description: 'Convert Markdown to PDF',
+    apiTool: 'MD_TO_PDF',
+    icon: FileText,
+    color: 'from-slate-500 to-slate-700',
+    accept: '.md,.markdown,.txt',
+  },
+  'html-to-pdf': {
+    title: 'HTML to PDF',
+    description: 'Convert HTML content to PDF',
+    apiTool: 'HTML_TO_PDF',
+    icon: FileBarChart,
+    color: 'from-violet-500 to-purple-600',
+    accept: '.html,.htm',
+  },
+  'pdf-to-pdfa': {
+    title: 'PDF to PDF/A',
+    description: 'Apply PDF/A archival metadata',
+    apiTool: 'PDF_TO_PDFA',
+    icon: Archive,
+    color: 'from-emerald-500 to-teal-600',
+    accept: '.pdf',
+  },
+  edit: {
+    title: 'Edit PDF',
+    description: 'Add text annotations to the first page',
+    apiTool: 'EDIT_PDF',
+    icon: FileEdit,
+    color: 'from-amber-500 to-orange-600',
+    accept: '.pdf',
+    options: [
+      { key: 'text', label: 'Annotation text', type: 'text', default: 'Reviewed' },
+    ],
+  },
+  protect: {
+    title: 'Protect PDF',
+    description: 'Add password protection',
+    apiTool: 'PROTECT',
+    icon: Lock,
+    color: 'from-red-500 to-rose-600',
+    accept: '.pdf',
+    options: [
+      { key: 'password', label: 'Password', type: 'password', default: '' },
+    ],
+  },
+  summarize: {
+    title: 'AI Summarize',
+    description: 'Generate extractive summary of PDF',
+    apiTool: 'AI_SUMMARIZE',
+    outputType: 'txt',
+    outputExtension: 'txt',
+    outputMime: 'text/plain',
+    icon: Brain,
+    color: 'from-pink-500 to-rose-600',
+    accept: '.pdf',
+  },
+  statistics: {
+    title: 'AI Statistics',
+    description: 'Word count, sentences, reading time analysis',
+    apiTool: 'AI_STATS',
+    outputType: 'txt',
+    outputExtension: 'txt',
+    outputMime: 'text/plain',
+    icon: Calculator,
+    color: 'from-indigo-500 to-blue-600',
+    accept: '.pdf',
+  },
+  translate: {
+    title: 'Translate PDF',
+    description: 'Extract text for manual translation',
+    apiTool: 'TRANSLATE',
+    outputType: 'txt',
+    outputExtension: 'txt',
+    outputMime: 'text/plain',
+    icon: Languages,
+    color: 'from-cyan-500 to-blue-600',
+    accept: '.pdf',
   },
 }
 
@@ -300,7 +414,7 @@ export default function ToolPage() {
     if (!result?.outputData) return
     const a = document.createElement('a')
     a.href = result.outputData
-    a.download = slug + '-output.pdf'
+    a.download = slug + '-output.' + (config.outputExtension || 'pdf')
     a.click()
   }
 

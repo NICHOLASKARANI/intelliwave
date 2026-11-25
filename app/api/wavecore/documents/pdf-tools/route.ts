@@ -250,7 +250,238 @@ export async function POST(request: NextRequest) {
       extra = { fields: Object.keys(body).filter(k => ['title', 'author', 'subject', 'keywords', 'producer', 'creator'].includes(k)) }
     }
     // ==================== UNSUPPORTED ====================
-    else {
+    
+    // ==================== JPG TO PDF ====================
+    else if (tool === 'JPG_TO_PDF') {
+      const { PDFDocument } = await loadPDFLib()
+      const doc = await PDFDocument.create()
+      const isJpg = inputBytes[0] === 0xFF && inputBytes[1] === 0xD8
+      const isPng = inputBytes[0] === 0x89 && inputBytes[1] === 0x50
+      let img
+      if (isJpg) img = await doc.embedJpg(inputBytes)
+      else if (isPng) img = await doc.embedPng(inputBytes)
+      else { return NextResponse.json({ error: 'Only JPG and PNG images supported' }, { status: 400 }) }
+      const page = doc.addPage([img.width, img.height])
+      page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height })
+      outputBytes = await doc.save()
+    }
+
+    // ==================== PDF TO TEXT ====================
+    else if (tool === 'PDF_TO_TEXT') {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs').catch(() => null) as any
+      if (!pdfjsLib) {
+        return NextResponse.json({ error: 'PDF text extraction library not available' }, { status: 500 })
+      }
+      const loadingTask = pdfjsLib.getDocument({ data: inputBytes, useSystemFonts: true })
+      const pdf = await loadingTask.promise
+      let fullText = ''
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        const pageText = content.items.map((it: any) => it.str).join(' ')
+        fullText += 'Page ' + i + ':\n' + pageText + '\n\n'
+      }
+      outputBytes = new TextEncoder().encode(fullText)
+      outputMime = 'text/plain'
+      extra = { text: fullText, characters: fullText.length, pages: pdf.numPages }
+    }
+
+    // ==================== PDF TO MARKDOWN ====================
+    else if (tool === 'PDF_TO_MD') {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs').catch(() => null) as any
+      if (!pdfjsLib) {
+        return NextResponse.json({ error: 'PDF text extraction library not available' }, { status: 500 })
+      }
+      const loadingTask = pdfjsLib.getDocument({ data: inputBytes, useSystemFonts: true })
+      const pdf = await loadingTask.promise
+      let md = '# Extracted from PDF\n\n'
+      for (let i = 1; i <= pdf.numPages; i++) {
+        md += '## Page ' + i + '\n\n'
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        const pageText = content.items.map((it: any) => it.str).join(' ')
+        md += pageText + '\n\n'
+      }
+      outputBytes = new TextEncoder().encode(md)
+      outputMime = 'text/markdown'
+      extra = { text: md, characters: md.length, pages: pdf.numPages }
+    }
+
+    // ==================== MARKDOWN TO PDF ====================
+    else if (tool === 'MD_TO_PDF') {
+      const { PDFDocument, StandardFonts } = await loadPDFLib()
+      const doc = await PDFDocument.create()
+      const font = await doc.embedFont(StandardFonts.Helvetica)
+      const fontBold = await doc.embedFont(StandardFonts.HelveticaBold)
+      const rawText = new TextDecoder().decode(inputBytes)
+      const lines = rawText.split('\n')
+      let page = doc.addPage([595, 842])
+      let y = 800
+      const margin = 50
+      const maxWidth = 595 - margin * 2
+      for (const line of lines) {
+        if (y < 50) { page = doc.addPage([595, 842]); y = 800 }
+        const isH1 = line.startsWith('# ')
+        const isH2 = line.startsWith('## ')
+        const isH3 = line.startsWith('### ')
+        let text = line.replace(/^#{1,3}\s*/, '')
+        const size = isH1 ? 20 : isH2 ? 16 : isH3 ? 14 : 11
+        const fnt = isH1 || isH2 || isH3 ? fontBold : font
+        if (text.length === 0) { y -= size + 4; continue }
+        const words = text.split(' ')
+        let lineBuf = ''
+        for (const w of words) {
+          const test = lineBuf + (lineBuf ? ' ' : '') + w
+          if (fnt.widthOfTextAtSize(test, size) > maxWidth) {
+            page.drawText(lineBuf, { x: margin, y, size, font: fnt })
+            y -= size + 3
+            if (y < 50) { page = doc.addPage([595, 842]); y = 800 }
+            lineBuf = w
+          } else {
+            lineBuf = test
+          }
+        }
+        if (lineBuf) { page.drawText(lineBuf, { x: margin, y, size, font: fnt }); y -= size + 4 }
+      }
+      outputBytes = await doc.save()
+    }
+
+    // ==================== HTML TO PDF ====================
+    else if (tool === 'HTML_TO_PDF') {
+      const { PDFDocument, StandardFonts } = await loadPDFLib()
+      const doc = await PDFDocument.create()
+      const font = await doc.embedFont(StandardFonts.Helvetica)
+      const rawHtml = new TextDecoder().decode(inputBytes)
+      const text = rawHtml.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim()
+      const page = doc.addPage([595, 842])
+      const words = text.split(' ')
+      let y = 800, lineBuf = ''
+      const maxWidth = 495
+      for (const w of words) {
+        const test = lineBuf + (lineBuf ? ' ' : '') + w
+        if (font.widthOfTextAtSize(test, 11) > maxWidth) {
+          page.drawText(lineBuf, { x: 50, y, size: 11, font })
+          y -= 14
+          if (y < 50) break
+          lineBuf = w
+        } else { lineBuf = test }
+      }
+      if (lineBuf && y >= 50) page.drawText(lineBuf, { x: 50, y, size: 11, font })
+      outputBytes = await doc.save()
+    }
+
+    // ==================== PDF TO PDF/A ====================
+    else if (tool === 'PDF_TO_PDFA') {
+      const { PDFDocument } = await loadPDFLib()
+      const doc = await PDFDocument.load(inputBytes)
+      doc.setTitle(doc.getTitle() || 'PDF/A Document')
+      doc.setProducer('WaveCore ERP (PDF/A-2B)')
+      doc.setCreator('WaveCore')
+      doc.setCreationDate(new Date())
+      doc.setModificationDate(new Date())
+      outputBytes = await doc.save({ useObjectStreams: false })
+      extra = { note: 'PDF/A-2B metadata applied. Full compliance requires additional validation.' }
+    }
+
+    // ==================== EDIT PDF ====================
+    else if (tool === 'EDIT_PDF') {
+      const { PDFDocument, rgb, StandardFonts } = await loadPDFLib()
+      const doc = await PDFDocument.load(inputBytes)
+      const font = await doc.embedFont(StandardFonts.Helvetica)
+      const text = String(body.options?.text || body.text || 'Edit annotation')
+      const pages = doc.getPages()
+      const firstPage = pages[0]
+      const { width, height } = firstPage.getSize()
+      firstPage.drawText(text, { x: 50, y: height - 50, size: 14, font, color: rgb(1, 0, 0) })
+      outputBytes = await doc.save()
+    }
+
+    // ==================== AI SUMMARIZE ====================
+    else if (tool === 'AI_SUMMARIZE') {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs').catch(() => null) as any
+      if (!pdfjsLib) {
+        return NextResponse.json({ error: 'PDF text extraction library not available' }, { status: 500 })
+      }
+      const loadingTask = pdfjsLib.getDocument({ data: inputBytes, useSystemFonts: true })
+      const pdf = await loadingTask.promise
+      let fullText = ''
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        fullText += content.items.map((it: any) => it.str).join(' ') + ' '
+      }
+      const sentences = fullText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20)
+      const summary = sentences.slice(0, Math.min(5, sentences.length)).join('. ') + '.'
+      const wordCount = fullText.split(/\s+/).filter(w => w.length > 0).length
+      outputBytes = new TextEncoder().encode('SUMMARY:\n\n' + summary + '\n\n---\n\nWord count: ' + wordCount + '\nPages: ' + pdf.numPages)
+      outputMime = 'text/plain'
+      extra = { text: summary, wordCount, pages: pdf.numPages }
+    }
+
+    // ==================== AI STATISTICS ====================
+    else if (tool === 'AI_STATS') {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs').catch(() => null) as any
+      if (!pdfjsLib) {
+        return NextResponse.json({ error: 'PDF text extraction library not available' }, { status: 500 })
+      }
+      const loadingTask = pdfjsLib.getDocument({ data: inputBytes, useSystemFonts: true })
+      const pdf = await loadingTask.promise
+      let fullText = ''
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        fullText += content.items.map((it: any) => it.str).join(' ') + ' '
+      }
+      const words = fullText.split(/\s+/).filter(w => w.length > 0)
+      const sentences = fullText.split(/[.!?]+/).filter(s => s.trim().length > 0)
+      const uniqueWords = new Set(words.map(w => w.toLowerCase()))
+      const readingTimeMin = Math.ceil(words.length / 200)
+      const stats = {
+        pages: pdf.numPages,
+        words: words.length,
+        sentences: sentences.length,
+        uniqueWords: uniqueWords.size,
+        avgWordLength: words.length > 0 ? (words.reduce((s, w) => s + w.length, 0) / words.length).toFixed(1) : 0,
+        avgSentenceLength: sentences.length > 0 ? (words.length / sentences.length).toFixed(1) : 0,
+        readingTimeMin,
+        estimatedComplexity: sentences.length > 0 && (words.length / sentences.length) > 20 ? 'High' : 'Standard',
+      }
+      const reportText = 'AI Statistics Report\n====================\n\n' +
+        'Pages: ' + stats.pages + '\n' +
+        'Words: ' + stats.words + '\n' +
+        'Sentences: ' + stats.sentences + '\n' +
+        'Unique words: ' + stats.uniqueWords + '\n' +
+        'Avg word length: ' + stats.avgWordLength + '\n' +
+        'Avg sentence length: ' + stats.avgSentenceLength + '\n' +
+        'Reading time: ~' + stats.readingTimeMin + ' min\n' +
+        'Complexity: ' + stats.estimatedComplexity
+      outputBytes = new TextEncoder().encode(reportText)
+      outputMime = 'text/plain'
+      extra = { text: reportText, stats }
+    }
+
+    // ==================== TRANSLATE PDF (extract text) ====================
+    else if (tool === 'TRANSLATE') {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs').catch(() => null) as any
+      if (!pdfjsLib) {
+        return NextResponse.json({ error: 'PDF text extraction library not available' }, { status: 500 })
+      }
+      const loadingTask = pdfjsLib.getDocument({ data: inputBytes, useSystemFonts: true })
+      const pdf = await loadingTask.promise
+      let fullText = ''
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        fullText += content.items.map((it: any) => it.str).join(' ') + '\n\n'
+      }
+      outputBytes = new TextEncoder().encode('EXTRACTED TEXT (TRANSLATION REQUIRES EXTERNAL API):\n\n' + fullText)
+      outputMime = 'text/plain'
+      extra = {
+        text: fullText,
+        note: 'Translation requires Google Translate API or OpenAI API key. Extracted text is provided for manual translation.'
+      }
+    }
+else {
       return NextResponse.json({
         error: 'Tool "' + tool + '" not supported in this environment. Supported: MERGE, SPLIT, COMPRESS, ROTATE, WATERMARK, PAGE_NUMBERS, ORGANIZE, UNLOCK, REPAIR, CROP, REDACT, METADATA',
         supportedTools: ['MERGE', 'SPLIT', 'COMPRESS', 'ROTATE', 'WATERMARK', 'PAGE_NUMBERS', 'ORGANIZE', 'UNLOCK', 'REPAIR', 'CROP', 'REDACT', 'METADATA'],
