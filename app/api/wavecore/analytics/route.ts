@@ -64,12 +64,12 @@ export async function GET(request: NextRequest) {
         [orgId]
       ),
       pool.query(
-        `SELECT COUNT(*) as count FROM "Project"`,
-        []
+        `SELECT COUNT(*) as count FROM "Project" WHERE "organizationId" = $1`,
+        [orgId]
       ),
       pool.query(
-        `SELECT COUNT(*) as count FROM "SupportTicket" WHERE "userId" = $1`,
-        [session!.userId]
+        `SELECT COUNT(*) as count FROM "SupportTicket" WHERE "userId" = $1 AND "organizationId" = $2`,
+        [session!.userId, orgId]
       ),
     ])
 

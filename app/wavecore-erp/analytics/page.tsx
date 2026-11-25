@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  BarChart3, TrendingUp, DollarSign, Package, Factory, Users,
+  BarChart3, TrendingUp, DollarSign, Package, Factory, Users, CreditCard,
   Loader2, Download, RefreshCw, ChevronRight, PieChart,
   Activity, Award, Zap, Target, FileText, Briefcase, Ticket,
 } from 'lucide-react'
@@ -76,19 +76,26 @@ export default function AnalyticsPage() {
     { name: 'HR Analytics', desc: 'Attendance, payroll, performance', href: '/wavecore-erp/analytics/hr', icon: Users, color: 'from-indigo-500 to-blue-600', stat: kpis.employees || 0 },
     { name: 'Sales Analytics', desc: 'Pipeline, invoices, customers', href: '/wavecore-erp/analytics/sales', icon: TrendingUp, color: 'from-cyan-500 to-sky-600', stat: kpis.invoiceCount || 0 },
     { name: 'Custom Reports', desc: 'Create and schedule reports', href: '/wavecore-erp/analytics/custom-reports', icon: BarChart3, color: 'from-pink-500 to-rose-600', stat: '—' },
+    { name: 'Customers', desc: 'Customer KPI', href: '/wavecore-erp/analytics/customers', icon: Users, color: 'from-blue-500 to-cyan-600', stat: kpis.activeCustomers || 0 },
+    { name: 'Employees', desc: 'Employee count', href: '/wavecore-erp/analytics/employees', icon: Users, color: 'from-indigo-500 to-blue-600', stat: kpis.employees || 0 },
+    { name: 'Invoices', desc: 'Invoice count', href: '/wavecore-erp/analytics/invoices', icon: FileText, color: 'from-emerald-500 to-green-600', stat: kpis.invoiceCount || 0 },
+    { name: 'Payables', desc: 'Accounts payable', href: '/wavecore-erp/analytics/payables', icon: CreditCard, color: 'from-amber-500 to-orange-600', stat: '—' },
+    { name: 'Products', desc: 'Product count', href: '/wavecore-erp/analytics/products', icon: Package, color: 'from-orange-500 to-red-600', stat: kpis.inventoryItems || 0 },
+    { name: 'Projects', desc: 'Active projects', href: '/wavecore-erp/analytics/projects', icon: Briefcase, color: 'from-teal-500 to-cyan-600', stat: kpis.projects || 0 },
+    { name: 'Receivables', desc: 'Outstanding AR', href: '/wavecore-erp/analytics/receivables', icon: TrendingUp, color: 'from-rose-500 to-pink-600', stat: 'KSh ' + Number(kpis.outstandingReceivables || 0).toLocaleString('en-KE') },
   ]
 
   const kpiCards = [
-    { label: 'Revenue (MTD)',   value: 'KSh ' + Number(kpis.revenueMTD || 0).toLocaleString('en-KE'),       icon: DollarSign, color: 'text-emerald-500' },
-    { label: 'Receivables',     value: 'KSh ' + Number(kpis.outstandingReceivables || 0).toLocaleString('en-KE'), icon: TrendingUp, color: 'text-amber-500' },
-    { label: 'Active Customers', value: kpis.activeCustomers || 0,                                          icon: Users,      color: 'text-blue-500' },
-    { label: 'Inventory Items', value: kpis.inventoryItems || 0,                                            icon: Package,    color: 'text-orange-500' },
+    { label: 'Revenue (MTD)',   value: 'KSh ' + Number(kpis.revenueMTD || 0).toLocaleString('en-KE'),       icon: DollarSign, color: 'text-emerald-500', href: '/wavecore-erp/analytics/revenue' },
+    { label: 'Receivables',     value: 'KSh ' + Number(kpis.outstandingReceivables || 0).toLocaleString('en-KE'), icon: TrendingUp, color: 'text-amber-500', href: '/wavecore-erp/analytics/receivables' },
+    { label: 'Active Customers', value: kpis.activeCustomers || 0,                                          icon: Users,      color: 'text-blue-500', href: '/wavecore-erp/analytics/customers' },
+    { label: 'Inventory Items', value: kpis.inventoryItems || 0,                                            icon: Package,    color: 'text-orange-500', href: '/wavecore-erp/analytics/inventory' },
   ]
 
   const performance = [
-    { label: 'Invoices',        value: kpis.invoiceCount || 0,   icon: FileText,   color: 'text-indigo-500' },
-    { label: 'Journal Entries', value: kpis.journalEntries || 0, icon: Activity,   color: 'text-emerald-500' },
-    { label: 'Projects',        value: kpis.projects || 0,       icon: Briefcase,  color: 'text-purple-500' },
+    { label: 'Invoices',        value: kpis.invoiceCount || 0,   icon: FileText,   color: 'text-indigo-500', href: '/wavecore-erp/analytics/invoices' },
+    { label: 'Journal Entries', value: kpis.journalEntries || 0, icon: Activity,   color: 'text-emerald-500', href: '/wavecore-erp/analytics/financial' },
+    { label: 'Projects',        value: kpis.projects || 0,       icon: Briefcase,  color: 'text-purple-500', href: '/wavecore-erp/analytics/projects' },
     { label: 'Support Tickets', value: kpis.tickets || 0,        icon: Ticket,     color: 'text-pink-500' },
   ]
 
@@ -153,13 +160,22 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {kpiCards.map(kpi => {
                 const Icon = kpi.icon
-                return (
-                  <div key={kpi.label} className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm hover:shadow-lg transition-all">
+                const CardInner = (
+                  <>
                     <div className="flex items-center justify-between mb-3">
                       <Icon className={'w-6 h-6 ' + kpi.color} />
                     </div>
                     <p className="text-2xl font-bold">{kpi.value}</p>
                     <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
+                  </>
+                )
+                return kpi.href ? (
+                  <Link key={kpi.label} href={kpi.href} className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm hover:shadow-lg hover:border-violet-400 transition-all block">
+                    {CardInner}
+                  </Link>
+                ) : (
+                  <div key={kpi.label} className="p-6 rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm hover:shadow-lg transition-all">
+                    {CardInner}
                   </div>
                 )
               })}
@@ -168,11 +184,20 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {performance.map(p => {
                 const Icon = p.icon
-                return (
-                  <div key={p.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+                const PerfInner = (
+                  <>
                     <Icon className={'w-5 h-5 mb-2 ' + p.color} />
                     <p className="text-2xl font-bold">{p.value}</p>
                     <p className="text-xs text-muted-foreground">{p.label}</p>
+                  </>
+                )
+                return p.href ? (
+                  <Link key={p.label} href={p.href} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900 hover:shadow-lg hover:border-violet-400 transition-all block">
+                    {PerfInner}
+                  </Link>
+                ) : (
+                  <div key={p.label} className="p-5 rounded-2xl border bg-white dark:bg-neutral-900">
+                    {PerfInner}
                   </div>
                 )
               })}
