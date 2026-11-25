@@ -1,68 +1,101 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { PenTool, Download, Upload, Loader2, FileText, Trash2, CheckCircle, Eye } from 'lucide-react'
+import {
+  ArrowLeft, PenTool, Loader2, FileText, Trash2, CheckCircle2, XCircle,
+  Mail, User, Printer, Plus, X, Clock, AlertCircle,
+} from 'lucide-react'
 
-interface SignatureDoc {
+interface SignatureRow {
+  id: string
+  documentId: string
+  signerId: string | null
+  signerName: string | null
+  signerEmail: string | null
+  status: 'PENDING' | 'SIGNED' | 'DECLINED'
+  requestedAt: string
+  signedAt: string | null
+  signatureData: string | null
+  declineReason: string | null
+  documentName?: string
+}
+
+interface DocOption {
   id: string
   name: string
-  signedBy: string
-  signedAt: string
-  status: 'SIGNED'
-  combinedDownloadUrl: string
 }
 
 export default function SignaturesPage() {
-  const [documents, setDocuments] = useState<SignatureDoc[]>([])
+  const [signatures, setSignatures] = useState<SignatureRow[]>([])
+  const [documents, setDocuments] = useState<DocOption[]>([])
   const [loading, setLoading] = useState(true)
-  const [fileName, setFileName] = useState('')
-  const [signerName, setSignerName] = useState('')
-  const [signing, setSigning] = useState(false)
-  const [uploadedImage, setUploadedImage] = useState('')
-  const [signatureData, setSignatureData] = useState('')
-  const [combinedDownloadUrl, setCombinedDownloadUrl] = useState('')
-  const [combinedPreviewUrl, setCombinedPreviewUrl] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [showRequest, setShowRequest] = useState(false)
+  const [showSign, setShowSign] = useState<SignatureRow | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [form, setForm] = useState({ documentId: '', signerName: '', signerEmail: '' })
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [drawing, setDrawing] = useState(false)
 
-  useEffect(() => {
-    const saved = localStorage.getItem('signature-docs-v4')
-    if (saved) setDocuments(JSON.parse(saved))
-    setLoading(false)
-  }, [])
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
 
-  useEffect(() => {
-    if (!loading) localStorage.setItem('signature-docs-v4', JSON.stringify(documents))
-  }, [documents, loading])
+  const loadAll = async () => {
+    setLoading(true); setError('')
+    try {
+      const [sigRes, docRes] = await Promise.all([
+        fetch('/api/wavecore/documents/signatures', { cache: 'no-store' }),
+        fetch('/api/wavecore/documents?limit=500', { cache: 'no-store' }),
+      ])
+      const sigJson = await sigRes.json()
+      const docJson = await docRes.json()
+      if (!sigRes.ok) { setError(sigJson.error || 'Failed to load signatures'); return }
+      const docMap: Record<string, string> = {}
+      ;(docJson.documents || []).forEach((d: any) => { docMap[d.id] = d.name })
+      const enriched = (sigJson.signatures || []).map((s: any) => ({ ...s, documentName: docMap[s.documentId] || 'Unknown document' }))
+      setSignatures(enriched)
+      setDocuments((docJson.documents || []).map((d: any) => ({ id: d.id, name: d.name })))
+    } catch { setError('Network error') }
+    finally { setLoading(false) }
+  }
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    // Validate file type
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      setError('Please upload an image file (JPG, PNG)')
-      return
-    }
-    
-    setError('')
-    setFileName(file.name)
-    setSignatureData('')
-    setCombinedDownloadUrl('')
-    setCombinedPreviewUrl('')
-    
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string
-      setUploadedImage(dataUrl)
-    }
-    reader.onerror = () => {
-      setError('Failed to read file')
-    }
-    reader.readAsDataURL(file)
+  useEffect(() => { loadAll() }, [])
+
+  const openRequest = () => {
+    setForm({ documentId: documents[0]?.id || '', signerName: '', signerEmail: '' })
+    setShowRequest(true)
+  }
+
+  const submitRequest = async () => {
+    if (!form.documentId || !form.signerEmail) { setError('Document and signer email required'); return }
+    setBusy('request'); setError(''); setSuccess('')
+    try {
+      const res = await fetch('/api/wavecore/documents/signatures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify(form),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Request failed'); return }
+      setShowRequest(false)
+      flash('Signature requested')
+      loadAll()
+    } catch { setError('Network error') }
+    finally { setBusy(null) }
+  }
+
+  const openSign = (sig: SignatureRow) => {
+    setShowSign(sig)
+    setTimeout(() => {
+      const canvas = canvasRef.current
+      if (canvas) {
+        const ctx = canvas.getContext('2d')
+        if (ctx) { ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.lineCap = 'round' }
+      }
+    }, 50)
   }
 
   const startDrawing = (e: React.MouseEvent) => {
@@ -74,7 +107,6 @@ export default function SignaturesPage() {
     ctx?.beginPath()
     ctx?.moveTo(e.clientX - rect.left, e.clientY - rect.top)
   }
-
   const draw = (e: React.MouseEvent) => {
     if (!drawing) return
     const canvas = canvasRef.current
@@ -84,270 +116,231 @@ export default function SignaturesPage() {
     ctx?.lineTo(e.clientX - rect.left, e.clientY - rect.top)
     ctx?.stroke()
   }
+  const stopDrawing = () => setDrawing(false)
 
-  const stopDrawing = () => {
-    setDrawing(false)
-    const canvas = canvasRef.current
-    if (canvas) setSignatureData(canvas.toDataURL())
-  }
-
-  const clearSignature = () => {
+  const submitSignature = async () => {
+    if (!showSign) return
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    ctx?.clearRect(0, 0, canvas.width, canvas.height)
-    setSignatureData('')
+    const signatureData = canvas.toDataURL('image/png')
+    if (signatureData.length < 1000) { setError('Please draw a signature first'); return }
+    setBusy('sign'); setError('')
+    try {
+      const res = await fetch('/api/wavecore/documents/signatures', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({ id: showSign.id, action: 'SIGN', signatureData }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Sign failed'); return }
+      setShowSign(null)
+      flash('Signed successfully')
+      loadAll()
+    } catch { setError('Network error') }
+    finally { setBusy(null) }
   }
 
-  const handleSign = () => {
-    if (!uploadedImage || !signerName || !signatureData) {
-      setError('Upload document, enter name, and draw signature')
-      return
+  const decline = async (sig: SignatureRow) => {
+    const reason = prompt('Reason for declining (optional):')
+    if (reason === null) return
+    setBusy(sig.id); setError('')
+    try {
+      const res = await fetch('/api/wavecore/documents/signatures', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({ id: sig.id, action: 'DECLINE', declineReason: reason || 'No reason given' }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Decline failed'); return }
+      flash('Declined')
+      loadAll()
+    } catch { setError('Network error') }
+    finally { setBusy(null) }
+  }
+
+  const remove = async (sig: SignatureRow) => {
+    if (!confirm('Delete this signature request? This cannot be undone.')) return
+    setBusy(sig.id); setError('')
+    try {
+      const res = await fetch('/api/wavecore/documents/signatures?id=' + sig.id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      if (!res.ok) { const j = await res.json(); setError(j.error || 'Delete failed'); return }
+      flash('Deleted')
+      loadAll()
+    } catch { setError('Network error') }
+    finally { setBusy(null) }
+  }
+
+  const printList = () => window.print()
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, string> = {
+      PENDING: 'bg-amber-100 text-amber-700',
+      SIGNED: 'bg-green-100 text-green-700',
+      DECLINED: 'bg-red-100 text-red-700',
     }
-
-    setError('')
-    setSigning(true)
-
-    // Use setTimeout to let UI update
-    setTimeout(() => {
-      try {
-        const combinedCanvas = document.createElement('canvas')
-        combinedCanvas.width = 800
-        combinedCanvas.height = 1000
-        const ctx = combinedCanvas.getContext('2d')
-
-        if (!ctx) throw new Error('Canvas not supported')
-
-        // White background
-        ctx.fillStyle = '#FFFFFF'
-        ctx.fillRect(0, 0, 800, 1000)
-
-        // Load uploaded document
-        const docImg = new window.Image()
-        
-        // Important: Do NOT set crossOrigin for data URLs
-        docImg.onload = () => {
-          try {
-            // Calculate dimensions to fit
-            const maxWidth = 700
-            const maxHeight = 650
-            let drawWidth = docImg.width
-            let drawHeight = docImg.height
-            
-            const widthRatio = maxWidth / drawWidth
-            const heightRatio = maxHeight / drawHeight
-            const ratio = Math.min(widthRatio, heightRatio)
-            
-            drawWidth = drawWidth * ratio
-            drawHeight = drawHeight * ratio
-            
-            // Center the document
-            const x = (800 - drawWidth) / 2
-            const y = (650 - drawHeight) / 2 + 30
-
-            // Draw document
-            ctx.drawImage(docImg, x, y, drawWidth, drawHeight)
-
-            // Load and draw signature
-            const sigImg = new window.Image()
-            sigImg.onload = () => {
-              try {
-                // Draw signature at bottom of document
-                ctx.drawImage(sigImg, 500, 720, 200, 80)
-
-                // Add text
-                ctx.fillStyle = '#000000'
-                ctx.font = 'bold 14px Arial'
-                ctx.fillText('Signed by: ' + signerName, 50, 780)
-                ctx.font = '12px Arial'
-                ctx.fillText('Date: ' + new Date().toLocaleString(), 50, 805)
-                ctx.font = '10px Arial'
-                ctx.fillStyle = '#666666'
-                ctx.fillText('Digitally signed using WaveCore E-Signature', 50, 830)
-
-                // Generate combined image
-                const combinedDataUrl = combinedCanvas.toDataURL('image/png')
-                setCombinedPreviewUrl(combinedDataUrl)
-
-                // Create downloadable blob
-                const byteString = atob(combinedDataUrl.split(',')[1])
-                const ab = new ArrayBuffer(byteString.length)
-                const ia = new Uint8Array(ab)
-                for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i)
-                const blob = new Blob([ab], { type: 'image/png' })
-                const url = URL.createObjectURL(blob)
-                setCombinedDownloadUrl(url)
-
-                const newDoc: SignatureDoc = {
-                  id: Date.now().toString(),
-                  name: fileName,
-                  signedBy: signerName,
-                  signedAt: new Date().toLocaleString(),
-                  status: 'SIGNED',
-                  combinedDownloadUrl: url,
-                }
-                setDocuments(prev => [newDoc, ...prev])
-                setSigning(false)
-                setError('')
-              } catch (innerError) {
-                setError('Error combining signature')
-                setSigning(false)
-              }
-            }
-            sigImg.onerror = () => {
-              setError('Error loading signature')
-              setSigning(false)
-            }
-            sigImg.src = signatureData
-          } catch (drawError) {
-            setError('Error drawing document')
-            setSigning(false)
-          }
-        }
-        docImg.onerror = () => {
-          setError('Error loading document. Try uploading a JPG or PNG image.')
-          setSigning(false)
-        }
-        docImg.src = uploadedImage
-      } catch (outerError) {
-        setError('Error: ' + (outerError as Error).message)
-        setSigning(false)
-      }
-    }, 500)
+    return map[s] || 'bg-neutral-100 text-neutral-700'
   }
 
-  const downloadSigned = (url?: string, name?: string) => {
-    const downloadUrl = url || combinedDownloadUrl
-    const downloadName = name || fileName
-    if (!downloadUrl) return
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.download = (downloadName || 'document').replace(/\.[^.]+$/, '') + '-SIGNED.png'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
-
-  const viewSigned = () => {
-    if (combinedPreviewUrl) window.open(combinedPreviewUrl, '_blank')
-  }
-
-  const deleteDocument = (id: string) => {
-    setDocuments(prev => prev.filter(d => d.id !== id))
-  }
-
-  const handleDownloadReport = () => {
-    const content = ['WaveCore ERP - E-Signatures', '='.repeat(50), `Signed: ${documents.length}`, '', ...documents.map(d => `${d.name} - ${d.signedBy} - ${d.signedAt}`), '', '© 2026 IntelliWavve'].join('\n')
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'signatures-report.pdf'; a.click()
-  }
+  const fmtDate = (d: string | null) => d ? new Date(d).toLocaleString('en-KE') : '—'
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp/documents" className="flex items-center gap-3">
-            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
-            <span className="font-bold">WaveCore</span>
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b print:hidden">
+        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+          <Link href="/wavecore-erp/documents" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="w-4 h-4" /> Documents
           </Link>
-          <span className="text-sm">E-Signatures</span>
+          <h1 className="font-bold flex items-center gap-2"><PenTool className="w-5 h-5 text-indigo-500" /> Signatures</h1>
+          <div className="flex gap-2">
+            <button onClick={printList} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+              <Printer className="w-4 h-4" /> Print
+            </button>
+            <button onClick={openRequest} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Request Signature
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto p-4 lg:p-8">
-        <div className="rounded-3xl bg-gradient-to-br from-green-600 to-emerald-700 p-6 mb-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2"><PenTool className="w-7 h-7" /> E-Signatures</h1>
-            <button onClick={handleDownloadReport} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm"><Download className="w-4 h-4" /> PDF</button>
-          </div>
+        <div className="hidden print:block mb-6 pb-4 border-b-2 border-neutral-800">
+          <h2 className="text-xl font-bold">Signature Requests</h2>
+          <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
         </div>
 
-        {error && (
-          <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm mb-4 text-center">{error}</div>
-        )}
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> {success}</div>}
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-              <label className="block border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer mb-4">
-                <Upload className="w-10 h-10 mx-auto mb-2 text-green-500" />
-                <p className="text-sm font-medium">{fileName || 'Upload document (JPG/PNG image)'}</p>
-                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleUpload} className="hidden" />
-              </label>
-
-              {uploadedImage && !combinedPreviewUrl && (
-                <div className="mb-3">
-                  <p className="text-xs font-medium mb-1">Uploaded Document:</p>
-                  <img src={uploadedImage} alt="Uploaded" className="max-h-40 mx-auto rounded-xl border" />
-                </div>
-              )}
-
-              <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border mb-3" placeholder="Signer full name" />
-
-              <div className="border-2 border-dashed rounded-xl p-2 mb-3">
-                <canvas ref={canvasRef} width={400} height={150} className="w-full bg-white cursor-crosshair"
-                  onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} />
-                <div className="flex justify-between mt-2">
-                  <p className="text-xs text-muted-foreground">Draw your signature</p>
-                  <button onClick={clearSignature} className="text-xs text-red-500">Clear</button>
-                </div>
-              </div>
-
-              <button onClick={handleSign} disabled={signing || !uploadedImage || !signerName || !signatureData}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2">
-                {signing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-                {signing ? 'Combining...' : 'Sign & Combine Document'}
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {combinedPreviewUrl && (
-              <div className="bg-green-50 dark:bg-green-950 rounded-2xl border border-green-200 p-6 text-center">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <p className="font-bold text-green-700">Document Signed!</p>
-                <img src={combinedPreviewUrl} alt="Signed Document" className="max-h-72 mx-auto mt-4 rounded-xl border" />
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <button onClick={viewSigned} className="py-3 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center gap-2">
-                    <Eye className="w-4 h-4" /> Open
-                  </button>
-                  <button onClick={() => downloadSigned()} className="py-3 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center gap-2">
-                    <Download className="w-4 h-4" /> Download Signed
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-8">
-          <h2 className="text-lg font-bold mb-4">Signed Documents ({documents.length})</h2>
-          {documents.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-neutral-900 rounded-2xl border">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-muted-foreground">No signed documents yet</p>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+          {loading ? (
+            <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
+          ) : signatures.length === 0 ? (
+            <div className="p-12 text-center text-sm text-neutral-500">
+              No signature requests yet. Click "Request Signature" to start.
             </div>
           ) : (
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-              {documents.map(doc => (
-                <div key={doc.id} className="flex justify-between items-center p-4 border-b">
-                  <div>
-                    <p className="font-medium">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">Signed by {doc.signedBy}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => downloadSigned(doc.combinedDownloadUrl, doc.name)} className="p-2 text-green-500"><Download className="w-4 h-4" /></button>
-                    <button onClick={() => deleteDocument(doc.id)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800 text-xs uppercase text-neutral-500">
+                  <tr>
+                    <th className="text-left px-4 py-3">Document</th>
+                    <th className="text-left px-4 py-3">Signer</th>
+                    <th className="text-left px-4 py-3">Status</th>
+                    <th className="text-left px-4 py-3">Requested</th>
+                    <th className="text-left px-4 py-3">Signed</th>
+                    <th className="text-right px-4 py-3 print:hidden">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {signatures.map(sig => (
+                    <tr key={sig.id} className="border-t hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                      <td className="px-4 py-3 font-medium">{sig.documentName}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{sig.signerName || '—'}</span>
+                          <span className="text-xs text-neutral-500 flex items-center gap-1"><Mail className="w-3 h-3" /> {sig.signerEmail}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3"><span className={'px-2 py-1 rounded text-xs font-bold ' + statusBadge(sig.status)}>{sig.status}</span></td>
+                      <td className="px-4 py-3 text-xs text-neutral-500">{fmtDate(sig.requestedAt)}</td>
+                      <td className="px-4 py-3 text-xs text-neutral-500">{fmtDate(sig.signedAt)}</td>
+                      <td className="px-4 py-3 text-right print:hidden">
+                        <div className="flex gap-1 justify-end">
+                          {sig.status === 'PENDING' && (
+                            <>
+                              <button onClick={() => openSign(sig)} disabled={busy === sig.id} className="px-2 py-1 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-bold disabled:opacity-40">
+                                Sign
+                              </button>
+                              <button onClick={() => decline(sig)} disabled={busy === sig.id} className="px-2 py-1 rounded-lg bg-neutral-200 dark:bg-neutral-700 text-xs font-bold disabled:opacity-40">
+                                Decline
+                              </button>
+                            </>
+                          )}
+                          <button onClick={() => remove(sig)} disabled={busy === sig.id} className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold disabled:opacity-40">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </main>
+
+      {/* Request modal */}
+      {showRequest && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowRequest(false)}>
+          <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-neutral-900 rounded-2xl border max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Request Signature</h3>
+              <button onClick={() => setShowRequest(false)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Document *</label>
+                <select value={form.documentId} onChange={e => setForm({ ...form, documentId: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-sm">
+                  <option value="">Select document...</option>
+                  {documents.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Signer Name</label>
+                <input value={form.signerName} onChange={e => setForm({ ...form, signerName: e.target.value })}
+                  placeholder="John Kamau"
+                  className="w-full px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 mb-1">Signer Email *</label>
+                <input type="email" value={form.signerEmail} onChange={e => setForm({ ...form, signerEmail: e.target.value })}
+                  placeholder="john@example.com"
+                  className="w-full px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-sm" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setShowRequest(false)} disabled={busy === 'request'} className="px-4 py-2 rounded-lg text-sm bg-neutral-100 dark:bg-neutral-800">Cancel</button>
+              <button onClick={submitRequest} disabled={busy === 'request'} className="px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40">
+                {busy === 'request' ? 'Requesting...' : 'Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign modal */}
+      {showSign && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowSign(null)}>
+          <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-neutral-900 rounded-2xl border max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Sign: {showSign.documentName}</h3>
+              <button onClick={() => setShowSign(null)}><X className="w-4 h-4" /></button>
+            </div>
+            <p className="text-sm text-neutral-500 mb-3">Draw your signature below:</p>
+            <canvas
+              ref={canvasRef}
+              width={480}
+              height={180}
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
+              className="w-full border-2 border-dashed rounded-xl cursor-crosshair bg-white"
+            />
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setShowSign(null)} disabled={busy === 'sign'} className="px-4 py-2 rounded-lg text-sm bg-neutral-100 dark:bg-neutral-800">Cancel</button>
+              <button onClick={submitSignature} disabled={busy === 'sign'} className="px-4 py-2 rounded-lg text-sm font-bold bg-green-600 hover:bg-green-500 text-white disabled:opacity-40">
+                {busy === 'sign' ? 'Signing...' : 'Sign'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,175 +1,199 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { GitBranch, Download, Upload, Loader2, FileText, Trash2, History, Plus } from 'lucide-react'
+import {
+  ArrowLeft, GitBranch, Loader2, Download, Trash2, Printer, AlertCircle,
+  CheckCircle2, Upload, FileText, Clock, User,
+} from 'lucide-react'
 
-interface DocumentVersion {
+interface Version {
+  id: string
+  documentId: string
+  versionNumber: number
+  fileName: string
+  fileSize: number
+  fileUrl: string
+  uploadedByName: string | null
+  notes: string | null
+  createdAt: string
+}
+
+interface DocOption {
   id: string
   name: string
-  version: number
-  size: string
-  uploadedAt: string
-  status: 'CURRENT' | 'PREVIOUS'
+  currentVersion: number
 }
 
 export default function VersionControlPage() {
-  const [documents, setDocuments] = useState<DocumentVersion[]>([])
+  const [documents, setDocuments] = useState<DocOption[]>([])
+  const [selectedId, setSelectedId] = useState('')
+  const [versions, setVersions] = useState<Version[]>([])
   const [loading, setLoading] = useState(true)
-  const [fileName, setFileName] = useState('')
-  const [uploading, setUploading] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  // Load from localStorage - ZERO data until user uploads
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
+
   useEffect(() => {
-    const saved = localStorage.getItem('version-control-docs')
-    if (saved) {
-      setDocuments(JSON.parse(saved))
-    }
-    setLoading(false)
+    loadDocuments()
   }, [])
 
-  // Persist to localStorage
   useEffect(() => {
-    if (!loading) {
-      localStorage.setItem('version-control-docs', JSON.stringify(documents))
+    if (selectedId) loadVersions()
+    else setVersions([])
+  }, [selectedId])
+
+  const loadDocuments = async () => {
+    setLoading(true); setError('')
+    try {
+      const res = await fetch('/api/wavecore/documents?limit=500', { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Failed to load documents'); return }
+      const docs = (json.documents || []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        currentVersion: Number(d.currentVersion || d.version || 1),
+      }))
+      setDocuments(docs)
+      if (docs.length > 0 && !selectedId) setSelectedId(docs[0].id)
+    } catch { setError('Network error') }
+    finally { setLoading(false) }
+  }
+
+  const loadVersions = async () => {
+    setError('')
+    try {
+      const res = await fetch('/api/wavecore/documents/' + selectedId + '/versions', { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Failed to load versions'); return }
+      setVersions(json.versions || [])
+    } catch { setError('Network error') }
+  }
+
+  const remove = async (version: Version) => {
+    const current = documents.find(d => d.id === selectedId)?.currentVersion || 1
+    if (version.versionNumber === current) {
+      setError('Cannot delete the current version. Upload a new version first.')
+      return
     }
-  }, [documents, loading])
-
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-
-    setTimeout(() => {
-      const existing = documents.find(d => d.name === file.name)
-      const newDoc: DocumentVersion = {
-        id: Date.now().toString(),
-        name: file.name,
-        version: existing ? existing.version + 1 : 1,
-        size: (file.size / 1024).toFixed(1) + ' KB',
-        uploadedAt: new Date().toLocaleString(),
-        status: 'CURRENT',
-      }
-
-      // Mark previous version as PREVIOUS
-      setDocuments(prev => [
-        newDoc,
-        ...prev.map(d => d.name === file.name ? { ...d, status: 'PREVIOUS' as const } : d),
-      ])
-
-      setFileName('')
-      setUploading(false)
-    }, 1000)
+    if (!confirm('Delete version ' + version.versionNumber + ' (' + version.fileName + ')? This cannot be undone.')) return
+    setBusy(version.id); setError('')
+    try {
+      const res = await fetch('/api/wavecore/documents/' + selectedId + '/versions?versionId=' + version.id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': csrf() },
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Delete failed'); return }
+      flash('Version deleted')
+      loadVersions()
+    } catch { setError('Network error') }
+    finally { setBusy(null) }
   }
 
-  const deleteDocument = (id: string) => {
-    if (!confirm('Delete this document version?')) return
-    setDocuments(prev => prev.filter(d => d.id !== id))
+  const printHistory = () => window.print()
+
+  const fmtBytes = (b: number) => {
+    if (!b) return '—'
+    if (b < 1024) return b + ' B'
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB'
+    return (b / 1024 / 1024).toFixed(2) + ' MB'
   }
 
-  const handleDownloadPDF = () => {
-    const content = [
-      'WaveCore ERP - Version Control',
-      '='.repeat(50),
-      'Generated: ' + new Date().toLocaleString(),
-      'Documents: ' + documents.length,
-      '='.repeat(50),
-      '',
-      ...documents.map((d, i) => 
-        `Document #${i+1}\n  Name: ${d.name}\n  Version: v${d.version}\n  Size: ${d.size}\n  Status: ${d.status}\n  Uploaded: ${d.uploadedAt}\n` + '-'.repeat(30)
-      ),
-      '',
-      '© 2026 IntelliWavve'
-    ].join('\n')
-    const blob = new Blob([content], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'version-control.pdf'; a.click()
-  }
+  const fmtDate = (d: string) => d ? new Date(d).toLocaleString('en-KE') : '—'
+
+  const selectedDoc = documents.find(d => d.id === selectedId)
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp/documents" className="flex items-center gap-3">
-            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
-            <span className="font-bold">WaveCore</span>
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b print:hidden">
+        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+          <Link href="/wavecore-erp/documents" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="w-4 h-4" /> Documents
           </Link>
-          <span className="text-sm">Version Control</span>
+          <h1 className="font-bold flex items-center gap-2"><GitBranch className="w-5 h-5 text-purple-500" /> Version Control</h1>
+          <button onClick={printHistory} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2">
+            <Printer className="w-4 h-4" /> Print
+          </button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-4 lg:p-8">
-        <div className="rounded-3xl bg-gradient-to-br from-purple-600 to-violet-700 p-6 mb-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <GitBranch className="w-7 h-7" /> Version Control
-            </h1>
-            <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white text-sm">
-              <Download className="w-4 h-4" /> PDF
-            </button>
-          </div>
+      <main className="max-w-6xl mx-auto p-4 lg:p-8">
+        <div className="hidden print:block mb-6 pb-4 border-b-2 border-neutral-800">
+          <h2 className="text-xl font-bold">Version History {selectedDoc ? '- ' + selectedDoc.name : ''}</h2>
+          <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
         </div>
 
-        {/* Upload */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
-          <label className="block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer">
-            <Upload className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-            <p className="text-sm font-medium">{uploading ? 'Uploading...' : 'Upload document (new version if exists)'}</p>
-            <input type="file" onChange={handleUpload} className="hidden" disabled={uploading} />
-          </label>
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2 print:hidden"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2 print:hidden"><CheckCircle2 className="w-4 h-4" /> {success}</div>}
+
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-4 print:hidden">
+          <label className="block text-xs font-bold text-neutral-500 mb-2">Select Document</label>
+          <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-sm">
+            <option value="">— choose a document —</option>
+            {documents.map(d => <option key={d.id} value={d.id}>{d.name} (v{d.currentVersion})</option>)}
+          </select>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 text-center">
-            <FileText className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{documents.length}</p>
-            <p className="text-xs text-muted-foreground">Documents</p>
-          </div>
-          <div className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 text-center">
-            <History className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{documents.filter(d => d.status === 'PREVIOUS').length}</p>
-            <p className="text-xs text-muted-foreground">Previous Versions</p>
-          </div>
-          <div className="p-4 rounded-2xl border bg-white dark:bg-neutral-900 text-center">
-            <Plus className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{documents.filter(d => d.status === 'CURRENT').length}</p>
-            <p className="text-xs text-muted-foreground">Current</p>
-          </div>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
+          {loading ? (
+            <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-500" /></div>
+          ) : !selectedId ? (
+            <div className="p-12 text-center text-sm text-neutral-500">Select a document to view its version history.</div>
+          ) : versions.length === 0 ? (
+            <div className="p-12 text-center text-sm text-neutral-500">No versions yet for this document.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 dark:bg-neutral-800 text-xs uppercase text-neutral-500">
+                  <tr>
+                    <th className="text-left px-4 py-3">Version</th>
+                    <th className="text-left px-4 py-3">File</th>
+                    <th className="text-left px-4 py-3">Size</th>
+                    <th className="text-left px-4 py-3">Uploaded by</th>
+                    <th className="text-left px-4 py-3">Date</th>
+                    <th className="text-left px-4 py-3">Notes</th>
+                    <th className="text-right px-4 py-3 print:hidden">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {versions.map(v => {
+                    const isCurrent = v.versionNumber === (selectedDoc?.currentVersion || 1)
+                    return (
+                      <tr key={v.id} className={'border-t ' + (isCurrent ? 'bg-purple-50 dark:bg-purple-950/30' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50')}>
+                        <td className="px-4 py-3 font-mono font-bold">v{v.versionNumber} {isCurrent && <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-purple-100 text-purple-700 font-bold">CURRENT</span>}</td>
+                        <td className="px-4 py-3 text-xs">{v.fileName}</td>
+                        <td className="px-4 py-3 text-xs">{fmtBytes(v.fileSize)}</td>
+                        <td className="px-4 py-3 text-xs">{v.uploadedByName || '—'}</td>
+                        <td className="px-4 py-3 text-xs text-neutral-500">{fmtDate(v.createdAt)}</td>
+                        <td className="px-4 py-3 text-xs text-neutral-500">{v.notes || '—'}</td>
+                        <td className="px-4 py-3 text-right print:hidden">
+                          <div className="flex gap-1 justify-end">
+                            {v.fileUrl && (
+                              <a href={v.fileUrl} target="_blank" rel="noreferrer" className="px-2 py-1 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold">
+                                <Download className="w-3 h-3 inline" />
+                              </a>
+                            )}
+                            {!isCurrent && (
+                              <button onClick={() => remove(v)} disabled={busy === v.id} className="px-2 py-1 rounded-lg bg-red-50 text-red-600 text-xs font-bold disabled:opacity-40">
+                                <Trash2 className="w-3 h-3 inline" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-
-        {/* Document List */}
-        {loading ? (
-          <div className="text-center py-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
-        ) : documents.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border">
-            <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-muted-foreground">No documents yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Upload your first document to start version tracking</p>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-            {documents.map(doc => (
-              <div key={doc.id} className="flex justify-between items-center p-4 border-b hover:bg-neutral-50">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-purple-500" />
-                  <div>
-                    <p className="font-medium">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">v{doc.version} • {doc.size} • {doc.uploadedAt}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    doc.status === 'CURRENT' ? 'bg-green-50 text-green-600' : 'bg-neutral-100 text-neutral-500'
-                  }`}>{doc.status}</span>
-                  <button onClick={() => deleteDocument(doc.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </main>
     </div>
   )
