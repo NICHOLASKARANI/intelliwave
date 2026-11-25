@@ -1,225 +1,202 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Scan, Download, Upload, Loader2, FileText, Eye, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft, Scan, Loader2, Upload, FileText, Download, Trash2, Printer,
+  AlertCircle, CheckCircle2, Sparkles, Languages, Clock,
+} from 'lucide-react'
+
+interface DocOption {
+  id: string
+  name: string
+}
+
+interface OCRResult {
+  text: string
+  confidence: number
+  characters: number
+  processingMs: number
+  jobId: string
+}
 
 export default function OCRPage() {
+  const [documents, setDocuments] = useState<DocOption[]>([])
+  const [selectedDocId, setSelectedDocId] = useState('')
+  const [language, setLanguage] = useState('eng')
   const [fileName, setFileName] = useState('')
-  const [scanning, setScanning] = useState(false)
-  const [scanned, setScanned] = useState(false)
-  const [extractedText, setExtractedText] = useState('')
-  const [previewUrl, setPreviewUrl] = useState('')
   const [imagePreview, setImagePreview] = useState('')
+  const [imageBase64, setImageBase64] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [result, setResult] = useState<OCRResult | null>(null)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const csrf = () => (typeof document === 'undefined') ? '' : (document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || '')
+  const flash = (m: string) => { setSuccess(m); setTimeout(() => setSuccess(''), 3500) }
+
+  useEffect(() => {
+    fetch('/api/wavecore/documents?limit=500', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => setDocuments((d.documents || []).map((x: any) => ({ id: x.id, name: x.name }))))
+      .catch(() => {})
+  }, [])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setFileName(file.name)
-    setScanned(false)
-    setPreviewUrl('')
-    setExtractedText('')
-
+    setError(''); setResult(null); setFileName(file.name)
+    if (!file.type.startsWith('image/')) { setError('Upload an image file (PNG, JPG, WEBP)'); return }
     const reader = new FileReader()
     reader.onload = (event) => {
-      setImagePreview(event.target?.result as string)
+      const dataUrl = event.target?.result as string
+      setImagePreview(dataUrl)
+      setImageBase64(dataUrl)
     }
+    reader.onerror = () => setError('Failed to read file')
     reader.readAsDataURL(file)
   }
 
-  const generateSimplePDF = (text: string): string => {
-    // Simple but VALID PDF structure
-    const lines = text.split('\n')
-    let pdfText = ''
-    
-    lines.forEach((line, i) => {
-      pdfText += `BT /F1 10 Tf 50 ${770 - i * 15} Td (${line.replace(/[()\\]/g, '\\$&').slice(0, 80)}) Tj ET\n`
-    })
-
-    const pdf = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
-endobj
-4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-endobj
-5 0 obj
-<< /Length ${pdfText.length} >>
-stream
-${pdfText}
-endstream
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000230 00000 n 
-0000000275 00000 n 
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-0
-%%EOF`
-
-    return pdf
+  const runOCR = async () => {
+    if (!imageBase64) { setError('Upload an image first'); return }
+    setScanning(true); setError(''); setSuccess(''); setResult(null)
+    try {
+      const res = await fetch('/api/wavecore/documents/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        body: JSON.stringify({
+          imageData: imageBase64,
+          language,
+          documentId: selectedDocId || undefined,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'OCR failed'); return }
+      setResult({
+        text: json.text || '',
+        confidence: json.confidence || 0,
+        characters: json.characters || 0,
+        processingMs: json.processingMs || 0,
+        jobId: json.jobId || '',
+      })
+      flash('OCR completed in ' + (json.processingMs || 0) + 'ms')
+    } catch (e) {
+      setError('Network error: ' + (e as Error).message)
+    } finally {
+      setScanning(false)
+    }
   }
 
-  const handleScan = () => {
-    if (!fileName) return
-    setScanning(true)
-
-    setTimeout(() => {
-      try {
-        const baseText = fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
-        const extracted = [
-          'OCR SCAN RESULTS',
-          '='.repeat(50),
-          '',
-          'Document: ' + fileName,
-          'Scan Date: ' + new Date().toLocaleString(),
-          '',
-          'Extracted Content:',
-          baseText.toUpperCase(),
-          '',
-          'Processed by WaveCore AI OCR Engine.',
-          'Accuracy: 99.7%',
-          '',
-          '--- END OF OCR EXTRACTION ---',
-          '(c) 2026 IntelliWavve'
-        ].join('\n')
-
-        setExtractedText(extracted)
-        
-        // Generate VALID PDF
-        const pdf = generateSimplePDF(extracted)
-        const blob = new Blob([pdf], { type: 'application/pdf' })
-        const url = URL.createObjectURL(blob)
-        
-        setPreviewUrl(url)
-        setScanned(true)
-        setScanning(false)
-      } catch (error) {
-        console.error('OCR error:', error)
-        setScanning(false)
-      }
-    }, 2000)
-  }
-
-  const handleDownload = () => {
-    if (!previewUrl) return
+  const downloadText = () => {
+    if (!result) return
+    const blob = new Blob([result.text], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = previewUrl
-    a.download = fileName.replace(/\.[^.]+$/, '') + '-ocr.pdf'
+    a.href = url
+    a.download = (fileName.replace(/\.[^.]+$/, '') || 'ocr') + '.txt'
     a.click()
+    URL.revokeObjectURL(url)
   }
 
-  const handleOpenInBrowser = () => {
-    if (!previewUrl) return
-    window.open(previewUrl, '_blank')
-  }
-
-  const resetAll = () => {
-    setFileName('')
-    setScanned(false)
-    setExtractedText('')
-    setPreviewUrl('')
-    setImagePreview('')
+  const clearAll = () => {
+    setFileName(''); setImagePreview(''); setImageBase64(''); setResult(null); setError(''); setSuccess('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const printResult = () => window.print()
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/wavecore-erp/documents" className="flex items-center gap-3">
-            <Image src="/images/Wavecore.jpeg" alt="WaveCore" width={40} height={40} className="rounded-xl object-cover" />
-            <span className="font-bold">WaveCore</span>
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b print:hidden">
+        <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+          <Link href="/wavecore-erp/documents" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="w-4 h-4" /> Documents
           </Link>
-          <span className="text-sm">OCR Scanner</span>
+          <h1 className="font-bold flex items-center gap-2"><Scan className="w-5 h-5 text-blue-500" /> OCR Scanner</h1>
+          <button onClick={printResult} disabled={!result} className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm font-bold flex items-center gap-2 disabled:opacity-40">
+            <Printer className="w-4 h-4" /> Print
+          </button>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-4 lg:p-8">
-        <div className="rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 mb-8">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Scan className="w-7 h-7" /> AI OCR Scanner
-          </h1>
-          <p className="text-white/80 text-sm">Extract text and generate searchable PDF</p>
+        <div className="hidden print:block mb-6 pb-4 border-b-2 border-neutral-800">
+          <h2 className="text-xl font-bold">OCR Result {fileName ? '- ' + fileName : ''}</h2>
+          <p className="text-xs text-neutral-500">Generated {new Date().toLocaleString()}</p>
         </div>
 
-        {/* Upload */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6 mb-6">
-          <label className="block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer">
-            <Upload className="w-12 h-12 mx-auto mb-3 text-neutral-400" />
-            <p className="font-medium">{fileName || 'Click to upload image/document'}</p>
-            <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileUpload} className="hidden" />
-          </label>
-        </div>
+        {error && <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-center gap-2 print:hidden"><AlertCircle className="w-4 h-4" /> {error}</div>}
+        {success && <div className="p-4 mb-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2 print:hidden"><CheckCircle2 className="w-4 h-4" /> {success}</div>}
 
-        {/* Image Preview */}
-        {imagePreview && !scanned && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4 mb-6">
-            <p className="font-bold mb-3">Original Document</p>
-            <img src={imagePreview} alt="Uploaded" className="max-h-64 mx-auto rounded-xl" />
-          </div>
-        )}
-
-        {/* Scan Button */}
-        {fileName && !scanned && !scanning && (
-          <button onClick={handleScan}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center gap-2 mb-6">
-            <Scan className="w-5 h-5" /> Start OCR Scan
-          </button>
-        )}
-
-        {/* Scanning Loader */}
-        {scanning && (
-          <div className="text-center py-8">
-            <Loader2 className="w-12 h-12 animate-spin mx-auto text-blue-500 mb-4" />
-            <p className="text-muted-foreground">Scanning with AI OCR...</p>
-          </div>
-        )}
-
-        {/* Results */}
-        {scanned && (
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-6">
-              <div className="flex justify-between items-center mb-3">
-                <p className="font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-blue-500" /> OCR Result</p>
-                <button onClick={resetAll} className="text-red-500 flex items-center gap-1 text-sm"><Trash2 className="w-4 h-4" /> New Scan</button>
-              </div>
-              <pre className="whitespace-pre-wrap text-sm font-mono bg-neutral-50 dark:bg-neutral-800 p-4 rounded-xl max-h-64 overflow-y-auto">{extractedText}</pre>
+        <div className="grid md:grid-cols-2 gap-4 print:hidden">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4">
+            <h3 className="font-bold mb-3 flex items-center gap-2"><Upload className="w-4 h-4" /> Upload Image</h3>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload}
+              className="block w-full text-sm mb-3 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:font-bold" />
+            {imagePreview && (
+              <img src={imagePreview} alt="Preview" className="w-full rounded-lg border max-h-64 object-contain" />
+            )}
+            <div className="mt-3">
+              <label className="block text-xs font-bold text-neutral-500 mb-1">Language</label>
+              <select value={language} onChange={e => setLanguage(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-sm">
+                <option value="eng">English</option>
+                <option value="swa">Swahili</option>
+                <option value="fra">French</option>
+                <option value="ara">Arabic</option>
+              </select>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={handleOpenInBrowser}
-                className="py-3.5 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center gap-2">
-                <Eye className="w-4 h-4" /> Open PDF
+            <div className="mt-3">
+              <label className="block text-xs font-bold text-neutral-500 mb-1">Attach to Document (optional)</label>
+              <select value={selectedDocId} onChange={e => setSelectedDocId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-sm">
+                <option value="">— don't attach —</option>
+                {documents.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button onClick={runOCR} disabled={!imageBase64 || scanning}
+                className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2">
+                {scanning ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning...</> : <><Sparkles className="w-4 h-4" /> Run OCR</>}
               </button>
-              <button onClick={handleDownload}
-                className="py-3.5 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center gap-2">
-                <Download className="w-4 h-4" /> Download PDF
+              <button onClick={clearAll} disabled={scanning}
+                className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm">
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
+          </div>
 
-            {previewUrl && (
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border overflow-hidden">
-                <p className="font-bold p-4 border-b">PDF Preview</p>
-                <iframe src={previewUrl} className="w-full h-96" title="OCR PDF" />
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border p-4">
+            <h3 className="font-bold mb-3 flex items-center gap-2"><FileText className="w-4 h-4" /> Extracted Text</h3>
+            {result ? (
+              <>
+                <div className="text-xs text-neutral-500 mb-2 flex flex-wrap gap-3">
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.processingMs}ms</span>
+                  <span>{result.characters} chars</span>
+                  <span>Confidence: {result.confidence.toFixed(1)}%</span>
+                </div>
+                <textarea readOnly value={result.text}
+                  className="w-full h-64 px-3 py-2 rounded-lg border bg-neutral-50 dark:bg-neutral-800 text-xs font-mono" />
+                <button onClick={downloadText} className="mt-2 w-full px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-bold flex items-center justify-center gap-2">
+                  <Download className="w-4 h-4" /> Download as .txt
+                </button>
+              </>
+            ) : (
+              <div className="text-sm text-neutral-400 text-center py-12">
+                Upload an image and click "Run OCR" to extract text
               </div>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Print-only result */}
+        <div className="hidden print:block">
+          {result && (
+            <pre className="whitespace-pre-wrap text-sm border p-4 rounded">{result.text}</pre>
+          )}
+        </div>
       </main>
     </div>
   )
