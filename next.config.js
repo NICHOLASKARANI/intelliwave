@@ -5,6 +5,11 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['undici', '@vercel/blob', 'pdfjs-dist'],
   },
+  outputFileTracingIncludes: {
+    '/api/wavecore/documents/pdf-tools': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
