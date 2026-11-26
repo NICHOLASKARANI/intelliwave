@@ -481,10 +481,27 @@ export async function POST(request: NextRequest) {
         note: 'Translation requires Google Translate API or OpenAI API key. Extracted text is provided for manual translation.'
       }
     }
+    else if (tool === 'PDF_TO_WORD') {
+      const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs')
+      const pdf = await pdfjs.getDocument({ data: new Uint8Array(inputBytes) }).promise
+      const docx: any = await import('docx')
+      const children: any[] = []
+      for (let pn = 1; pn <= pdf.numPages; pn++) {
+        const pg = await pdf.getPage(pn)
+        const tc = await pg.getTextContent()
+        const txt = tc.items.map((x: any) => x.str).join(' ')
+        children.push(new docx.Paragraph({ children: [new docx.TextRun(txt)] }))
+      }
+      const finalDoc = new docx.Document({ sections: [{ properties: {}, children }] })
+      const buffer = await docx.Packer.toBuffer(finalDoc)
+      outputBytes = new Uint8Array(buffer)
+      outputMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      extra = { pages: pdf.numPages }
+    }
 else {
       return NextResponse.json({
         error: 'Tool "' + tool + '" not supported in this environment. Supported: MERGE, SPLIT, COMPRESS, ROTATE, WATERMARK, PAGE_NUMBERS, ORGANIZE, UNLOCK, REPAIR, CROP, REDACT, METADATA',
-        supportedTools: ['MERGE', 'SPLIT', 'COMPRESS', 'ROTATE', 'WATERMARK', 'PAGE_NUMBERS', 'ORGANIZE', 'UNLOCK', 'REPAIR', 'CROP', 'REDACT', 'METADATA'],
+        supportedTools: ['MERGE', 'SPLIT', 'COMPRESS', 'ROTATE', 'WATERMARK', 'PAGE_NUMBERS', 'ORGANIZE', 'UNLOCK', 'REPAIR', 'CROP', 'REDACT', 'METADATA', 'PDF_TO_WORD'],
       }, { status: 400 })
     }
 

@@ -40,7 +40,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
-    "docx": "^9.7.1",
+    "docx": "^9.16.0",
     "framer-motion": "^10.18.0",
     "googleapis": "^173.0.0",
     "ioredis": "^6.0.0",

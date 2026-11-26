@@ -23,7 +23,7 @@ const TOOL_CONFIG: Record<string, {
   multiple?: boolean
   options?: { key: string; label: string; type: 'text'|'number'|'select'|'password'|'color'; default?: any; choices?: string[]; min?: number; max?: number; step?: number }[]
   multipleFiles?: boolean
-  outputType?: 'pdf' | 'text' | 'md' | 'txt';
+  outputType?: 'pdf' | 'text' | 'md' | 'txt' | 'docx' | 'xlsx' | 'csv' | 'pptx';
   outputExtension?: string;
   outputMime?: string;
 }> = {
@@ -191,7 +191,17 @@ const TOOL_CONFIG: Record<string, {
     color: 'from-teal-500 to-cyan-600',
     accept: '.pdf',
   },
-  'md-to-pdf': {
+  'pdf-to-word': {
+    title: 'PDF to Word',
+    description: 'Convert PDF to editable Word document (.docx)',
+    apiTool: 'PDF_TO_WORD',
+    outputType: 'docx',
+    outputExtension: 'docx',
+    outputMime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    icon: FileEdit,
+    color: 'from-blue-500 to-indigo-600',
+    accept: '.pdf',
+  },  'md-to-pdf': {
     title: 'Markdown to PDF',
     description: 'Convert Markdown to PDF',
     apiTool: 'MD_TO_PDF',
