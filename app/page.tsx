@@ -61,18 +61,6 @@ function AnimatedCounter({ end, suffix = '' }: { end: number; suffix?: string })
 // ============================================================
 // DATA
 // ============================================================
-const servicesData = [
-  { title: 'AI Business Automation', image: '/images/Aibusinessautomation.jpeg', desc: 'Intelligent automation for enterprise operations', href: '/ai-engineering' },
-  { title: 'E-Commerce Platforms', image: '/images/eccomerce.jpeg', desc: 'Scalable online stores with M-Pesa integration', href: '/services' },
-  { title: 'Real Estate Solutions', image: '/images/real estate.jpeg', desc: 'Property management and real estate platforms', href: '/services' },
-  { title: 'Healthcare Systems', image: '/images/medicaldental clinnic.jpeg', desc: 'Medical and dental practice management', href: '/services' },
-  { title: 'Restaurant & Hospitality', image: '/images/restaurant.jpeg', desc: 'POS and management systems for hospitality', href: '/services' },
-  { title: 'Construction Management', image: '/images/constructioncompanies.jpeg', desc: 'Project management for construction firms', href: '/services' },
-  { title: 'Law Firm Solutions', image: '/images/law firm website.jpeg', desc: 'Case management for legal practices', href: '/services' },
-  { title: 'Fitness & Gym Management', image: '/images/gymfitness.jpeg', desc: 'Membership and scheduling platforms', href: '/services' },
-  { title: 'Auto Repair Shops', image: '/images/Autorepairshops.jpeg', desc: 'Workshop and inventory management', href: '/services' },
-  { title: 'Beauty & Spa Salons', image: '/images/beautysalonsspa.jpeg', desc: 'Booking and client management systems', href: '/services' },
-]
 
 const engineeringImages = [
   { src: '/images/ai-engineering.jpg', alt: 'AI engineers building machine learning models', label: 'AI Engineering' },
@@ -81,12 +69,6 @@ const engineeringImages = [
   { src: '/images/cloud-devops.jpg', alt: 'Cloud engineers managing infrastructure and deployments', label: 'Cloud & DevOps' },
 ]
 
-const businessImages = [
-  
-  { src: '/images/Satelites.jpeg', alt: 'Satellite technology and space systems', label: 'Space Technology' },
-  { src: '/images/great.jpeg', alt: 'Delivering exceptional enterprise results', label: 'Proven Results' },
-  { src: '/images/ui.png', alt: 'Enterprise dashboard with premium UI/UX', label: 'Enterprise Design' },
-]
 
 // ============================================================
 // HOMEPAGE â€” World-Class Enterprise Experience
@@ -249,244 +231,230 @@ export default function HomePage() {
 
       {/* ========================================== IntelliWavve FLAGSHIP SHOWCASE ========================================== */}
 
-      {/* ========================================== SOLUTIONS FOR EVERY INDUSTRY ========================================== */}
-      <section className="py-28 bg-white dark:bg-neutral-950">
+      {/* ========================================== 1. 100 ECOSYSTEMS ========================================== */}
+      <section className="py-24 md:py-32 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
-              Solutions for Every Industry
-            </h2>
-            <p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto">
-              Custom-built software and AI solutions tailored to your specific needs.
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {servicesData.map((service, index) => (
-              <motion.div key={service.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.04 }}
-                whileHover={{ y: -6 }} className="group relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 cursor-pointer">
-                <Link href={service.href}>
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <Image src={service.image} alt={service.title} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-blue-500/20 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                      <h3 className="text-white font-bold text-xl tracking-tight">{service.title}</h3>
-                      <p className="text-white/70 text-sm mt-2 leading-relaxed">{service.desc}</p>
-                    </div>
-                    <ArrowUpRight className="absolute top-4 right-4 w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================== ENGINEERING EXCELLENCE ========================================== */}
-      <section className="py-28 bg-neutral-50 dark:bg-neutral-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
-              Engineering Excellence
-            </h2>
-            <p className="text-xl text-neutral-500 dark:text-neutral-400">
-              Production-grade systems built with rigorous engineering standards.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {engineeringImages.map((img) => (
-              <div key={img.label} className="group relative rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all duration-500">
-                <div className="relative h-72">
-                  <Image src={img.src} alt={img.alt} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <h3 className="text-white font-bold text-lg">{img.label}</h3>
-                  </div>
-                </div>
+          <div className="max-w-5xl mx-auto">
+            <Link href="/executives" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-blue-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(59,130,246,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/100-ecosystems.png"
+                  alt="100 Business Ecosystems — IntelliWavve"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="eager"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================== ENTERPRISE ARCHITECTURE + AI CAPABILITIES ========================================== */}
-      <EnterpriseArchitecture />
-      <AICapabilities />
-
-      {/* ========================================== ENTERPRISE AI PLATFORM ========================================== */}
-      <section className="py-28 bg-white dark:bg-neutral-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
-              Enterprise AI Platform
-            </h2>
-          </div>
-          <div className="relative rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-700 shadow-2xl">
-            <Image src="/images/intelli-systems.png" alt="IntelliWavve Enterprise AI Platform" width={1200} height={600} className="w-full object-cover" priority />
-            <div className="absolute bottom-0 left-0 right-0 p-10 text-white bg-gradient-to-t from-black/70 via-black/30 to-transparent">
-              <h3 className="text-3xl font-bold tracking-tight">IntelliWavve Enterprise AI Ecosystem</h3>
-              <p className="text-white/70 text-lg mt-2">One unified platform for AI, automation, and enterprise operations</p>
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                One Intelligent Ecosystem. Solutions Across 100 Business Systems.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                IntelliWavve brings together 100 specialised business and industry systems designed to address diverse operational needs. From retail, healthcare and education to finance, logistics, manufacturing and professional services, our expanding digital ecosystem provides businesses with technology to streamline operations, improve productivity and accelerate digital transformation.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========================================== BUSINESS IMPACT ========================================== */}
-      <section className="py-28 bg-neutral-50 dark:bg-neutral-900">
+      {/* ========================================== 2. WAVECORE ERP ========================================== */}
+      <section className="py-24 md:py-32 bg-neutral-50 dark:bg-neutral-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
-              Business Impact
-            </h2>
-            <p className="text-xl text-neutral-500 dark:text-neutral-400">
-              Real results across industries and technologies.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {businessImages.map((img) => (
-              <div key={img.label} className="group relative rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all duration-500">
-                <div className="relative aspect-[4/3]">
-                  <Image src={img.src} alt={img.alt} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <h3 className="text-white font-bold text-lg">{img.label}</h3>
-                  </div>
-                </div>
+          <div className="max-w-5xl mx-auto">
+            <Link href="/wavecore-erp" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-cyan-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(6,182,212,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/wavecore-erp.png"
+                  alt="WaveCore ERP — Enterprise Management Platform"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
-            ))}
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                One Integrated Platform. Complete Enterprise Management.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                WaveCore ERP delivers an integrated approach to enterprise resource planning, connecting essential business operations through one intelligent platform. From inventory and procurement to sales, finance, human resource management and operational reporting, businesses gain greater visibility, coordination and control over their activities.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ========================================== REMAINING ENTERPRISE SECTIONS ========================================== */}
-      <DigitalTwin />
-      <WorldMap />
-      <GlobalInfrastructure />
-      <ExecutiveROI />
-      <EnterpriseTrust />
-      <MissionControl />
-
-      {/* ========================================== ENTERPRISE ANALYTICS DASHBOARD ========================================== */}
-      <section className="py-28 bg-white dark:bg-neutral-950">
+      {/* ========================================== 3. WAVVE SI ========================================== */}
+      <section className="py-24 md:py-32 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              Enterprise Analytics
-            </h2>
-          </div>
-          <EnterpriseDashboard />
-        </div>
-      </section>
-
-      {/* ========================================== AI PROPOSAL GENERATOR ========================================== */}
-      <section className="py-28 bg-neutral-50 dark:bg-neutral-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              Get Your Custom Proposal
-            </h2>
-          </div>
-          <div className="max-w-2xl mx-auto"><AIProposalGenerator /></div>
-        </div>
-      </section>
-
-      {/* ========================================== LIVE STATS BAR ========================================== */}
-      <section className="py-16 bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { end: 100, label: 'Industries Served', suffix: '+' },
-              { end: 10000, label: 'Enterprise Projects', suffix: '+' },
-              { end: 50, label: 'Countries Reached', suffix: '+' },
-              { end: 10, label: 'Years Engineering', suffix: '+' },
-            ].map((stat, index) => (
-              <motion.div key={stat.label} initial={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}>
-                <p className="text-5xl md:text-6xl font-bold text-white">
-                  <AnimatedCounter end={stat.end} suffix={stat.suffix} />
-                </p>
-                <p className="text-blue-200 mt-2 text-lg">{stat.label}</p>
-              </motion.div>
-            ))}
+          <div className="max-w-5xl mx-auto">
+            <Link href="/wavve-si" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-purple-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(168,85,247,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/wavvesi.png"
+                  alt="Wavve SI — AI-Powered Business Systems"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                Artificial Intelligence Designed for Real Business Operations.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Wavve SI introduces an intelligent technology ecosystem designed to bring AI capabilities into everyday business operations. Through specialised industry systems, intelligent automation and AI-assisted workflows, organisations can enhance decision-making, optimise processes and explore new opportunities for innovation and operational efficiency.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ========================================== TECHNOLOGY ECOSYSTEM ========================================== */}
-      <section className="py-28 bg-neutral-50 dark:bg-neutral-900">
+      {/* ========================================== 4. DIGITAL TWIN / DELEGATION ========================================== */}
+      <section className="py-24 md:py-32 bg-neutral-50 dark:bg-neutral-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              Technology Ecosystem
-            </h2>
-            <p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto mt-4">
-              One unified platform connecting AI, ERP, Commerce, and Enterprise Systems
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { title: 'WaveCore ERP', desc: 'AI-native enterprise resource planning', image: '/images/ui.png', href: '/wavecore-erp' },
-              { title: 'AI Engineering', desc: 'Custom AI models and intelligent automation', image: '/images/ai-engineering.jpg', href: '/ai-engineering' },
-              { title: 'Cloud & DevOps', desc: 'Scalable cloud infrastructure and deployment', image: '/images/cloud-devops.jpg', href: '/cloud-devops' },
-              { title: 'Cybersecurity', desc: 'Enterprise-grade security and compliance', image: '/images/cybersecurity.jpg', href: '/cybersecurity' },
-              { title: 'Software Development', desc: 'Custom enterprise software solutions', image: '/images/software-development.jpg', href: '/software-development' },
-              { title: 'Space Technology', desc: 'Satellite systems and advanced technology', image: '/images/Satelites.jpeg', href: '/services' },
-            ].map((tech, index) => (
-              <motion.div key={tech.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.05 }}
-                className="group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
-                <Link href={tech.href}>
-                  <div className="relative h-72">
-                    <Image src={tech.image} alt={tech.title} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="text-white font-bold text-2xl">{tech.title}</h3>
-                      <p className="text-white/70 text-sm mt-2">{tech.desc}</p>
-                      <span className="inline-flex items-center gap-2 text-blue-300 font-medium mt-3 group-hover:gap-3 transition-all">
-                        Explore <ArrowRight className="w-4 h-4" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+          <div className="max-w-5xl mx-auto">
+            <Link href="/executives" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-blue-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(59,130,246,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/delegation-guiding.png"
+                  alt="Digital Twin & Guided Transformation — IntelliWavve"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                Understand. Simulate. Optimise. Transform.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                IntelliWavve embraces digital transformation through intelligent operational modelling and guided business processes. Our vision is to help organisations understand their operational environments, coordinate responsibilities and explore improved workflows through connected digital systems. This approach supports better planning, operational visibility and more informed business decisions.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ========================================== GLOBAL IMPACT ========================================== */}
-      <section className="py-28 bg-white dark:bg-neutral-950">
+      {/* ========================================== 5. EXECUTIVE LEADERS ========================================== */}
+      <section className="py-24 md:py-32 bg-white dark:bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              Global Impact
-            </h2>
-            <p className="text-xl text-neutral-500 dark:text-neutral-400 max-w-3xl mx-auto mt-4">
-              Building technology that transforms organizations worldwide
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
-            {[
-              { title: 'AI Automation', desc: 'Intelligent workflows that reduce manual work by 60%', icon: Zap },
-              { title: 'Data Intelligence', desc: 'Real-time analytics for faster decisions', icon: BarChart3 },
-              { title: 'Enterprise Security', desc: 'Multi-layer protection for critical systems', icon: Shield },
-              { title: 'Cloud Scale', desc: 'Infrastructure that grows with your business', icon: Cloud },
-              { title: 'Global Reach', desc: 'Technology deployed across continents', icon: Globe },
-              { title: 'Innovation', desc: 'Continuous R&D in AI and enterprise systems', icon: Sparkles },
-            ].map((item, index) => {
-              const Icon = item.icon
-              return (
-                <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.05 }}
-                  className="p-8 rounded-3xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl transition-all">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-5">
-                    <Icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="font-bold text-xl text-neutral-900 dark:text-white">{item.title}</h3>
-                  <p className="text-neutral-500 dark:text-neutral-400 mt-2">{item.desc}</p>
-                </motion.div>
-              )
-            })}
+          <div className="max-w-5xl mx-auto">
+            <Link href="/executives" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-cyan-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(6,182,212,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/onboarding-leaders.png"
+                  alt="Executive Leadership Network — IntelliWavve"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                Building a Global Network of Digital Transformation Leaders.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                IntelliWavve is developing an ecosystem of executive leaders, technology advocates and business development partners who introduce organisations to modern digital solutions. Through structured onboarding and customer acquisition opportunities, we aim to empower individuals to participate in the growth of digital technology while expanding IntelliWavve's reach across Kenya and international markets.
+              </p>
+            </div>
           </div>
         </div>
       </section>
+
+      {/* ========================================== 6. 8 REGIONS ========================================== */}
+      <section className="py-24 md:py-32 bg-neutral-50 dark:bg-neutral-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <Link href="/wavve-si" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-purple-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(168,85,247,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/teaching-wavvesi.png"
+                  alt="Teaching Wavve SI Across 8 Regions — IntelliWavve"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                Taking Digital Intelligence Closer to Every Business Community.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Our expansion vision focuses on extending digital knowledge, AI awareness and technology adoption across eight strategic regions. Through demonstrations, training, digital education and community engagement, IntelliWavve aims to make advanced business technology more accessible to entrepreneurs, institutions and organisations, including those beyond major commercial centres.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================== 7. WAVVEMARKET ========================================== */}
+      <section className="py-24 md:py-32 bg-white dark:bg-neutral-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <Link href="/marketplace" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-blue-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(59,130,246,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/wavvemarket.png"
+                  alt="WavveMarket — Digital Commerce for Kenya"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                Connecting Kenyan Businesses Through Digital Commerce.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                WavveMarket is designed to connect buyers and sellers through a digital marketplace that makes product discovery, business visibility and online commerce more accessible. From independent retailers and wholesalers to growing enterprises, the platform creates opportunities for businesses to showcase their products, reach customers and participate in Kenya's evolving digital economy.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================== 8. JOIN INTELLIWAVVE ========================================== */}
+      <section className="py-24 md:py-32 bg-neutral-50 dark:bg-neutral-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <Link href="/marketplace" className="block group">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-purple-500/10 group-hover:shadow-[0_30px_90px_-15px_rgba(168,85,247,0.45)] transition-all duration-700">
+                <img
+                  src="/banners/join-wavvemarket.png"
+                  alt="Join IntelliWavve — Connected Digital Business"
+                  className="w-full block group-hover:scale-[1.02] transition-transform duration-700"
+                  style={{ aspectRatio: '16 / 9', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+            </Link>
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-neutral-900 dark:text-white tracking-tight">
+                Join the Future of Connected Digital Business.
+              </h2>
+              <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Become part of the IntelliWavve ecosystem and participate in the next generation of digital commerce, enterprise management and artificial intelligence. Whether you are an entrepreneur, retailer, business leader, organisation or technology enthusiast, IntelliWavve provides an opportunity to explore connected digital solutions and contribute to a more digitally empowered economy.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ========================================== FINAL CTA ========================================== */}
       <section className="py-36 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
