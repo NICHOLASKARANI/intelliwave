@@ -153,6 +153,7 @@ model Organization {
   statutoryRates       StatutoryRate[]
   supplierInvoices     SupplierInvoice[]
   restaurantTables     RestaurantTable[]
+  reservations         Reservation[]
 }
 
 model Project {
@@ -442,6 +443,7 @@ model Customer {
   salesOrders    SalesOrder[]
 
   @@index([organizationId], map: "idx_customer_org")
+  reservations   Reservation[]
 }
 
 model Contact {
@@ -2630,6 +2632,7 @@ model RestaurantTable {
 
   @@unique([organizationId, name], map: "unique_table_name_per_org")
   @@index([organizationId], map: "idx_table_org")
+  reservations   Reservation[]
 }
 
 // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
@@ -3475,4 +3478,37 @@ model AnalyticSnapshot {
   @@index([organizationId])
   @@index([metric])
   @@index([snapshotDate])
+}
+
+
+// ============================================ WAVVE SI — RESERVATIONS ============================================
+// Restaurant table reservations. Tenant-isolated via organizationId.
+// Added: 2026-11-27
+
+model Reservation {
+  id             String    @id @default(cuid())
+  organizationId String
+  customerId     String?
+  customerName   String
+  customerPhone  String?
+  customerEmail  String?
+  partySize      Int
+  reservationAt  DateTime
+  durationMins   Int       @default(90)
+  tableId        String?
+  status         String    @default("PENDING")
+  notes          String?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  table          RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId], map: "idx_reservation_org")
+  @@index([organizationId, reservationAt], map: "idx_reservation_org_datetime")
+  @@index([organizationId, status], map: "idx_reservation_org_status")
+  @@index([tableId], map: "idx_reservation_table")
+  @@index([customerId], map: "idx_reservation_customer")
 }
