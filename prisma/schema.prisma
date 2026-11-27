@@ -154,6 +154,7 @@ model Organization {
   supplierInvoices     SupplierInvoice[]
   restaurantTables     RestaurantTable[]
   reservations         Reservation[]
+  housekeepingTasks    HousekeepingTask[]
 }
 
 model Project {
@@ -3511,4 +3512,37 @@ model Reservation {
   @@index([organizationId, status], map: "idx_reservation_org_status")
   @@index([tableId], map: "idx_reservation_table")
   @@index([customerId], map: "idx_reservation_customer")
+}
+
+
+// ============================================ WAVVE SI — HOUSEKEEPING ============================================
+// Room cleaning, maintenance, inspection tasks. Tenant-isolated via organizationId.
+// Added: 2026-11-27
+
+model HousekeepingTask {
+  id              String    @id @default(cuid())
+  organizationId  String
+  roomNumber      String
+  roomType        String?
+  taskType        String    @default("CLEANING")
+  priority        String    @default("NORMAL")
+  status          String    @default("PENDING")
+  assignedToId    String?
+  assignedToName  String?
+  notes           String?
+  scheduledFor    DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId], map: "idx_hk_org")
+  @@index([organizationId, status], map: "idx_hk_org_status")
+  @@index([organizationId, scheduledFor], map: "idx_hk_org_scheduled")
+  @@index([organizationId, assignedToId], map: "idx_hk_org_assigned")
 }
