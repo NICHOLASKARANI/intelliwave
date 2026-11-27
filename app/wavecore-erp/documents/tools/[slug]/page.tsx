@@ -212,7 +212,17 @@ const TOOL_CONFIG: Record<string, {
     color: 'from-green-500 to-emerald-600',
     accept: '.pdf',
   },
-  'md-to-pdf': {
+  'excel-to-pdf': {
+    title: 'Excel to PDF',
+    description: 'Convert Excel spreadsheet to PDF document',
+    apiTool: 'EXCEL_TO_PDF',
+    outputType: 'pdf',
+    outputExtension: 'pdf',
+    outputMime: 'application/pdf',
+    icon: FileSpreadsheet,
+    color: 'from-green-500 to-emerald-600',
+    accept: '.xlsx,.xls,.csv',
+  },  'md-to-pdf': {
     title: 'Markdown to PDF',
     description: 'Convert Markdown to PDF',
     apiTool: 'MD_TO_PDF',

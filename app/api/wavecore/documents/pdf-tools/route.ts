@@ -526,10 +526,42 @@ export async function POST(request: NextRequest) {
       outputMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       extra = { pages: pdf.numPages, rows: allRows.length }
     }
+    else if (tool === 'EXCEL_TO_PDF') {
+      const XLSX: any = await import('xlsx')
+      const wb = XLSX.read(inputBytes, { type: 'buffer' })
+      const firstSheet = wb.SheetNames[0]
+      if (!firstSheet) return NextResponse.json({ error: 'No sheets in workbook' }, { status: 400 })
+      const ws = wb.Sheets[firstSheet]
+      const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+      const doc = await PDFDocument.create()
+      const font = await doc.embedFont(StandardFonts.Helvetica)
+      const fontSize = 9
+      const lineHeight = 14
+      const margin = 40
+      const pageW = 595, pageH = 842
+      const usableW = pageW - margin * 2
+      let page = doc.addPage([pageW, pageH])
+      let y = pageH - margin
+      const drawLine = (text: string) => {
+        if (y < margin + lineHeight) { page = doc.addPage([pageW, pageH]); y = pageH - margin }
+        page.drawText(String(text).slice(0, 200), { x: margin, y, size: fontSize, font })
+        y -= lineHeight
+      }
+      for (const row of rows) {
+        if (y < margin + lineHeight) { page = doc.addPage([pageW, pageH]); y = pageH - margin }
+        const cellText = row.map((v: any) => String(v ?? '')).join('  |  ')
+        page.drawText(cellText.slice(0, 200), { x: margin, y, size: fontSize, font })
+        y -= lineHeight
+      }
+      const buffer = await doc.save()
+      outputBytes = new Uint8Array(buffer)
+      outputMime = 'application/pdf'
+      extra = { rows: rows.length, sheet: firstSheet }
+    }
 else {
       return NextResponse.json({
         error: 'Tool "' + tool + '" not supported in this environment. Supported: MERGE, SPLIT, COMPRESS, ROTATE, WATERMARK, PAGE_NUMBERS, ORGANIZE, UNLOCK, REPAIR, CROP, REDACT, METADATA',
-        supportedTools: ['MERGE', 'SPLIT', 'COMPRESS', 'ROTATE', 'WATERMARK', 'PAGE_NUMBERS', 'ORGANIZE', 'UNLOCK', 'REPAIR', 'CROP', 'REDACT', 'METADATA', 'PDF_TO_WORD', 'PDF_TO_EXCEL'],
+        supportedTools: ['MERGE', 'SPLIT', 'COMPRESS', 'ROTATE', 'WATERMARK', 'PAGE_NUMBERS', 'ORGANIZE', 'UNLOCK', 'REPAIR', 'CROP', 'REDACT', 'METADATA', 'PDF_TO_WORD', 'PDF_TO_EXCEL', 'EXCEL_TO_PDF'],
       }, { status: 400 })
     }
 
