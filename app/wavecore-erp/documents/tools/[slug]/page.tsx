@@ -222,6 +222,16 @@ const TOOL_CONFIG: Record<string, {
     icon: FileSpreadsheet,
     color: 'from-green-500 to-emerald-600',
     accept: '.xlsx,.xls,.csv',
+  },  'word-to-pdf': {
+    title: 'Word to PDF',
+    description: 'Convert Word document (.docx) to PDF',
+    apiTool: 'WORD_TO_PDF',
+    outputType: 'pdf',
+    outputExtension: 'pdf',
+    outputMime: 'application/pdf',
+    icon: FileText,
+    color: 'from-blue-500 to-indigo-600',
+    accept: '.docx',
   },  'md-to-pdf': {
     title: 'Markdown to PDF',
     description: 'Convert Markdown to PDF',

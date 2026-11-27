@@ -43,7 +43,7 @@ const TOOLS = [
   { name: 'HTML to PDF',      href: '/wavecore-erp/documents/tools/html-to-pdf', icon: FileBarChart,  category: 'CONVERT',  desc: 'Webpage → PDF' },
   { name: 'PDF to PDF/A',     href: '/wavecore-erp/documents/tools/pdf-to-pdfa', icon: Archive,       category: 'CONVERT',  desc: 'Archive standard' },
   { name: 'PDF to Word',      href: '/wavecore-erp/documents/tools/pdf-to-word', icon: FileEdit,      category: 'CONVERT',  desc: 'Convert PDF to editable Word (.docx)' },
-  { name: 'Word to PDF',      href: '/wavecore-erp/documents/tools/word-to-pdf', icon: FileText,      category: 'CONVERT',  desc: 'Coming soon · CloudConvert' },
+  { name: 'Word to PDF',      href: '/wavecore-erp/documents/tools/word-to-pdf', icon: FileText,      category: 'CONVERT',  desc: 'Convert Word document to PDF' },
   { name: 'PDF to Excel',     href: '/wavecore-erp/documents/tools/pdf-to-excel', icon: FileSpreadsheet, category: 'CONVERT', desc: 'Convert PDF tables to Excel (.xlsx)' },
   { name: 'Excel to PDF',     href: '/wavecore-erp/documents/tools/excel-to-pdf', icon: FileSpreadsheet, category: 'CONVERT', desc: 'Convert Excel spreadsheet to PDF' },
 

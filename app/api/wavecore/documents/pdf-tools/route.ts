@@ -558,10 +558,35 @@ export async function POST(request: NextRequest) {
       outputMime = 'application/pdf'
       extra = { rows: rows.length, sheet: firstSheet }
     }
+    else if (tool === 'WORD_TO_PDF') {
+      const mammoth: any = await import('mammoth')
+      const buffer = Buffer.from(inputBytes)
+      const result = await mammoth.extractRawText({ buffer })
+      const text = result.value || ''
+      const lines2 = text.split(/\r?\n/)
+      const doc = await PDFDocument.create()
+      const font = await doc.embedFont(StandardFonts.Helvetica)
+      const fontSize = 10
+      const lineHeight = 14
+      const margin = 40
+      const pageW = 595, pageH = 842
+      let page = doc.addPage([pageW, pageH])
+      let y = pageH - margin
+      for (const rawLine of lines2) {
+        if (y < margin + lineHeight) { page = doc.addPage([pageW, pageH]); y = pageH - margin }
+        const safeLine = String(rawLine).replace(/[\u0000-\u001f\u007f-\u009f]/g, '').slice(0, 200)
+        page.drawText(safeLine, { x: margin, y, size: fontSize, font, maxWidth: pageW - margin * 2 })
+        y -= lineHeight
+      }
+      const pdfBytes = await doc.save()
+      outputBytes = new Uint8Array(pdfBytes)
+      outputMime = 'application/pdf'
+      extra = { lines: lines2.length }
+    }
 else {
       return NextResponse.json({
         error: 'Tool "' + tool + '" not supported in this environment. Supported: MERGE, SPLIT, COMPRESS, ROTATE, WATERMARK, PAGE_NUMBERS, ORGANIZE, UNLOCK, REPAIR, CROP, REDACT, METADATA',
-        supportedTools: ['MERGE', 'SPLIT', 'COMPRESS', 'ROTATE', 'WATERMARK', 'PAGE_NUMBERS', 'ORGANIZE', 'UNLOCK', 'REPAIR', 'CROP', 'REDACT', 'METADATA', 'PDF_TO_WORD', 'PDF_TO_EXCEL', 'EXCEL_TO_PDF'],
+        supportedTools: ['MERGE', 'SPLIT', 'COMPRESS', 'ROTATE', 'WATERMARK', 'PAGE_NUMBERS', 'ORGANIZE', 'UNLOCK', 'REPAIR', 'CROP', 'REDACT', 'METADATA', 'PDF_TO_WORD', 'PDF_TO_EXCEL', 'EXCEL_TO_PDF', 'WORD_TO_PDF'],
       }, { status: 400 })
     }
 
