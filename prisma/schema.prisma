@@ -155,6 +155,7 @@ model Organization {
   restaurantTables     RestaurantTable[]
   reservations         Reservation[]
   housekeepingTasks    HousekeepingTask[]
+  guestServiceRequests GuestServiceRequest[]
 }
 
 model Project {
@@ -3545,4 +3546,40 @@ model HousekeepingTask {
   @@index([organizationId, status], map: "idx_hk_org_status")
   @@index([organizationId, scheduledFor], map: "idx_hk_org_scheduled")
   @@index([organizationId, assignedToId], map: "idx_hk_org_assigned")
+}
+
+
+// ============================================ WAVVE SI — GUEST SERVICES ============================================
+// Guest requests, complaints, concierge services. Tenant-isolated via organizationId.
+// Added: 2026-11-27
+
+model GuestServiceRequest {
+  id               String    @id @default(cuid())
+  organizationId   String
+  requestNumber    String
+  roomNumber       String?
+  guestName        String
+  guestPhone       String?
+  guestEmail       String?
+  category         String    @default("OTHER")
+  priority         String    @default("NORMAL")
+  status           String    @default("OPEN")
+  subject          String
+  description      String?
+  resolutionNotes  String?
+  assignedToId     String?
+  assignedToName   String?
+  resolvedAt       DateTime?
+  closedAt         DateTime?
+  createdBy        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId], map: "idx_gsr_org")
+  @@index([organizationId, status], map: "idx_gsr_org_status")
+  @@index([organizationId, category], map: "idx_gsr_org_category")
+  @@index([organizationId, assignedToId], map: "idx_gsr_org_assigned")
+  @@index([organizationId, createdAt], map: "idx_gsr_org_created")
 }

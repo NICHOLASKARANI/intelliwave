@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { UtensilsCrossed, LayoutDashboard, ShoppingCart, BookOpen, Users, ArrowLeft, ChefHat, LayoutGrid, Calendar, Sparkles } from 'lucide-react'
+import { UtensilsCrossed, LayoutDashboard, ShoppingCart, BookOpen, Users, ArrowLeft, ChefHat, LayoutGrid, Calendar, Sparkles, BellRing } from 'lucide-react'
 
 const TABS = [
   { href: '/wavve-si/modules/restaurant-hospitality', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -12,6 +12,7 @@ const TABS = [
   { href: '/wavve-si/modules/restaurant-hospitality/tables', label: 'Tables', icon: LayoutGrid },
   { href: '/wavve-si/modules/restaurant-hospitality/reservations', label: 'Reservations', icon: Calendar },
   { href: '/wavve-si/modules/restaurant-hospitality/housekeeping', label: 'Housekeeping', icon: Sparkles },
+  { href: '/wavve-si/modules/restaurant-hospitality/guest-services', label: 'Guest Services', icon: BellRing },
   { href: '/wavve-si/modules/restaurant-hospitality/customers', label: 'Customers', icon: Users },
 ]
 
