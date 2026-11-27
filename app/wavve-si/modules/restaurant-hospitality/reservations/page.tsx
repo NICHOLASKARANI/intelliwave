@@ -124,7 +124,9 @@ export default function ReservationsPage() {
               </td></tr>
             )}
             {!loading && rows.map(r => (
-              <tr key={r.id} className="border-t border-neutral-100 dark:border-neutral-800">
+              <tr key={r.id}
+                onClick={() => router.push("/wavve-si/modules/restaurant-hospitality/reservations/" + r.id)}
+                className="border-t border-neutral-100 dark:border-neutral-800 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors">
                 <td className="px-4 py-3">
                   <div className="font-bold">{r.customerName}</div>
                   {r.customerPhone && <div className="text-xs text-neutral-500">{r.customerPhone}</div>}
@@ -144,15 +146,15 @@ export default function ReservationsPage() {
                 </td>
                 <td className="px-4 py-3">
                   {r.status === 'PENDING' && (
-                    <button onClick={() => setStatusFor(r.id, 'CONFIRMED')}
+                    <button onClick={(e) => { e.stopPropagation(); setStatusFor(r.id, 'CONFIRMED') }}
                       className="text-xs font-bold text-blue-400 hover:text-blue-300">Confirm</button>
                   )}
                   {r.status === 'CONFIRMED' && (
-                    <button onClick={() => setStatusFor(r.id, 'SEATED')}
+                    <button onClick={(e) => { e.stopPropagation(); setStatusFor(r.id, 'SEATED') }}
                       className="text-xs font-bold text-green-400 hover:text-green-300">Seat</button>
                   )}
                   {r.status === 'SEATED' && (
-                    <button onClick={() => setStatusFor(r.id, 'COMPLETED')}
+                    <button onClick={(e) => { e.stopPropagation(); setStatusFor(r.id, 'COMPLETED') }}
                       className="text-xs font-bold text-neutral-400 hover:text-neutral-300">Complete</button>
                   )}
                 </td>
