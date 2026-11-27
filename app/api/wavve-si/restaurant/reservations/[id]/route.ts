@@ -45,22 +45,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     const sets: string[] = []
     const vals: any[] = []
-    if (status)         { vals.push(status);         sets.push(`status = $${vals.length}`) }
-    if (customerName !== undefined)   { vals.push(customerName);   sets.push(`"customerName" = $${vals.length}`) }
-    if (customerPhone !== undefined)  { vals.push(customerPhone);  sets.push(`"customerPhone" = $${vals.length}`) }
-    if (customerEmail !== undefined)  { vals.push(customerEmail);  sets.push(`"customerEmail" = $${vals.length}`) }
-    if (partySize !== undefined)      { vals.push(partySize);      sets.push(`"partySize" = $${vals.length}`) }
-    if (reservationAt !== undefined)  { vals.push(reservationAt);  sets.push(`"reservationAt" = $${vals.length}::timestamp`) }
-    if (durationMins !== undefined)   { vals.push(durationMins);   sets.push(`"durationMins" = $${vals.length}`) }
-    if (tableId !== undefined)        { vals.push(tableId);        sets.push(`"tableId" = $${vals.length}`) }
-    if (notes !== undefined)          { vals.push(notes);          sets.push(`notes = $${vals.length}`) }
+    if (status)                        { vals.push(status);        sets.push(`status = $${vals.length}`) }
+    if (customerName !== undefined)    { vals.push(customerName);  sets.push(`"customerName" = $${vals.length}`) }
+    if (customerPhone !== undefined)   { vals.push(customerPhone); sets.push(`"customerPhone" = $${vals.length}`) }
+    if (customerEmail !== undefined)   { vals.push(customerEmail); sets.push(`"customerEmail" = $${vals.length}`) }
+    if (partySize !== undefined)       { vals.push(partySize);     sets.push(`"partySize" = $${vals.length}`) }
+    if (reservationAt !== undefined)   { vals.push(reservationAt); sets.push(`"reservationAt" = $${vals.length}::timestamp`) }
+    if (durationMins !== undefined)    { vals.push(durationMins);  sets.push(`"durationMins" = $${vals.length}`) }
+    if (tableId !== undefined)         { vals.push(tableId);       sets.push(`"tableId" = $${vals.length}`) }
+    if (notes !== undefined)           { vals.push(notes);         sets.push(`notes = $${vals.length}`) }
 
     if (sets.length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
     }
 
     sets.push(`"updatedAt" = NOW()`)
-    vals.push(params.id); vals.push(session.organizationId)
+    vals.push(params.id)
+    vals.push(session.organizationId)
 
     const res = await pool.query(
       `UPDATE "Reservation"
