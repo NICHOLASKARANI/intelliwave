@@ -8,7 +8,7 @@ import {
   ArrowLeft, Upload, Loader2, CheckCircle2, X, Download, FileText,
   Layers, Scissors, Minimize2, RotateCw, Stamp, Hash, GitBranch,
   Lock, Unlock, RefreshCw, Crop, FileSearch, AlertTriangle, Sparkles,
-  Archive, Brain, Calculator, FileBarChart, FileEdit, FileImage,
+  Archive, Brain, Calculator, FileBarChart, FileEdit, FileImage, FileSpreadsheet,
   FileType, Languages, Minimize, Quote,
 } from 'lucide-react'
 
@@ -201,7 +201,18 @@ const TOOL_CONFIG: Record<string, {
     icon: FileEdit,
     color: 'from-blue-500 to-indigo-600',
     accept: '.pdf',
-  },  'md-to-pdf': {
+  },  'pdf-to-excel': {
+    title: 'PDF to Excel',
+    description: 'Convert PDF tables to Excel spreadsheet (.xlsx)',
+    apiTool: 'PDF_TO_EXCEL',
+    outputType: 'xlsx',
+    outputExtension: 'xlsx',
+    outputMime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    icon: FileSpreadsheet,
+    color: 'from-green-500 to-emerald-600',
+    accept: '.pdf',
+  },
+  'md-to-pdf': {
     title: 'Markdown to PDF',
     description: 'Convert Markdown to PDF',
     apiTool: 'MD_TO_PDF',
