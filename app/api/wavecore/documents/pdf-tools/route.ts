@@ -185,10 +185,12 @@ export async function POST(request: NextRequest) {
     }
     // ==================== UNLOCK (decrypt) ====================
     else if (tool === 'UNLOCK') {
-      const password = body.password || ''
+      const password = String(body.password || '').trim()
+      if (!password) return NextResponse.json({ error: 'password required for unlock' }, { status: 400 })
       try {
         const CantooPDF: any = await import('@cantoo/pdf-lib')
-        const doc = await CantooPDF.PDFDocument.load(inputBytes, { password })
+        // ignoreEncryption: false forces actual decryption with the password
+        const doc = await CantooPDF.PDFDocument.load(inputBytes, { password, ignoreEncryption: false })
         outputBytes = await doc.save()
         outputMime = 'application/pdf'
         extra = { unlocked: true }

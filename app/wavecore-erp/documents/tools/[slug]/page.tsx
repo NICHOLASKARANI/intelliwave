@@ -1,5 +1,7 @@
 'use client'
 
+import { authedFetch } from '@/lib/wavecore/csrf-client'
+
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -21,7 +23,7 @@ const TOOL_CONFIG: Record<string, {
   color: string
   accept: string
   multiple?: boolean
-  options?: { key: string; label: string; type: 'text'|'number'|'select'|'password'|'color'; default?: any; choices?: string[]; min?: number; max?: number; step?: number }[]
+  options?: { key: string; label: string; type: 'text'|'number'|'select'|'password'|'color'|'file'; default?: any; choices?: string[]; min?: number; max?: number; step?: number; accept?: string }[]
   multipleFiles?: boolean
   outputType?: 'pdf' | 'text' | 'md' | 'txt' | 'docx' | 'xlsx' | 'csv' | 'pptx';
   outputExtension?: string;
@@ -240,7 +242,7 @@ const TOOL_CONFIG: Record<string, {
     color: 'from-purple-500 to-indigo-600',
     accept: '.pdf',
     options: [
-      { key: 'signatureData', label: 'Signature image (paste PNG base64 data URL)', type: 'text', default: '' },
+      { key: 'signatureData', label: 'Signature image (PNG)', type: 'file', accept: 'image/png,image/jpeg', default: '' },
       { key: 'pageNumber', label: 'Page number', type: 'number', default: 1 },
       { key: 'x', label: 'X position (points)', type: 'number', default: 100 },
       { key: 'y', label: 'Y position (points)', default: 100, type: 'number' },
@@ -448,10 +450,9 @@ export default function ToolPage() {
         }
       }
 
-      const csrf = document.cookie.match(/wavecore_csrf=([^;]+)/)?.[1] || ''
-      const res = await fetch('/api/wavecore/documents/pdf-tools', {
+      const res = await authedFetch('/api/wavecore/documents/pdf-tools', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
@@ -556,6 +557,24 @@ export default function ToolPage() {
                       <select value={options[opt.key] || ''} onChange={e => setOptions({ ...options, [opt.key]: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm">
                         {(opt.choices || []).map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
+                    ) : opt.type === 'file' ? (
+                      <div>
+                        <input
+                          type="file"
+                          accept={opt.accept || '*/*'}
+                          onChange={async (e) => {
+                            const f = e.target.files?.[0]
+                            if (f) {
+                              const dataUrl = await fileToDataUrl(f)
+                              setOptions({ ...options, [opt.key]: dataUrl })
+                            }
+                          }}
+                          className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-600 file:text-white file:font-bold hover:file:bg-amber-700"
+                        />
+                        {options[opt.key] && (
+                          <p className="text-xs text-green-400 mt-1">✓ {Math.round(String(options[opt.key]).length / 1024)} KB loaded</p>
+                        )}
+                      </div>
                     ) : opt.type === 'color' ? (
                       <input type="color" value={options[opt.key] || '#000000'} onChange={e => setOptions({ ...options, [opt.key]: e.target.value })} className="w-16 h-10 rounded-xl cursor-pointer" />
                     ) : (
