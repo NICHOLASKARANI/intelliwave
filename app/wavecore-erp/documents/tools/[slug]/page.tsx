@@ -9,7 +9,7 @@ import {
   Layers, Scissors, Minimize2, RotateCw, Stamp, Hash, GitBranch,
   Lock, Unlock, RefreshCw, Crop, FileSearch, AlertTriangle, Sparkles,
   Archive, Brain, Calculator, FileBarChart, FileEdit, FileImage, FileSpreadsheet,
-  FileType, Languages, Minimize, Quote,
+  FileType, Languages, Minimize, Quote, PenTool,
 } from 'lucide-react'
 
 // Tool config per slug
@@ -232,6 +232,21 @@ const TOOL_CONFIG: Record<string, {
     icon: FileText,
     color: 'from-blue-500 to-indigo-600',
     accept: '.docx',
+  },  sign: {
+    title: 'Sign PDF',
+    description: 'Add a signature image to a PDF page',
+    apiTool: 'SIGN',
+    icon: PenTool,
+    color: 'from-purple-500 to-indigo-600',
+    accept: '.pdf',
+    options: [
+      { key: 'signatureData', label: 'Signature image (paste PNG base64 data URL)', type: 'text', default: '' },
+      { key: 'pageNumber', label: 'Page number', type: 'number', default: 1 },
+      { key: 'x', label: 'X position (points)', type: 'number', default: 100 },
+      { key: 'y', label: 'Y position (points)', default: 100, type: 'number' },
+      { key: 'width', label: 'Width (points)', type: 'number', default: 150 },
+      { key: 'height', label: 'Height (points)', type: 'number', default: 60 },
+    ],
   },  'md-to-pdf': {
     title: 'Markdown to PDF',
     description: 'Convert Markdown to PDF',

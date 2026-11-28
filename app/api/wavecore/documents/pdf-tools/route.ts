@@ -171,21 +171,29 @@ export async function POST(request: NextRequest) {
     else if (tool === 'PROTECT') {
       const password = body.password
       if (!password) return NextResponse.json({ error: 'password required for protect' }, { status: 400 })
-      // pdf-lib doesn't support encryption — return error asking for a different tool
-      // Provide a clear message rather than failing silently
-      return NextResponse.json({
-        error: 'PDF encryption is not supported in this environment yet. Coming soon.',
-        notSupported: 'PROTECT',
-      }, { status: 501 })
+      try {
+        const CantooPDF: any = await import('@cantoo/pdf-lib')
+        const doc = await CantooPDF.PDFDocument.load(inputBytes, { ignoreEncryption: true })
+        const ownerPassword = body.ownerPassword || password
+        doc.encrypt({ userPassword: password, ownerPassword, algorithm: 'AES-256' })
+        outputBytes = await doc.save()
+        outputMime = 'application/pdf'
+        extra = { encrypted: true, algorithm: 'AES-256' }
+      } catch (e: any) {
+        return NextResponse.json({ error: 'Could not protect PDF: ' + (e?.message || 'unknown error') }, { status: 500 })
+      }
     }
     // ==================== UNLOCK (decrypt) ====================
     else if (tool === 'UNLOCK') {
       const password = body.password || ''
       try {
-        const doc = await PDFDocument.load(inputBytes, { ignoreEncryption: true, password })
+        const CantooPDF: any = await import('@cantoo/pdf-lib')
+        const doc = await CantooPDF.PDFDocument.load(inputBytes, { password })
         outputBytes = await doc.save()
-      } catch (e) {
-        return NextResponse.json({ error: 'Could not unlock PDF. Wrong password or unsupported encryption.' }, { status: 400 })
+        outputMime = 'application/pdf'
+        extra = { unlocked: true }
+      } catch (e: any) {
+        return NextResponse.json({ error: 'Could not unlock PDF. Wrong password or unsupported encryption: ' + (e?.message || '') }, { status: 400 })
       }
     }
     // ==================== REPAIR ====================
@@ -582,6 +590,25 @@ export async function POST(request: NextRequest) {
       outputBytes = new Uint8Array(pdfBytes)
       outputMime = 'application/pdf'
       extra = { lines: lines2.length }
+    }
+    else if (tool === 'SIGN') {
+      const sigData = body.signatureData || body.signature
+      if (!sigData) return NextResponse.json({ error: 'signatureData (PNG base64) required' }, { status: 400 })
+      try {
+        const sigBytes = dataUrlToBytes(sigData)
+        const doc = await PDFDocument.load(inputBytes, { ignoreEncryption: true })
+        const png = await doc.embedPng(sigBytes)
+        const pages = doc.getPages()
+        const pn = Math.max(1, Math.min(Number(body.pageNumber) || 1, pages.length))
+        const w = Number(body.width) || 150
+        const h = Number(body.height) || 60
+        pages[pn - 1].drawImage(png, { x: Number(body.x) || 100, y: Number(body.y) || 100, width: w, height: h })
+        outputBytes = await doc.save()
+        outputMime = 'application/pdf'
+        extra = { pageNumber: pn, width: w, height: h }
+      } catch (e: any) {
+        return NextResponse.json({ error: 'Could not sign PDF: ' + (e?.message || 'unknown error') }, { status: 500 })
+      }
     }
 else {
       return NextResponse.json({
